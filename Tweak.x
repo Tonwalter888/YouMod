@@ -1,5 +1,7 @@
 // All Codes are adapt from YTLite and uYouEnhanced + Some of my research
 #import <YouTubeHeader/_ASDisplayView.h>
+#import <YouTubeHeader/YTInlinePlayerBarContainerView.h>
+#import <YouTubeHeader/YTPlayerBarController.h>
 #import "Headers.h"
 
 // Navigation Bar
@@ -295,13 +297,7 @@
 // Disable toggle time remaining - @bhackel
 %hook YTInlinePlayerBarContainerView
 - (void)setShouldDisplayTimeRemaining:(BOOL)arg1 {
-    // Set true if alwaysShowRemainingTime
-    if (IS_ENABLED(@"alwaysShowRemainingTime_enabled")) {
-        %orig(YES);
-    } else {
-        %orig(NO);
-    }
-    %orig;
+    %orig(YES);
 }
 %end
 
