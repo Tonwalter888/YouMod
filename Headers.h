@@ -10,6 +10,18 @@
 #import <YouTubeHeader/YTIMenuConditionalServiceItemRenderer.h>
 #import <YouTubeHeader/YTIPivotBarRenderer.h>
 #import <YouTubeHeader/YTPivotBarItemView.h>
+#import <YouTubeHeader/YTActionSheetAction.h>
+#import <YouTubeHeader/YTIMenuItemSupportedRenderers.h>
+#import <YouTubeHeader/YTMainAppVideoPlayerOverlayViewController.h>
+#import <YouTubeHeader/YTVideoQualitySwitchOriginalController.h>
+#import <YouTubeHeader/YTVideoQualitySwitchRedesignedController.h>
+#import <YouTubeHeader/YTInnerTubeCollectionViewController.h>
+#import <YouTubeHeader/YTISectionListRenderer.h>
+#import <YouTubeHeader/YTIShelfRenderer.h>
+#import <YouTubeHeader/YTIWatchNextResponse.h>
+#import <YouTubeHeader/YTPlayerOverlay.h>
+#import <YouTubeHeader/YTPlayerOverlayProvider.h>
+#import <YouTubeHeader/YTReelModel.h>
 #import <dlfcn.h>
 
 // For Settings.x
@@ -137,4 +149,8 @@
 @end
 
 @interface SSOConfiguration : NSObject
+@end
+
+@interface YTVideoQualitySwitchOriginalController (YouMod)
+@property (retain, nonatomic) YTVideoQualitySwitchRedesignedController *redesignedController;
 @end
