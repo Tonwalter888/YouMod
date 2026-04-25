@@ -182,3 +182,7 @@
 @interface YTAppDelegate : UIResponder
 - (void)YouModAutoClearCache;
 @end
+
+@interface YTSettingsCell (YouMod)
+- (void)setTitleDescription:(NSString)description;
+@end
