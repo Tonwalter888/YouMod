@@ -1,0 +1,361 @@
+name: Build IPA with tweaks (TEST)
+on:
+  workflow_dispatch:
+    inputs:
+      ipa_url:
+        description: "URL to the decrypted IPA file"
+        default: ""
+        required: true
+        type: string
+
+      display_name:
+        description: "App Name (Optional)"
+        default: "YouTube"
+        required: true
+        type: string
+
+      bundle_id:
+        description: "Bundle ID (Optional)"
+        default: "com.google.ios.youtube"
+        required: true
+        type: string
+
+      demc:
+        description: "Integrate DontEatMyContent"
+        default: true
+        required: false
+        type: boolean
+
+      ytvid:
+        description: "Integrate YTVideoErrorAlert"
+        default: true
+        required: false
+        type: boolean
+
+      volboost:
+        description: "Integrate VolumeBoostYT (Require iOS 16+)"
+        default: true
+        required: false
+        type: boolean
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build IPA with tweaks
+    runs-on: macos-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Hide Sensitive Inputs
+        uses: levibostian/action-hide-sensitive-inputs@v1
+        with:
+          exclude_inputs: bundle_id,display_name,demc,ytvid
+          
+      - name: Download and Validate IPA
+        run: |
+          wget "${{ inputs.ipa_url }}" --quiet --no-verbose -O youtube.ipa
+
+          file_type=$(file --mime-type -b youtube.ipa)
+
+          if [[ "$file_type" != "application/x-ios-app" && "$file_type" != "application/zip" ]]; then
+            echo "::error::Validation failed: The downloaded file is not a valid IPA. Detected type: $file_type."
+            exit 1
+          fi
+
+      - name: Get YouTube Version 
+        run: |
+          unzip -q youtube.ipa -d ytextracted
+          echo "YT_VERSION=$(grep -A 1 '<key>CFBundleVersion</key>' ytextracted/Payload/YouTube.app/Info.plist | grep '<string>' | awk -F'[><]' '{print $3}')" >> $GITHUB_ENV
+
+      - name: Install Dependencies
+        run: brew install make ldid swiftlint
+
+      - name: Set PATH Environment Variables
+        run: |
+          echo "$(brew --prefix make)/libexec/gnubin" >> $GITHUB_PATH
+          echo "THEOS=${{ github.workspace }}/theos" >> $GITHUB_ENV
+
+      - name: Clone Theos
+        run: git clone --quiet --depth=1 --recurse-submodules https://github.com/theos/theos.git
+           
+      - name: Download iOS SDK
+        run: |
+          git clone --quiet --depth=1 -n --filter=tree:0 https://github.com/Tonwalter888/iOS-SDKs.git
+          cd iOS-SDKs
+          git sparse-checkout set --no-cone iPhoneOS18.6.sdk
+          git checkout
+          mv *.sdk $THEOS/sdks
+
+      - name: Install cyan and tbd
+        run: |
+          pipx install --force https://github.com/asdfzxcvbn/pyzule-rw/archive/main.zip
+          wget --quiet --no-verbose "https://github.com/inoahdev/tbd/releases/download/2.2/tbd-mac" -O /usr/local/bin/tbd
+          chmod +x /usr/local/bin/tbd 
+          
+      - name: Clone Open in YouTube (Safari Extension)
+        run: |
+          git clone --quiet -n --depth=1 --filter=tree:0 https://github.com/BillyCurtis/OpenYouTubeSafariExtension.git
+          cd OpenYouTubeSafariExtension
+          git sparse-checkout set --no-cone OpenYouTubeSafariExtension.appex
+          git checkout
+          mv *.appex ${{ github.workspace }}
+
+      - name: Clone YouTubeHeader
+        run: |
+           git clone --quiet --depth=1 https://github.com/PoomSmart/YouTubeHeader.git $THEOS/include/YouTubeHeader
+           if [ "${{ inputs.demc }}" = "true" ]; then
+            cp -r "$THEOS/include/YouTubeHeader" "$THEOS/include/YTHeaders"
+           fi
+
+      - name: Clone PSHeader
+        run: git clone --quiet --depth=1 https://github.com/PoomSmart/PSHeader.git $THEOS/include/PSHeader
+
+      - name: Clone YouMod
+        run: git clone --quiet --depth=1 https://github.com/Tonwalter888/YouMod.git
+
+      - name: Clone YouPiP
+        run: git clone --quiet --depth=1 https://github.com/PoomSmart/YouPiP.git
+    
+      - name: Clone YTUHD
+        run: git clone --quiet --depth=1 https://github.com/Tonwalter888/YTUHD.git
+           
+      - name: Clone Return-YouTube-Dislikes
+        run: git clone --quiet --depth=1 https://github.com/PoomSmart/Return-YouTube-Dislikes.git
+
+      - name: Clone YouGroupSettings
+        run: git clone --quiet --depth=1 https://github.com/Tonwalter888/YouGroupSettings.git
+           
+      - name: Clone YTVideoOverlay
+        run: git clone --quiet --depth=1 https://github.com/PoomSmart/YTVideoOverlay.git
+          
+      - name: Clone YTABConfig
+        run: git clone --quiet --depth=1 https://github.com/PoomSmart/YTABConfig.git
+                  
+      - name: Clone YouQuality
+        run: git clone --quiet --depth=1 https://github.com/PoomSmart/YouQuality.git
+
+      - name: Clone YouSpeed
+        run: git clone --quiet --depth=1 https://github.com/PoomSmart/YouSpeed.git
+
+      - name: Clone DontEatMyContent
+        if: ${{ inputs.demc }}
+        run: git clone --quiet --depth=1 https://github.com/therealFoxster/DontEatMyContent.git
+
+      - name: Clone YouMute
+        run: git clone --quiet --depth=1 https://github.com/PoomSmart/YouMute.git
+    
+      - name: Clone YouLoop
+        run: git clone --quiet --depth=1 https://github.com/bhackel/YouLoop.git
+
+      - name: Clone YTweaks
+        run: git clone --quiet --depth=1 https://github.com/fosterbarnes/YTweaks.git
+
+      - name: Clone Alderis
+        run: git clone --quiet --depth=1 https://github.com/hbang/Alderis.git
+
+      - name: Clone YouSlider
+        run: git clone --quiet --depth=1 https://github.com/PoomSmart/YouSlider.git
+
+      - name: Clone YouChooseQuality
+        run: git clone --quiet https://github.com/PoomSmart/YouChooseQuality.git
+
+      - name: Clone YouShare
+        run: git clone --quiet --depth=1 https://github.com/Tonwalter888/YouShare.git
+
+      - name: Clone Gonerino
+        run: git clone --quiet --depth=1 https://github.com/castdrian/Gonerino.git
+
+      - name: Clone YouGetCaption
+        run: git clone --quiet --depth=1 https://github.com/PoomSmart/YouGetCaption.git
+
+      - name: Clone youtube-native-share
+        run: git clone --quiet --depth=1 https://github.com/jkhsjdhjs/youtube-native-share.git
+
+      - name: Clone YTVideoErrorAlert
+        if: ${{ inputs.ytvid }}
+        run: git clone --quiet --depth=1 https://github.com/PoomSmart/YTVideoErrorAlert.git
+
+      - name: Clone VolumeBoostYT
+        if: ${{ inputs.volboost }}
+        run: git clone --quiet --depth=1 https://github.com/VasirakCalgux/VolumeBoostYT.git
+
+      - name: Clone iSponsorBlock
+        run: git clone --quiet --depth=1 https://github.com/jaydenjcpy/iSponsorBlock
+
+      - name: Build YouMod
+        run: |
+          cd YouMod
+          echo "YOUMOD_VERSION=$(grep '^Version:' control | cut -d ' ' -f2)" >> $GITHUB_ENV
+          make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
+          mv packages/*.deb ${{ github.workspace }}/youmod.deb
+        
+      - name: Build YouPiP
+        run: |
+          cd YouPiP
+          make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
+          mv packages/*.deb ${{ github.workspace }}/youpip.deb
+
+      - name: Build iSponsorBlock
+        run: |
+          cd iSponsorBlock
+          make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless TARGET=iphone:clang:latest:13.0
+          mv packages/*.deb ${{ github.workspace }}/isponsorblock.deb
+
+      - name: Build YTUHD
+        run: |
+          cd YTUHD
+          make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
+          mv packages/*.deb ${{ github.workspace }}/ytuhd.deb
+
+      - name: Build Return-YouTube-Dislikes
+        run: |
+          cd Return-YouTube-Dislikes
+          make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
+          mv packages/*.deb ${{ github.workspace }}/ryd.deb
+
+      - name: Build YouGroupSettings
+        run: |
+          cd YouGroupSettings
+          make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
+          mv packages/*.deb ${{ github.workspace }}/ygs.deb
+
+      - name: Build YTVideoOverlay
+        run: |
+          cd YTVideoOverlay
+          make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
+          mv packages/*.deb ${{ github.workspace }}/ytvo.deb
+
+      - name: Build YTABConfig
+        run: |
+          cd YTABConfig
+          make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
+          mv packages/*.deb ${{ github.workspace }}/ytabconfig.deb
+
+      - name: Build YouQuality
+        run: |
+          cd YouQuality
+          make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
+          mv packages/*.deb ${{ github.workspace }}/youquality.deb
+
+      - name: Build YouSpeed
+        run: |
+          cd YouSpeed
+          make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
+          mv packages/*.deb ${{ github.workspace }}/youspeed.deb
+
+      - name: Build DontEatMyContent
+        if: ${{ inputs.demc }}
+        run: |
+          cd DontEatMyContent
+          make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
+          mv packages/*.deb ${{ github.workspace }}/demc.deb
+
+      - name: Build YouMute
+        run: |
+          cd YouMute
+          make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
+          mv packages/*.deb ${{ github.workspace }}/ym.deb
+
+      - name: Build YouLoop
+        run: |
+          cd YouLoop
+          make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
+          mv packages/*.deb ${{ github.workspace }}/youloop.deb
+
+      - name: Build YouSlider
+        run: |
+          cd YouSlider
+          make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
+          mv packages/*.deb ${{ github.workspace }}/youslider.deb
+
+      - name: Build Alderis
+        run: |
+          cd Alderis
+          make clean package DEBUG=0 FINALPACKAGE=1 ARCHS=arm64
+          mv packages/*.deb ${{ github.workspace }}/alderis.deb
+
+      - name: Build YouChooseQuality
+        run: |
+          cd YouChooseQuality
+          git checkout 1585a3691b2ef0b59d42c40c31639fd8b79e2cd4
+          make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
+          mv packages/*.deb ${{ github.workspace }}/youchoose.deb
+
+      - name: Build YouShare
+        run: |
+          cd YouShare
+          make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
+          mv packages/*.deb ${{ github.workspace }}/youshare.deb
+
+      - name: Build YTweaks
+        run: |
+          cd YTweaks
+          make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
+          mv packages/*.deb ${{ github.workspace }}/ytweaks.deb
+          
+      - name: Build Gonerino
+        run: |
+          cd Gonerino
+          make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
+          mv packages/*.deb ${{ github.workspace }}/gonerino.deb
+
+      - name: Build YouGetCaption
+        run: |
+          cd YouGetCaption
+          make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
+          mv packages/*.deb ${{ github.workspace }}/ygc.deb
+
+      - name: Build youtube-native-share
+        run: |
+          cd youtube-native-share
+          git clone --quiet --depth=1 https://github.com/protocolbuffers/protobuf.git
+          make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless ARCHS=arm64
+          mv packages/*.deb ${{ github.workspace }}/ytnativeshare.deb
+
+      - name: Build YTVideoErrorAlert
+        if: ${{ inputs.ytvid }}
+        run: |
+          cd YTVideoErrorAlert
+          make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
+          mv packages/*.deb ${{ github.workspace }}/ytvideoerror.deb
+
+      - name: Build VolumeBoostYT
+        if: ${{ inputs.volboost }}
+        run: |
+          cd VolumeBoostYT
+          make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless ARCHS=arm64
+          mv packages/*.deb ${{ github.workspace }}/volboostyt.deb
+          
+      - name: Inject Tweaks Into IPA
+        run: |
+          tweaks="OpenYouTubeSafariExtension.appex"
+
+          for f in *.deb; do
+            tweaks="$tweaks $f"
+          done
+          
+          cyan -i youtube.ipa -o YouMod_${{ env.YT_VERSION }}_v${{ env.YOUMOD_VERSION }}.ipa -uwef $tweaks -n "${{ inputs.display_name }}" -b ${{ inputs.bundle_id }}
+
+      - name: Create a Draft Release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: youmod-ipa${{ github.run_number }}
+          name: YouMod_${{ env.YT_VERSION }}_v${{ env.YOUMOD_VERSION }} (${{ github.run_number }}) 
+          files: YouMod_${{ env.YT_VERSION }}_v${{ env.YOUMOD_VERSION }}.ipa
+          draft: true
+
+      - name: Job Summary - Build Conplete
+        run: |
+          echo -e '### 🛠️ Build IPA with tweaks Complete!' >> $GITHUB_STEP_SUMMARY
+
+      - name: Job Summary - Output the Draft Release Link
+        run: |
+          echo -e '### 🚀 Draft Release\n\nDraft release has been created successfully! You can view your release here: https://github.com/${{ github.repository }}/releases' >> $GITHUB_STEP_SUMMARY     
+          
+      - name: Job Summary - Cleanup
+        run: |
+          echo -e '### 🧹 Cleanup\n\nYou can remove previous GitHub Actions run here: https://github.com/${{ github.repository }}/actions/workflows/delete-old-workflows-run.yml And if you want to delelte old draft releases you have then here: https://github.com/${{ github.repository }}/actions/workflows/delete-old-draft-releases.yml' >> $GITHUB_STEP_SUMMARY
