@@ -1,4 +1,4 @@
-name: Build IPA with tweaks
+name: Build IPA with tweaks 
 on:
   workflow_dispatch:
     inputs:
@@ -167,7 +167,7 @@ jobs:
         run: git clone --quiet --depth=1 https://github.com/Tonwalter888/YouShare.git
 
       - name: Clone Gonerino
-        run: git clone --quiet --depth=1 https://github.com/castdrian/Gonerino.git
+        run: git clone --quiet --depth=1 https://github.com/jaydenjcpy/Gonerino.git
 
       - name: Clone YouGetCaption
         run: git clone --quiet --depth=1 https://github.com/PoomSmart/YouGetCaption.git
@@ -182,6 +182,9 @@ jobs:
       - name: Clone VolumeBoostYT
         if: ${{ inputs.volboost }}
         run: git clone --quiet --depth=1 https://github.com/VasirakCalgux/VolumeBoostYT.git
+
+      - name: Clone iSponsorBlock
+        run: git clone --quiet --depth=1 https://github.com/Galactic-Dev/iSponsorBlock.git
 
       - name: Build YouMod
         run: |
@@ -231,6 +234,13 @@ jobs:
           cd YouQuality
           make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
           mv packages/*.deb ${{ github.workspace }}/youquality.deb
+
+      - name: Build iSponsorBlock
+        run: |
+          cd iSponsorBlock
+          make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless TARGET=iphone:clang:latest:13.0
+          mv packages/*.deb ${{ github.workspace }}/isponsorblock.deb
+
 
       - name: Build YouSpeed
         run: |
