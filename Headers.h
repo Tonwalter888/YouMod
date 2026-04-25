@@ -184,5 +184,5 @@
 @end
 
 @interface YTSettingsCell (YouMod)
-- (void)setTitleDescription:(NSString)description;
+- (void)setTitleDescription:(NSString *)description;
 @end
