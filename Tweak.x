@@ -233,14 +233,6 @@ static BOOL isDarkMode(UIView *view) {
 - (BOOL)isPremiumLogo { return IS_ENABLED(YTPremiumLogo) ? YES : %orig; }
 %end
 
-// NEW: Hide iSponsorBlock button
-%hook YTRightNavigationButtons
-- (void)setButton:(id)arg1 forType:(unsigned long long)arg2 {
-    if (arg2 && arg2 == 'ispb' && IS_ENABLED(HideiSponsorBlock)) return;
-    %orig;
-}
-%end
-
 // Hide Navigation Bar Buttons
 %hook YTRightNavigationButtons
 - (void)layoutSubviews {
@@ -251,6 +243,11 @@ static BOOL isDarkMode(UIView *view) {
         if (IS_ENABLED(HideVoiceSearch) && [subview.accessibilityLabel isEqualToString:NSLocalizedString(@"search.voice.access", nil)]) subview.hidden = YES;
         if (IS_ENABLED(HideCastButtonNav) && [subview.accessibilityIdentifier isEqualToString:@"id.mdx.playbackroute.button"]) subview.hidden = YES;
     }
+}
+// NEW: Hide iSponsorBlock button
+- (void)setButton:(id)arg1 forType:(unsigned long long)arg2 {
+    if (arg2 && arg2 == 'ispb' && IS_ENABLED(HideiSponsorBlock)) return;
+    %orig;
 }
 %end
 
