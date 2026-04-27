@@ -115,7 +115,7 @@ jobs:
         run: git clone --quiet --depth=1 https://github.com/PoomSmart/PSHeader.git $THEOS/include/PSHeader
 
       - name: Clone YouMod
-        run: git clone --quiet --depth=1 https://github.com/Tonwalter888/YouMod.git
+        run: git clone --quiet --depth=1 https://github.com/kes158/YouMod.git
 
       - name: Clone YouPiP
         run: git clone --quiet --depth=1 https://github.com/PoomSmart/YouPiP.git
