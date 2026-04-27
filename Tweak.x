@@ -218,11 +218,11 @@ static BOOL isDarkMode(UIView *view) {
 %end
 
 %hook YTCinematicContainerView
-- (void)didMoveToWindow { if (!IS_ENABLED(OLEDTheme) || !isDarkMode2) %orig; }
-- (void)layoutSubviews { if (!IS_ENABLED(OLEDTheme) || !isDarkMode2) %orig; }
-- (void)loadWithModel:(id)arg { if (!IS_ENABLED(OLEDTheme) || !isDarkMode2) %orig; }
+- (void)didMoveToWindow { if (!IS_ENABLED(OLEDTheme)) %orig; }
+- (void)layoutSubviews { if (!IS_ENABLED(OLEDTheme)) %orig; }
+- (void)loadWithModel:(id)arg { if (!IS_ENABLED(OLEDTheme)) %orig; }
 - (id)initWithFrame:(CGRect)arg {
-    if (IS_ENABLED(OLEDTheme) && isDarkMode2) {
+    if (IS_ENABLED(OLEDTheme)) {
         return nil;
     }
     return %orig;
