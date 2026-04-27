@@ -254,6 +254,18 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
         }];
     [sectionItems addObject:apper];
 
+    // OLED theme
+    YTSettingsSectionItem *oledtheme = [YTSettingsSectionItemClass switchItemWithTitle:LOC(@"OLED_THEME")
+        titleDescription:LOC(@"OLED_THEME_DESC")
+        accessibilityIdentifier:nil
+        switchOn:IS_ENABLED(OLEDTheme)
+        switchBlock:^BOOL (YTSettingsCell *cell, BOOL enabled) {
+            [[NSUserDefaults standardUserDefaults] setBool:enabled forKey:OLEDTheme];
+            return YES;
+        }
+        settingItemId:0];
+    [sectionItems addObject:oledtheme];
+
     // OLED Keyboard
     YTSettingsSectionItem *oledkeyboard = [YTSettingsSectionItemClass switchItemWithTitle:LOC(@"OLED_KEYBOARD")
         titleDescription:LOC(@"OLED_KEYBOARD_DESC")
@@ -265,18 +277,6 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
         }
         settingItemId:0];
     [sectionItems addObject:oledkeyboard];
-
-    /*
-    // Perference Mgr - NEEDS TO DO THE LOGIC
-    YTSettingsSectionItem *github = [YTSettingsSectionItemClass itemWithTitle:nil
-        titleDescription:@"Github"
-        accessibilityIdentifier:nil
-        detailTextBlock:nil
-        selectBlock:^BOOL (YTSettingsCell *cell, NSUInteger arg1) {
-            return NO;
-        }];
-    [sectionItems addObject:github];
-    */ 
 
     // Section 4
     // Navigation bar

@@ -42,6 +42,7 @@
 // Cache
 #define AutoClearCache @"YouModAutoClearCache"
 // Appearance
+#define OLEDTheme @"YouModEnablesOLEDTheme"
 #define OLEDKeyboard @"YouModEnablesOLEDKeyboard"
 // Navigation bar
 #define HideYTLogo @"YouModHideYTLogo"
@@ -191,4 +192,11 @@
 - (void)exportYouModSettingsFromVC:(UIViewController *)vc;
 - (void)importYouModSettingsFromVC:(UIViewController *)vc;
 - (void)restoreYouModDefaults;
+@end
+
+@interface YTColor : UIColor
++ (UIColor *)blackPure;
+@end
+
+@interface YTPivotBarView : UIView
 @end

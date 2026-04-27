@@ -30,8 +30,10 @@
 "AUTO_CLEARCACHE_DESC" = "Automatically clears the app cache on startup.";
 
 "APPEARANCE" = "Appearance";
-"OLED_KEYBOARD" = "OLED Keyboard";
-"OLED_KEYBOARD_DESC" = "Make the keyboard uses a pure black (OLED) color.";
+"OLED_THEME" = "OLED theme";
+"OLED_THEME_DESC" = "Make the app uses a pure black (OLED) color for dark theme.";
+"OLED_KEYBOARD" = "OLED keyboard";
+"OLED_KEYBOARD_DESC" = "Make the keyboard uses a pure black (OLED) color for dark theme.";
 
 "NAVBAR" = "Navigation bar";
 "HIDE_YT_LOGO" = "Hide YouTube logo";
