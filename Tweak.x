@@ -165,26 +165,42 @@ static BOOL isDarkMode(UIView *view) {
 // OLED theme - implemented by @Tonwalter888
 %hook YTColor
 + (UIColor *)black0 {
-    return IS_ENABLED(OLEDTheme) ? [self blackPure] : %orig;
+    if (IS_ENABLED(OLEDTheme) && isDarkMode) {
+        return [self blackPure];
+    }
+    return %orig;
 }
 
 + (UIColor *)black1 {
-    return IS_ENABLED(OLEDTheme) ? [self blackPure] : %orig;
+    if (IS_ENABLED(OLEDTheme) && isDarkMode) {
+        return [self blackPure];
+    }
+    return %orig;
 }
 
 + (UIColor *)black2 {
-    return IS_ENABLED(OLEDTheme) ? [self blackPure] : %orig;
+    if (IS_ENABLED(OLEDTheme) && isDarkMode) {
+        return [self blackPure];
+    }
+    return %orig;
 }
 
 + (UIColor *)black3 {
-    return IS_ENABLED(OLEDTheme) ? [self blackPure] : %orig;
+    if (IS_ENABLED(OLEDTheme) && isDarkMode) {
+        return [self blackPure];
+    }
+    return %orig;
 }
 
 + (UIColor *)black4 {
-    return IS_ENABLED(OLEDTheme) ? [self blackPure] : %orig;
+    if (IS_ENABLED(OLEDTheme) && isDarkMode) {
+        return [self blackPure];
+    }
+    return %orig;
 }
 %end
 
+/*
 // Untested
 %hook YTPivotBarView
 - (UIView *)contentView {
@@ -193,15 +209,51 @@ static BOOL isDarkMode(UIView *view) {
     return orig;
 }
 %end
+*/
 
 %hook YTCommonColorPalette
-- (UIColor *)brandBackgroundSolid { return IS_ENABLED(OLEDTheme) ? [UIColor blackColor] : %orig; }
-- (UIColor *)brandBackgroundPrimary { return IS_ENABLED(OLEDTheme) ? [UIColor blackColor] : %orig; }
-- (UIColor *)brandBackgroundSecondary { return IS_ENABLED(OLEDTheme) ? [UIColor blackColor] : %orig; }
-- (UIColor *)background1 { return IS_ENABLED(OLEDTheme) ? [UIColor blackColor] : %orig; }
-- (UIColor *)background2 { return IS_ENABLED(OLEDTheme) ? [UIColor blackColor] : %orig; }
-- (UIColor *)background3 { return IS_ENABLED(OLEDTheme) ? [UIColor blackColor] : %orig; }
-- (UIColor *)baseBackground { return IS_ENABLED(OLEDTheme) ? [UIColor blackColor] : %orig; }
+- (UIColor *)brandBackgroundSolid {
+    if (IS_ENABLED(OLEDTheme) && isDarkMode) {
+        return [UIColor blackColor];
+    }
+    return %orig;
+}
+- (UIColor *)brandBackgroundPrimary {
+    if (IS_ENABLED(OLEDTheme) && isDarkMode) {
+        return [UIColor blackColor];
+    }
+    return %orig;
+}
+- (UIColor *)brandBackgroundSecondary {
+    if (IS_ENABLED(OLEDTheme) && isDarkMode) {
+        return [UIColor blackColor];
+    }
+    return %orig;
+}
+- (UIColor *)background1 {
+    if (IS_ENABLED(OLEDTheme) && isDarkMode) {
+        return [UIColor blackColor];
+    }
+    return %orig;
+}
+- (UIColor *)background2 {
+    if (IS_ENABLED(OLEDTheme) && isDarkMode) {
+        return [UIColor blackColor];
+    }
+    return %orig;
+}
+- (UIColor *)background3 {
+    if (IS_ENABLED(OLEDTheme) && isDarkMode) {
+        return [UIColor blackColor];
+    }
+    return %orig;
+}
+- (UIColor *)baseBackground {
+    if (IS_ENABLED(OLEDTheme) && isDarkMode) {
+        return [UIColor blackColor];
+    }
+    return %orig;
+}
 %end
 
 // _ASDisplayView filters
