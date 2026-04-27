@@ -202,59 +202,50 @@ static BOOL isDarkMode(UIView *view) {
 }
 %end
 
-/*
-// Untested
-%hook YTPivotBarView
-- (UIView *)contentView {
-    UIView *orig = %orig;
-    if (IS_ENABLED(OLEDTheme)) orig.backgroundColor = [UIColor blackColor];
-    return orig;
-}
-%end
-*/
-
 %hook YTCommonColorPalette
 - (UIColor *)brandBackgroundSolid {
     if (IS_ENABLED(OLEDTheme) && isDarkMode2) {
         return [UIColor blackColor];
     }
-    return [UIColor whiteColor];
+    return %orig;
 }
 - (UIColor *)brandBackgroundPrimary {
     if (IS_ENABLED(OLEDTheme) && isDarkMode2) {
         return [UIColor blackColor];
     }
-    return [UIColor whiteColor];
+    return %orig;
 }
 - (UIColor *)brandBackgroundSecondary {
     if (IS_ENABLED(OLEDTheme) && isDarkMode2) {
         return [UIColor blackColor];
     }
-    return [UIColor whiteColor];
+    return %orig;
 }
 - (UIColor *)background1 {
     if (IS_ENABLED(OLEDTheme) && isDarkMode2) {
         return [UIColor blackColor];
     }
-    return [UIColor whiteColor];
+    return %orig;
 }
+/*
 - (UIColor *)background2 {
     if (IS_ENABLED(OLEDTheme) && isDarkMode2) {
         return [UIColor blackColor];
     }
-    return [UIColor whiteColor];
+    return %orig;
 }
+*/
 - (UIColor *)background3 {
     if (IS_ENABLED(OLEDTheme) && isDarkMode2) {
         return [UIColor blackColor];
     }
-    return [UIColor whiteColor];
+    return %orig;
 }
 - (UIColor *)baseBackground {
     if (IS_ENABLED(OLEDTheme) && isDarkMode2) {
         return [UIColor blackColor];
     }
-    return [UIColor whiteColor];
+    return %orig;
 }
 %end
 
