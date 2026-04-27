@@ -215,13 +215,13 @@ static BOOL isDarkMode(UIView *view) {
 
 %hook YTCommonColorPalette
 - (UIColor *)brandBackgroundSolid {
-    if (IS_ENABLED(OLEDTheme) && isDarkMode) {
+    if (IS_ENABLED(OLEDTheme) && isDarkMode2) {
         return [UIColor blackColor];
     }
     return %orig;
 }
 - (UIColor *)brandBackgroundPrimary {
-    if (IS_ENABLED(OLEDTheme) && isDarkMode) {
+    if (IS_ENABLED(OLEDTheme) && isDarkMode2) {
         return [UIColor blackColor];
     }
     return %orig;
