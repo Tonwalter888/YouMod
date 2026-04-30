@@ -1,10 +1,12 @@
 "NOTE" = "หมายเหตุ: ฟีเจอร์การซ่อนบางอย่างอาจทำให้เกิดช่องว่างเปล่า";
+"SETTINGS" = "การตั้งค่า";
 
 "NEW_ISSUES" = "รายงานปัญหาหรือขอฟีเจอร์ใหม่";
 "NEW_ISSUES_DESC" = "พบบัคหรืออยากได้ฟีเจอร์ใหม่? แตะที่นี่";
 "SOURCE_CODES" = "ซอร์สโค้ด";
 "SOURCE_CODES_DESC" = "ลองอ่านโค้ดดูสิ!";
 
+"PERFER_HEADER" = "การตั้งค่า YouMod";
 "PERFER" = "การตั้งค่า";
 "IMPORT" = "นำเข้าการตั้งค่า";
 "IMPORT_DESC" = "โหลดการตั้งค่าจากไฟล์ .plist";
@@ -23,7 +25,7 @@
 "ERROR_NO_KEYS_EXPORT" = "ไม่มีคีย์สำหรับส่งออก";
 "OVERRIDE" = "การกระทำนี้จะเขียนทับการตั้งค่าปัจจุบัน ดำเนินการต่อหรือไม่?";
 
-"CACHE" = "แคช";
+"CACHE" = "การจัดการแคช";
 "CLEARCACHE" = "ล้างแคช";
 "DONE" = "เสร็จสิ้น";
 "AUTO_CLEARCACHE" = "ล้างแคชอัตโนมัติ";
@@ -52,6 +54,8 @@
 "HIDE_SUBBAR_DESC" = "ซ่อนแถบหมวดหมู่ในฟีด";
 "HIDE_MUSIC_PLAYLISTS" = "ซ่อนเพลย์ลิสต์เพลง";
 "HIDE_MUSIC_PLAYLISTS_DESC" = "ซ่อนตัวสร้างเพลย์ลิสต์ในฟีด";
+"HIDE_FEED_POST" = "ซ่อนโพส";
+"HIDE_FEED_POST_DESC" = "ซ่อนโพสในฟีด";
 "HIDE_SHORTS_SHELF" = "ซ่อน Shorts";
 "HIDE_SHORTS_SHELF_DESC" = "ซ่อน Shorts ในฟีด";
 "HIDE_SEARCH_HISTORY" = "ซ่อนประวัติการค้นหา";
@@ -78,8 +82,14 @@
 "REMOVE_DARK_OVERLAY_DESC" = "ลบโอเวอร์เลย์มืดจากโอเวอร์เลย์วิดีโอ";
 "HIDE_END_SCREEN" = "ซ่อนการ์ดท้าย";
 "HIDE_END_SCREEN_DESC" = "ซ่อนการ์ดท้ายในโอเวอร์เลย์วิดีโอ";
+"HIDE_SUGGESTED_VIDEO" = "ซ่อนวิดีโอแนะนำ";
+"HIDE_SUGGESTED_VIDEO_DESC" = "ซ่อนตารางวิดีโอแนะนำที่ปรากฏขึ้นหลังจากวิดีโอเล่นจบ";
+"HIDE_PAID_OVERLAY" = "ซ่อน 'มีโฆษณาจากสปอนเซอร์'";
+"HIDE_PAID_OVERLAY_DESC" = "ซ่อนกล่องข้อความ 'มีโฆษณาจากสปอนเซอร์' ในโอเวอร์เลย์วิดีโอ";
 "HIDE_WATERMARK" = "ซ่อนลายน้ำ";
 "HIDE_WATERMARK_DESC" = "ซ่อนลายน้ำช่องในโอเวอร์เลย์วิดีโอ";
+"GESTURES" = "เปิดใช้งานการควบคุมด้วยท่าทาง";
+"GESTURES_DESC" = "เปิดใช้งานการควบคุมด้วยท่าทางในโอเวอร์เลย์วิดีโอ\nด้านบน: ความสว่าง, ด้านล่าง: ระดับเสียง";
 "DISABLES_DOUBLE_TAP" = "ปิดใช้งานการแตะสองครั้ง";
 "DISABLES_DOUBLE_TAP_DESC" = "ปิดการแตะสองครั้งในโอเวอร์เลย์วิดีโอ";
 "DISABLES_LONG_HOLD" = "ปิดใช้งานการกดค้าง";
@@ -144,6 +154,10 @@
 "HIDE_SHORTS_SUBSCRIPT_BUTTON_DESC" = "ซ่อนปุ่มการติดตามด้านบนตัววิดีโอ";
 "HIDE_SHORTS_LIVE_BUTTON" = "ซ่อนปุ่มสด";
 "HIDE_SHORTS_LIVE_BUTTON_DESC" = "ซ่อนปุ่มสดด้านบนตัววิดีโอ";
+"HIDE_SHORTS_LENS_BUTTON" = "ซ่อนปุ่ม Lens";
+"HIDE_SHORTS_LENS_BUTTON_DESC" = "ซ่อนปุ่ม Lens ด้านบนตัววิดีโอ";
+"HIDE_SHORTS_TRENDS_BUTTON" = "ซ่อนปุ่มเทรนด์";
+"HIDE_SHORTS_TRENDS_BUTTON_DESC" = "ซ่อนปุ่มเทรนด์ด้านบนตัววิดีโอ";
 "HIDE_SHORTS_TO_VIDEO" = "ซ่อนลิงก์ไปวิดีโอเต็ม";
 "HIDE_SHORTS_TO_VIDEO_DESC" = "ซ่อนลิงก์ไปวิดีโอเต็มใน Shorts";
 "ENABLES_SHORTS_QUALITY" = "เปิดใช้งานตัวเลือกคุณภาพ Shorts";

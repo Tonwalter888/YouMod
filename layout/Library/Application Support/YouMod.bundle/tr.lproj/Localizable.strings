@@ -1,10 +1,12 @@
 "NOTE" = "NOTE: Some hiding features may leave a blank box.";
+"SETTINGS" = "Settings";
 
 "NEW_ISSUES" = "Report issues or request new features";
 "NEW_ISSUES_DESC" = "Found bugs or want to request new features? Tap here.";
 "SOURCE_CODES" = "Source codes";
 "SOURCE_CODES_DESC" = "Take a look at the codes!";
 
+"PERFER_HEADER" = "YouMod perferences";
 "PERFER" = "Perferences";
 "IMPORT" = "Import settings";
 "IMPORT_DESC" = "Load your preferences in a .plist file.";
@@ -23,7 +25,7 @@
 "ERROR_NO_KEYS_EXPORT" = "No available keys to export";
 "OVERRIDE" = "This will override the current settings. Do you want to continue?";
 
-"CACHE" = "Cache";
+"CACHE" = "Cache management";
 "CLEARCACHE" = "Clear cache";
 "DONE" = "Done";
 "AUTO_CLEARCACHE" = "Auto clear cache";
@@ -52,6 +54,8 @@
 "HIDE_SUBBAR_DESC" = "Hide subbar at the top of the feed.";
 "HIDE_MUSIC_PLAYLISTS" = "Hide music playlist generator";
 "HIDE_MUSIC_PLAYLISTS_DESC" = "Hide music playlist generator (Select music tunes in three) in the feed.";
+"HIDE_FEED_POST" = "Hide posts";
+"HIDE_FEED_POST_DESC" = "Hide posts in feed.";
 "HIDE_SHORTS_SHELF" = "Hide Shorts shelf";
 "HIDE_SHORTS_SHELF_DESC" = "Hide Shorts shelf in the feed, including in the Subscriptions tab.";
 "HIDE_SEARCH_HISTORY" = "Hide search history";
@@ -78,8 +82,14 @@
 "REMOVE_DARK_OVERLAY_DESC" = "Remove dark overlay from the video overlay.";
 "HIDE_END_SCREEN" = "Hide endscreen cards";
 "HIDE_END_SCREEN_DESC" = "Hide endscreen cards shown before the video ends.";
+"HIDE_SUGGESTED_VIDEO" = "Hide suggested videos";
+"HIDE_SUGGESTED_VIDEO_DESC" = "Hide the grid of suggested videos that appears when a video finishes playing.";
+"HIDE_PAID_OVERLAY" = "Hide 'Includes paid promotion'";
+"HIDE_PAID_OVERLAY_DESC" = "Hide 'Includes paid promotion' in the video overlay.";
 "HIDE_WATERMARK" = "Hide watermark";
 "HIDE_WATERMARK_DESC" = "Hide channel watermark at the bottom of the video overlay.";
+"GESTURES" = "Enable gestures controls";
+"GESTURES_DESC" = "Enables gestures controls in the video overlay.\nTop: Brightness, Bottom: Volume";
 "DISABLES_DOUBLE_TAP" = "Disables double tap";
 "DISABLES_DOUBLE_TAP_DESC" = "Disables double tap to seek in the video overlay.";
 "DISABLES_LONG_HOLD" = "Disables long hold";
@@ -137,13 +147,17 @@
 "HIDE_SHORTS_PRODUCT" = "Hide products";
 "HIDE_SHORTS_PRODUCT_DESC" = "Hide tagged products and shopping links in the Shorts overlay.";
 "HIDE_SHORTS_RECBAR" = "Hide recommendation bar";
-"HIDE_SHORTS_RECBAR_DESC" = "Hide the suggested action bar in the Shorts player (e.g. Try this sound, Shopping).";
+"HIDE_SHORTS_RECBAR_DESC" = "Hide the suggested action bar in the Shorts player (e.g. Try this sound, Shopping, Preview comment).";
 "HIDE_SHORTS_COMMIT" = "Hide commissions bar";
 "HIDE_SHORTS_COMMIT_DESC" = "Hide the bar that shows the video got commissions in the Shorts player.";
 "HIDE_SHORTS_SUBSCRIPT_BUTTON" = "Hide subscriptions button";
 "HIDE_SHORTS_SUBSCRIPT_BUTTON_DESC" = "Hide the Subscriptions button at the top of the Shorts player.";
 "HIDE_SHORTS_LIVE_BUTTON" = "Hide live button";
 "HIDE_SHORTS_LIVE_BUTTON_DESC" = "Hide the Live button at the top of the Shorts player.";
+"HIDE_SHORTS_LENS_BUTTON" = "Hide lens button";
+"HIDE_SHORTS_LENS_BUTTON_DESC" = "Hide the Lens button at the top of the Shorts player.";
+"HIDE_SHORTS_TRENDS_BUTTON" = "Hide trends button";
+"HIDE_SHORTS_TRENDS_BUTTON_DESC" = "Hide the Trends button at the top of the Shorts player.";
 "HIDE_SHORTS_TO_VIDEO" = "Hide link to full video";
 "HIDE_SHORTS_TO_VIDEO_DESC" = "Hide the link that redirects in a Short to a full video in the Shorts player.";
 "ENABLES_SHORTS_QUALITY" = "Enable Shorts quality picker";

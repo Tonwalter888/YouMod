@@ -43,6 +43,8 @@ This project uses GPLv3 license. See [LICENSE](https://github.com/Tonwalter888/Y
 
 ## Credits
 - [YTLite](https://github.com/dayanch96/YTLite) - dayanch96
+- [OLEDKeyboard](https://github.com/dayanch96/OLEDKeyboard) - dayanch96
+- [YTLitePlus](https://github.com/YTLitePlus/YTLitePlus)
 - [uYouEnhanced](https://github.com/arichornlover/uYouEnhanced) - arichornlover
 - [YTweaks](https://github.com/fosterbarnes/YTweaks) - fosterbarnes
 - And [PoomSmart](https://github.com/PoomSmart)'s tweaks

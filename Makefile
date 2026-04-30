@@ -1,5 +1,4 @@
 # Original Makefile from YTLite
-DEBUG = 0
 FINALPACKAGE = 1
 ARCHS = arm64
 TARGET := iphone:clang:latest:14.0

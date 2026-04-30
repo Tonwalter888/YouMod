@@ -1,10 +1,12 @@
 "NOTE" = "ПРИМЕЧАНИЕ: Некоторые функции скрытия могут оставлять пустую область.";
+"SETTINGS" = "Settings";
 
 "NEW_ISSUES" = "Сообщить о проблеме или предложить новую функцию";
 "NEW_ISSUES_DESC" = "Нашли ошибку или хотите предложить новую функцию? Нажмите здесь.";
 "SOURCE_CODES" = "Исходный код";
 "SOURCE_CODES_DESC" = "Посмотреть исходный код!";
 
+"PERFER_HEADER" = "YouMod perferences";
 "PERFER" = "Настройки";
 "IMPORT" = "Импорт настроек";
 "IMPORT_DESC" = "Загрузить настройки из файла формата .plist.";
@@ -52,6 +54,8 @@
 "HIDE_SUBBAR_DESC" = "Скрыть верхнюю панель в ленте.";
 "HIDE_MUSIC_PLAYLISTS" = "Скрыть генератор музыкальных плейлистов";
 "HIDE_MUSIC_PLAYLISTS_DESC" = "Скрыть генератор музыкальных плейлистов в ленте.";
+"HIDE_FEED_POST" = "Hide posts";
+"HIDE_FEED_POST_DESC" = "Hide posts in feed.";
 "HIDE_SHORTS_SHELF" = "Скрыть блок Shorts";
 "HIDE_SHORTS_SHELF_DESC" = "Скрыть блок Shorts в ленте, включая вкладку «Подписки».";
 "HIDE_SEARCH_HISTORY" = "Скрыть историю поиска";
@@ -78,8 +82,14 @@
 "REMOVE_DARK_OVERLAY_DESC" = "Убрать тёмное затемнение из интерфейса видео.";
 "HIDE_END_SCREEN" = "Скрыть конечные карточки";
 "HIDE_END_SCREEN_DESC" = "Скрыть конечные карточки, которые появляются перед окончанием видео.";
+"HIDE_SUGGESTED_VIDEO" = "Hide suggested videos";
+"HIDE_SUGGESTED_VIDEO_DESC" = "Hide the grid of suggested videos that appears when a video finishes playing.";
+"HIDE_PAID_OVERLAY" = "Hide 'Includes paid promotion'";
+"HIDE_PAID_OVERLAY_DESC" = "Hide 'Includes paid promotion' in the video overlay.";
 "HIDE_WATERMARK" = "Скрыть водяной знак";
 "HIDE_WATERMARK_DESC" = "Скрыть водяной знак канала внизу интерфейса видео.";
+"GESTURES" = "Enable gestures controls";
+"GESTURES_DESC" = "Enables gestures controls in the video overlay.\nTop: Brightness, Bottom: Volume";
 "DISABLES_DOUBLE_TAP" = "Отключить двойное нажатие";
 "DISABLES_DOUBLE_TAP_DESC" = "Отключить перемотку двойным нажатием в интерфейсе видео.";
 "DISABLES_LONG_HOLD" = "Отключить долгое нажатие";
@@ -144,6 +154,10 @@
 "HIDE_SHORTS_SUBSCRIPT_BUTTON_DESC" = "Скрыть кнопку «Подписки» в верхней части плеера Shorts.";
 "HIDE_SHORTS_LIVE_BUTTON" = "Скрыть кнопку прямого эфира";
 "HIDE_SHORTS_LIVE_BUTTON_DESC" = "Скрыть кнопку прямого эфира в верхней части плеера Shorts.";
+"HIDE_SHORTS_LENS_BUTTON" = "Hide lens button";
+"HIDE_SHORTS_LENS_BUTTON_DESC" = "Hide the Lens button at the top of the Shorts player.";
+"HIDE_SHORTS_TRENDS_BUTTON" = "Hide trends button";
+"HIDE_SHORTS_TRENDS_BUTTON_DESC" = "Hide the Trends button at the top of the Shorts player.";
 "HIDE_SHORTS_TO_VIDEO" = "Скрыть ссылку на полное видео";
 "HIDE_SHORTS_TO_VIDEO_DESC" = "Скрыть ссылку, которая ведёт из Shorts к полному видео.";
 "ENABLES_SHORTS_QUALITY" = "Включить выбор качества в Shorts";

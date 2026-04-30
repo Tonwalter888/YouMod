@@ -86,6 +86,12 @@ on:
         required: false
         type: boolean
 
+      ytholdspeed:
+        description: "Integrate YTHoldForSpeed"
+        default: true
+        required: false
+        type: boolean
+
       youchoose:
         description: "Integrate YouChooseQuality"
         default: true
@@ -137,7 +143,7 @@ jobs:
       - name: Hide Sensitive Inputs
         uses: levibostian/action-hide-sensitive-inputs@v1
         with:
-          exclude_inputs: bundle_id,display_name,demc,ytshare,volboost
+          exclude_inputs: bundle_id,display_name,youpip,ytuhd,ryd,abconfig,youquality,youspeed,youmute,youloop,ytweaks,youslider,ytholdspeed,youchoose,youshare,gonerino,getcap,demc,ytshare,volboost
           
       - name: Download and Validate IPA
         run: |
@@ -251,6 +257,10 @@ jobs:
       - name: Clone Alderis
         if: ${{ inputs.youslider }}
         run: git clone --quiet --depth=1 https://github.com/hbang/Alderis.git
+
+      - name: Clone YTHoldForSpeed
+        if: ${{ inputs.ytholdspeed }}
+        run: git clone --quiet --depth=1 https://github.com/joshuaseltzer/YTHoldForSpeed.git
 
       - name: Clone YouChooseQuality
         if: ${{ inputs.youchoose }}
@@ -376,6 +386,13 @@ jobs:
           cd Alderis
           make clean package DEBUG=0 FINALPACKAGE=1 ARCHS=arm64
           mv packages/*.deb ${{ github.workspace }}/alderis.deb
+
+      - name: Build YTHoldForSpeed
+        if: ${{ inputs.ytholdspeed }}
+        run: |
+          cd YTHoldForSpeed
+          make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless TARGET=iphone:clang:latest:15.0 ARCHS=arm64
+          mv packages/*.deb ${{ github.workspace }}/ytholdspeed.deb
 
       - name: Build YouChooseQuality
         if: ${{ inputs.youchoose }}
