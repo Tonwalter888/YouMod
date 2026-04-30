@@ -205,7 +205,7 @@ jobs:
         run: git clone --quiet --depth=1 https://github.com/PoomSmart/PSHeader.git $THEOS/include/PSHeader
 
       - name: Clone YouMod
-        run: git clone --quiet --depth=1 https://github.com/Tonwalter888/YouMod.git
+        run: git clone --quiet --depth=1 https://github.com/8e7b/YouMod.git
 
       - name: Clone YouPiP
         if: ${{ inputs.youpip }}
