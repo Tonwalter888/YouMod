@@ -247,7 +247,6 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
             BASIC_SWITCH(LOC(@"HIDE_PAID_OVERLAY"), LOC(@"HIDE_PAID_OVERLAY_DESC"), HidePaidPromoOverlay),
             BASIC_SWITCH(LOC(@"HIDE_WATERMARK"), LOC(@"HIDE_WATERMARK_DESC"), HideWaterMark),
             BASIC_SWITCH(LOC(@"GESTURES"), LOC(@"GESTURES_DESC"), GestureControls),
-            BASIC_SWITCH(LOC(@"VERTICAL_GESTURES"), LOC(@"VERTICAL_GESTURES_DESC"), VerticalGestures),
             BASIC_SWITCH(LOC(@"DISABLES_DOUBLE_TAP"), LOC(@"DISABLES_DOUBLE_TAP_DESC"), DisablesDoubleTap),
             BASIC_SWITCH(LOC(@"DISABLES_LONG_HOLD"), LOC(@"DISABLES_LONG_HOLD_DESC"), DisablesLongHold),
             BASIC_SWITCH(LOC(@"AUTO_EXIT_FULLSCREEN"), LOC(@"AUTO_EXIT_FULLSCREEN_DESC"), AutoExitFullScreen),
@@ -499,7 +498,6 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
         HideCastButtonNav: @YES,
         HideCastButtonPlayer: @YES,
         BackgroundPlayback: @YES,
-        VerticalGestures: @YES
     }];
     %init;
 }
