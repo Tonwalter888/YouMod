@@ -1,12 +1,12 @@
 "NOTE" = "참고: 일부 숨기기 기능을 사용하면 화면에 빈 공간이 남을 수 있습니다.";
-"SETTINGS" = "Settings";
+"SETTINGS" = "설정";
 
 "NEW_ISSUES" = "버그 신고 및 새 기능 요청";
 "NEW_ISSUES_DESC" = "버그를 발견했거나 새로운 기능을 원하시나요? 여기를 눌러주세요.";
 "SOURCE_CODES" = "소스 코드";
 "SOURCE_CODES_DESC" = "앱의 소스 코드를 확인해 보세요!";
 
-"PERFER_HEADER" = "YouMod perferences";
+"PERFER_HEADER" = "YouMod 환경설정";
 "PERFER" = "환경설정";
 "IMPORT" = "설정 불러오기";
 "IMPORT_DESC" = "백업해둔 .plist 파일에서 설정값을 불러옵니다.";
@@ -54,8 +54,8 @@
 "HIDE_SUBBAR_DESC" = "홈 화면 맨 위에 있는 주제별 필터(게임, 음악 등)를 숨깁니다.";
 "HIDE_MUSIC_PLAYLISTS" = "음악 재생목록 자동생성 숨기기";
 "HIDE_MUSIC_PLAYLISTS_DESC" = "피드 중간에 뜨는 유튜브 자동 생성 음악 믹스 추천을 숨깁니다.";
-"HIDE_FEED_POST" = "Hide posts";
-"HIDE_FEED_POST_DESC" = "Hide posts in feed.";
+"HIDE_FEED_POST" = "게시물 숨기기";
+"HIDE_FEED_POST_DESC" = "피드에서 텍스트나 이미지로 된 커뮤니티 게시물을 숨깁니다.";
 "HIDE_SHORTS_SHELF" = "쇼츠(Shorts) 선반 숨기기";
 "HIDE_SHORTS_SHELF_DESC" = "홈 화면과 구독 탭에서 여러 개가 가로로 나열된 쇼츠 영상 모음을 안 보이게 합니다.";
 "HIDE_SEARCH_HISTORY" = "검색 기록 숨기기";
@@ -82,14 +82,14 @@
 "REMOVE_DARK_OVERLAY_DESC" = "영상을 터치하거나 일시정지할 때 화면이 어두워지는 효과를 없앱니다.";
 "HIDE_END_SCREEN" = "종료 화면 추천 카드 숨기기";
 "HIDE_END_SCREEN_DESC" = "영상이 끝날 때쯤 화면을 가리면서 나타나는 추천 동영상 카드들을 싹 숨깁니다.";
-"HIDE_SUGGESTED_VIDEO" = "Hide suggested videos";
-"HIDE_SUGGESTED_VIDEO_DESC" = "Hide the grid of suggested videos that appears when a video finishes playing.";
-"HIDE_PAID_OVERLAY" = "Hide 'Includes paid promotion'";
-"HIDE_PAID_OVERLAY_DESC" = "Hide 'Includes paid promotion' in the video overlay.";
+"HIDE_SUGGESTED_VIDEO" = "추천 동영상 격자 숨기기";
+"HIDE_SUGGESTED_VIDEO_DESC" = "동영상 재생이 끝났을 때 바둑판 모양으로 뜨는 추천 동영상 목록을 숨깁니다.";
+"HIDE_PAID_OVERLAY" = "'유료 광고 포함' 배너 숨기기";
+"HIDE_PAID_OVERLAY_DESC" = "영상 화면에 뜨는 '유료 광고 포함' 안내 배너를 숨깁니다.";
 "HIDE_WATERMARK" = "채널 워터마크 숨기기";
 "HIDE_WATERMARK_DESC" = "영상 오른쪽 아래 구석에 작게 떠 있는 채널 로고(워터마크)를 숨깁니다.";
-"GESTURES" = "Enable gestures controls";
-"GESTURES_DESC" = "Enables gestures controls in the video overlay.\nTop: Brightness, Bottom: Volume";
+"GESTURES" = "제스처 제어 켜기";
+"GESTURES_DESC" = "화면을 스와이프하여 조작하는 제스처 기능을 켭니다.\n상단: 밝기 조절, 하단: 볼륨 조절";
 "DISABLES_DOUBLE_TAP" = "두 번 탭하기 건너뛰기 끄기";
 "DISABLES_DOUBLE_TAP_DESC" = "화면 양옆을 두 번 터치해서 앞뒤로 건너뛰는 기능을 끕니다.";
 "DISABLES_LONG_HOLD" = "길게 눌러 배속하기 끄기";
@@ -154,10 +154,10 @@
 "HIDE_SHORTS_SUBSCRIPT_BUTTON_DESC" = "쇼츠 화면 상단에 둥둥 떠 있는 구독 버튼을 숨깁니다.";
 "HIDE_SHORTS_LIVE_BUTTON" = "라이브 버튼 숨기기";
 "HIDE_SHORTS_LIVE_BUTTON_DESC" = "쇼츠 화면 상단에 뜨는 실시간 방송(라이브) 버튼을 숨깁니다.";
-"HIDE_SHORTS_LENS_BUTTON" = "Hide lens button";
-"HIDE_SHORTS_LENS_BUTTON_DESC" = "Hide the Lens button at the top of the Shorts player.";
-"HIDE_SHORTS_TRENDS_BUTTON" = "Hide trends button";
-"HIDE_SHORTS_TRENDS_BUTTON_DESC" = "Hide the Trends button at the top of the Shorts player.";
+"HIDE_SHORTS_LENS_BUTTON" = "렌즈 버튼 숨기기";
+"HIDE_SHORTS_LENS_BUTTON_DESC" = "쇼츠 화면 상단에 있는 렌즈(검색) 버튼을 숨깁니다.";
+"HIDE_SHORTS_TRENDS_BUTTON" = "트렌드 버튼 숨기기";
+"HIDE_SHORTS_TRENDS_BUTTON_DESC" = "쇼츠 화면 상단에 있는 트렌드(인기) 버튼을 숨깁니다.";
 "HIDE_SHORTS_TO_VIDEO" = "원본 영상 링크 숨기기";
 "HIDE_SHORTS_TO_VIDEO_DESC" = "쇼츠 영상에 걸려있는 전체 길이의 원본 동영상으로 넘어가는 링크를 숨깁니다.";
 "ENABLES_SHORTS_QUALITY" = "쇼츠 화질 선택 기능 켜기";
@@ -187,8 +187,8 @@
 "MISCELLANEOUS" = "기타 설정";
 "BACKGROUND_PLAYBACK" = "백그라운드 재생";
 "BACKGROUND_PLAYBACK_DESC" = "유튜브 앱을 닫거나 스마트폰 화면을 꺼도 소리가 계속 끊기지 않고 나오게 해줍니다.";
-"DISABLES_SHORTS_PIP" = "쇼츠 PiP 모드 끄기";
-"DISABLES_SHORTS_PIP_DESC" = "쇼츠 화면을 작은 팝업창(PiP)으로 띄우는 기능을 끕니다. (완벽하게 꺼지지 않을 수도 있습니다.)";
+"DISABLES_SHORTS_PIP" = "Shorts PIP 모드 끄기";
+"DISABLES_SHORTS_PIP_DESC" = "Shorts PIP 화면을 작은 팝업창으로 띄우는 기능을 끕니다. (완벽하게 꺼지지 않을 수도 있습니다.)";
 "BLOCK_UPGRADE_DIALOGS" = "업데이트 강요 알림 차단";
 "BLOCK_UPGRADE_DIALOGS_DESC" = "유튜브 앱을 새 버전으로 업데이트하라고 귀찮게 뜨는 팝업창을 막아줍니다.";
 "ARE_YOU_THERE_DIALOG" = "'계속 시청하시겠어요?' 팝업 숨기기";
