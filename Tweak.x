@@ -1351,22 +1351,17 @@ BOOL isTabSelected = NO;
 
 %hook YTPlayerViewController
 %property (nonatomic, retain) UIPanGestureRecognizer *YouModPanGesture;
-%property (nonatomic, retain) UILabel *YouModPercentageLabel;
-
 %new
 - (void)YouModHandlePanGesture:(UIPanGestureRecognizer *)panGestureRecognizer {
     static float initialVolume;
     static float initialBrightness;
-    static BOOL isValidPan = NO; 
+    static BOOL isValidHorizontalPan = NO; 
     static GestureSection gestureSection = GestureSectionInvalid;
     static CGPoint startLocation;
-    static CGFloat deadzoneStartingTranslation;
-    static CGFloat adjustedTranslation;
+    static CGFloat deadzoneStartingXTranslation;
+    static CGFloat adjustedTranslationX;
     static CGFloat deadzoneRadius = 20.0;
     static CGFloat sensitivityFactor = 1.0;
-
-    // 🌟 핵심: 설정에서 'VerticalGestures' 값을 읽어와서 모드를 결정해!
-    BOOL useVerticalMode = IS_ENABLED(VerticalGestures);
 
     static MPVolumeView *volumeView;
     static UISlider *volumeViewSlider;
@@ -1382,63 +1377,29 @@ BOOL isTabSelected = NO;
         }
     });
 
-    // 화면 중앙 % 알림창 생성 (최초 1회)
-    if (!self.YouModPercentageLabel) {
-        self.YouModPercentageLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 0, 140, 50)];
-        self.YouModPercentageLabel.center = self.view.center;
-        self.YouModPercentageLabel.autoresizingMask = UIViewAutoresizingFlexibleTopMargin | UIViewAutoresizingFlexibleBottomMargin | UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin;
-        self.YouModPercentageLabel.backgroundColor = [UIColor colorWithWhite:0.0 alpha:0.6];
-        self.YouModPercentageLabel.textColor = [UIColor whiteColor];
-        self.YouModPercentageLabel.textAlignment = NSTextAlignmentCenter;
-        self.YouModPercentageLabel.font = [UIFont boldSystemFontOfSize:22];
-        self.YouModPercentageLabel.layer.cornerRadius = 12;
-        self.YouModPercentageLabel.layer.masksToBounds = YES;
-        self.YouModPercentageLabel.alpha = 0.0;
-        
-        [self.view addSubview:self.YouModPercentageLabel];
-    }
-
-    // 1. 터치 시작 (화면 분할)
     if (panGestureRecognizer.state == UIGestureRecognizerStateBegan) {
         startLocation = [panGestureRecognizer locationInView:self.view];
-        
-        if (useVerticalMode) {
-            // [세로 모드] 좌우 화면 분할
-            if (startLocation.x <= self.view.bounds.size.width / 2.0) {
-                gestureSection = GestureSectionTop; // 밝기 (좌측)
-            } else {
-                gestureSection = GestureSectionBottom; // 볼륨 (우측)
-            }
+        CGFloat viewHeight = self.view.bounds.size.height;
+
+        if (startLocation.y <= viewHeight / 2.0) {
+            gestureSection = GestureSectionTop; 
         } else {
-            // [가로 모드 - 원본] 상하 화면 분할
-            if (startLocation.y <= self.view.bounds.size.height / 2.0) {
-                gestureSection = GestureSectionTop; // 밝기 (상단)
-            } else {
-                gestureSection = GestureSectionBottom; // 볼륨 (하단)
-            }
+            gestureSection = GestureSectionBottom;
         }
         
-        isValidPan = NO;
-        
-        [UIView animateWithDuration:0.15 animations:^{
-            self.YouModPercentageLabel.alpha = 1.0;
-        }];
+        isValidHorizontalPan = NO;
     }
 
-    // 2. 스와이프 중 (수치 조절)
     if (panGestureRecognizer.state == UIGestureRecognizerStateChanged) {
         CGPoint translation = [panGestureRecognizer translationInView:self.view];
         
-        if (!isValidPan) {
-            // 모드에 따라 유효한 스와이프 방향인지 검사
-            BOOL isDirectionValid = useVerticalMode ? (fabs(translation.y) > fabs(translation.x)) : (fabs(translation.x) > fabs(translation.y));
-            
-            if (isDirectionValid) {
+        if (!isValidHorizontalPan) {
+            if (fabs(translation.x) > fabs(translation.y)) {
                 CGFloat distanceFromStart = hypot(translation.x, translation.y);
                 if (distanceFromStart < deadzoneRadius) return;
 
-                isValidPan = YES;
-                deadzoneStartingTranslation = useVerticalMode ? translation.y : translation.x;
+                isValidHorizontalPan = YES;
+                deadzoneStartingXTranslation = translation.x;
                 
                 if (gestureSection == GestureSectionTop) {
                     initialBrightness = [UIScreen mainScreen].brightness;
@@ -1451,50 +1412,35 @@ BOOL isTabSelected = NO;
             }
         }
 
-        if (isValidPan) {
-            float delta = 0;
-            if (useVerticalMode) {
-                // 세로 스와이프 계산
-                adjustedTranslation = -(translation.y - deadzoneStartingTranslation);
-                delta = (adjustedTranslation / self.view.bounds.size.height) * sensitivityFactor;
-            } else {
-                // 가로 스와이프 계산
-                adjustedTranslation = translation.x - deadzoneStartingTranslation;
-                delta = (adjustedTranslation / self.view.bounds.size.width) * sensitivityFactor;
-            }
+        if (isValidHorizontalPan) {
+            adjustedTranslationX = translation.x - deadzoneStartingXTranslation;
+            
+            // Calculate delta based on screen width
+            float delta = (adjustedTranslationX / self.view.bounds.size.width) * sensitivityFactor;
             
             if (gestureSection == GestureSectionTop) {
                 float newBrightness = fmaxf(fminf(initialBrightness + delta, 1.0), 0.0);
                 [[UIScreen mainScreen] setBrightness:newBrightness];
-                self.YouModPercentageLabel.text = [NSString stringWithFormat:@"☀️ %d%%", (int)(newBrightness * 100)];
             } else if (gestureSection == GestureSectionBottom) {
                 float newVolume = fmaxf(fminf(initialVolume + delta, 1.0), 0.0);
                 volumeViewSlider.value = newVolume;
-                self.YouModPercentageLabel.text = [NSString stringWithFormat:@"🔊 %d%%", (int)(newVolume * 100)];
             }
         }
-    }
-
-    // 3. 터치 종료 (알림창 숨김)
-    if (panGestureRecognizer.state == UIGestureRecognizerStateEnded || 
-        panGestureRecognizer.state == UIGestureRecognizerStateCancelled || 
-        panGestureRecognizer.state == UIGestureRecognizerStateFailed) {
-        
-        [UIView animateWithDuration:0.3 delay:0.4 options:UIViewAnimationOptionCurveEaseOut animations:^{
-            self.YouModPercentageLabel.alpha = 0.0;
-        } completion:nil];
     }
 }
 
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
-    // (이 부분은 이전 코드와 완벽히 동일하게 놔두면 됨)
     if ([gestureRecognizer isKindOfClass:[UIPanGestureRecognizer class]] && [otherGestureRecognizer isKindOfClass:[UIPanGestureRecognizer class]]) {
         YTMainAppVideoPlayerOverlayViewController *mainVideoPlayerController = (YTMainAppVideoPlayerOverlayViewController *)self.childViewControllers.firstObject;
         YTPlayerBarController *playerBarController = mainVideoPlayerController.playerBarController;
         YTInlinePlayerBarContainerView *playerBar = playerBarController.playerBar;
+        
+        // Priority to seeking and scrubbing
         if (otherGestureRecognizer == playerBar.scrubGestureRecognizer) return NO;
+        
         YTFineScrubberFilmstripView *fineScrubberFilmstrip = playerBar.fineScrubberFilmstrip;
         if (!fineScrubberFilmstrip) return YES;
+        
         YTFineScrubberFilmstripCollectionView *filmstripCollectionView = [fineScrubberFilmstrip valueForKey:@"_filmstripCollectionView"];
         if (filmstripCollectionView && otherGestureRecognizer == filmstripCollectionView.panGestureRecognizer) return NO;
     }
