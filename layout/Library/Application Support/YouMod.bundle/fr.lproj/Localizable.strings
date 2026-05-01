@@ -6,7 +6,7 @@
 "SOURCE_CODES" = "Code source";
 "SOURCE_CODES_DESC" = "Jette un œil au code !";
 
-"PERFER_HEADER" = "YouMod perferences";
+"PERFER_HEADER" = "Réglages YouMod";
 "PERFER" = "Réglages";
 "IMPORT" = "Importer les réglages";
 "IMPORT_DESC" = "Importer tes réglages depuis un fichier .plist.";
