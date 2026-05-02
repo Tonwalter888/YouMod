@@ -3,8 +3,8 @@
 
 "NEW_ISSUES" = "Segnala un problema o richiedi una funzione";
 "NEW_ISSUES_DESC" = "Hai trovato un bug o vuoi una nuova funzione? Clicca qui!";
-"SOURCE_CODES" = "Source codes";
-"SOURCE_CODES_DESC" = "Take a look at the codes!";
+"SOURCE_CODES" = "Codice sorgente";
+"SOURCE_CODES_DESC" = "Dai un'occhiata al codice!";
 
 "PERFER_HEADER" = "Opzioni YouMod";
 "PERFER" = "Opzioni";
