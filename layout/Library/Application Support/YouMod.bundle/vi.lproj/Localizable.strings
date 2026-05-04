@@ -211,7 +211,7 @@
 "LIB_NAME" = "Thư viện (Bạn)";
 "HIDE_TAB_INDI" = "Ẩn chỉ báo tab";
 "HIDE_TAB_INDI_DESC" = "Ẩn tất cả các chỉ báo tab trên thanh tab.";
-"HIDE_TAB_LABELS" = "Ẩn nhãn tab;
+"HIDE_TAB_LABELS" = "Ẩn nhãn tab";
 "HIDE_TAB_LABELS_DESC" = "Ẩn tất cả nhãn tab trên thanh tab.";
 "HIDE_HOME_TAB" = "Ẩn tab Trang chủ";
 "HIDE_HOME_TAB_DESC" = "Ẩn tab Trang chủ trên thanh tab.";
