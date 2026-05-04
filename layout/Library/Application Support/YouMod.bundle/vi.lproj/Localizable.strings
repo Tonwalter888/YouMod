@@ -33,9 +33,9 @@
 
 "APPEARANCE" = "Giao diện";
 "OLED_THEME" = "Chế độ OLED";
-"OLED_THEME_DESC" = "Uses pure black (OLED) color for the app dark theme.";
+"OLED_THEME_DESC" = "Sử dụng giao diện OLED.";
 "OLED_KEYBOARD" = "Bàn phím OLED";
-"OLED_KEYBOARD_DESC" = "Make the keyboard uses a pure black (OLED) color for dark theme.";
+"OLED_KEYBOARD_DESC" = "Làm cho bàn phím sử dụng giao diện OLED.";
 
 "NAVBAR" = "Thanh điều hướng";
 "HIDE_YT_LOGO" = "Ẩn logo YouTube";
