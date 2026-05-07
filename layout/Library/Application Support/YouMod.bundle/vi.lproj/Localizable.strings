@@ -186,8 +186,8 @@
 "HIDE_SHORTS_COMMENT_BUTTON_DESC" = "Ẩn nút Bình luận trong trình phát Shorts.";
 "HIDE_SHORTS_SHARE_BUTTON" = "Ẩn nút Chia sẻ";
 "HIDE_SHORTS_SHARE_BUTTON_DESC" = "Ẩn nút Chia sẻ trong trình phát Shorts.";
-"HIDE_SHORTS_REMIX_BUTTON" = "Ẩn nút Remix";
-"HIDE_SHORTS_REMIX_BUTTON_DESC" = "Ẩn nút Remix trong trình phát Shorts.";
+"HIDE_SHORTS_REMIX_BUTTON" = "Ẩn nút 'Phối lại'";
+"HIDE_SHORTS_REMIX_BUTTON_DESC" = "Ẩn nút 'Phối lại' trong trình phát Shorts.";
 "HIDE_METADATA_BUTTON" = "Ẩn nút nguồn âm thanh";
 "HIDE_METADATA_BUTTON_DESC" = "Ẩn nút hiển thị nguồn âm thanh hoặc thông tin bài hát trong trình phát Shorts.";
 "HIDE_SHORTS_PRODUCT" = "Ẩn các sản phẩm";
