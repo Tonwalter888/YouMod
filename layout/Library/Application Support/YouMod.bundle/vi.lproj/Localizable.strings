@@ -28,16 +28,16 @@
 "CACHE" = "Quản lý bộ nhớ tạm";
 "CLEARCACHE" = "Xóa bộ nhớ tạm";
 "DONE" = "Hoàn tất";
-"AUTO_CLEARCACHE" = "Tự động xóa cache";
+"AUTO_CLEARCACHE" = "Tự động xóa bộ nhớ tạm";
 "AUTO_CLEARCACHE_DESC" = "Tự động xóa bộ nhớ tạm mỗi khi ứng dụng khởi động.";
 
-"DOWNLOADING" = "Downloading";
-"DOWNLOAD_MANAGER" = "Download Manager";
-"DOWNLOAD_MANAGER_DESC" = "Replaces YouTube's video downloader with YouMod one. With ablity to downloading videos, audios, captions, and thumbnails";
-"DOWNLOAD_SAVE_PHOTOS" = "Automatically save to Photos";
-"DOWNLOAD_SAVE_PHOTOS_DESC" = "Automatically saves downloaded videos and images directly to your Photos app.";
-"DOWNLOAD_DRC_AUDIO" = "Prefer DRC Audio";
-"DOWNLOAD_DRC_AUDIO_DESC" = "Prioritizes downloading audio tracks with Dynamic Range Compression for more consistent volume levels.";
+"DOWNLOADING" = "Tải xuống";
+"DOWNLOAD_MANAGER" = "Trình tải xuống";
+"DOWNLOAD_MANAGER_DESC" = "Thay thế trình tải xuống của YouTube bằng YouMod. Với khả năng tải video, âm thanh, phụ đề, và ảnh thu nhỏ";
+"DOWNLOAD_SAVE_PHOTOS" = "Tự động lưu vào Thư viện ảnh";
+"DOWNLOAD_SAVE_PHOTOS_DESC" = "Tự động lưu video và ảnh trực tiếp vào ứng dụng Ảnh.";
+"DOWNLOAD_DRC_AUDIO" = "Ưu tiên DRC";
+"DOWNLOAD_DRC_AUDIO_DESC" = "Ưu tiên tải các bản âm thanh có nén dải động (Dynamic Range Compression) để có mức âm lượng ổn định hơn.";
 
 "APPEARANCE" = "Giao diện";
 "OLED_THEME" = "Chế độ OLED";
@@ -49,7 +49,7 @@
 "HIDE_YT_LOGO" = "Ẩn logo YouTube";
 "HIDE_YT_LOGO_DESC" = "Ẩn logo của YouTube khỏi thanh điều hướng.";
 "PREMIUM_LOGO" = "Sử dụng logo Youtube Premium";
-"PREMIUM_LOGO_DESC" = "Sử dụng logo YouTube Premium thay vì logo bình thường.";
+"PREMIUM_LOGO_DESC" = "Sử dụng logo YouTube Premium thay vì logo thường.";
 "HIDE_NOTIFICATION_BUTTON" = "Ẩn nút thông báo";
 "HIDE_NOTIFICATION_BUTTON_DESC" = "Ẩn nút thông báo khỏi thanh điều hướng.";
 "HIDE_SEARCH_BUTTON" = "Ẩn nút tìm kiếm";
@@ -57,7 +57,7 @@
 "HIDE_VOICE_SEARCH_BUTTON" = "Ẩn nút tìm kiếm bằng giọng nói";
 "HIDE_VOICE_SEARCH_BUTTON_DESC" = "Ẩn nút tìm kiếm bằng giọng nói khỏi thanh điều hướng.";
 "HIDE_CAST_BUTTON_NAVBAR" = "Ẩn nút phản chiếu (Cast)";
-"HIDE_CAST_BUTTON_NAVBAR_DESC" = "Ẩn nút trình chiếu màn hình khỏi thanh điều hướng.";
+"HIDE_CAST_BUTTON_NAVBAR_DESC" = "Ẩn nút phản chiếu màn hình khỏi thanh điều hướng.";
 
 "FEED" = "Bảng tin";
 "HIDE_SUBBAR" = "Ẩn thanh phụ";
@@ -117,7 +117,7 @@
 "GESTURE_HUD_SIZE" = "Kích thước thông báo Cử chỉ";
 "GESTURE_HUD_SIZE_DESC" = "Căn chỉnh văn bản và biểu tượng của thông báo Cử chỉ.";
 "SMALL" = "Nhỏ (-1)";
-"NORMAL" = "Vừa (Default)";
+"NORMAL" = "Vừa (Mặc định)";
 "LARGE" = "Lớn (+1)";
 "EXTRALARGE" = "Cực lớn (+2)";
 "MAX" = "Tối đa (+3)";
@@ -172,8 +172,8 @@
 "HIDE_DOWNLOAD_BUTTON_DESC" = "Ẩn nút Tải xuống trên thanh hành động bên dưới trình phát.";
 "HIDE_CLIP_BUTTON" = "Ẩn nút Clip";
 "HIDE_CLIP_BUTTON_DESC" = "Ẩn nút Tạo đoạn trích (Clip) trên thanh hành động bên dưới lớp phủ video.";
-"HIDE_REMIX_BUTTON" = "Ẩn nút Remix";
-"HIDE_REMIX_BUTTON_DESC" = "Ẩn nút Remix trên thanh hành động bên dưới trình phát.";
+"HIDE_REMIX_BUTTON" = "Ẩn nút 'Phối lại'";
+"HIDE_REMIX_BUTTON_DESC" = "Ẩn nút 'Phối lại' trên thanh hành động bên dưới trình phát.";
 "HIDE_SAVE_BUTTON" = "Ẩn nút Lưu";
 "HIDE_SAVE_BUTTON_DESC" = "Ẩn nút Lưu trên thanh hành động bên dưới trình phát.";
 
