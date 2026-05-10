@@ -31,13 +31,13 @@
 "AUTO_CLEARCACHE" = "Vider le cache automatiquement";
 "AUTO_CLEARCACHE_DESC" = "Vider le cache automatiquement lors du lancement de l'application.";
 
-"DOWNLOADING" = "Downloading";
-"DOWNLOAD_MANAGER" = "Download Manager";
-"DOWNLOAD_MANAGER_DESC" = "Replaces YouTube's video downloader with YouMod one. With ablity to downloading videos, audios, captions, and thumbnails";
-"DOWNLOAD_SAVE_PHOTOS" = "Automatically save to Photos";
-"DOWNLOAD_SAVE_PHOTOS_DESC" = "Automatically saves downloaded videos and images directly to your Photos app.";
-"DOWNLOAD_DRC_AUDIO" = "Prefer DRC Audio";
-"DOWNLOAD_DRC_AUDIO_DESC" = "Prioritizes downloading audio tracks with Dynamic Range Compression for more consistent volume levels.";
+"DOWNLOADING" = "Téléchargement";
+"DOWNLOAD_MANAGER" = "Gestionnaire de téléchargement";
+"DOWNLOAD_MANAGER_DESC" = "Remplace le téléchargeur vidéo de YouTube par celui de YouMod. Avec la possibilité de télécharger des vidéos, des audios, des sous-titres et des vignettes";
+"DOWNLOAD_SAVE_PHOTOS" = "Enregistrer automatiquement dans Photos";
+"DOWNLOAD_SAVE_PHOTOS_DESC" = "Enregistre automatiquement les vidéos et images téléchargées directement dans votre application Photos.";
+"DOWNLOAD_DRC_AUDIO" = "Préférer l'audio DRC";
+"DOWNLOAD_DRC_AUDIO_DESC" = "Préfère les flux audio avec Dynamic Range Compression (DRC) pour un niveau de volume plus consistant.";
 
 "APPEARANCE" = "Apparence";
 "OLED_THEME" = "Thème OLED";
