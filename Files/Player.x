@@ -12,6 +12,7 @@ static BOOL YouModHasPlaybackTime = NO;
 static id YouModSkipBackwardCommandTarget;
 static id YouModSkipForwardCommandTarget;
 static NSMutableArray *YouModRemoteCommandTargetProxies;
+typedef MPRemoteCommandHandlerStatus (^YouModRemoteCommandHandler)(MPRemoteCommandEvent *event);
 
 static void YouModUpdateCurrentPlayer(YTPlayerViewController *player) {
     YouModCurrentPlayerViewController = player;
@@ -329,15 +330,16 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
     %orig;
 }
 
-- (id)addTargetWithHandler:(MPRemoteCommandHandlerStatus(^)(MPRemoteCommandEvent *event))handler {
+- (id)addTargetWithHandler:(YouModRemoteCommandHandler)handler {
     if (YouModIsPreviousNextCommand(self)) {
-        return %orig(^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *event) {
+        YouModRemoteCommandHandler wrappedHandler = ^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *event) {
             if (IS_ENABLED(ReplacePrevNextButtons) && YouModIsPreviousNextRemoteCommandEvent(event)) {
                 return YouModStatusForSeek(YouModHandlePreviousNextRemoteCommand(event));
             }
 
             return handler(event);
-        });
+        };
+        return %orig(wrappedHandler);
     }
 
     return %orig;
