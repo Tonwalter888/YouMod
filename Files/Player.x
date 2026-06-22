@@ -99,6 +99,8 @@ static void YouModConfigureRemoteSkipCommands(void) {
     commandCenter.skipBackwardCommand.preferredIntervals = intervals;
     commandCenter.skipForwardCommand.enabled = enabled;
     commandCenter.skipForwardCommand.preferredIntervals = intervals;
+    commandCenter.previousTrackCommand.enabled = !enabled;
+    commandCenter.nextTrackCommand.enabled = !enabled;
 
     if (!YouModSkipBackwardCommandTarget) {
         YouModSkipBackwardCommandTarget = [commandCenter.skipBackwardCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *event) {

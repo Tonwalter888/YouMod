@@ -88,8 +88,8 @@
 "HIDE_PREV_BUTTON_DESC" = "Hide previous/back button in the video overlay.";
 "HIDE_NEXT_BUTTON" = "Hide next/skip button";
 "HIDE_NEXT_BUTTON_DESC" = "Hide next/skip button in the video overlay.";
-"REPLACE_PREVNEXT_BUTTONS" = "Replace Previous/Next buttons";
-"REPLACE_PREVNEXT_BUTTONS_DESC" = "Replaces the Previous and Next video buttons in the player with Rewind and Fast Forward buttons.";
+"REPLACE_PREVNEXT_BUTTONS" = "Use Rewind/Fast Forward controls";
+"REPLACE_PREVNEXT_BUTTONS_DESC" = "Replaces Previous and Next controls in the player and iOS media controls with Rewind and Fast Forward.";
 "REMOVE_DARK_OVERLAY" = "Remove dark overlay";
 "REMOVE_DARK_OVERLAY_DESC" = "Remove dark overlay from the video overlay.";
 "HIDE_END_SCREEN" = "Hide endscreen cards";
