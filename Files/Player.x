@@ -30,6 +30,11 @@ static BOOL YouModIsPreviousNextCommand(MPRemoteCommand *command) {
     return command == commandCenter.previousTrackCommand || command == commandCenter.nextTrackCommand;
 }
 
+static BOOL YouModIsSkipCommand(MPRemoteCommand *command) {
+    MPRemoteCommandCenter *commandCenter = [MPRemoteCommandCenter sharedCommandCenter];
+    return command == commandCenter.skipBackwardCommand || command == commandCenter.skipForwardCommand;
+}
+
 static BOOL YouModSeekByInterval(NSTimeInterval interval) {
     if (!IS_ENABLED(ReplacePrevNextButtons) || !YouModCurrentPlayerViewController || !YouModHasPlaybackTime) return NO;
     if (![YouModCurrentPlayerViewController respondsToSelector:@selector(seekToTime:)]) return NO;
@@ -326,6 +331,7 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
         proxy.action = action;
         [YouModRemoteCommandTargetProxies addObject:proxy];
         %orig(proxy, @selector(youModHandleRemoteCommandEvent:));
+        YouModConfigureRemoteSkipCommands();
         return;
     }
 
@@ -341,10 +347,28 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
 
             return handler(event);
         };
-        return %orig(wrappedHandler);
+        id commandTarget = %orig(wrappedHandler);
+        YouModConfigureRemoteSkipCommands();
+        return commandTarget;
     }
 
     return %orig;
+}
+
+- (void)setEnabled:(BOOL)enabled {
+    if (IS_ENABLED(ReplacePrevNextButtons)) {
+        if (YouModIsPreviousNextCommand(self)) {
+            %orig(NO);
+            return;
+        }
+
+        if (YouModIsSkipCommand(self)) {
+            %orig(YES);
+            return;
+        }
+    }
+
+    %orig;
 }
 
 - (void)removeTarget:(id)target action:(SEL)action {
