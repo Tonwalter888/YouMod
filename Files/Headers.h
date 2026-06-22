@@ -208,6 +208,7 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 - (void)YouModAutoFullscreen;
 - (void)YouModTurnOffCaptions;
 - (void)setActiveCaptionTrack:(id)arg1 source:(long long)arg2;
+- (void)seekToTime:(CGFloat)time;
 - (void)setPlaybackRate:(float)rate;
 @end
 

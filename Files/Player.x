@@ -4,6 +4,114 @@ extern void YouModDownloadSetCurrentPlayer(YTPlayerViewController *player);
 
 float playbackRate = 1.0;
 
+static const NSTimeInterval YouModRemoteSkipInterval = 10.0;
+static __weak YTPlayerViewController *YouModCurrentPlayerViewController;
+static NSTimeInterval YouModCurrentPlaybackTime = 0;
+static NSTimeInterval YouModCurrentDuration = 0;
+static BOOL YouModHasPlaybackTime = NO;
+static id YouModSkipBackwardCommandTarget;
+static id YouModSkipForwardCommandTarget;
+static NSMutableArray *YouModRemoteCommandTargetProxies;
+
+static void YouModUpdateCurrentPlayer(YTPlayerViewController *player) {
+    YouModCurrentPlayerViewController = player;
+}
+
+static void YouModUpdatePlaybackTime(YTPlayerViewController *player, YTSingleVideoController *video, YTSingleVideoTime *time) {
+    YouModUpdateCurrentPlayer(player);
+    YouModCurrentPlaybackTime = time.time;
+    YouModCurrentDuration = video.totalMediaTime;
+    YouModHasPlaybackTime = YES;
+}
+
+static BOOL YouModIsPreviousNextCommand(MPRemoteCommand *command) {
+    MPRemoteCommandCenter *commandCenter = [MPRemoteCommandCenter sharedCommandCenter];
+    return command == commandCenter.previousTrackCommand || command == commandCenter.nextTrackCommand;
+}
+
+static BOOL YouModSeekByInterval(NSTimeInterval interval) {
+    if (!IS_ENABLED(ReplacePrevNextButtons) || !YouModCurrentPlayerViewController || !YouModHasPlaybackTime) return NO;
+    if (![YouModCurrentPlayerViewController respondsToSelector:@selector(seekToTime:)]) return NO;
+
+    NSTimeInterval targetTime = YouModCurrentPlaybackTime + interval;
+    if (YouModCurrentDuration > 0) targetTime = fmin(targetTime, YouModCurrentDuration);
+    targetTime = fmax(targetTime, 0);
+
+    [YouModCurrentPlayerViewController seekToTime:(CGFloat)targetTime];
+    YouModCurrentPlaybackTime = targetTime;
+    return YES;
+}
+
+static MPRemoteCommandHandlerStatus YouModStatusForSeek(BOOL handled) {
+    return handled ? MPRemoteCommandHandlerStatusSuccess : MPRemoteCommandHandlerStatusNoActionableNowPlayingItem;
+}
+
+static BOOL YouModHandlePreviousNextRemoteCommand(MPRemoteCommandEvent *event) {
+    MPRemoteCommandCenter *commandCenter = [MPRemoteCommandCenter sharedCommandCenter];
+    if (event.command == commandCenter.previousTrackCommand) return YouModSeekByInterval(-YouModRemoteSkipInterval);
+    if (event.command == commandCenter.nextTrackCommand) return YouModSeekByInterval(YouModRemoteSkipInterval);
+    return NO;
+}
+
+static BOOL YouModIsPreviousNextRemoteCommandEvent(MPRemoteCommandEvent *event) {
+    return YouModIsPreviousNextCommand(event.command);
+}
+
+@interface YouModRemoteCommandTargetProxy : NSObject
+@property (nonatomic, weak) MPRemoteCommand *command;
+@property (nonatomic, weak) id target;
+@property (nonatomic, assign) SEL action;
+- (MPRemoteCommandHandlerStatus)youModHandleRemoteCommandEvent:(MPRemoteCommandEvent *)event;
+@end
+
+@implementation YouModRemoteCommandTargetProxy
+- (MPRemoteCommandHandlerStatus)youModHandleRemoteCommandEvent:(MPRemoteCommandEvent *)event {
+    if (IS_ENABLED(ReplacePrevNextButtons) && YouModIsPreviousNextRemoteCommandEvent(event)) {
+        return YouModStatusForSeek(YouModHandlePreviousNextRemoteCommand(event));
+    }
+
+    if (!self.target || !self.action) return MPRemoteCommandHandlerStatusCommandFailed;
+
+    NSMethodSignature *signature = [self.target methodSignatureForSelector:self.action];
+    if (!signature) return MPRemoteCommandHandlerStatusCommandFailed;
+
+    NSInvocation *invocation = [NSInvocation invocationWithMethodSignature:signature];
+    invocation.target = self.target;
+    invocation.selector = self.action;
+    if (signature.numberOfArguments > 2) [invocation setArgument:&event atIndex:2];
+    [invocation invoke];
+
+    if (signature.methodReturnLength == 0) return MPRemoteCommandHandlerStatusSuccess;
+
+    MPRemoteCommandHandlerStatus status = MPRemoteCommandHandlerStatusSuccess;
+    [invocation getReturnValue:&status];
+    return status;
+}
+@end
+
+static void YouModConfigureRemoteSkipCommands(void) {
+    MPRemoteCommandCenter *commandCenter = [MPRemoteCommandCenter sharedCommandCenter];
+    BOOL enabled = IS_ENABLED(ReplacePrevNextButtons);
+    NSArray *intervals = @[@(YouModRemoteSkipInterval)];
+
+    commandCenter.skipBackwardCommand.enabled = enabled;
+    commandCenter.skipBackwardCommand.preferredIntervals = intervals;
+    commandCenter.skipForwardCommand.enabled = enabled;
+    commandCenter.skipForwardCommand.preferredIntervals = intervals;
+
+    if (!YouModSkipBackwardCommandTarget) {
+        YouModSkipBackwardCommandTarget = [commandCenter.skipBackwardCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *event) {
+            return YouModStatusForSeek(YouModSeekByInterval(-YouModRemoteSkipInterval));
+        }];
+    }
+
+    if (!YouModSkipForwardCommandTarget) {
+        YouModSkipForwardCommandTarget = [commandCenter.skipForwardCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *event) {
+            return YouModStatusForSeek(YouModSeekByInterval(YouModRemoteSkipInterval));
+        }];
+    }
+}
+
 /*
 static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoController *video, YTSingleVideoTime *time) {
     if (!IS_ENABLED(ShowExtraTimeRemaining)) return;
@@ -204,6 +312,68 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
 - (BOOL)replacePreviousPaddleWithRewindButtonForSingletonVods { return IS_ENABLED(ReplacePrevNextButtons) ? YES : %orig; }
 %end
 
+%hook MPRemoteCommand
+- (void)addTarget:(id)target action:(SEL)action {
+    if (YouModIsPreviousNextCommand(self)) {
+        if (!YouModRemoteCommandTargetProxies) YouModRemoteCommandTargetProxies = [NSMutableArray array];
+
+        YouModRemoteCommandTargetProxy *proxy = [[YouModRemoteCommandTargetProxy alloc] init];
+        proxy.command = self;
+        proxy.target = target;
+        proxy.action = action;
+        [YouModRemoteCommandTargetProxies addObject:proxy];
+        %orig(proxy, @selector(youModHandleRemoteCommandEvent:));
+        return;
+    }
+
+    %orig;
+}
+
+- (id)addTargetWithHandler:(MPRemoteCommandHandlerStatus(^)(MPRemoteCommandEvent *event))handler {
+    if (YouModIsPreviousNextCommand(self)) {
+        return %orig(^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *event) {
+            if (IS_ENABLED(ReplacePrevNextButtons) && YouModIsPreviousNextRemoteCommandEvent(event)) {
+                return YouModStatusForSeek(YouModHandlePreviousNextRemoteCommand(event));
+            }
+
+            return handler(event);
+        });
+    }
+
+    return %orig;
+}
+
+- (void)removeTarget:(id)target action:(SEL)action {
+    if (YouModIsPreviousNextCommand(self) && YouModRemoteCommandTargetProxies.count > 0) {
+        NSArray *proxies = [YouModRemoteCommandTargetProxies copy];
+        for (YouModRemoteCommandTargetProxy *proxy in proxies) {
+            BOOL targetMatches = !target || proxy.target == target;
+            BOOL actionMatches = !action || proxy.action == action;
+            if (proxy.command == self && targetMatches && actionMatches) {
+                %orig(proxy, @selector(youModHandleRemoteCommandEvent:));
+                [YouModRemoteCommandTargetProxies removeObject:proxy];
+            }
+        }
+    }
+
+    %orig;
+}
+
+- (void)removeTarget:(id)target {
+    if (YouModIsPreviousNextCommand(self) && YouModRemoteCommandTargetProxies.count > 0) {
+        NSArray *proxies = [YouModRemoteCommandTargetProxies copy];
+        for (YouModRemoteCommandTargetProxy *proxy in proxies) {
+            if (proxy.command == self && (!target || proxy.target == target)) {
+                %orig(proxy);
+                [YouModRemoteCommandTargetProxies removeObject:proxy];
+            }
+        }
+    }
+
+    %orig;
+}
+%end
+
 %group ForceMiniPlayer
 %hook YTIMiniplayerRenderer
 %new
@@ -313,6 +483,8 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
 %hook YTPlayerViewController
 - (void)loadWithPlayerTransition:(id)arg1 playbackConfig:(id)arg2 {
     %orig;
+    YouModUpdateCurrentPlayer(self);
+    YouModConfigureRemoteSkipCommands();
     YouModDownloadSetCurrentPlayer(self);
     if (IS_ENABLED(AutoFullScreen)) [self performSelector:@selector(YouModAutoFullscreen) withObject:nil afterDelay:0.75];
     // if (ytlBool(@"shortsToRegular")) [self performSelector:@selector(shortsToRegular) withObject:nil afterDelay:0.75];
@@ -321,6 +493,8 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
 
 - (void)prepareToLoadWithPlayerTransition:(id)arg1 expectedLayout:(id)arg2 {
     %orig;
+    YouModUpdateCurrentPlayer(self);
+    YouModConfigureRemoteSkipCommands();
     YouModDownloadSetCurrentPlayer(self);
     if (IS_ENABLED(AutoFullScreen)) [self performSelector:@selector(YouModAutoFullscreen) withObject:nil afterDelay:0.75];
     // if (ytlBool(@"shortsToRegular")) [self performSelector:@selector(shortsToRegular) withObject:nil afterDelay:0.75];
@@ -351,6 +525,16 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
     YouModAddEndTime(self, video, time);
 }
 */
+
+- (void)singleVideo:(YTSingleVideoController *)video currentVideoTimeDidChange:(YTSingleVideoTime *)time {
+    %orig;
+    YouModUpdatePlaybackTime(self, video, time);
+}
+
+- (void)potentiallyMutatedSingleVideo:(YTSingleVideoController *)video currentVideoTimeDidChange:(YTSingleVideoTime *)time {
+    %orig;
+    YouModUpdatePlaybackTime(self, video, time);
+}
 
 - (void)setPlaybackRate:(float)rate {
     playbackRate = rate;
@@ -653,6 +837,7 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
 
 %ctor {
     %init;
+    YouModConfigureRemoteSkipCommands();
     if (IS_ENABLED(OldQualityPicker)) {
         %init(OldVideoQuality);
     }
