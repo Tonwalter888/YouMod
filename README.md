@@ -8,9 +8,9 @@ If you want to contribute this project, scroll down to `How to contribute this p
 The reason is because of YTLite no longer free. So I'll try my best to recreate all the features as much as I can, plus alternative tweaks combined.
 ## Features
 This tweak add a lot of QoL feature and can hide elements in YouTube. Such as:
-- Downloading (video, audio, select quality...)
-- Feed modifications (hide shorts, hide post...)
-- Appearance modification (OLED theme, keyboard, add/remove buttons...)
+- Downloading (video, audio, select quality)
+- Feed modifications (hide shorts, hide post)
+- Appearance modification (OLED theme, keyboard, add/remove buttons)
 - Navigation bar (hide buttons)
 - Player (add/remove buttons and elements)
 - Shorts (add/remove buttons and elements)
