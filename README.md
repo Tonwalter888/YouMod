@@ -3,7 +3,7 @@ A tweak that's try to recreate features like in YTLite as much as possible. Cont
 
 Thanks for 200 stars and forks! This might be the best project I've done.
 
-If you want to contribute this project, scroll down to *How to contribute this project?*part.
+If you want to contribute this project, scroll down to `How to contribute this project?` part.
 ## Why I created this project?
 The reason is because of YTLite no longer free. So I'll try my best to recreate all the features as much as I can, plus alternative tweaks combined.
 ## Features
