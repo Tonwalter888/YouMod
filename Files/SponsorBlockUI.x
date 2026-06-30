@@ -631,6 +631,7 @@ extern BOOL useBackwardIconForButton;
     UIView *playerBar;
     UIView *mainview;
     CGFloat totalTime = [self currentVideoTotalMediaTime];
+    if (totalTime <= 0) return;
     CGFloat barWidth;
     CGFloat h;
     CGFloat y;
