@@ -551,11 +551,11 @@ extern BOOL useBackwardIconForButton;
 
 %end
 
-@interface YTWatchFloatingMiniplayerProgressBarView : UIView
+@interface YTProgressView : UIView
 @end
 
-// YTWatchFloatingMiniplayerProgressBarView - miniplayer
-%hook YTWatchFloatingMiniplayerProgressBarView
+// YTProgressView - miniplayer
+%hook YTProgressView
 - (void)layoutSubviews {
     %orig;
     CGFloat barWidth = self.bounds.size.width;
@@ -574,7 +574,7 @@ extern BOOL useBackwardIconForButton;
         if (isPoi) { w = 3.0; x = MAX(0, x - 1.5); }
         else if (w < 2.0) w = 2.0;
 
-        sub.frame = CGRectMake(x, self.frame.origin.y, w, self.frame.size.height);
+        sub.frame = CGRectMake(x, self.frame.size.height, w, self.frame.size.height);
     }
 }
 %end
@@ -624,11 +624,13 @@ extern BOOL useBackwardIconForButton;
     UIView *playerBar;
     CGFloat totalTime = [self currentVideoTotalMediaTime];
     CGFloat barWidth;
+    CGFloat h;
+    CGFloat y;
     if ([self.parentViewController isKindOfClass:%c(YTWatchFloatingMiniplayerViewController)]) {
         YTWatchFloatingMiniplayerViewController *miniplayercontroller = (YTWatchFloatingMiniplayerViewController *)self.parentViewController;
         YTWatchFloatingMiniplayerWithPersistentControlsView *controlsview = (YTWatchFloatingMiniplayerWithPersistentControlsView *)miniplayercontroller.view;
         for (UIView *sub in controlsview.allSubviews) {
-            if ([sub isKindOfClass:%c(YTWatchFloatingMiniplayerProgressBarView)]) {
+            if ([sub isKindOfClass:%c(YTProgressView)]) {
                 referenceView = sub;
                 break;
             }
@@ -640,6 +642,8 @@ extern BOOL useBackwardIconForButton;
         if (!segments || segments.count == 0) return;
 
         barWidth = referenceView.bounds.size.width;
+        h = referenceView.bounds.size.height;
+        y = referenceView.bounds.size.height;
     } else if ([[self activeVideoPlayerOverlay] isKindOfClass:%c(YTMainAppVideoPlayerOverlayViewController)]) {
         YTMainAppVideoPlayerOverlayViewController *overlay = [self activeVideoPlayerOverlay];
         YTPlayerBarController *barController = [overlay playerBarController];
@@ -676,6 +680,9 @@ extern BOOL useBackwardIconForButton;
         }
     }
 
+    h = referenceView.bounds.size.height;
+    y = referenceView.frame.origin.y;
+
     for (SBSegment *segment in segments) {
         SBSegmentAction action = [segment configuredAction];
         if (action == SBSegmentActionDisable) continue;
@@ -699,7 +706,7 @@ extern BOOL useBackwardIconForButton;
             if (w < 2.0) w = 2.0;
         }
 
-        UIView *marker = [[UIView alloc] initWithFrame:CGRectMake(x, referenceView.frame.origin.y, w, referenceView.frame.size.height)];
+        UIView *marker = [[UIView alloc] initWithFrame:CGRectMake(x, y, w, h)];
         marker.backgroundColor = [segment segmentColor];
         marker.userInteractionEnabled = NO;
         marker.tag = 9900;
