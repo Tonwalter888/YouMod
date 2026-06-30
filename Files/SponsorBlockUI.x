@@ -623,8 +623,8 @@ extern BOOL useBackwardIconForButton;
     UIView *playerBar;
     CGFloat totalTime = [self currentVideoTotalMediaTime];
     CGFloat barWidth;
-    if ([[self.parentViewController] isKindOfClass:%c(YTWatchFloatingMiniplayerViewController)]) {
-        YTWatchFloatingMiniPlayerViewController *miniplayercontroller = (YTWatchFloatingMiniPlayerViewController *)self.parentViewController;
+    if ([self.parentViewController isKindOfClass:%c(YTWatchFloatingMiniplayerViewController)]) {
+        YTWatchFloatingMiniplayerViewController *miniplayercontroller = (YTWatchFloatingMiniplayerViewController *)self.parentViewController;
         YTWatchFloatingMiniplayerWithPersistentControlsView *controlsview = (YTWatchFloatingMiniplayerWithPersistentControlsView *)miniplayercontroller.view;
         for (UIView *sub in controlsview.allSubviews) {
             if ([sub isKindOfClass:%c(YTWatchFloatingMiniplayerProgressBarView)]) {
