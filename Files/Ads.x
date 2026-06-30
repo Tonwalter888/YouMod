@@ -159,11 +159,11 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
 %end
 
 %hook YTAdsInnerTubeContextDecorator
-- (void)decorateContext:(id)context {}
+- (void)decorateContext:(id)context { %orig(nil); }
 %end
 
 %hook YTAccountScopedAdsInnerTubeContextDecorator
-- (void)decorateContext:(id)context {}
+- (void)decorateContext:(id)context { %orig(nil); }
 %end
 
 %hook YTLocalPlaybackController
