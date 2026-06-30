@@ -511,8 +511,9 @@ extern BOOL useBackwardIconForButton;
 
 %end
 
-#pragma mark - YTModularPlayerBarView Hook (Marker Repositioning)
+#pragma mark - Marker Repositioning Hooks
 
+// YTModularPlayerBarView - normal player
 %hook YTModularPlayerBarView
 
 - (void)layoutSubviews {
@@ -550,7 +551,41 @@ extern BOOL useBackwardIconForButton;
 
 %end
 
+@interface YTWatchFloatingMiniplayerProgressBarView : UIView
+@end
+
+// YTWatchFloatingMiniplayerProgressBarView - miniplayer
+%hook YTWatchFloatingMiniplayerProgressBarView
+- (void)layoutSubviews {
+    %orig;
+    CGFloat barWidth = self.bounds.size.width;
+
+    for (UIView *sub in self.subviews) {
+        if (sub.tag != 9900) continue;
+        NSArray *data = objc_getAssociatedObject(sub, @selector(sbSegmentData));
+        if (!data || data.count < 3) continue;
+
+        CGFloat startFrac = [data[0] floatValue];
+        CGFloat endFrac = [data[1] floatValue];
+        BOOL isPoi = [data[2] boolValue];
+
+        CGFloat x = startFrac * barWidth;
+        CGFloat w = (endFrac - startFrac) * barWidth;
+        if (isPoi) { w = 3.0; x = MAX(0, x - 1.5); }
+        else if (w < 2.0) w = 2.0;
+
+        sub.frame = CGRectMake(x, self.frame.origin.y, w, self.frame.size.height);
+    }
+}
+%end
+
 #pragma mark - YTPlayerViewController Hook (Notification Observer)
+
+@interface YTWatchFloatingMiniplayerViewController : UIViewController
+@end
+
+@interface YTWatchFloatingMiniplayerWithPersistentControlsView : UIView
+@end
 
 %group SBObserver
 %hook YTPlayerViewController
@@ -583,45 +618,61 @@ extern BOOL useBackwardIconForButton;
 - (void)sbRefreshMarkers:(NSArray<SBSegment *> *)segments {
     if (!segments) segments = self.sbSegments;
 
-    if (![[self activeVideoPlayerOverlay] isKindOfClass:%c(YTMainAppVideoPlayerOverlayViewController)]) return;
-    YTMainAppVideoPlayerOverlayViewController *overlay = [self activeVideoPlayerOverlay];
-    YTPlayerBarController *barController = [overlay playerBarController];
-    YTInlinePlayerBarContainerView *containerView = barController.playerBar;
-    UIView *playerBar;
-
-    for (UIView *subview in containerView.subviews) {
-        if ([subview isKindOfClass:%c(YTModularPlayerBarView)]) {
-            playerBar = subview;
-            break;
-        }
-    }
-    if (!playerBar) return;
-
-    // Remove old markers (tag 9900)
-    for (UIView *sub in [playerBar.subviews copy]) {
-        if (sub.tag == 9900) [sub removeFromSuperview];
-    }
-
-    if (!segments || segments.count == 0) return;
-
-    CGFloat totalTime = [self currentVideoTotalMediaTime];
-    if (totalTime <= 0) return;
-
-    CGFloat barWidth = playerBar.bounds.size.width;
-    if (barWidth <= 0) return;
-
-    // Find reference track view for Y position and height
-    UIView *referenceView = nil;
     UIView *scrubberView = nil;
-    for (UIView *sub in playerBar.subviews) {
-        if ([sub isKindOfClass:%c(YTPlayerBarRectangleDecorationView)]) {
-            referenceView = sub;
-        } else if ([sub isKindOfClass:%c(YTPlayerBarProgressDecorationView)]) {
-            if (!referenceView) referenceView = sub;
-        } else if ([sub isKindOfClass:%c(YTPlayerBarScrubberDotDecorationView)]) {
-            scrubberView = sub.subviews.firstObject;
+    UIView *referenceView = nil;
+    CGFloat totalTime = [self currentVideoTotalMediaTime];
+    CGFloat barWidth;
+    if ([[self.parentViewController] isKindOfClass:%c(YTWatchFloatingMiniplayerViewController)]) {
+        YTWatchFloatingMiniPlayerViewController *miniplayercontroller = (YTWatchFloatingMiniPlayerViewController *)self.parentViewController;
+        YTWatchFloatingMiniplayerWithPersistentControlsView *controlsview = (YTWatchFloatingMiniplayerWithPersistentControlsView *)miniplayercontroller.view;
+        for (UIView *sub in controlsview.allSubviews) {
+            if ([sub isKindOfClass:%c(YTWatchFloatingMiniplayerProgressBarView)]) {
+                referenceView = sub;
+                break;
+            }
         }
-        if (referenceView && scrubberView) break;
+        // Remove old markers (tag 9900)
+        for (UIView *sub in [referenceView.subviews copy]) {
+            if (sub.tag == 9900) [sub removeFromSuperview];
+        }
+        if (!segments || segments.count == 0) return;
+
+        barWidth = referenceView.bounds.size.width;
+    } else if ([[self activeVideoPlayerOverlay] isKindOfClass:%c(YTMainAppVideoPlayerOverlayViewController)]) {
+        YTMainAppVideoPlayerOverlayViewController *overlay = [self activeVideoPlayerOverlay];
+        YTPlayerBarController *barController = [overlay playerBarController];
+        YTInlinePlayerBarContainerView *containerView = barController.playerBar;
+        UIView *playerBar;
+
+        for (UIView *subview in containerView.subviews) {
+            if ([subview isKindOfClass:%c(YTModularPlayerBarView)]) {
+                playerBar = subview;
+                break;
+            }
+        }
+        if (!playerBar) return;
+
+        // Remove old markers (tag 9900)
+        for (UIView *sub in [playerBar.subviews copy]) {
+            if (sub.tag == 9900) [sub removeFromSuperview];
+        }
+
+        if (!segments || segments.count == 0) return;
+
+        barWidth = playerBar.bounds.size.width;
+        if (barWidth <= 0) return;
+
+        // Find reference track view for Y position and height
+        for (UIView *sub in playerBar.subviews) {
+            if ([sub isKindOfClass:%c(YTPlayerBarRectangleDecorationView)]) {
+                referenceView = sub;
+            } else if ([sub isKindOfClass:%c(YTPlayerBarProgressDecorationView)]) {
+                if (!referenceView) referenceView = sub;
+            } else if ([sub isKindOfClass:%c(YTPlayerBarScrubberDotDecorationView)]) {
+                scrubberView = sub.subviews.firstObject;
+            }
+            if (referenceView && scrubberView) break;
+        }
     }
 
     for (SBSegment *segment in segments) {
@@ -655,9 +706,6 @@ extern BOOL useBackwardIconForButton;
 
         [playerBar insertSubview:marker belowSubview:scrubberView];
     }
-
-    // Keep scrubber dot on top
-    // [containerView bringSubviewToFront:scrubberView];
 }
 
 // On fullscreen enter/exit and other layout transitions, YouTube swaps the
