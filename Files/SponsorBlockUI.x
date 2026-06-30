@@ -714,7 +714,8 @@ extern BOOL useBackwardIconForButton;
         if (playerBar) {
             [playerBar insertSubview:marker belowSubview:scrubberView];
         } else {
-            [referenceView insertSubview:marker aboveSubview:referenceView];
+            [referenceView addSubview:marker];
+            [referenceView bringSubviewToFront:marker];
         }
     }
 }
