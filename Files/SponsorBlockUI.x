@@ -568,11 +568,11 @@ extern BOOL useBackwardIconForButton;
     UIView *playerBar;
     for (UIView *sub in self.allSubviews) {
         if ([sub isKindOfClass:%c(YTWatchFloatingMiniplayerProgressBarView)]) {
-            playerbar = sub;
+            playerBar = sub;
             break;
         }
     }
-    CGFloat barWidth = playerbar.bounds.size.width;
+    CGFloat barWidth = playerBar.bounds.size.width;
 
     for (UIView *sub in self.subviews) {
         if (sub.tag != 9900) continue;
@@ -588,7 +588,7 @@ extern BOOL useBackwardIconForButton;
         if (isPoi) { w = 3.0; x = MAX(0, x - 1.5); }
         else if (w < 2.0) w = 2.0;
 
-        sub.frame = CGRectMake(x, playerbar.frame.origin.y, w, playerbar.bounds.size.height);
+        sub.frame = CGRectMake(x, playerBar.frame.origin.y, w, playerBar.bounds.size.height);
     }
 }
 %end
@@ -645,7 +645,7 @@ extern BOOL useBackwardIconForButton;
             }
         }
         // Remove old markers (tag 9900)
-        for (UIView *sub in [referenceView.subviews copy]) {
+        for (UIView *sub in [controlsview.subviews copy]) {
             if (sub.tag == 9900) [sub removeFromSuperview];
         }
         if (!segments || segments.count == 0) return;
