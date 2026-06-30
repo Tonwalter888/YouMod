@@ -620,6 +620,7 @@ extern BOOL useBackwardIconForButton;
 
     UIView *scrubberView = nil;
     UIView *referenceView = nil;
+    UIView *playerBar;
     CGFloat totalTime = [self currentVideoTotalMediaTime];
     CGFloat barWidth;
     if ([[self.parentViewController] isKindOfClass:%c(YTWatchFloatingMiniplayerViewController)]) {
@@ -642,7 +643,6 @@ extern BOOL useBackwardIconForButton;
         YTMainAppVideoPlayerOverlayViewController *overlay = [self activeVideoPlayerOverlay];
         YTPlayerBarController *barController = [overlay playerBarController];
         YTInlinePlayerBarContainerView *containerView = barController.playerBar;
-        UIView *playerBar;
 
         for (UIView *subview in containerView.subviews) {
             if ([subview isKindOfClass:%c(YTModularPlayerBarView)]) {
@@ -704,7 +704,12 @@ extern BOOL useBackwardIconForButton;
         marker.tag = 9900;
         objc_setAssociatedObject(marker, @selector(sbSegmentData), @[@(startFrac), @(endFrac), @(isPoi)], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 
-        [playerBar insertSubview:marker belowSubview:scrubberView];
+        if (playerBar) {
+            [playerBar insertSubview:marker belowSubview:scrubberView];
+        } else {
+            [referenceView addSubview:marker];
+            [referenceView bringSubviewToFront:marker];
+        }
     }
 }
 
