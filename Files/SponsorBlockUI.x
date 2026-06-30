@@ -511,6 +511,16 @@ extern BOOL useBackwardIconForButton;
 
 %end
 
+@interface YTWatchFloatingMiniplayerViewController : UIViewController
+@end
+
+@interface YTWatchFloatingMiniplayerWithPersistentControlsView : UIView
+- (NSArray *)allSubviews;
+@end
+
+@interface YTWatchFloatingMiniplayerProgressBarView : UIView
+@end
+
 #pragma mark - Marker Repositioning Hooks
 
 // YTModularPlayerBarView - normal player
@@ -551,14 +561,18 @@ extern BOOL useBackwardIconForButton;
 
 %end
 
-@interface YTProgressView : UIView
-@end
-
-// YTProgressView - miniplayer
-%hook YTProgressView
+// YTWatchFloatingMiniplayerWithPersistentControlsView - miniplayer
+%hook YTWatchFloatingMiniplayerWithPersistentControlsView
 - (void)layoutSubviews {
     %orig;
-    CGFloat barWidth = self.bounds.size.width;
+    UIView *playerBar;
+    for (UIView *sub in self.allSubviews) {
+        if ([sub isKindOfClass:%c(YTWatchFloatingMiniplayerProgressBarView)]) {
+            playerbar = sub;
+            break;
+        }
+    }
+    CGFloat barWidth = playerbar.bounds.size.width;
 
     for (UIView *sub in self.subviews) {
         if (sub.tag != 9900) continue;
@@ -574,19 +588,12 @@ extern BOOL useBackwardIconForButton;
         if (isPoi) { w = 3.0; x = MAX(0, x - 1.5); }
         else if (w < 2.0) w = 2.0;
 
-        sub.frame = CGRectMake(x, self.superview.frame.origin.y, w, self.bounds.size.height);
+        sub.frame = CGRectMake(x, playerbar.frame.origin.y, w, playerbar.bounds.size.height);
     }
 }
 %end
 
 #pragma mark - YTPlayerViewController Hook (Notification Observer)
-
-@interface YTWatchFloatingMiniplayerViewController : UIViewController
-@end
-
-@interface YTWatchFloatingMiniplayerWithPersistentControlsView : UIView
-- (NSArray *)allSubviews;
-@end
 
 %group SBObserver
 %hook YTPlayerViewController
@@ -622,6 +629,7 @@ extern BOOL useBackwardIconForButton;
     UIView *scrubberView = nil;
     UIView *referenceView = nil;
     UIView *playerBar;
+    UIView *mainview;
     CGFloat totalTime = [self currentVideoTotalMediaTime];
     CGFloat barWidth;
     CGFloat h;
@@ -629,8 +637,9 @@ extern BOOL useBackwardIconForButton;
     if ([self.parentViewController isKindOfClass:%c(YTWatchFloatingMiniplayerViewController)]) {
         YTWatchFloatingMiniplayerViewController *miniplayercontroller = (YTWatchFloatingMiniplayerViewController *)self.parentViewController;
         YTWatchFloatingMiniplayerWithPersistentControlsView *controlsview = (YTWatchFloatingMiniplayerWithPersistentControlsView *)miniplayercontroller.view;
+        mainview = controlsview;
         for (UIView *sub in controlsview.allSubviews) {
-            if ([sub isKindOfClass:%c(YTProgressView)]) {
+            if ([sub isKindOfClass:%c(YTWatchFloatingMiniplayerProgressBarView)]) {
                 referenceView = sub;
                 break;
             }
@@ -643,7 +652,7 @@ extern BOOL useBackwardIconForButton;
 
         barWidth = referenceView.bounds.size.width;
         h = referenceView.bounds.size.height;
-        y = referenceView.superview.frame.origin.y;
+        y = referenceView.frame.origin.y;
     } else if ([[self activeVideoPlayerOverlay] isKindOfClass:%c(YTMainAppVideoPlayerOverlayViewController)]) {
         YTMainAppVideoPlayerOverlayViewController *overlay = [self activeVideoPlayerOverlay];
         YTPlayerBarController *barController = [overlay playerBarController];
@@ -714,8 +723,8 @@ extern BOOL useBackwardIconForButton;
         if (playerBar) {
             [playerBar insertSubview:marker belowSubview:scrubberView];
         } else {
-            [referenceView addSubview:marker];
-            [referenceView bringSubviewToFront:marker];
+            [mainview addSubview:marker];
+            [mainview bringSubviewToFront:marker];
         }
     }
 }
