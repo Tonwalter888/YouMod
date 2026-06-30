@@ -585,6 +585,7 @@ extern BOOL useBackwardIconForButton;
 @end
 
 @interface YTWatchFloatingMiniplayerWithPersistentControlsView : UIView
+- (NSArray *)allSubviews;
 @end
 
 %group SBObserver
