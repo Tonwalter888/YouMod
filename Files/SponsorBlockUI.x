@@ -574,7 +574,7 @@ extern BOOL useBackwardIconForButton;
         if (isPoi) { w = 3.0; x = MAX(0, x - 1.5); }
         else if (w < 2.0) w = 2.0;
 
-        sub.frame = CGRectMake(x, self.frame.size.height, w, self.frame.size.height);
+        sub.frame = CGRectMake(x, self.superview.frame.origin.y, w, self.bounds.size.height);
     }
 }
 %end
@@ -643,7 +643,7 @@ extern BOOL useBackwardIconForButton;
 
         barWidth = referenceView.bounds.size.width;
         h = referenceView.bounds.size.height;
-        y = referenceView.bounds.size.height;
+        y = referenceView.superview.frame.origin.y;
     } else if ([[self activeVideoPlayerOverlay] isKindOfClass:%c(YTMainAppVideoPlayerOverlayViewController)]) {
         YTMainAppVideoPlayerOverlayViewController *overlay = [self activeVideoPlayerOverlay];
         YTPlayerBarController *barController = [overlay playerBarController];
@@ -678,10 +678,9 @@ extern BOOL useBackwardIconForButton;
             }
             if (referenceView && scrubberView) break;
         }
+        h = referenceView.bounds.size.height;
+        y = referenceView.frame.origin.y;
     }
-
-    h = referenceView.bounds.size.height;
-    y = referenceView.frame.origin.y;
 
     for (SBSegment *segment in segments) {
         SBSegmentAction action = [segment configuredAction];
@@ -715,8 +714,7 @@ extern BOOL useBackwardIconForButton;
         if (playerBar) {
             [playerBar insertSubview:marker belowSubview:scrubberView];
         } else {
-            [referenceView addSubview:marker];
-            [referenceView bringSubviewToFront:marker];
+            [referenceView insertSubview:marker aboveSubview:referenceView];
         }
     }
 }
