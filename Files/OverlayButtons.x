@@ -98,31 +98,10 @@ static UIButton *YMCreateOverlayButton(YTMainAppControlsOverlayView *overlay, YM
 
 #pragma mark - YTMainAppControlsOverlayView Hook
 
-// static BOOL isSetSleepTimerButton = NO;
-// static BOOL isSetSpeedButton = NO;
-// static BOOL isSetMuteButton = NO;
-
 %hook YTMainAppControlsOverlayView
 
 - (void)layoutSubviews {
     %orig;
-    /*
-    if (IS_ENABLED(MuteButton) && !isSetMuteButton) {
-        YMOverlayButtonSpec *mute = [[YMOverlayButtonSpec alloc] init];
-        mute.identifier = @"mute.video";
-        mute.symbolName = @"speaker.wave.2";
-        mute.tintColor = [UIColor whiteColor];
-        mute.sortOrder = 300;
-        mute.isVisible = nil; // always visible when the overlay is up
-        mute.onTap = ^(YTPlayerViewController *player, UIButton *button) {
-            UIViewController *presenter = YouModPresenterForSender(button, player ?: YouModCurrentPlayerViewController);
-            YTPlayerViewController *resolved = YouModPlayerFromViewController(presenter) ?: player ?: YouModCurrentPlayerViewController;
-            YouModShowDownloadManager(resolved, presenter, button);
-        };
-        YMRegisterOverlayButton(mute);
-        isSetMuteButton = YES;
-    }
-    */
     NSArray<YMOverlayButtonSpec *> *specs = YMRegisteredOverlayButtons();
     if (specs.count == 0) return;
 
@@ -199,5 +178,16 @@ static UIButton *YMCreateOverlayButton(YTMainAppControlsOverlayView *overlay, YM
         [button setImage:newIcon forState:UIControlStateNormal];
     };
     YMRegisterOverlayButton(mute);
+    YMOverlayButtonSpec *speed = [[YMOverlayButtonSpec alloc] init];
+    speed.identifier = @"speed.video";
+    speed.symbolName = @"speedometer";
+    speed.tintColor = [UIColor whiteColor];
+    speed.sortOrder = 400;
+    speed.isVisible = nil; // always visible when the overlay is up
+    speed.onTap = ^(YTPlayerViewController *player, UIButton *button) {
+        YTMainAppVideoPlayerOverlayViewController *ovcon = player.childViewControllers[0];
+        [ovcon didPressVarispeed:button];
+    };
+    YMRegisterOverlayButton(speed);
     %init;
 }
