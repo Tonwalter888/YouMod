@@ -642,6 +642,7 @@ extern BOOL useBackwardIconForButton;
         for (UIView *sub in controlsview.allSubviews) {
             if ([sub isKindOfClass:%c(YTWatchFloatingMiniplayerProgressBarView)]) {
                 referenceView = sub;
+                scrubberView = sub;
                 break;
             }
         }
@@ -726,8 +727,7 @@ extern BOOL useBackwardIconForButton;
         if (playerBar) {
             [playerBar insertSubview:marker belowSubview:scrubberView];
         } else {
-            [mainview addSubview:marker];
-            [mainview bringSubviewToFront:marker];
+            [mainview insertSubview:marker aboveSubview:scrubberView];
         }
     }
 }
