@@ -637,7 +637,7 @@ extern BOOL useBackwardIconForButton;
     if ([self.parentViewController isKindOfClass:%c(YTWatchFloatingMiniplayerViewController)]) {
         YTWatchFloatingMiniplayerViewController *miniplayercontroller = (YTWatchFloatingMiniplayerViewController *)self.parentViewController;
         YTWatchFloatingMiniplayerWithPersistentControlsView *controlsview = (YTWatchFloatingMiniplayerWithPersistentControlsView *)miniplayercontroller.view;
-        mainview = controlsview;
+        mainView = controlsview;
         for (UIView *sub in controlsview.allSubviews) {
             if ([sub isKindOfClass:%c(YTWatchFloatingMiniplayerProgressBarView)]) {
                 referenceView = sub;
@@ -724,8 +724,8 @@ extern BOOL useBackwardIconForButton;
         marker.tag = 9900;
         objc_setAssociatedObject(marker, @selector(sbSegmentData), @[@(startFrac), @(endFrac), @(isPoi)], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 
-        [mainview addSubview:marker];
-        [mainview bringSubviewToFront:marker];
+        [mainView addSubview:marker];
+        [mainView bringSubviewToFront:marker];
     }
 }
 
