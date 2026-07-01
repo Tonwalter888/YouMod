@@ -625,7 +625,6 @@ extern BOOL useBackwardIconForButton;
 %new
 - (void)sbRefreshMarkers:(NSArray<SBSegment *> *)segments {
     if (!segments) segments = self.sbSegments;
-    if (!self.sbEnabledForVideo) return;
 
     UIView *scrubberView = nil;
     UIView *referenceView = nil;
@@ -692,6 +691,8 @@ extern BOOL useBackwardIconForButton;
         h = referenceView.bounds.size.height;
         y = referenceView.frame.origin.y;
     }
+
+    if (!self.sbEnabledForVideo) return;
 
     for (SBSegment *segment in segments) {
         SBSegmentAction action = [segment configuredAction];
