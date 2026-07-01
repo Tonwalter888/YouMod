@@ -684,10 +684,8 @@ extern BOOL useBackwardIconForButton;
                 referenceView = sub;
             } else if ([sub isKindOfClass:%c(YTPlayerBarProgressDecorationView)]) {
                 if (!referenceView) referenceView = sub;
-            } else if ([sub isKindOfClass:%c(YTPlayerBarScrubberDotDecorationView)]) {
-                scrubberView = sub.subviews.firstObject;
             }
-            if (referenceView && scrubberView) break;
+            if (referenceView) break;
         }
         h = referenceView.bounds.size.height;
         y = referenceView.frame.origin.y;
