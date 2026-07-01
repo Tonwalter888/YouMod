@@ -1187,7 +1187,7 @@ static void YouModPresentMenu(NSString *title, NSArray <YouModMenuItem *> *items
 }
 
 - (void)trimAudioToHalfLengthAtURL:(NSURL *)inputURL toURL:(NSURL *)outputURL completion:(void (^)(NSError *error))completion {
-    [self updateProgressTitle:LOC(@"TRIMING_AUDIO") progress:0.985f];
+    [self updateProgressTitle:LOC(@"TRIMMING_AUDIO") progress:0.985f];
     AVURLAsset *asset = [AVURLAsset URLAssetWithURL:inputURL options:nil];
 
     [asset loadValuesAsynchronouslyForKeys:@[@"duration"] completionHandler:^{
