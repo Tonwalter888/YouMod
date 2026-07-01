@@ -203,11 +203,12 @@ static UIButton *YMCreateOverlayButton(YTMainAppControlsOverlayView *overlay, YM
     mute.sortOrder = 300;
     mute.isVisible = nil; // always visible when the overlay is up
     mute.onTap = ^(YTPlayerViewController *player, UIButton *button) {
-        YTSingleVideoController *sgvid = self.activeVideo;
-        BOOL muteStatus = ![self isMuted];
+        YTSingleVideoController *sgvid = player.activeVideo;
+        BOOL muteStatus = ![sgvid isMuted];
         [[NSUserDefaults standardUserDefaults] setBool:muteStatus forKey:KeepMutedKey];
-        [player setMuted:muteStatus];
-        mute.symbolName = muteStatus ? @"speaker.slash" : @"speaker.wave.2"
+        [sgvid setMuted:muteStatus];
+        UIImage *newIcon = [UIImage systemImageWithName:mute.symbolName];
+        [button setImage:newIcon forState:UIControlStateNormal];
     };
     YMRegisterOverlayButton(mute);
     %init;
