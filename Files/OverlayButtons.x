@@ -180,19 +180,6 @@ static UIButton *YMCreateOverlayButton(YTMainAppControlsOverlayView *overlay, YM
     matched.onTap(player, sender);
 }
 
-/* Mute logic from YouMute
-%new
-- (void)YouModDidPressMute:(BOOL)mute {
-    YTMainAppVideoPlayerOverlayViewController *c = [self valueForKey:@"_eventsDelegate"];
-    YTSingleVideoController *video = [c valueForKey:@"_currentSingleVideoObservable"];
-    BOOL muteStatus = ![video isMuted];
-    [[NSUserDefaults standardUserDefaults] setBool:muteStatus forKey:Muted];
-    [video setMuted:muteStatus];
-    // Change this to our button logic
-    [self.overlayButtons[TweakKey] setImage:muteImage([video isMuted]) forState:UIControlStateNormal];
-}
-*/
-
 %end
 
 %ctor {
@@ -207,7 +194,8 @@ static UIButton *YMCreateOverlayButton(YTMainAppControlsOverlayView *overlay, YM
         BOOL muteStatus = ![sgvid isMuted];
         [[NSUserDefaults standardUserDefaults] setBool:muteStatus forKey:KeepMutedKey];
         [sgvid setMuted:muteStatus];
-        UIImage *newIcon = [UIImage systemImageNamed:IS_ENABLED(KeepMutedKey) ? @"speaker.slash" : @"speaker.wave.2"];
+        UIImageSymbolConfiguration *config = [UIImageSymbolConfiguration configurationWithPointSize:20 weight:UIImageSymbolWeightMedium];
+        UIImage *newIcon = [UIImage systemImageNamed:muteStatus ? @"speaker.slash" : @"speaker.wave.2" withConfiguration:config];
         [button setImage:newIcon forState:UIControlStateNormal];
     };
     YMRegisterOverlayButton(mute);
