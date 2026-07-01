@@ -161,13 +161,25 @@ static UIButton *YMCreateOverlayButton(YTMainAppControlsOverlayView *overlay, YM
 
 %end
 
+%hook YTPlayerViewController
+
+- (void)setMuted:(BOOL)muted {
+    if (!IS_ENABLED(MuteButton)) {
+        %orig;
+        return;
+    }
+    %orig([self isInlinePlaybackActive] ? muted : IS_ENABLED(KeepMutedKey));
+}
+
+%end
+
 %ctor {
     YMOverlayButtonSpec *mute = [[YMOverlayButtonSpec alloc] init];
     mute.identifier = @"mute.video";
     mute.symbolName = IS_ENABLED(KeepMutedKey) ? @"speaker.slash" : @"speaker.wave.2";
     mute.tintColor = [UIColor whiteColor];
     mute.sortOrder = 300;
-    mute.isVisible = nil; // always visible when the overlay is up
+    mute.isVisible = IS_ENABLED(MuteButton);
     mute.onTap = ^(YTPlayerViewController *player, UIButton *button) {
         YTSingleVideoController *sgvid = player.activeVideo;
         BOOL muteStatus = ![sgvid isMuted];
@@ -183,9 +195,9 @@ static UIButton *YMCreateOverlayButton(YTMainAppControlsOverlayView *overlay, YM
     speed.symbolName = @"speedometer";
     speed.tintColor = [UIColor whiteColor];
     speed.sortOrder = 400;
-    speed.isVisible = nil; // always visible when the overlay is up
+    speed.isVisible = IS_ENABLED(SpeedButton);
     speed.onTap = ^(YTPlayerViewController *player, UIButton *button) {
-        YTMainAppVideoPlayerOverlayViewController *ovcon = player.childViewControllers[0];
+        YTMainAppVideoPlayerOverlayViewController *ovcon = [player activeVideoPlayerOverlay];
         [ovcon didPressVarispeed:button];
     };
     YMRegisterOverlayButton(speed);

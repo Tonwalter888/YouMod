@@ -84,6 +84,7 @@
 "ALREADY_DOWNLOADING" = "กำลังดาวน์โหลดอยู่แล้ว";
 "DOWNLOAD_CANCELLED" = "ยกเลิกการดาวน์โหลดแล้ว";
 "CANCEL" = "ยกเลิก";
+"TRIMMING_AUDIO" = "กำลังตัดต่อเสียง...";
 
 "APPEARANCE" = "ลักษณะ";
 "OLED_THEME" = "ธีม OLED";
@@ -143,6 +144,10 @@
 "NO_AUTO_DUBBED_DESC" = "ข้ามการเลือกแทร็กเสียงที่ต้องการถ้าภาษาที่เลือกเป็นภาษาที่แปลโดยอัตโนมัติ";
 "DEFAULT_SPEED" = "ความเร็วเริ่มต้น";
 "DEFAULT_SPEED_DESC" = "ตั้งค่าความเร็วเริ่มต้นเมื่อเปิดวิดีโอใหม่";
+"SPEED_BUTTON" = "ปุ่มควบคุมความเร็ววิดีโอ";
+"SPEED_BUTTON_DESC" = "แสดงปุ่มควบคุมความเร็ววิดีโอบนโอเวอร์เลย์";
+"MUTE_BUTTON" = "ปุ่มปิดเสียง";
+"MUTE_BUTTON_DESC" = "แสดงปุ่มปิด/เปิดเสียงบนโอเวอร์เลย์";
 "HOLD_TO_SPEED" = "ความเร็วเมื่อกดค้าง";
 "HOLD_TO_SPEED_DESC" = "ใช้ความเร็วในการเล่นวิดีโอแบบกำหนดเองเมื่อกดค้างที่หน้าจอ";
 "HIDE_AUTOPLAY" = "ซ่อนสวิตซ์เล่นอัตโนมัติ";
@@ -249,8 +254,6 @@
 "PAUSE_SHORTS" = "หยุดวิดีโอ";
 "REMOVE_LIVE_SHORTS" = "ลบวิดีโอสด";
 "REMOVE_LIVE_SHORTS_DESC" = "นำวิดีโอสดออกจากฟีด";
-"HIDE_SHORTS_HEADER" = "ซ่อนส่วนหัวของ Shorts";
-"HIDE_SHORTS_HEADER_DESC" = "ซ่อนส่วนหัวของ Shorts ที่อยู่ด้านบนเครื่องเล่น Shorts";
 "HIDE_SHORTS_PRODUCT" = "ซ่อนสินค้า";
 "HIDE_SHORTS_PRODUCT_DESC" = "ซ่อนสินค้าและลิงค์สินค้าในโอเวอร์เลย์ Shorts";
 "HIDE_SHORTS_RECBAR" = "ซ่อนแถบแนะนำ";

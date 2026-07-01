@@ -84,6 +84,7 @@
 "ALREADY_DOWNLOADING" = "Already downloading";
 "DOWNLOAD_CANCELLED" = "Download cancelled";
 "CANCEL" = "Cancel";
+"TRIMMING_AUDIO" = "Trimming audio...";
 
 "APPEARANCE" = "Aspetto";
 "OLED_THEME" = "OLED dark mode";
@@ -141,6 +142,10 @@
 "NO_AUTO_DUBBED_DESC" = "Skips manual selection if the preferred language track is auto-dubbed.";
 "DEFAULT_SPEED" = "Default playback rate";
 "DEFAULT_SPEED_DESC" = "Overrides the default playback speed.";
+"SPEED_BUTTON" = "Speed controls button";
+"SPEED_BUTTON_DESC" = "Displays a speed controls button on overlay.";
+"MUTE_BUTTON" = "Mute button";
+"MUTE_BUTTON_DESC" = "Displays a button to mute or unmute the volume on the overlay.";
 "HOLD_TO_SPEED" = "Hold to speed";
 "HOLD_TO_SPEED_DESC" = "Uses custom hold to speed playback rate.";
 "HIDE_AUTOPLAY" = "Nascondi interruttore riproduzione automatica";
@@ -247,8 +252,6 @@
 "PAUSE_SHORTS" = "Stop video";
 "REMOVE_LIVE_SHORTS" = "Remove live videos";
 "REMOVE_LIVE_SHORTS_DESC" = "Removes live videos from the feed.";
-"HIDE_SHORTS_HEADER" = "Hide Shorts header";
-"HIDE_SHORTS_HEADER_DESC" = "Hide Shorts header that is on top of the Shorts player.";
 "HIDE_SHORTS_PRODUCT" = "Nascondi prodotti";
 "HIDE_SHORTS_PRODUCT_DESC" = "Nasconde i prodotti taggati e i link per lo shopping negli Shorts.";
 "HIDE_SHORTS_RECBAR" = "Nascondi barra dei suggerimenti";

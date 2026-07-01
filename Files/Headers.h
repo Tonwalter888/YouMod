@@ -70,6 +70,8 @@
 #define IS_ENABLED(k) [[NSUserDefaults standardUserDefaults] boolForKey:k]
 #define INTFORVAL(v) [[NSUserDefaults standardUserDefaults] integerForKey:v]
 #define FixPlaybackIssues @"YouModFixPlaybackIssues"
+#define MuteButton @"YouModMuteButton"
+#define SpeedButton @"YouModSpeedButton"
 #define KeepMutedKey @"YouModKeepMutedKey"
 // Downloading
 #define DownloadManager @"YouModDownloadManager"
@@ -152,7 +154,6 @@
 // Shorts
 #define RemoveShortsLive @"YouModRemoveShortsLive"
 #define ShortsToRegular @"YouModShortsToRegular"
-#define HideShortsHeader @"YouModHideShortsHeader"
 #define HideShortsProducts @"YouModHideShortsProducts"
 #define HideShortsRecbar @"YouModHideShortsRecbar"
 #define EnablesShortsQuality @"YouModEnablesShortsQuality"

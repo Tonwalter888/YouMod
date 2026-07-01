@@ -136,6 +136,7 @@ typedef void (^YouModRangeDownloadProgress)(unsigned long long completedBytes);
 - (void)startDirectVideoDownloadWithVideoFormat:(YouModMediaFormat *)videoFormat audioFormat:(YouModMediaFormat *)audioFormat fileName:(NSString *)fileName presenter:(UIViewController *)presenter;
 - (void)startDirectSingleVideoDownloadWithFormat:(YouModMediaFormat *)format fileName:(NSString *)fileName presenter:(UIViewController *)presenter;
 - (void)startDirectAudioDownloadWithAudioFormat:(YouModMediaFormat *)audioFormat fileName:(NSString *)fileName presenter:(UIViewController *)presenter;
+- (void)trimAudioToHalfLengthAtURL:(NSURL *)inputURL toURL:(NSURL *)outputURL completion:(void (^)(NSError *error))completion;
 - (void)mergeVideoURL:(NSURL *)videoURL audioURL:(NSURL *)audioURL fileName:(NSString *)fileName outputExtension:(NSString *)outputExtension durationMs:(unsigned long long)durationMs presenter:(UIViewController *)presenter;
 - (void)mergeVideoWithAVFoundationVideoURL:(NSURL *)videoURL audioURL:(NSURL *)audioURL outputURL:(NSURL *)outputURL durationMs:(unsigned long long)durationMs presenter:(UIViewController *)presenter fallbackError:(NSError *)fallbackError;
 - (void)trimSingleVideoURL:(NSURL *)inputURL outputURL:(NSURL *)outputURL durationMs:(unsigned long long)durationMs presenter:(UIViewController *)presenter;
@@ -1154,18 +1155,76 @@ static void YouModPresentMenu(NSString *title, NSArray <YouModMenuItem *> *items
     self.totalBytes = audioFormat.contentLength;
     
     NSURL *finalURL = YouModUniqueFileURL(fileName, @"m4a");
-    NSURL *downloadURL = finalURL;
-    self.audioTempURL = nil;
+    NSString *tempFileName = [NSString stringWithFormat:@"Temp_%@", fileName];
+    NSURL *downloadURL = YouModUniqueFileURL(tempFileName, @"m4a");
+    self.audioTempURL = downloadURL;
+    
     [self showProgressWithTitle:LOC(@"DOWNLOADING_AUDIO") presenter:presenter];
     __weak typeof(self) weakSelf = self;
+    
     [self downloadURL:audioURL toURL:downloadURL expectedBytes:audioFormat.contentLength headers:nil completion:^(NSURL *fileURL, NSError *error) {
         __strong typeof(weakSelf) self = weakSelf;
-        if (!self || self.cancelled) return;
+        if (!self || self.cancelled) {
+            [[NSFileManager defaultManager] removeItemAtURL:downloadURL error:nil];
+            return;
+        }
         if (error) {
+            [[NSFileManager defaultManager] removeItemAtURL:downloadURL error:nil];
             [self failWithError:error ?: [NSError errorWithDomain:@"YouMod" code:4 userInfo:@{NSLocalizedDescriptionKey: @"Audio download failed"}]];
             return;
         }
-        [self completeWithFileURL:fileURL isVideo:NO presenter:presenter];
+        
+        [self trimAudioToHalfLengthAtURL:fileURL toURL:finalURL completion:^(NSError *trimError) {
+            [[NSFileManager defaultManager] removeItemAtURL:fileURL error:nil];
+            if (self.cancelled) return;
+            if (trimError) {
+                [self failWithError:trimError];
+                return;
+            }
+            [self completeWithFileURL:finalURL isVideo:NO presenter:presenter];
+        }];
+    }];
+}
+
+- (void)trimAudioToHalfLengthAtURL:(NSURL *)inputURL toURL:(NSURL *)outputURL completion:(void (^)(NSError *error))completion {
+    [self updateProgressTitle:LOC(@"TRIMING_AUDIO") progress:0.985f];
+    AVURLAsset *asset = [AVURLAsset URLAssetWithURL:inputURL options:nil];
+
+    [asset loadValuesAsynchronouslyForKeys:@[@"duration"] completionHandler:^{
+        NSError *error = nil;
+        AVKeyValueStatus status = [asset statusOfValueForKey:@"duration" error:&error];
+        if (status != AVKeyValueStatusLoaded) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                completion(error ?: [NSError errorWithDomain:@"YouMod" code:5 userInfo:@{NSLocalizedDescriptionKey: @"Failed to load audio duration"}]);
+            });
+            return;
+        }
+        
+        CMTime totalDuration = asset.duration;
+        CMTime halfDuration = CMTimeMultiplyByFloat64(totalDuration, 0.5);
+        CMTimeRange exportTimeRange = CMTimeRangeMake(kCMTimeZero, halfDuration);
+        
+        AVAssetExportSession *exportSession = [AVAssetExportSession exportSessionWithAsset:asset presetName:AVAssetExportPresetAppleM4A];
+        if (!exportSession) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                completion([NSError errorWithDomain:@"YouMod" code:6 userInfo:@{NSLocalizedDescriptionKey: @"Failed to create export session"}]);
+            });
+            return;
+        }
+        
+        exportSession.outputURL = outputURL;
+        exportSession.outputFileType = AVFileTypeAppleM4A;
+        exportSession.timeRange = exportTimeRange;
+        
+        [exportSession exportAsynchronouslyWithCompletionHandler:^{
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if (exportSession.status == AVAssetExportSessionStatusCompleted) {
+                    completion(nil);
+                } else {
+                    completion(exportSession.error ?: [NSError errorWithDomain:@"YouMod" code:7 userInfo:@{NSLocalizedDescriptionKey: @"Audio trim export failed"}]);
+                }
+            });
+        }];
     }];
 }
 

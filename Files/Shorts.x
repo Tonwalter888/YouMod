@@ -35,14 +35,10 @@
 - (BOOL)enablePlayerBarForVerticalVideoWhenControlsHiddenInFullscreen { return IS_ENABLED(ShowShortsSeekbar) ? YES : %orig; }
 %end
 
-%hook YTReelHeaderView
-- (void)setTitleLabelVisible:(BOOL)arg1 animated:(BOOL)arg2 { IS_ENABLED(HideShortsHeader) ? %orig(NO, arg2) : %orig; }
-%end
-
 static void YouModMakeAShortsAction(YTReelPlayerViewController *self, YTSingleVideoController *video, YTSingleVideoTime *time) {
     if (INTFORVAL(ShortsActionIndex) == 0) return;
 
-    if (floor(time.time) >= floor(video.totalMediaTime)) {
+    if (floor(time.time) == floor(video.totalMediaTime)) {
         if (INTFORVAL(ShortsActionIndex) == 1) {
             [self reelContentViewRequestsAdvanceToNextVideo:nil];
         } else if (INTFORVAL(ShortsActionIndex) == 2) {

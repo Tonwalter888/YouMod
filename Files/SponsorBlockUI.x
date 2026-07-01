@@ -626,15 +626,14 @@ extern BOOL useBackwardIconForButton;
 - (void)sbRefreshMarkers:(NSArray<SBSegment *> *)segments {
     if (!segments) segments = self.sbSegments;
 
-    UIView *scrubberView = nil;
-    UIView *referenceView = nil;
-    UIView *playerBar;
-    UIView *mainview;
     CGFloat totalTime = [self currentVideoTotalMediaTime];
     if (totalTime <= 0) return;
     CGFloat barWidth;
     CGFloat h;
     CGFloat y;
+    UIView *mainView;
+    UIView *referenceView;
+
     if ([self.parentViewController isKindOfClass:%c(YTWatchFloatingMiniplayerViewController)]) {
         YTWatchFloatingMiniplayerViewController *miniplayercontroller = (YTWatchFloatingMiniplayerViewController *)self.parentViewController;
         YTWatchFloatingMiniplayerWithPersistentControlsView *controlsview = (YTWatchFloatingMiniplayerWithPersistentControlsView *)miniplayercontroller.view;
@@ -658,10 +657,12 @@ extern BOOL useBackwardIconForButton;
         YTMainAppVideoPlayerOverlayViewController *overlay = [self activeVideoPlayerOverlay];
         YTPlayerBarController *barController = [overlay playerBarController];
         YTInlinePlayerBarContainerView *containerView = barController.playerBar;
+        UIView *playerBar;
 
         for (UIView *subview in containerView.subviews) {
             if ([subview isKindOfClass:%c(YTModularPlayerBarView)]) {
                 playerBar = subview;
+                mainView = subview;
                 break;
             }
         }
@@ -690,6 +691,8 @@ extern BOOL useBackwardIconForButton;
         }
         h = referenceView.bounds.size.height;
         y = referenceView.frame.origin.y;
+    } else {
+        return;
     }
 
     if (!self.sbEnabledForVideo) return;
@@ -723,12 +726,8 @@ extern BOOL useBackwardIconForButton;
         marker.tag = 9900;
         objc_setAssociatedObject(marker, @selector(sbSegmentData), @[@(startFrac), @(endFrac), @(isPoi)], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 
-        if (playerBar) {
-            [playerBar insertSubview:marker belowSubview:scrubberView];
-        } else {
-            [mainview addSubview:marker];
-            [mainview bringSubviewToFront:marker];
-        }
+        [mainview addSubview:marker];
+        [mainview bringSubviewToFront:marker];
     }
 }
 
