@@ -207,7 +207,7 @@ static UIButton *YMCreateOverlayButton(YTMainAppControlsOverlayView *overlay, YM
         BOOL muteStatus = ![sgvid isMuted];
         [[NSUserDefaults standardUserDefaults] setBool:muteStatus forKey:KeepMutedKey];
         [sgvid setMuted:muteStatus];
-        UIImage *newIcon = [UIImage systemImageWithName:mute.symbolName];
+        UIImage *newIcon = [UIImage systemImageNamed:IS_ENABLED(KeepMutedKey) ? @"speaker.slash" : @"speaker.wave.2"];
         [button setImage:newIcon forState:UIControlStateNormal];
     };
     YMRegisterOverlayButton(mute);
