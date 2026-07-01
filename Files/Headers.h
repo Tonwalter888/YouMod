@@ -70,6 +70,7 @@
 #define IS_ENABLED(k) [[NSUserDefaults standardUserDefaults] boolForKey:k]
 #define INTFORVAL(v) [[NSUserDefaults standardUserDefaults] integerForKey:v]
 #define FixPlaybackIssues @"YouModFixPlaybackIssues"
+#define KeepMutedKey @"YouModKeepMutedKey"
 // Downloading
 #define DownloadManager @"YouModDownloadManager"
 #define DownloadSaveToPhotos @"YouModDownloadSaveToPhotos"
