@@ -692,7 +692,7 @@ extern BOOL useBackwardIconForButton;
         y = referenceView.frame.origin.y;
     } else if ([[self activeVideoPlayerOverlay] isKindOfClass:%c(YTInlineMutedPlaybackPlayerOverlayViewController)] && IS_ENABLED(SBSegmentsInFeed)) {
         YTInlineMutedPlaybackPlayerOverlayViewController *viewcon = [self activeVideoPlayerOverlay];
-        YTInlineMutedPlaybackPlayerOverlayView *view = viewcon.view;
+        YTInlineMutedPlaybackPlayerOverlayView *view = (YTInlineMutedPlaybackPlayerOverlayView *)viewcon.view;
         UIView *scrub;
         for (UIView *sub in view.subviews) {
             if ([sub isKindOfClass:%c(YTInlineMutedPlaybackScrubberView)]) {
