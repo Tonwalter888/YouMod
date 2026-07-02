@@ -715,6 +715,7 @@ extern BOOL useBackwardIconForButton;
                 playerBar = sub;
             } else if ([sub isKindOfClass:%c(YTModularPlayerBarView)] && sub.frame.origin.y != 0) {
                 playerBar = sub;
+                mainView = sub;
             } else if ([sub isKindOfClass:%c(YTInlineMutedPlaybackScrubbingSlider)]) {
                 if ([sub.accessibilityIdentifier isEqualToString:@"id.player.scrubber.slider"]) {
                     scrubberDot = sub;

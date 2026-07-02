@@ -310,6 +310,12 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 - (void)showPivotBar;
 @end
 
+@interface YTAudioTrackSwitchController : NSObject
+- (void)switchToAudioTrack:(id)track source:(NSInteger)source;
+- (void)notifyObserversAudioTrackDidChange:(id)arg1 source:(NSInteger)arg2;
+- (void)notifyObserversAudioTrackWillChange:(id)arg1 source:(NSInteger)arg2;
+@end
+
 @interface YTPlayerViewController (YouMod) <UIGestureRecognizerDelegate>
 @property (nonatomic, retain) UIPanGestureRecognizer *YouModPanGesture;
 @property (nonatomic, retain) UITapGestureRecognizer *YouModTapGesture;
@@ -328,9 +334,11 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 - (void)play;
 - (void)pause;
 - (void)YouModAutoMute;
+- (void)YouModAutoAudioTrack;
 - (NSInteger)playerState;
 - (YTPlayerResponse *)contentPlayerResponse;
 - (YTPlayerResponse *)playerResponse;
+- (YTAudioTrackSwitchController *)audioTrackController;
 @end
 
 @interface YTInlineMutedPlaybackPlayerOverlayViewController : UIViewController
@@ -402,13 +410,6 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 - (void)exportYouModSettingsFromVC:(UIViewController *)vc;
 - (void)importYouModSettingsFromVC:(UIViewController *)vc;
 - (void)restoreYouModDefaults;
-@end
-
-@interface YTAudioTrackSwitchController : NSObject
-- (void)switchToAudioTrack:(id)track source:(NSInteger)source;
-- (void)notifyObserversAudioTrackDidChange:(id)arg1 source:(NSInteger)arg2;
-- (void)notifyObserversAudioTrackWillChange:(id)arg1 source:(NSInteger)arg2;
-- (void)YouModChangeAudioTrackWithTrack:(YTIAudioTrack *)matchedTrack;
 @end
 
 @interface YTIAudioTrack (YouMod)

@@ -326,6 +326,7 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
     if (IS_ENABLED(AutoFullScreen)) [playerviewController performSelector:@selector(YouModAutoFullscreen) withObject:nil afterDelay:0.5];
     if (IS_ENABLED(DisablesCaptions)) [playerviewController performSelector:@selector(YouModTurnOffCaptions) withObject:nil afterDelay:0.5];
     if (INTFORVAL(AutoSpeedIndex) != 0) [playerviewController performSelector:@selector(YouModSetAutoSpeed) withObject:nil afterDelay:0.5];
+    if (INTFORVAL(AudioTrack) != 0) [playerviewController performSelector:@selector(YouModAutoAudioTrack) withObject:nil afterDelay:0.5];
 }
 %end
 
@@ -614,69 +615,6 @@ static void YouModManageHoldToSpeed(UILongPressGestureRecognizer *gesture, YTMai
         [self setVideoFormatConstraint:[fc initWithVideoQualitySetting:3 formatSelectionReason:2 qualityLabel:qualityLabel]];
     }
 }
-
-%end
-
-// Audio track selection
-%hook YTAudioTrackSwitchController
-
-// When playing a new video, remove the old timer first
-- (void)setActiveVideo:(id)arg {
-    [NSObject cancelPreviousPerformRequestsWithTarget:self];
-    %orig;
-}
-
-- (void)setUserSelectableFormats:(id)arg {
-    [NSObject cancelPreviousPerformRequestsWithTarget:self];
-    %orig;
-    if (INTFORVAL(AudioTrack) == 0) return;
-    NSInteger selectedIndex = INTFORVAL(AudioTrackLangIndex);
-    NSArray *langCodes = getAllSystemLanguageValues();
-    NSString *userTargetLang = langCodes[selectedIndex];
-    NSArray *availableTracks = [self valueForKey:@"_availableAudioTracks"];
-    if (!availableTracks || availableTracks.count == 0) return;
-    // Check if the current audio track is already the same as the user perferences
-    // YTIAudioTrack *currentTrack = [self valueForKey:@"_lastSelectedAudioTrack"]; Doesn't work for some reasons
-    YTIAudioTrack *matchedTrack = nil;
-
-    if (INTFORVAL(AudioTrack) == 1) {
-        // Loop for all tracks
-        for (YTIAudioTrack *track in availableTracks) {
-            if ([track.id_p hasSuffix:@".4"]) {
-                matchedTrack = track;
-                break;
-            }
-        }
-    } else if (INTFORVAL(AudioTrack) == 2) {
-        // Loop for all tracks
-        for (YTIAudioTrack *track in availableTracks) {
-            if ([track.id_p hasPrefix:userTargetLang]) {
-                matchedTrack = track;
-                break;
-            }
-        }
-
-        // Check if it's dubbed
-        if (matchedTrack && [matchedTrack isAutoDubbed] && IS_ENABLED(NoDubbedAudioTrack)) {
-            matchedTrack = nil;
-            return;
-        }
-    }
-
-    // If found, change to it
-    if (matchedTrack) {
-        // Delay this for 1 second
-        [self performSelector:@selector(YouModChangeAudioTrackWithTrack:) withObject:matchedTrack afterDelay:1.0];
-    }
-}
-
-%new
-- (void)YouModChangeAudioTrackWithTrack:(YTIAudioTrack *)matchedTrack {
-    [self notifyObserversAudioTrackWillChange:matchedTrack source:0];
-    [self switchToAudioTrack:matchedTrack source:0];
-    [self notifyObserversAudioTrackDidChange:matchedTrack source:0];
-}
-
 %end
 
 %hook YTPlayerViewController
@@ -736,6 +674,50 @@ static void YouModManageHoldToSpeed(UILongPressGestureRecognizer *gesture, YTMai
     YTSingleVideoController *sgvid = self.activeVideo;
     BOOL muted = [sgvid isMuted];
     [sgvid setMuted:[self isInlinePlaybackActive] ? muted : IS_ENABLED(KeepMutedKey)];
+}
+
+%new
+- (void)YouModAutoAudioTrack {
+    NSInteger selectedIndex = INTFORVAL(AudioTrackLangIndex);
+    NSArray *langCodes = getAllSystemLanguageValues();
+    NSString *userTargetLang = langCodes[selectedIndex];
+    YTAudioTrackSwitchController *switch = self.audioTrackController;
+    NSArray *availableTracks = [switch valueForKey:@"_availableAudioTracks"];
+    if (!availableTracks || availableTracks.count == 0) return;
+    // Check if the current audio track is already the same as the user perferences
+    // YTIAudioTrack *currentTrack = [switch valueForKey:@"_lastSelectedAudioTrack"]; Doesn't work for some reasons
+    YTIAudioTrack *matchedTrack = nil;
+
+    if (INTFORVAL(AudioTrack) == 1) {
+        // Loop for all tracks
+        for (YTIAudioTrack *track in availableTracks) {
+            if ([track.id_p hasSuffix:@".4"]) {
+                matchedTrack = track;
+                break;
+            }
+        }
+    } else if (INTFORVAL(AudioTrack) == 2) {
+        // Loop for all tracks
+        for (YTIAudioTrack *track in availableTracks) {
+            if ([track.id_p hasPrefix:userTargetLang]) {
+                matchedTrack = track;
+                break;
+            }
+        }
+
+        // Check if it's dubbed
+        if (matchedTrack && [matchedTrack isAutoDubbed] && IS_ENABLED(NoDubbedAudioTrack)) {
+            matchedTrack = nil;
+            return;
+        }
+    }
+
+    // If found, change to it
+    if (matchedTrack) {
+        [switch notifyObserversAudioTrackWillChange:matchedTrack source:0];
+        [switch switchToAudioTrack:matchedTrack source:0];
+        [switch notifyObserversAudioTrackDidChange:matchedTrack source:0];
+    }
 }
 %end
 
