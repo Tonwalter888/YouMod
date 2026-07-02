@@ -681,11 +681,11 @@ static void YouModManageHoldToSpeed(UILongPressGestureRecognizer *gesture, YTMai
     NSInteger selectedIndex = INTFORVAL(AudioTrackLangIndex);
     NSArray *langCodes = getAllSystemLanguageValues();
     NSString *userTargetLang = langCodes[selectedIndex];
-    YTAudioTrackSwitchController *switch = self.audioTrackController;
-    NSArray *availableTracks = [switch valueForKey:@"_availableAudioTracks"];
+    YTAudioTrackSwitchController *switchcon = self.audioTrackController;
+    NSArray *availableTracks = [switchcon valueForKey:@"_availableAudioTracks"];
     if (!availableTracks || availableTracks.count == 0) return;
     // Check if the current audio track is already the same as the user perferences
-    // YTIAudioTrack *currentTrack = [switch valueForKey:@"_lastSelectedAudioTrack"]; Doesn't work for some reasons
+    // YTIAudioTrack *currentTrack = [switchcon valueForKey:@"_lastSelectedAudioTrack"]; Doesn't work for some reasons
     YTIAudioTrack *matchedTrack = nil;
 
     if (INTFORVAL(AudioTrack) == 1) {
@@ -714,9 +714,9 @@ static void YouModManageHoldToSpeed(UILongPressGestureRecognizer *gesture, YTMai
 
     // If found, change to it
     if (matchedTrack) {
-        [switch notifyObserversAudioTrackWillChange:matchedTrack source:0];
-        [switch switchToAudioTrack:matchedTrack source:0];
-        [switch notifyObserversAudioTrackDidChange:matchedTrack source:0];
+        [switchcon notifyObserversAudioTrackWillChange:matchedTrack source:0];
+        [switchcon switchToAudioTrack:matchedTrack source:0];
+        [switchcon notifyObserversAudioTrackDidChange:matchedTrack source:0];
     }
 }
 %end

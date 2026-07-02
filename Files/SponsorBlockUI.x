@@ -725,6 +725,10 @@ extern BOOL useBackwardIconForButton;
         }
 
         if ([playerBar isKindOfClass:%c(YTModularPlayerBarView)]) {
+            // Remove old markers (tag 9900)
+            for (UIView *sub in [playerBar.subviews copy]) {
+                if (sub.tag == 9900) [sub removeFromSuperview];
+            }
             for (UIView *sub in playerBar.subviews) {
                 if ([sub isKindOfClass:%c(YTPlayerBarRectangleDecorationView)] || [sub isKindOfClass:%c(YTPlayerBarProgressDecorationView)]) {
                     if (!referenceView) referenceView = sub;
