@@ -55,15 +55,6 @@ static BOOL isDarkMode(UIView *view) {
             if ([responder isKindOfClass:%c(YTActionSheetDialogViewController)] || [responder isKindOfClass:%c(YTBotttomSheetController)]) {
                 self.backgroundColor = [UIColor blackColor];
                 break;
-            } else if ([responder isKindOfClass:%c(YTAppCollectionViewController)]) {
-                YTAppCollectionViewController *appcol = (YTAppCollectionViewController *)responder;
-                YTSectionListViewController *sections = [appcol valueForKey:@"_delegate"];
-                YTISectionListRenderer *renderer = [sections valueForKey:@"_model"];
-                NSString *description = [renderer description];
-                if ([description containsString:@"missing_content_view.eml"]) {
-                    self.backgroundColor = [UIColor blackColor];
-                    break;
-                }
             }
             responder = responder.nextResponder;
         }
@@ -76,15 +67,6 @@ static BOOL isDarkMode(UIView *view) {
             if ([responder isKindOfClass:%c(YTActionSheetDialogViewController)] || [responder isKindOfClass:%c(YTBotttomSheetController)]) {
                 self.backgroundColor = [UIColor clearColor];
                 break;
-            } else if ([responder isKindOfClass:%c(YTAppCollectionViewController)]) {
-                YTAppCollectionViewController *appcol = (YTAppCollectionViewController *)responder;
-                YTSectionListViewController *sections = [appcol valueForKey:@"_delegate"];
-                YTISectionListRenderer *renderer = [sections valueForKey:@"_model"];
-                NSString *description = [renderer description];
-                if ([description containsString:@"missing_content_view.eml"]) {
-                    self.backgroundColor = [UIColor clearColor];
-                    break;
-                }
             }
             responder = responder.nextResponder;
         }
@@ -105,15 +87,6 @@ static BOOL isDarkMode(UIView *view) {
             if ([responder isKindOfClass:%c(YTActionSheetDialogViewController)] || [responder isKindOfClass:%c(YTBotttomSheetController)]) {
                 self.backgroundColor = [UIColor blackColor];
                 break;
-            } else if ([responder isKindOfClass:%c(YTAppCollectionViewController)]) {
-                YTAppCollectionViewController *appcol = (YTAppCollectionViewController *)responder;
-                YTSectionListViewController *sections = [appcol valueForKey:@"_delegate"];
-                YTISectionListRenderer *renderer = [sections valueForKey:@"_model"];
-                NSString *description = [renderer description];
-                if ([description containsString:@"missing_content_view.eml"]) {
-                    self.backgroundColor = [UIColor blackColor];
-                    break;
-                }
             }
             responder = responder.nextResponder;
         }
@@ -126,15 +99,6 @@ static BOOL isDarkMode(UIView *view) {
             if ([responder isKindOfClass:%c(YTActionSheetDialogViewController)] || [responder isKindOfClass:%c(YTBotttomSheetController)]) {
                 self.backgroundColor = [UIColor clearColor];
                 break;
-            } else if ([responder isKindOfClass:%c(YTAppCollectionViewController)]) {
-                YTAppCollectionViewController *appcol = (YTAppCollectionViewController *)responder;
-                YTSectionListViewController *sections = [appcol valueForKey:@"_delegate"];
-                YTISectionListRenderer *renderer = [sections valueForKey:@"_model"];
-                NSString *description = [renderer description];
-                if ([description containsString:@"missing_content_view.eml"]) {
-                    self.backgroundColor = [UIColor clearColor];
-                    break;
-                }
             }
             responder = responder.nextResponder;
         }

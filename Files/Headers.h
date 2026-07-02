@@ -58,8 +58,6 @@
 #import <YouTubeHeader/YTIVideoDetails.h>
 #import <YouTubeHeader/YTIStreamingData.h>
 #import <YouTubeHeader/YTIFormattedString.h>
-#import <YouTubeHeader/YTAppCollectionViewController.h>
-#import <YouTubeHeader/YTSectionListViewController.h>
 
 // For Settings.x and SponsorBlockSettings.x
 #import <PSHeader/Misc.h>
