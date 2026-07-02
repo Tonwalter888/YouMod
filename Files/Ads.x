@@ -55,28 +55,26 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
     NSIndexSet *removeIndexes = [newArray indexesOfObjectsPassingTest:^BOOL(YTIItemSectionRenderer *sectionRenderer, NSUInteger idx, BOOL *stop) {
         // Filter shelf renderer items (ads and shorts)
         if ([sectionRenderer isKindOfClass:%c(YTIShelfRenderer)]) {
+            NSString *description = [sectionRenderer description];
+            // Filter shorts
+            if (IS_ENABLED(HideShortsShelf)) {
+                if (IS_ENABLED(KeepShortsSubscript)) {
+                    if ([description containsString:@"shorts_video_cell.eml"] && ![description containsString:@"subscriptions-shorts-shelf-item"]) return YES;
+                } else {
+                    if ([description containsString:@"shorts_video_cell.eml"]) return YES;
+                }
+                if ([description containsString:@"shelf_header.eml"] && [description containsString:@"youtube_shorts_24_cairo"]) return YES;
+            }
+            // Filter feed posts
+            if (IS_ENABLED(HideFeedPost) && ([description containsString:@"poll_post_root.eml"] || [description containsString:@"options_post_root.eml"] || [description containsString:@"images_post_root_slim.eml"] || [description containsString:@"options_post_responsive_root.eml"] || [description containsString:@"post_base_wrapper_slim.eml"])) {
+                return YES;
+            }
             YTIShelfSupportedRenderers *content = ((YTIShelfRenderer *)sectionRenderer).content;
             YTIHorizontalListRenderer *horizontalListRenderer = content.horizontalListRenderer;
             NSMutableArray <YTIHorizontalListSupportedRenderers *> *itemsArray = horizontalListRenderer.itemsArray;
             NSIndexSet *removeItemsArrayIndexes = [itemsArray indexesOfObjectsPassingTest:^BOOL(YTIHorizontalListSupportedRenderers *horizontalListSupportedRenderers, NSUInteger idx2, BOOL *stop2) {
                 YTIElementRenderer *elementRenderer = horizontalListSupportedRenderers.elementRenderer;
-                // Filter ads
-                if (isAdRenderer(elementRenderer, 4)) return YES;
-                NSString *description = [elementRenderer description];
-                // Filter shorts
-                if (IS_ENABLED(HideShortsShelf)) {
-                    if (IS_ENABLED(KeepShortsSubscript)) {
-                        if ([description containsString:@"shorts_video_cell.eml"] && ![description containsString:@"subscriptions-shorts-shelf-item"]) return YES;
-                    } else {
-                        if ([description containsString:@"shorts_video_cell.eml"]) return YES;
-                    }
-                    if ([description containsString:@"shelf_header.eml"] && [description containsString:@"youtube_shorts_24_cairo"]) return YES;
-                }
-                // Filter feed posts
-                if (IS_ENABLED(HideFeedPost) && ([description containsString:@"poll_post_root.eml"] || [description containsString:@"options_post_root.eml"] || [description containsString:@"images_post_root_slim.eml"] || [description containsString:@"options_post_responsive_root.eml"] || [description containsString:@"post_base_wrapper_slim.eml"])) {
-                    return YES;
-                }
-                return NO;
+                return isAdRenderer(elementRenderer, 4);
             }];
             [itemsArray removeObjectsAtIndexes:removeItemsArrayIndexes];
         }

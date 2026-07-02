@@ -294,7 +294,7 @@ UIColor *SBColorFromHex(NSString *hexString) {
 
 - (void)playbackController:(id)playbackController didActivateVideo:(id)video withPlaybackData:(id)playbackData {
     %orig;
-    if (!IS_ENABLED(SBEnabled) || self.isInlinePlaybackActive || self.isPlayingAd) return;
+    if (!IS_ENABLED(SBEnabled) || self.isPlayingAd) return;
 
     self.sbEnabledForVideo = YES;
     self.sbSkippedSegments = [NSMutableSet set];
@@ -321,7 +321,7 @@ UIColor *SBColorFromHex(NSString *hexString) {
 
 - (void)singleVideo:(id)video currentVideoTimeDidChange:(id)time {
     %orig;
-    if (!IS_ENABLED(SBEnabled) || !self.sbEnabledForVideo || self.isInlinePlaybackActive || self.isPlayingAd) return;
+    if (!IS_ENABLED(SBEnabled) || !self.sbEnabledForVideo || self.isPlayingAd) return;
 
     CGFloat currentTime = [self currentVideoMediaTime];
     float minDuration = FLOAT_FOR_KEY(SBMinDuration);
@@ -351,7 +351,7 @@ UIColor *SBColorFromHex(NSString *hexString) {
 // Alternative hook for newer YouTube versions where method was renamed
 - (void)potentiallyMutatedSingleVideo:(id)video currentVideoTimeDidChange:(id)time {
     %orig;
-    if (!IS_ENABLED(SBEnabled) || !self.sbEnabledForVideo || self.isInlinePlaybackActive || self.isPlayingAd) return;
+    if (!IS_ENABLED(SBEnabled) || !self.sbEnabledForVideo || self.isPlayingAd) return;
 
     CGFloat currentTime = [self currentVideoMediaTime];
     float minDuration = FLOAT_FOR_KEY(SBMinDuration);
