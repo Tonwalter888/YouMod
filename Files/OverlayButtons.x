@@ -161,18 +161,6 @@ static UIButton *YMCreateOverlayButton(YTMainAppControlsOverlayView *overlay, YM
 
 %end
 
-%hook YTPlayerViewController
-
-- (void)setMuted:(BOOL)muted {
-    if (!IS_ENABLED(MuteButton)) {
-        %orig;
-        return;
-    }
-    %orig([self isInlinePlaybackActive] ? muted : IS_ENABLED(KeepMutedKey));
-}
-
-%end
-
 %ctor {
     YMOverlayButtonSpec *mute = [[YMOverlayButtonSpec alloc] init];
     mute.identifier = @"mute.video";

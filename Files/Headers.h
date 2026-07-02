@@ -58,6 +58,8 @@
 #import <YouTubeHeader/YTIVideoDetails.h>
 #import <YouTubeHeader/YTIStreamingData.h>
 #import <YouTubeHeader/YTIFormattedString.h>
+#import <YouTubeHeader/YTAppCollectionViewController.h>
+#import <YouTubeHeader/YTSectionListViewController.h>
 
 // For Settings.x and SponsorBlockSettings.x
 #import <PSHeader/Misc.h>
@@ -327,9 +329,25 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 - (void)setPlaybackRate:(float)rate;
 - (void)play;
 - (void)pause;
+- (void)YouModAutoMute;
 - (NSInteger)playerState;
 - (YTPlayerResponse *)contentPlayerResponse;
 - (YTPlayerResponse *)playerResponse;
+@end
+
+@interface YTInlineMutedPlaybackPlayerOverlayViewController : UIViewController
+@end
+
+@interface YTInlineMutedPlaybackPlayerOverlayView : UIView
+@end
+
+@interface YTWatchFloatingMiniplayerViewController : UIViewController
+@end
+
+@interface YTWatchFloatingMiniplayerWithPersistentControlsView : UIView
+@end
+
+@interface YTWatchFloatingMiniplayerProgressBarView : UIView
 @end
 
 @interface SSOConfiguration : NSObject

@@ -511,16 +511,6 @@ extern BOOL useBackwardIconForButton;
 
 %end
 
-@interface YTWatchFloatingMiniplayerViewController : UIViewController
-@end
-
-@interface YTWatchFloatingMiniplayerWithPersistentControlsView : UIView
-- (NSArray *)allSubviews;
-@end
-
-@interface YTWatchFloatingMiniplayerProgressBarView : UIView
-@end
-
 #pragma mark - Marker Repositioning Hooks
 
 // YTModularPlayerBarView - normal player
@@ -566,11 +556,14 @@ extern BOOL useBackwardIconForButton;
 - (void)layoutSubviews {
     %orig;
     UIView *playerBar;
-    for (UIView *sub in self.allSubviews) {
-        if ([sub isKindOfClass:%c(YTWatchFloatingMiniplayerProgressBarView)]) {
-            playerBar = sub;
-            break;
+    for (UIView *sub in self.subviews) {
+        for (UIView *sub2 in sub.subviews) {
+            if ([sub2 isKindOfClass:%c(YTWatchFloatingMiniplayerProgressBarView)]) {
+                playerBar = sub2;
+                break;
+            }
         }
+        if (playerBar) break;
     }
     CGFloat barWidth = playerBar.bounds.size.width;
 
@@ -624,6 +617,7 @@ extern BOOL useBackwardIconForButton;
 // currently-visible bar instead of an old detached one.
 %new
 - (void)sbRefreshMarkers:(NSArray<SBSegment *> *)segments {
+    if (!IS_ENABLED(SBSegmentsInMiniPlayer) && !IS_ENABLED(SBSegmentsInFeed)) return;
     if (!segments) segments = self.sbSegments;
 
     CGFloat totalTime = [self currentVideoTotalMediaTime];
@@ -632,17 +626,22 @@ extern BOOL useBackwardIconForButton;
     CGFloat h;
     CGFloat y;
     UIView *mainView;
+    UIView *scrubberDot;
     UIView *referenceView;
 
-    if ([self.parentViewController isKindOfClass:%c(YTWatchFloatingMiniplayerViewController)]) {
+    if ([self.parentViewController isKindOfClass:%c(YTWatchFloatingMiniplayerViewController)] && IS_ENABLED(SBSegmentsInMiniPlayer)) {
         YTWatchFloatingMiniplayerViewController *miniplayercontroller = (YTWatchFloatingMiniplayerViewController *)self.parentViewController;
         YTWatchFloatingMiniplayerWithPersistentControlsView *controlsview = (YTWatchFloatingMiniplayerWithPersistentControlsView *)miniplayercontroller.view;
         mainView = controlsview;
-        for (UIView *sub in controlsview.allSubviews) {
-            if ([sub isKindOfClass:%c(YTWatchFloatingMiniplayerProgressBarView)]) {
-                referenceView = sub;
-                break;
+
+        for (UIView *sub in controlsview.subviews) {
+            for (UIView *sub2 in sub.subviews) {
+                if ([sub2 isKindOfClass:%c(YTWatchFloatingMiniplayerProgressBarView)]) {
+                    referenceView = sub2;
+                    break;
+                }
             }
+            if (referenceView) break;
         }
         // Remove old markers (tag 9900)
         for (UIView *sub in [controlsview.subviews copy]) {
@@ -653,7 +652,7 @@ extern BOOL useBackwardIconForButton;
         barWidth = referenceView.bounds.size.width;
         h = referenceView.bounds.size.height;
         y = referenceView.frame.origin.y;
-    } else if ([[self activeVideoPlayerOverlay] isKindOfClass:%c(YTMainAppVideoPlayerOverlayViewController)]) {
+    } else if ([[self activeVideoPlayerOverlay] isKindOfClass:%c(YTMainAppVideoPlayerOverlayViewController)] && IS_ENABLED(SBSegmentsInMiniPlayer)) {
         YTMainAppVideoPlayerOverlayViewController *overlay = [self activeVideoPlayerOverlay];
         YTPlayerBarController *barController = [overlay playerBarController];
         YTInlinePlayerBarContainerView *containerView = barController.playerBar;
@@ -684,9 +683,35 @@ extern BOOL useBackwardIconForButton;
                 referenceView = sub;
             } else if ([sub isKindOfClass:%c(YTPlayerBarProgressDecorationView)]) {
                 if (!referenceView) referenceView = sub;
+            } else if ([sub isKindOfClass:%c(YTPlayerBarScrubberDotDecorationView)]) {
+                scrubberDot = sub;
             }
-            if (referenceView) break;
+            if (referenceView && scrubberDot) break;
         }
+        h = referenceView.bounds.size.height;
+        y = referenceView.frame.origin.y;
+    } else if ([[self activeVideoPlayerOverlay] isKindOfClass:%c(YTInlineMutedPlaybackPlayerOverlayViewController)] && IS_ENABLED(SBSegmentsInFeed)) {
+        YTInlineMutedPlaybackPlayerOverlayViewController *viewcon = [self activeVideoPlayerOverlay];
+        YTInlineMutedPlaybackPlayerOverlayView *view = viewcon.view;
+        UIView *scrub;
+        for (UIView *sub in view.subviews) {
+            if ([sub isKindOfClass:%c(YTInlineMutedPlaybackScrubberView)]) {
+                scrub = sub;
+                mainView = sub;
+                break;
+            }
+        }
+        for (UIView *sub in scrub.subviews) {
+            if ([sub isKindOfClass:%c(YTPlayerBarMarkerView)]) {
+                referenceView = sub;
+            } else if ([sub isKindOfClass:%c(YTInlineMutedPlaybackScrubbingSlider)]) {
+                if ([sub.accessibilityIdentifier isEqualToString:@"id.player.scrubber.slider"]) {
+                    scrubberDot = sub;
+                }
+            }
+            if (referenceView && scrubberDot) break;
+        }
+        barWidth = referenceView.bounds.size.width;
         h = referenceView.bounds.size.height;
         y = referenceView.frame.origin.y;
     } else {
@@ -726,6 +751,9 @@ extern BOOL useBackwardIconForButton;
 
         [mainView addSubview:marker];
         [mainView bringSubviewToFront:marker];
+    }
+    if (scrubberDot) {
+        [mainView bringSubviewToFront:scrubberDot];
     }
 }
 
