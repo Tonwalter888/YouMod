@@ -724,6 +724,8 @@ extern BOOL useBackwardIconForButton;
             if (playerBar && scrubberDot) break;
         }
 
+        if (!playerBar && !scrubberDot) return;
+
         if ([playerBar isKindOfClass:%c(YTModularPlayerBarView)]) {
             // Remove old markers (tag 9900)
             for (UIView *sub in [playerBar.subviews copy]) {
