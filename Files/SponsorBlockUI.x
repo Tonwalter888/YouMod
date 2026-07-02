@@ -701,6 +701,14 @@ extern BOOL useBackwardIconForButton;
                 break;
             }
         }
+
+        // Remove old markers (tag 9900)
+        for (UIView *sub in [scrub.subviews copy]) {
+            if (sub.tag == 9900) [sub removeFromSuperview];
+        }
+
+        if (!segments || segments.count == 0) return;
+
         for (UIView *sub in scrub.subviews) {
             if ([sub isKindOfClass:%c(YTPlayerBarMarkerView)]) {
                 referenceView = sub;
