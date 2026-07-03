@@ -34,6 +34,17 @@ void sbUpdateOverlayInsetForPivotBar() {
     UIViewController *rootVC = sbOverlayWindow.rootViewController;
     if (!rootVC) return;
 
+    // The overlay window's frame is set only at creation; the scene can change
+    // size afterward (rotation, iPhone fullscreen exit) and this plain-UIViewController
+    // window doesn't auto-resize with it. Re-sync to the current scene bounds so the
+    // pill safe-area math below runs against the correct (e.g. portrait) size rather
+    // than a stale landscape one — otherwise pills anchor to a mid-screen bottom edge.
+    UIWindowScene *scene = sbOverlayWindow.windowScene;
+    CGRect sceneBounds = scene ? scene.coordinateSpace.bounds : sbOverlayWindow.bounds;
+    if (scene && !CGRectEqualToRect(sbOverlayWindow.frame, sceneBounds)) {
+        sbOverlayWindow.frame = sceneBounds;
+    }
+
     // Look up YouTube's root view controller in the SAME scene as our overlay
     // window — on iPad multi-window the app delegate's window may belong to a
     // different scene, so [delegate window] is not safe here.
@@ -64,12 +75,18 @@ void sbUpdateOverlayInsetForPivotBar() {
         UIView *overlayView = rootVC.view;
         CGRect pivotInOverlay = [overlayView convertRect:pivot.bounds fromView:pivot];
         CGFloat pivotTop = CGRectGetMinY(pivotInOverlay);
-        CGFloat overlayHeight = overlayView.bounds.size.height;
+        // Use the scene bounds we just synced to, not overlayView.bounds — the
+        // latter depends on autoresizing having propagated this runloop, whereas
+        // sceneBounds is the authoritative size we assigned above.
+        CGFloat overlayHeight = sceneBounds.size.height;
         CGFloat deviceSafeBottom = sbOverlayWindow.safeAreaInsets.bottom;
-        // Clamp to [0, overlayHeight] in case convertRect returns a stale
-        // value during scene transitions (e.g. iPad split-view drag) — without
-        // an upper bound, an absurd tabH would push the pill off-screen.
-        tabH = MAX(0.0, MIN(overlayHeight, overlayHeight - deviceSafeBottom - pivotTop));
+        CGFloat pivotHeight = pivot.bounds.size.height;
+        // Clamp to the pivot bar's own height: a legitimate inset can never exceed
+        // the bar it's clearing. If convertRect returns a stale value during a scene
+        // transition (e.g. fullscreen exit), the raw result balloons toward the full
+        // screen height — clamping to pivotHeight keeps the pill just above the safe
+        // area instead of letting it drift to the middle of the screen.
+        tabH = MAX(0.0, MIN(pivotHeight, overlayHeight - deviceSafeBottom - pivotTop));
     }
     UIEdgeInsets current = rootVC.additionalSafeAreaInsets;
     if (current.bottom != tabH) {
