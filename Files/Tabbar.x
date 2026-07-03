@@ -156,12 +156,12 @@ static NSString *ymTitleForTabID(NSString *tabID) {
 // Hide Tab Bar Indicators
 %hook YTPivotBarIndicatorView
 - (void)setFillColor:(UIColor *)arg1 {
-    UIColor *temp = [UIColor clearColor];
-    IS_ENABLED(HideTabIndi) ? %orig(temp) : %orig;
+    UIColor *temp = IS_ENABLED(HideTabIndi) ? [UIColor clearColor] : arg1;
+    %orig(temp);
 }
 - (void)setBorderColor:(UIColor *)arg1 {
-    UIColor *temp = [UIColor clearColor];
-    IS_ENABLED(HideTabIndi) ? %orig(temp) : %orig;
+    UIColor *temp = IS_ENABLED(HideTabIndi) ? [UIColor clearColor] : arg1;
+    %orig(temp);
 }
 %end
 
