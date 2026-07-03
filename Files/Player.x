@@ -26,6 +26,82 @@ BOOL isWiFiConnected(void) {
 }
 
 extern void YouModDownloadSetCurrentPlayer(YTPlayerViewController *player);
+extern YTPlayerViewController *YouModDownloadGetCurrentPlayer(void);
+
+#pragma mark - Rewind / Fast-forward on iOS media controls
+
+// The user-chosen skip amount for each direction, in seconds. Zero means the
+// preference was never set, in which case the seek falls back to 10 seconds.
+static CGFloat YouModRewindSecondsValue(void) {
+    CGFloat s = FLOAT_FOR_KEY(RewindSeconds);
+    return s > 0 ? s : 10.0;
+}
+
+static CGFloat YouModForwardSecondsValue(void) {
+    CGFloat s = FLOAT_FOR_KEY(ForwardSeconds);
+    return s > 0 ? s : 10.0;
+}
+
+// Seeks the active player by delta seconds, clamped to [0, duration]. Returns NO
+// when no active player is available (e.g. a media key is pressed after playback
+// ended), so the caller can report the command as having nothing to act on.
+//
+// The seek runs on the main queue because MPRemoteCommand handlers may be invoked
+// off the main thread (notably from Bluetooth and CarPlay), while seekToTime: and
+// the player's time accessors are main-thread-only.
+static BOOL YouModSeekByInterval(CGFloat delta) {
+    YTPlayerViewController *player = YouModDownloadGetCurrentPlayer();
+    if (!player || ![player respondsToSelector:@selector(seekToTime:)]) return NO;
+    dispatch_async(dispatch_get_main_queue(), ^{
+        CGFloat cur = [player currentVideoMediaTime];
+        CGFloat dur = [player currentVideoTotalMediaTime];
+        CGFloat target = cur + delta;
+        if (target < 0) target = 0;
+        if (dur > 0 && target > dur) target = dur;
+        [player seekToTime:target];
+    });
+    return YES;
+}
+
+// Retained handler tokens for the two skip commands. A non-nil token marks a
+// command whose handler is already installed, so it is installed only once.
+static id gYouModRewindTarget = nil;
+static id gYouModForwardTarget = nil;
+
+// Points the system now-playing skip controls (lock screen, Bluetooth, Control
+// Center, CarPlay) at our per-direction seek. When enabled, the OS previous/next
+// commands are turned off and skip-backward/forward take over with the user's
+// intervals; when disabled, previous/next are restored. Only these system
+// controls are configurable — the on-screen player rewind/fast-forward buttons
+// are rendered by YouTube with an amount it owns, so they are left alone.
+//
+// The handlers are installed once and thereafter only their enabled state and
+// preferred intervals are updated. Because the handlers read the seconds at press
+// time, a changed preference always seeks by the new amount immediately; the
+// interval shown on the OS controls reflects the value captured the last time this
+// ran (video change or launch).
+static void YouModConfigureRemoteSkipCommands(void) {
+    MPRemoteCommandCenter *cc = [MPRemoteCommandCenter sharedCommandCenter];
+    BOOL on = IS_ENABLED(RemoteSkipEnabled);
+
+    cc.skipBackwardCommand.enabled = on;
+    cc.skipBackwardCommand.preferredIntervals = @[@(YouModRewindSecondsValue())];
+    cc.skipForwardCommand.enabled = on;
+    cc.skipForwardCommand.preferredIntervals = @[@(YouModForwardSecondsValue())];
+    cc.previousTrackCommand.enabled = !on;
+    cc.nextTrackCommand.enabled = !on;
+
+    if (!gYouModRewindTarget) {
+        gYouModRewindTarget = [cc.skipBackwardCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *event) {
+            return YouModSeekByInterval(-YouModRewindSecondsValue()) ? MPRemoteCommandHandlerStatusSuccess : MPRemoteCommandHandlerStatusNoSuchContent;
+        }];
+    }
+    if (!gYouModForwardTarget) {
+        gYouModForwardTarget = [cc.skipForwardCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *event) {
+            return YouModSeekByInterval(YouModForwardSecondsValue()) ? MPRemoteCommandHandlerStatusSuccess : MPRemoteCommandHandlerStatusNoSuchContent;
+        }];
+    }
+}
 
 // static NSString *shortsVidID;
 
@@ -341,6 +417,7 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
     YTPlayerView *playerview = [sgvid valueForKey:@"_playerView"];
     YTPlayerViewController *playerviewController = [playerview valueForKey:@"_playerViewDelegate"];
     YouModDownloadSetCurrentPlayer(playerviewController);
+    YouModConfigureRemoteSkipCommands();
     if (IS_ENABLED(MuteButton)) [playerviewController YouModAutoMute];
     if (IS_ENABLED(AutoFullScreen)) [playerviewController performSelector:@selector(YouModAutoFullscreen) withObject:nil afterDelay:0.5];
     if (INTFORVAL(CaptionTrack) != 0) [playerviewController performSelector:@selector(YouModAutoCaptions) withObject:nil afterDelay:0.5];
@@ -1084,6 +1161,7 @@ static void YouModManageHoldToSpeed(UILongPressGestureRecognizer *gesture, YTMai
 
 %ctor {
     %init;
+    YouModConfigureRemoteSkipCommands();
     if (IS_ENABLED(OldQualityPicker)) {
         %init(OldVideoQuality);
     }

@@ -7,12 +7,13 @@
 
 #pragma mark - Registry
 
-// Reserved view-tag range for registered overlay buttons. Kept distinct from the
-// seek-bar marker tag (9900) and the legacy SB button tag (9901).
+// Base of the view-tag range for registered overlay buttons. Chosen to avoid
+// colliding with other tagged views in the player overlay (e.g. the seek-bar
+// segment markers at 9900).
 static const NSInteger YMOverlayButtonBaseTag = 9910;
 
-// Button geometry. Y matches the SponsorBlock button's historical top inset so the
-// row sits just below YouTube's CC/gear row, exactly as before.
+// Button geometry. The top inset places the row just below YouTube's own
+// CC/gear row in the top-right corner of the player overlay.
 static const CGFloat YMOverlayButtonSize = 40.0;
 static const CGFloat YMOverlayButtonGap = 8.0;
 static const CGFloat YMOverlayButtonTopInset = 52.0;
@@ -47,8 +48,8 @@ NSArray<YMOverlayButtonSpec *> *YMRegisteredOverlayButtons(void) {
 
 #pragma mark - Helpers
 
-// Resolve the player VC that owns this overlay. Prefer the exposed property, fall
-// back to walking the responder chain (older layouts), mirroring the old SB code.
+// The player view controller that owns this controls overlay, reached through the
+// overlay's events delegate. Button handlers use it to act on the current video.
 static YTPlayerViewController *YMPlayerVCFromOverlay(YTMainAppControlsOverlayView *overlay) {
     YTMainAppVideoPlayerOverlayViewController *mainOverlayController = (YTMainAppVideoPlayerOverlayViewController *)overlay.eventsDelegate;
     return mainOverlayController.parentViewController;

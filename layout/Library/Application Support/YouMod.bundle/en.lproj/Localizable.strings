@@ -174,6 +174,10 @@
 "HIDE_NEXT_AND_PREV_BUTTON_DESC" = "Hide previous and next buttons in the video overlay.";
 "REPLACE_PREVNEXT_BUTTONS" = "Replace Previous/Next buttons";
 "REPLACE_PREVNEXT_BUTTONS_DESC" = "Replaces the Previous and Next video buttons in the player with Rewind and Fast Forward buttons.";
+"REMOTE_SKIP_ENABLED" = "Rewind/Fast-forward on media controls";
+"REMOTE_SKIP_ENABLED_DESC" = "Remap Previous/Next on the lock screen, Bluetooth, Control Center, and CarPlay to rewind and fast-forward.";
+"REWIND_SECONDS" = "Rewind seconds";
+"FORWARD_SECONDS" = "Fast-forward seconds";
 "REMOVE_DARK_OVERLAY" = "Remove dark overlay";
 "REMOVE_DARK_OVERLAY_DESC" = "Remove dark overlay from the video overlay.";
 "HIDE_END_SCREEN" = "Hide endscreen cards";

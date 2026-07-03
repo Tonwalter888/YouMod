@@ -23,7 +23,8 @@ typedef NS_ENUM(NSInteger, YMRowType) {
     YMRowTypeHeader,
     YMRowTypeSegment,
     YMRowTypeTextSegment,
-    YMRowTypeImageSegment
+    YMRowTypeImageSegment,
+    YMRowTypeSlider
 };
 
 @interface YMSettingsItem : NSObject
@@ -37,7 +38,12 @@ typedef NS_ENUM(NSInteger, YMRowType) {
 @property (nonatomic, strong) NSArray<NSNumber *> *segmentIcons;
 @property (nonatomic, strong) NSArray<NSString *> *segmentLabels;
 @property (nonatomic, strong) NSArray<UIImage *> *segmentImages;
+@property (nonatomic, assign) float sliderMin;
+@property (nonatomic, assign) float sliderMax;
+@property (nonatomic, assign) float sliderStep;
+@property (nonatomic, assign) float sliderDefault;
 + (instancetype)toggleWithTitle:(NSString *)title subtitle:(NSString *)subtitle key:(NSString *)key;
++ (instancetype)sliderWithTitle:(NSString *)title subtitle:(NSString *)subtitle key:(NSString *)key min:(float)min max:(float)max step:(float)step defaultValue:(float)defaultValue;
 + (instancetype)pickerWithTitle:(NSString *)title subtitle:(NSString *)subtitle key:(NSString *)key options:(NSArray<NSString *> *)options defaultValue:(NSInteger)defaultValue;
 + (instancetype)actionWithTitle:(NSString *)title subtitle:(NSString *)subtitle action:(void (^)(UIViewController *vc))action;
 + (instancetype)headerWithTitle:(NSString *)title;
@@ -54,6 +60,19 @@ typedef NS_ENUM(NSInteger, YMRowType) {
     item.title = title;
     item.subtitle = subtitle;
     item.key = key;
+    return item;
+}
+
++ (instancetype)sliderWithTitle:(NSString *)title subtitle:(NSString *)subtitle key:(NSString *)key min:(float)min max:(float)max step:(float)step defaultValue:(float)defaultValue {
+    YMSettingsItem *item = [[YMSettingsItem alloc] init];
+    item.type = YMRowTypeSlider;
+    item.title = title;
+    item.subtitle = subtitle;
+    item.key = key;
+    item.sliderMin = min;
+    item.sliderMax = max;
+    item.sliderStep = step;
+    item.sliderDefault = defaultValue;
     return item;
 }
 
@@ -133,6 +152,9 @@ static const void *kYMTableViewKey = &kYMTableViewKey;
 static const void *kYMNavTitleKey = &kYMNavTitleKey;
 static const void *kYMItemsKey = &kYMItemsKey;
 static const void *kYMSwitchKeyAssoc = &kYMSwitchKeyAssoc;
+static const void *kYMSliderKeyAssoc = &kYMSliderKeyAssoc;
+static const void *kYMSliderStepAssoc = &kYMSliderStepAssoc;
+static const void *kYMSliderLabelAssoc = &kYMSliderLabelAssoc;
 
 @implementation YMSubSettingsViewController
 
@@ -236,6 +258,8 @@ static const void *kYMSwitchKeyAssoc = &kYMSwitchKeyAssoc;
         return [self textSegmentCellForItem:item tableView:tableView];
     } else if (item.type == YMRowTypeImageSegment) {
         return [self imageSegmentCellForItem:item tableView:tableView];
+    } else if (item.type == YMRowTypeSlider) {
+        return [self sliderCellForItem:item tableView:tableView];
     }
     return [self pickerCellForItem:item tableView:tableView];
 }
@@ -280,6 +304,71 @@ static const void *kYMSwitchKeyAssoc = &kYMSwitchKeyAssoc;
     if (key) {
         [[NSUserDefaults standardUserDefaults] setBool:sender.on forKey:key];
     }
+}
+
+- (UITableViewCell *)sliderCellForItem:(YMSettingsItem *)item tableView:(UITableView *)tableView {
+    UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:nil];
+    cell.backgroundColor = [UIColor clearColor];
+    cell.selectionStyle = UITableViewCellSelectionStyleNone;
+
+    // A stored value of zero is treated as "no value yet" and shown as the
+    // default. Slider ranges are therefore expected to be positive.
+    float stored = [[NSUserDefaults standardUserDefaults] floatForKey:item.key];
+    if (stored <= 0) stored = item.sliderDefault;
+
+    UILabel *titleLabel = [[UILabel alloc] init];
+    titleLabel.translatesAutoresizingMaskIntoConstraints = NO;
+    titleLabel.text = item.title;
+    titleLabel.textColor = [self ymTextColor];
+    titleLabel.font = [UIFont systemFontOfSize:16 weight:UIFontWeightMedium];
+    [cell.contentView addSubview:titleLabel];
+
+    UILabel *valueLabel = [[UILabel alloc] init];
+    valueLabel.translatesAutoresizingMaskIntoConstraints = NO;
+    valueLabel.textColor = [self ymSecondaryColor];
+    valueLabel.font = [UIFont systemFontOfSize:14 weight:UIFontWeightMedium];
+    valueLabel.textAlignment = NSTextAlignmentRight;
+    valueLabel.text = [NSString stringWithFormat:@"%d secs", (int)stored];
+    [cell.contentView addSubview:valueLabel];
+
+    UISlider *slider = [[UISlider alloc] init];
+    slider.translatesAutoresizingMaskIntoConstraints = NO;
+    slider.minimumValue = item.sliderMin;
+    slider.maximumValue = item.sliderMax;
+    slider.value = stored;
+    slider.minimumTrackTintColor = [UIColor colorWithRed:0.6 green:0.2 blue:0.9 alpha:1.0];
+    slider.maximumTrackTintColor = [UIColor colorWithWhite:0.3 alpha:1.0];
+    objc_setAssociatedObject(slider, kYMSliderKeyAssoc, item.key, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    objc_setAssociatedObject(slider, kYMSliderStepAssoc, @(item.sliderStep), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    objc_setAssociatedObject(slider, kYMSliderLabelAssoc, valueLabel, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    [slider addTarget:self action:@selector(sliderChanged:) forControlEvents:UIControlEventValueChanged];
+    [cell.contentView addSubview:slider];
+
+    [NSLayoutConstraint activateConstraints:@[
+        [titleLabel.leadingAnchor constraintEqualToAnchor:cell.contentView.leadingAnchor constant:16],
+        [titleLabel.topAnchor constraintEqualToAnchor:cell.contentView.topAnchor constant:12],
+        [valueLabel.trailingAnchor constraintEqualToAnchor:cell.contentView.trailingAnchor constant:-16],
+        [valueLabel.centerYAnchor constraintEqualToAnchor:titleLabel.centerYAnchor],
+        [valueLabel.widthAnchor constraintGreaterThanOrEqualToConstant:60],
+        [slider.leadingAnchor constraintEqualToAnchor:cell.contentView.leadingAnchor constant:16],
+        [slider.trailingAnchor constraintEqualToAnchor:cell.contentView.trailingAnchor constant:-16],
+        [slider.topAnchor constraintEqualToAnchor:titleLabel.bottomAnchor constant:8],
+        [slider.bottomAnchor constraintEqualToAnchor:cell.contentView.bottomAnchor constant:-12],
+    ]];
+
+    return cell;
+}
+
+- (void)sliderChanged:(UISlider *)sender {
+    NSString *key = objc_getAssociatedObject(sender, kYMSliderKeyAssoc);
+    if (!key) return;
+    float step = [objc_getAssociatedObject(sender, kYMSliderStepAssoc) floatValue];
+    if (step <= 0) step = 1;
+    float snapped = roundf(sender.value / step) * step;
+    sender.value = snapped;
+    [[NSUserDefaults standardUserDefaults] setFloat:snapped forKey:key];
+    UILabel *valueLabel = objc_getAssociatedObject(sender, kYMSliderLabelAssoc);
+    valueLabel.text = [NSString stringWithFormat:@"%d secs", (int)snapped];
 }
 
 #pragma mark - Action Cell
@@ -568,6 +657,10 @@ YMSettingsItem *YMToggle(NSString *title, NSString *subtitle, NSString *key) {
     return [YMSettingsItem toggleWithTitle:title subtitle:subtitle key:key];
 }
 
+YMSettingsItem *YMSlider(NSString *title, NSString *subtitle, NSString *key, float min, float max, float step, float defaultValue) {
+    return [YMSettingsItem sliderWithTitle:title subtitle:subtitle key:key min:min max:max step:step defaultValue:defaultValue];
+}
+
 YMSettingsItem *YMPicker(NSString *title, NSString *subtitle, NSString *key, NSArray<NSString *> *options, NSInteger defaultValue) {
     return [YMSettingsItem pickerWithTitle:title subtitle:subtitle key:key options:options defaultValue:defaultValue];
 }
@@ -612,10 +705,10 @@ static const NSInteger kYMTabMaxEnabled = 6;
 static const void *kYMTabTableViewKey = &kYMTabTableViewKey;
 static const void *kYMTabDataKey = &kYMTabDataKey;
 static const void *kYMTabSnapshotKey = &kYMTabSnapshotKey;
-// Saved copies of the SHARED nav bar's appearance, captured on appear and
-// restored on disappear. This page is the only settings screen that mutates the
-// shared navigationBar appearance; without restoring it, the leftover appearance
-// repaints the previous page's back button with its default (blue) tint.
+// Saved copies of the shared navigation bar's appearance, restored when this
+// screen is dismissed. This screen installs its own opaque navigation bar
+// appearance; because that appearance is shared, leaving it in place would repaint
+// the previous screen's back button with the appearance's default (blue) tint.
 static const void *kYMTabSavedStdAppearanceKey = &kYMTabSavedStdAppearanceKey;
 static const void *kYMTabSavedScrollEdgeAppearanceKey = &kYMTabSavedScrollEdgeAppearanceKey;
 
@@ -695,11 +788,9 @@ static const void *kYMTabSavedScrollEdgeAppearanceKey = &kYMTabSavedScrollEdgeAp
     [self loadTabData];
     [self takeSnapshot];
 
-    // Snapshot the shared nav bar's appearance BEFORE we overwrite it below, so
-    // we can restore it on exit. viewDidLoad runs before viewWillAppear:, so this
-    // is the last point at which the bar still carries the previous page's
-    // appearance. Without restoring it, the leftover appearance repaints the
-    // previous page's back button with its default (blue) tint.
+    // The previous screen's navigation bar appearance is saved before this screen
+    // installs its own opaque appearance, and restored on dismissal so that screen
+    // keeps its own back-button tint.
     UINavigationBar *sharedNavBar = self.navigationController.navigationBar;
     objc_setAssociatedObject(self, kYMTabSavedStdAppearanceKey, sharedNavBar.standardAppearance, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     objc_setAssociatedObject(self, kYMTabSavedScrollEdgeAppearanceKey, sharedNavBar.scrollEdgeAppearance, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
@@ -766,8 +857,8 @@ static const void *kYMTabSavedScrollEdgeAppearanceKey = &kYMTabSavedScrollEdgeAp
     struct objc_super superStruct = { self, ytStyled ?: [UIViewController class] };
     ((void (*)(struct objc_super *, SEL, BOOL))objc_msgSendSuper)(&superStruct, @selector(viewWillDisappear:), animated);
 
-    // Restore the shared nav bar appearance we captured in viewDidLoad, so the
-    // page we return to keeps its own back-button tint instead of ours.
+    // Restore the previous screen's saved navigation bar appearance so it keeps
+    // its own back-button tint rather than this screen's opaque appearance.
     UINavigationBar *navBar = self.navigationController.navigationBar;
     navBar.standardAppearance = objc_getAssociatedObject(self, kYMTabSavedStdAppearanceKey);
     navBar.scrollEdgeAppearance = objc_getAssociatedObject(self, kYMTabSavedScrollEdgeAppearanceKey);

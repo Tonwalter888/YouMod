@@ -36,9 +36,9 @@ void sbUpdateOverlayInsetForPivotBar() {
 
     // The overlay window's frame is set only at creation; the scene can change
     // size afterward (rotation, iPhone fullscreen exit) and this plain-UIViewController
-    // window doesn't auto-resize with it. Re-sync to the current scene bounds so the
-    // pill safe-area math below runs against the correct (e.g. portrait) size rather
-    // than a stale landscape one — otherwise pills anchor to a mid-screen bottom edge.
+    // window doesn't auto-resize with it. Re-syncing to the current scene bounds keeps
+    // the pill safe-area math on the correct (e.g. portrait) size rather than a stale
+    // landscape one — otherwise pills anchor to a mid-screen bottom edge.
     UIWindowScene *scene = sbOverlayWindow.windowScene;
     CGRect sceneBounds = scene ? scene.coordinateSpace.bounds : sbOverlayWindow.bounds;
     if (scene && !CGRectEqualToRect(sbOverlayWindow.frame, sceneBounds)) {
@@ -75,9 +75,9 @@ void sbUpdateOverlayInsetForPivotBar() {
         UIView *overlayView = rootVC.view;
         CGRect pivotInOverlay = [overlayView convertRect:pivot.bounds fromView:pivot];
         CGFloat pivotTop = CGRectGetMinY(pivotInOverlay);
-        // Use the scene bounds we just synced to, not overlayView.bounds — the
-        // latter depends on autoresizing having propagated this runloop, whereas
-        // sceneBounds is the authoritative size we assigned above.
+        // The scene bounds are the authoritative overlay height. overlayView.bounds
+        // is avoided here because it only reflects a new window size once autoresizing
+        // has propagated, which may lag within the current runloop.
         CGFloat overlayHeight = sceneBounds.size.height;
         CGFloat deviceSafeBottom = sbOverlayWindow.safeAreaInsets.bottom;
         CGFloat pivotHeight = pivot.bounds.size.height;

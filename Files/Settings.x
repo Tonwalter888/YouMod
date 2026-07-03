@@ -13,6 +13,7 @@ static const NSInteger TweakSection = 'ytmo';
 @class YMSettingsItem;
 extern void YMPushSubSettings(NSString *title, NSArray<YMSettingsItem *> *items, id settingsVC, id parentResponder);
 extern YMSettingsItem *YMToggle(NSString *title, NSString *subtitle, NSString *key);
+extern YMSettingsItem *YMSlider(NSString *title, NSString *subtitle, NSString *key, float min, float max, float step, float defaultValue);
 extern YMSettingsItem *YMPicker(NSString *title, NSString *subtitle, NSString *key, NSArray<NSString *> *options, NSInteger defaultValue);
 extern YMSettingsItem *YMAction(NSString *title, NSString *subtitle, void (^action)(UIViewController *vc));
 extern YMSettingsItem *YMHeader(NSString *title);
@@ -280,6 +281,9 @@ static NSArray *getAllSystemLanguageTitles() {
             YMToggle(LOC(@"HIDE_CAST_BUTTON_PLAYER"), LOC(@"HIDE_CAST_BUTTON_PLAYER_DESC"), HideCastButtonPlayer),
             YMToggle(LOC(@"HIDE_NEXT_AND_PREV_BUTTON"), LOC(@"HIDE_NEXT_AND_PREV_BUTTON_DESC"), HideNextAndPrevButtons),
             YMToggle(LOC(@"REPLACE_PREVNEXT_BUTTONS"), LOC(@"REPLACE_PREVNEXT_BUTTONS_DESC"), ReplacePrevNextButtons),
+            YMToggle(LOC(@"REMOTE_SKIP_ENABLED"), LOC(@"REMOTE_SKIP_ENABLED_DESC"), RemoteSkipEnabled),
+            YMSlider(LOC(@"REWIND_SECONDS"), nil, RewindSeconds, 5, 60, 5, 10),
+            YMSlider(LOC(@"FORWARD_SECONDS"), nil, ForwardSeconds, 5, 60, 5, 10),
             YMToggle(LOC(@"REMOVE_AMBIANT"), LOC(@"REMOVE_AMBIANT_DESC"), RemoveAmbiant),
             YMToggle(LOC(@"REMOVE_DARK_OVERLAY"), LOC(@"REMOVE_DARK_OVERLAY_DESC"), RemoveDarkOverlay),
             YMToggle(LOC(@"HIDE_END_SCREEN"), LOC(@"HIDE_END_SCREEN_DESC"), HideEndScreenCards),
@@ -578,6 +582,8 @@ static NSArray *getAllSystemLanguageTitles() {
         DownloadManager: @YES,
         DownloadSaveToPhotos: @YES,
         DisableHints: @YES,
+        RewindSeconds: @10.0,
+        ForwardSeconds: @10.0,
     }];
     %init;
 }

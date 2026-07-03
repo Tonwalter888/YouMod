@@ -455,6 +455,10 @@ void YouModDownloadSetCurrentPlayer(YTPlayerViewController *player) {
     YouModCurrentPlayerViewController = player;
 }
 
+YTPlayerViewController *YouModDownloadGetCurrentPlayer(void) {
+    return YouModCurrentPlayerViewController;
+}
+
 static id YouModObjectFromSelector(id object, SEL selector) {
     if (!object) return nil;
     if ([object respondsToSelector:selector]) {
@@ -1764,8 +1768,8 @@ void YouModConfigureDownloadButton(_ASDisplayView *view) {
 %end
 
 %ctor {
-    // Download.x previously relied on Logos' implicit %init; declaring an explicit
-    // %ctor means we must call it ourselves, or every hook in this file goes dead.
+    // An explicit constructor must call %init itself; without it Logos does not
+    // initialize the hooks in this file.
     %init;
     // Register the download button in the player overlay's custom button row.
     // sortOrder 200 places it to the left of the SponsorBlock toggle (sortOrder 100).
