@@ -76,9 +76,11 @@ static NSArray *getAllSystemLanguageTitles() {
 %hook YTSettingsGroupData
 
 - (NSArray <NSNumber *> *)orderedCategories {
-    if (self.type != 1 || class_getClassMethod(objc_getClass("YTSettingsGroupData"), @selector(tweaks)))
+    if (self.type != 1 || class_getClassMethod(objc_getClass("YTSettingsGroupData"), @selector(tweaks))) {
         return %orig;
-    NSMutableArray *mutableCategories = %orig.mutableCopy;
+    }
+    NSArray *temp = %orig;
+    NSMutableArray *mutableCategories = temp.mutableCopy;
     [mutableCategories insertObject:@(TweakSection) atIndex:0];
     return mutableCategories.copy;
 }

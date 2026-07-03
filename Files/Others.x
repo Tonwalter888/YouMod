@@ -45,17 +45,26 @@ Class YTILikeResponseClass, YTIDislikeResponseClass, YTIRemoveLikeResponseClass;
 // Disable Hints
 %hook YTSettings
 - (BOOL)areHintsDisabled { return IS_ENABLED(DisableHints) ? YES : %orig; }
-- (void)setHintsDisabled:(BOOL)arg1 { IS_ENABLED(DisableHints) ? %orig(YES) : %orig; }
+- (void)setHintsDisabled:(BOOL)arg1 {
+    BOOL temp = YES;
+    IS_ENABLED(DisableHints) ? %orig(temp) : %orig;
+}
 %end
 
 %hook YTSettingsImpl
 - (BOOL)areHintsDisabled { return IS_ENABLED(DisableHints) ? YES : %orig; }
-- (void)setHintsDisabled:(BOOL)arg1 { IS_ENABLED(DisableHints) ? %orig(YES) : %orig; }
+- (void)setHintsDisabled:(BOOL)arg1 {
+    BOOL temp = YES;
+    IS_ENABLED(DisableHints) ? %orig(temp) : %orig;
+}
 %end
 
 %hook YTUserDefaults
 - (BOOL)areHintsDisabled { return IS_ENABLED(DisableHints) ? YES : %orig; }
-- (void)setHintsDisabled:(BOOL)arg1 { IS_ENABLED(DisableHints) ? %orig(YES) : %orig; }
+- (void)setHintsDisabled:(BOOL)arg1 {
+    BOOL temp = YES;
+    IS_ENABLED(DisableHints) ? %orig(temp) : %orig;
+}
 %end
 
 // Block upgrade dialogs
