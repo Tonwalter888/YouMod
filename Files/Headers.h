@@ -318,6 +318,13 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 - (void)notifyObserversAudioTrackWillChange:(id)arg1 source:(NSInteger)arg2;
 @end
 
+@interface YTICaptionTrackEntry : GPBMessage
+- (NSString *)baseURL;
+- (NSString *)vssId;
+- (NSString *)languageCode;
+- (YTIFormattedString *)name;
+@end
+
 @interface YTPlayerViewController (YouMod) <UIGestureRecognizerDelegate>
 @property (nonatomic, retain) UIPanGestureRecognizer *YouModPanGesture;
 @property (nonatomic, retain) UITapGestureRecognizer *YouModTapGesture;
@@ -436,13 +443,6 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 @interface YTReelPlayerViewController (YouMod)
 - (void)reelContentViewRequestsAdvanceToNextVideo:(id)arg;
 - (void)reelContentViewRequestsPlayPauseToggle:(id)arg;
-@end
-
-@interface YTICaptionTrackEntry : GPBMessage
-- (NSString *)baseURL;
-- (NSString *)vssId;
-- (NSString *)languageCode;
-- (YTIFormattedString *)name;
 @end
 
 @interface YTIPlayerCaptionsTrackListRenderer : GPBMessage
