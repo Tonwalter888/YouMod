@@ -365,7 +365,7 @@ static NSArray *getAllSystemLanguageTitles() {
                 if (ytIconType) {
                     YTIIcon *icon = [%c(YTIIcon) new];
                     icon.iconType = [ytIconType intValue];
-                    UIImage *img = [icon respondsToSelector:@selector(iconImageWithColor:)] ? [icon iconImageWithColor:[UIColor whiteColor]] : nil;
+                    UIImage *img = [icon iconImageWithColor:[UIColor whiteColor]];
                     if (img) [defaultTabImages addObject:img];
                 } else {
                     NSString *bundleName = tabBundleIconMap[tabID];
@@ -384,7 +384,7 @@ static NSArray *getAllSystemLanguageTitles() {
             for (NSNumber *iconType in fallbackIcons) {
                 YTIIcon *icon = [%c(YTIIcon) new];
                 icon.iconType = [iconType intValue];
-                UIImage *img = [icon respondsToSelector:@selector(iconImageWithColor:)] ? [icon iconImageWithColor:[UIColor whiteColor]] : nil;
+                UIImage *img = [icon iconImageWithColor:[UIColor whiteColor]];
                 if (img) [defaultTabImages addObject:img];
             }
         }

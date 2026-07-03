@@ -46,7 +46,16 @@
 "DOWNLOAD_SHORTS" = "Download Shorts";
 "DOWNLOAD_SHORTS_DESC" = "Choose Shorts quality";
 "COPY_VID_INFO" = "Copy video information";
-"COPY_VID_INFO_DESC" = "Copy title and URL";
+"COPY_VID_INFO_DESC" = "Choose what to copy";
+"COPY_TITLE" = "Copy title";
+"COPY_TITLE_DESC" = "Copy the video title";
+"COPY_DESCRIPTION" = "Copy description";
+"COPY_DESCRIPTION_DESC" = "Copy the video description";
+"COPY_URL" = "Copy URL";
+"COPY_URL_DESC" = "Copy the video URL";
+"COPIED_TITLE" = "Copied title";
+"COPIED_DESCRIPTION" = "Copied description";
+"COPIED_URL" = "Copied URL";
 "SAVE_THUMBNAIL" = "Save thumbnail";
 "SAVE_THUMBNAIL_DESC" = "Save to Photos";
 "DOWNLOAD_CAPTIONS" = "Download captions";

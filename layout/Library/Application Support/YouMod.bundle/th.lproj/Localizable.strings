@@ -46,7 +46,16 @@
 "DOWNLOAD_SHORTS" = "ดาวน์โหลด Shorts";
 "DOWNLOAD_SHORTS_DESC" = "เลือกคุณภาพ Shorts";
 "COPY_VID_INFO" = "คัดลอกข้อมูลวิดีโอ";
-"COPY_VID_INFO_DESC" = "คัดลอกชื่อคลิปและ URL";
+"COPY_VID_INFO_DESC" = "เลือกสิ่งที่ต้องการคัดลอก";
+"COPY_TITLE" = "คัดลอกชื่อ";
+"COPY_TITLE_DESC" = "คัดลอกชื่อวิดีโอ";
+"COPY_DESCRIPTION" = "คัดลอกคำอธิบาย";
+"COPY_DESCRIPTION_DESC" = "คัดลอกคำอธิบายวิดีโอ";
+"COPY_URL" = "คัดลอก URL";
+"COPY_URL_DESC" = "คัดลอก URL ของวิดีโอ";
+"COPIED_TITLE" = "คัดลอกชื่อแล้ว";
+"COPIED_DESCRIPTION" = "คัดลอกคำอธิบายแล้ว";
+"COPIED_URL" = "คัดลอก URL แล้ว";
 "SAVE_THUMBNAIL" = "บันทึกปกคลิป";
 "SAVE_THUMBNAIL_DESC" = "บันทึกลงในแอปรูปภาพ";
 "DOWNLOAD_CAPTIONS" = "ดาวน์โหลดคำบรรยาย";
