@@ -46,24 +46,24 @@ Class YTILikeResponseClass, YTIDislikeResponseClass, YTIRemoveLikeResponseClass;
 %hook YTSettings
 - (BOOL)areHintsDisabled { return IS_ENABLED(DisableHints) ? YES : %orig; }
 - (void)setHintsDisabled:(BOOL)arg1 {
-    BOOL temp = YES;
-    IS_ENABLED(DisableHints) ? %orig(temp) : %orig;
+    BOOL temp = IS_ENABLED(DisableHints) ? YES : arg1;
+    %orig(temp);
 }
 %end
 
 %hook YTSettingsImpl
 - (BOOL)areHintsDisabled { return IS_ENABLED(DisableHints) ? YES : %orig; }
 - (void)setHintsDisabled:(BOOL)arg1 {
-    BOOL temp = YES;
-    IS_ENABLED(DisableHints) ? %orig(temp) : %orig;
+    BOOL temp = IS_ENABLED(DisableHints) ? YES : arg1;
+    %orig(temp);
 }
 %end
 
 %hook YTUserDefaults
 - (BOOL)areHintsDisabled { return IS_ENABLED(DisableHints) ? YES : %orig; }
 - (void)setHintsDisabled:(BOOL)arg1 {
-    BOOL temp = YES;
-    IS_ENABLED(DisableHints) ? %orig(temp) : %orig;
+    BOOL temp = IS_ENABLED(DisableHints) ? YES : arg1;
+    %orig(temp);
 }
 %end
 

@@ -218,8 +218,8 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
 %hook YTAutonavEndscreenController
 - (void)showEndscreen { if (!IS_ENABLED(HideSuggestedVideo)) %orig; }
 - (void)showEndscreenControlsInPlayerBar:(BOOL)arg {
-    BOOL temp = NO;
-    IS_ENABLED(HideSuggestedVideo) ? %orig(temp) : %orig;
+    BOOL temp = IS_ENABLED(HideSuggestedVideo) ? NO : arg;
+    %orig(temp);
 }
 %end
 
@@ -238,14 +238,14 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
 // Remove Dark Background in Overlay
 %hook YTMainAppVideoPlayerOverlayView
 - (void)setBackgroundVisible:(BOOL)arg1 isGradientBackground:(BOOL)arg2 {
-    BOOL temp = NO;
-    IS_ENABLED(RemoveDarkOverlay) ? %orig(temp, arg2) : %orig;
+    BOOL temp = IS_ENABLED(RemoveDarkOverlay) ? NO : arg1;
+    %orig(temp, arg2);
 }
 // Hide Watermarks
 - (BOOL)isWatermarkEnabled { return IS_ENABLED(HideWaterMark) ? NO : %orig; }
 - (void)setWatermarkEnabled:(BOOL)arg { 
-    BOOL temp = NO;
-    IS_ENABLED(HideWaterMark) ? %orig(temp) : %orig;
+    BOOL temp = IS_ENABLED(HideWaterMark) ? NO : arg;
+    %orig(temp);
 }
 - (void)layoutSubviews {
     %orig;
@@ -257,12 +257,12 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
 // No Endscreen Cards
 %hook YTCreatorEndscreenView
 - (void)setHidden:(BOOL)arg1 { 
-    BOOL temp = YES;
-    IS_ENABLED(HideEndScreenCards) ? %orig(temp) : %orig;
+    BOOL temp = IS_ENABLED(HideEndScreenCards) ? YES : arg1;
+    %orig(temp);
 }
 - (void)setHoverCardHidden:(BOOL)arg { 
-    BOOL temp = YES;
-    IS_ENABLED(HideEndScreenCards) ? %orig(temp) : %orig;
+    BOOL temp = IS_ENABLED(HideEndScreenCards) ? YES : arg;
+    %orig(temp);
 }
 - (void)setHoverCardRenderer:(id)arg { if (!IS_ENABLED(HideEndScreenCards)) %orig; }
 %end
@@ -315,11 +315,12 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
     BOOL temp;
     if (IS_ENABLED(DisablesShowRemaining)) {
         temp = NO;
-        %orig(temp);
-        return;
+    } else if (IS_ENABLED(AlwaysShowRemaining)) {
+        temp = YES;
+    } else {
+        temp = arg1;
     }
-    temp = YES;
-    IS_ENABLED(AlwaysShowRemaining) ? %orig(temp) : %orig;
+    %orig(temp);
 }
 %end
 
@@ -363,8 +364,8 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
 // Disable Autoplay 
 %hook YTPlaybackConfig
 - (void)setStartPlayback:(BOOL)arg1 { 
-    BOOL temp = NO;
-    IS_ENABLED(StopAutoplayVideo) ? %orig(temp) : %orig; 
+    BOOL temp = IS_ENABLED(StopAutoplayVideo) ? NO : arg1;
+    %orig(temp); 
 }
 %end
 
@@ -380,8 +381,8 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
 // Always show seekbar
 %hook YTInlinePlayerBarContainerView
 - (void)setPlayerBarAlpha:(CGFloat)alpha { 
-    CGFloat temp = 1.0;
-    IS_ENABLED(AlwaysShowSeekbar) ? %orig(temp) : %orig;
+    CGFloat temp = IS_ENABLED(AlwaysShowSeekbar) ? 1.0 : alpha;
+    %orig(temp);
 }
 %end
 
@@ -400,8 +401,8 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
 
 %hook YTInlinePlayerBarContainerView
 - (void)inlinePlayerBarView:(id)arg1 didScrubToChapteredTime:(CGFloat)arg2 shouldSnap:(BOOL)arg3 { 
-    BOOL temp = NO;
-    IS_ENABLED(DontSnapToChapter) ? %orig(arg1, arg2, temp) : %orig;
+    BOOL temp = IS_ENABLED(DontSnapToChapter) ? NO : arg3;
+    %orig(arg1, arg2, temp);
 }
 %end
 
