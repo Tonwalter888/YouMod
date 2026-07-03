@@ -778,11 +778,6 @@ static NSArray <YouModMediaFormat *> *YouModFormatsForPlayer(YTPlayerViewControl
     return unique.copy;
 }
 
-static YouModMediaFormat *YouModBestAudioFormatForPlayer(YTPlayerViewController *player) {
-    NSArray <YouModMediaFormat *> *audioFormats = YouModFormatsForPlayer(player, NO);
-    return audioFormats.firstObject;
-}
-
 static UIViewController *YouModPresenterForSender(UIView *sender, YTPlayerViewController *player) {
     UIViewController *presenter = nil;
     if ([sender respondsToSelector:@selector(_viewControllerForAncestor)])
