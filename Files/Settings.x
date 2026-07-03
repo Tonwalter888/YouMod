@@ -267,6 +267,9 @@ static NSArray *getAllSystemLanguageTitles() {
             YMTextSegment(LOC(@"AUDIO_TRACK"), AudioTrack, (@[LOC(@"DEFAULT"), LOC(@"ORIGINAL"), LOC(@"SELECT_MANUALLY")]), 0),
             YMPicker(LOC(@"AUDIO_TRACK_SELECT"), LOC(@"AUDIO_TRACK_SELECT_DESC"), AudioTrackLangIndex, getAllSystemLanguageTitles(), 0),
             YMToggle(LOC(@"NO_AUTO_DUBBED"), LOC(@"NO_AUTO_DUBBED_DESC"), NoDubbedAudioTrack),
+            YMTextSegment(LOC(@"CAPTION_TRACK"), CaptionTrack, (@[LOC(@"DEFAULT"), LOC(@"DISABLED"), LOC(@"SELECT_MANUALLY")]), 0),
+            YMPicker(LOC(@"CAPTION_TRACK_SELECT"), LOC(@"CAPTION_TRACK_SELECT_DESC"), CaptionTrackLangIndex, getAllSystemLanguageTitles(), 0),
+            YMToggle(LOC(@"DISABLES_CAPTION_TRACK"), LOC(@"DISABLES_CAPTION_TRACK_DESC"), DisablesCaptionTrack),
             YMHeader(LOC(@"INTERFACE")),
             YMToggle(LOC(@"MUTE_BUTTON"), LOC(@"MUTE_BUTTON_DESC"), MuteButton),
             YMToggle(LOC(@"SPEED_BUTTON"), LOC(@"SPEED_BUTTON_DESC"), SpeedButton),
@@ -303,8 +306,6 @@ static NSArray *getAllSystemLanguageTitles() {
             YMToggle(LOC(@"EXTRA_SPEED"), LOC(@"EXTRA_SPEED_DESC"), ExtraSpeed),
             YMHeader(LOC(@"PLAYER_ACTIONS")),
             YMPicker(LOC(@"DEFAULT_SPEED"), LOC(@"DEFAULT_SPEED_DESC"), AutoSpeedIndex, (@[LOC(@"DISABLED"), @"0.25x", @"0.5x", @"0.75x", @"1x", @"1.25x", @"1.5x", @"1.75x", @"2x", @"3x", @"4x", @"5x"]), 0),
-            YMToggle(LOC(@"AUTO_DISABLES_CAPTION"), LOC(@"AUTO_DISABLES_CAPTION_DESC"), DisablesCaptions), // will get removed
-            YMToggle(LOC(@"FORCE_MINIPLAYER"), LOC(@"FORCE_MINIPLAYER_DESC"), ForceMiniPlayer),
             YMToggle(LOC(@"HIDE_CONTENT_WARNING"), LOC(@"HIDE_CONTENT_WARNING_DESC"), HideContentWarning),
             YMToggle(LOC(@"STOP_AUTOPLAY_VIDEO"), LOC(@"STOP_AUTOPLAY_VIDEO_DESC"), StopAutoplayVideo),
             YMToggle(LOC(@"AUTO_FULLSCREEN"), LOC(@"AUTO_FULLSCREEN_DESC"), AutoFullScreen),

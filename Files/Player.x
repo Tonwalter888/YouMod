@@ -343,7 +343,7 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
     YouModDownloadSetCurrentPlayer(playerviewController);
     if (IS_ENABLED(MuteButton)) [playerviewController YouModAutoMute];
     if (IS_ENABLED(AutoFullScreen)) [playerviewController performSelector:@selector(YouModAutoFullscreen) withObject:nil afterDelay:0.5];
-    if (IS_ENABLED(DisablesCaptions)) [playerviewController performSelector:@selector(YouModTurnOffCaptions) withObject:nil afterDelay:0.5];
+    if (INTFORVAL(CaptionTrack) != 0) [playerviewController performSelector:@selector(YouModAutoCaptions) withObject:nil afterDelay:0.5];
     if (INTFORVAL(AutoSpeedIndex) != 0) [playerviewController performSelector:@selector(YouModSetAutoSpeed) withObject:nil afterDelay:0.5];
     if (INTFORVAL(AudioTrack) != 0) [playerviewController performSelector:@selector(YouModAutoAudioTrack) withObject:nil afterDelay:0.5];
 }
@@ -646,17 +646,6 @@ static void YouModManageHoldToSpeed(UILongPressGestureRecognizer *gesture, YTMai
 %hook YTPlayerViewController
 
 %new
-- (void)YouModTurnOffCaptions {
-    if ([self.view.superview isKindOfClass:NSClassFromString(@"YTWatchView")]) {
-        @try {
-            [self setActiveCaptionTrack:nil source:0];
-        } @catch (id ex) {
-            [self setActiveCaptionTrack:nil];
-        }
-    }
-}
-
-%new
 - (void)YouModAutoFullscreen {
     YTWatchController *watchController = [self valueForKey:@"_UIDelegate"];
     [watchController showFullScreen];
@@ -743,6 +732,54 @@ static void YouModManageHoldToSpeed(UILongPressGestureRecognizer *gesture, YTMai
         [switchcon notifyObserversAudioTrackWillChange:matchedTrack source:0];
         [switchcon switchToAudioTrack:matchedTrack source:0];
         [switchcon notifyObserversAudioTrackDidChange:matchedTrack source:0];
+    }
+}
+
+%new
+- (void)YouModAutoCaptions {
+    if (INTFORVAL(CaptionTrack) == 1) {
+        @try {
+            [self setActiveCaptionTrack:nil source:0];
+        } @catch (id ex) {
+            [self setActiveCaptionTrack:nil];
+        }
+        return;
+    }
+    YTPlayerResponse *response;
+    @try {
+        response = self.contentPlayerResponse;
+    } @catch (id ex) {
+        response = self.playerResponse;
+    }
+    YTIPlayerResponse *playerData = response.playerData;
+    YTICaptionsSupportedRenderers *captions = playerData.captions;
+    YTIPlayerCaptionsTrackListRenderer *tracklistRenderer = captions.playerCaptionsTracklistRenderer;
+    NSArray *tracks = tracklistRenderer.captionTracksArray;
+    NSInteger selectedIndex = INTFORVAL(CaptionTrackLangIndex);
+    NSArray *langCodes = getAllSystemLanguageValues();
+    NSString *userTargetLang = langCodes[selectedIndex];
+    YTICaptionTrackEntry *matchedTrack;
+    for (YTICaptionTrackEntry *track in tracks) {
+        if ([track.languageCode isEqualToString:userTargetLang]) {
+            matchedTrack = track;
+            break;
+        }
+    }
+    if (matchedTrack && [matchedTrack.vssId hasPrefix:@"a."] && IS_ENABLED(DisablesCaptionTrack)) {
+        matchedTrack = nil;
+        @try {
+            [self setActiveCaptionTrack:nil source:0];
+        } @catch (id ex) {
+            [self setActiveCaptionTrack:nil];
+        }
+        return;
+    }
+    if (matchedTrack) {
+        @try {
+            [self setActiveCaptionTrack:matchedTrack source:0];
+        } @catch (id ex) {
+            [self setActiveCaptionTrack:matchedTrack];
+        }
     }
 }
 %end

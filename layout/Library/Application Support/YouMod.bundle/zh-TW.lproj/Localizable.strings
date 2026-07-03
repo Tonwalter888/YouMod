@@ -53,9 +53,9 @@
 "COPY_DESCRIPTION_DESC" = "Copy the video description";
 "COPY_URL" = "Copy URL";
 "COPY_URL_DESC" = "Copy the video URL";
-"COPIED_TITLE" = "Copied title";
-"COPIED_DESCRIPTION" = "Copied description";
-"COPIED_URL" = "Copied URL";
+"COPIED_TITLE" = "Copied video title";
+"COPIED_DESCRIPTION" = "Copied video description";
+"COPIED_URL" = "Copied video URL";
 "SAVE_THUMBNAIL" = "Save thumbnail";
 "SAVE_THUMBNAIL_DESC" = "Save to Photos";
 "DOWNLOAD_CAPTIONS" = "Download captions";
@@ -148,9 +148,14 @@
 "ORIGINAL" = "Original";
 "SELECT_MANUALLY" = "Select manually";
 "AUDIO_TRACK_SELECT" = "Selected audio track";
-"AUDIO_TRACK_SELECT_DESC" = "Specifies the preferred audio track language to use for playback, if available";
+"AUDIO_TRACK_SELECT_DESC" = "Specifies the preferred audio track language to use for playback, if available.";
 "NO_AUTO_DUBBED" = "Ignore auto-dubbed tracks";
 "NO_AUTO_DUBBED_DESC" = "Skips manual selection if the preferred language track is auto-dubbed.";
+"CAPTION_TRACK" = "Preferred captions";
+"CAPTION_TRACK_SELECT" = "Selected captions";
+"CAPTION_TRACK_SELECT_DESC" = "Specifies the preferred captions language to display, if available.";
+"DISABLES_CAPTION_TRACK" = "Disable auto-generated captions";
+"DISABLES_CAPTION_TRACK_DESC" = "Disable captions if the preferred language is auto-generated.";
 "DEFAULT_SPEED" = "Default playback rate";
 "DEFAULT_SPEED_DESC" = "Overrides the default playback speed.";
 "SPEED_BUTTON" = "Speed controls button";
@@ -235,8 +240,6 @@
 "HIDE_CONTENT_WARNING_DESC" = "Automatically skip the sensitive content warning alert in some vidoes.";
 "AUTO_FULLSCREEN" = "Auto fullscreen";
 "AUTO_FULLSCREEN_DESC" = "Automatically enter fullscreen mode when starting video playback.";
-"AUTO_DISABLES_CAPTION" = "Auto disable captions";
-"AUTO_DISABLES_CAPTION_DESC" = "Automatically turns off closed captions (CC) whenever a new video starts playing.";
 "PORTRAIT_FULLSCREEN" = "Portrait fullscren mode";
 "PORTRAIT_FULLSCREEN_DESC" = "Enables portrait fullscreen mode support.";
 "OLD_QUALITY_PICKER" = "Use old quality picker";

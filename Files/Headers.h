@@ -106,6 +106,9 @@
 #define AudioTrack @"YouModAudioTrackSegment"
 #define AudioTrackLangIndex @"YouModAudioTrackLangIndex"
 #define NoDubbedAudioTrack @"YouModNoDubbedAudioTrack"
+#define CaptionTrack @"YouModCaptionTrack"
+#define CaptionTrackLangIndex @"YouModCaptionTrackLangIndex"
+#define DisablesCaptionTrack @"YouModDisablesCaptionTrack"
 #define AutoSpeedIndex @"YouModAutoSpeedIndex"
 #define HoldToSpeedIndex @"YouModHoldToSpeedIndex"
 #define HideAutoPlayToggle @"YouModHideAutoPlayToggle"
@@ -132,7 +135,6 @@
 #define DisablesDoubleTap @"YouModDisablesDoubleTap"
 #define DisablesLongHold @"YouModDisablesLongHold"
 #define AutoExitFullScreen @"YouModAutoExitFullScreen"
-#define DisablesCaptions @"YouModAutoDisablesCaptions"
 #define DisablesShowRemaining @"YouModDisablesShowRemainingTime"
 #define AlwaysShowRemaining @"YouModAlwaysShowRemainingTime"
 #define ShowExtraTimeRemaining @"YouModShowExtraTimeRemaining"
@@ -325,16 +327,16 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 @property (nonatomic, assign, readonly) BOOL isPlayingAd;
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer;
 - (void)YouModAutoFullscreen;
-- (void)YouModTurnOffCaptions;
 - (void)YouModShortsToRegular;
 - (void)YouModSetAutoSpeed;
-- (void)setActiveCaptionTrack:(id)arg1 source:(long long)arg2;
-- (void)setActiveCaptionTrack:(id)arg;
+- (void)setActiveCaptionTrack:(YTICaptionTrackEntry *)arg1 source:(long long)arg2;
+- (void)setActiveCaptionTrack:(YTICaptionTrackEntry *)arg;
 - (void)setPlaybackRate:(float)rate;
 - (void)play;
 - (void)pause;
 - (void)YouModAutoMute;
 - (void)YouModAutoAudioTrack;
+- (void)YouModAutoCaptions;
 - (NSInteger)playerState;
 - (YTPlayerResponse *)contentPlayerResponse;
 - (YTPlayerResponse *)playerResponse;
@@ -438,6 +440,7 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 
 @interface YTICaptionTrackEntry : GPBMessage
 - (NSString *)baseURL;
+- (NSString *)vssId;
 - (NSString *)languageCode;
 - (YTIFormattedString *)name;
 @end
