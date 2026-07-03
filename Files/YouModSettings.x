@@ -612,6 +612,12 @@ static const NSInteger kYMTabMaxEnabled = 6;
 static const void *kYMTabTableViewKey = &kYMTabTableViewKey;
 static const void *kYMTabDataKey = &kYMTabDataKey;
 static const void *kYMTabSnapshotKey = &kYMTabSnapshotKey;
+// Saved copies of the SHARED nav bar's appearance, captured on appear and
+// restored on disappear. This page is the only settings screen that mutates the
+// shared navigationBar appearance; without restoring it, the leftover appearance
+// repaints the previous page's back button with its default (blue) tint.
+static const void *kYMTabSavedStdAppearanceKey = &kYMTabSavedStdAppearanceKey;
+static const void *kYMTabSavedScrollEdgeAppearanceKey = &kYMTabSavedScrollEdgeAppearanceKey;
 
 @implementation YMTabOrderViewController
 
@@ -689,6 +695,15 @@ static const void *kYMTabSnapshotKey = &kYMTabSnapshotKey;
     [self loadTabData];
     [self takeSnapshot];
 
+    // Snapshot the shared nav bar's appearance BEFORE we overwrite it below, so
+    // we can restore it on exit. viewDidLoad runs before viewWillAppear:, so this
+    // is the last point at which the bar still carries the previous page's
+    // appearance. Without restoring it, the leftover appearance repaints the
+    // previous page's back button with its default (blue) tint.
+    UINavigationBar *sharedNavBar = self.navigationController.navigationBar;
+    objc_setAssociatedObject(self, kYMTabSavedStdAppearanceKey, sharedNavBar.standardAppearance, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    objc_setAssociatedObject(self, kYMTabSavedScrollEdgeAppearanceKey, sharedNavBar.scrollEdgeAppearance, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+
     // Configure navigation bar appearance with solid color
     UINavigationBarAppearance *appearance = [[UINavigationBarAppearance alloc] init];
     [appearance configureWithDefaultBackground];
@@ -750,6 +765,12 @@ static const void *kYMTabSnapshotKey = &kYMTabSnapshotKey;
     Class ytStyled = objc_getClass("YTStyledViewController");
     struct objc_super superStruct = { self, ytStyled ?: [UIViewController class] };
     ((void (*)(struct objc_super *, SEL, BOOL))objc_msgSendSuper)(&superStruct, @selector(viewWillDisappear:), animated);
+
+    // Restore the shared nav bar appearance we captured in viewDidLoad, so the
+    // page we return to keeps its own back-button tint instead of ours.
+    UINavigationBar *navBar = self.navigationController.navigationBar;
+    navBar.standardAppearance = objc_getAssociatedObject(self, kYMTabSavedStdAppearanceKey);
+    navBar.scrollEdgeAppearance = objc_getAssociatedObject(self, kYMTabSavedScrollEdgeAppearanceKey);
 
     if ([self hasRealChanges]) {
         YTAlertView *alert = [%c(YTAlertView) confirmationDialogWithAction:^{

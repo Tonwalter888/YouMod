@@ -22,7 +22,7 @@ static NSBundle *SBSettingsBundle() {
 
 static NSArray<NSString *> *sbSettingsCategories() {
     return @[@"sponsor", @"intro", @"outro", @"interaction", @"selfpromo",
-             @"music_offtopic", @"preview", @"poi_highlight", @"filler"];
+             @"music_offtopic", @"preview", @"hook", @"poi_highlight", @"filler"];
 }
 
 static NSString *SBActionName(NSInteger action) {
@@ -572,6 +572,7 @@ static const void *kSBColorIndexPathKey = &kSBColorIndexPathKey;
         SB_ACTION_KEY(@"selfpromo"): @(SBSegmentActionAutoSkip),
         SB_ACTION_KEY(@"music_offtopic"): @(SBSegmentActionAutoSkip),
         SB_ACTION_KEY(@"preview"): @(SBSegmentActionAutoSkip),
+        SB_ACTION_KEY(@"hook"): @(SBSegmentActionDisable),
         SB_ACTION_KEY(@"poi_highlight"): @(SBSegmentActionSkipTo),
         SB_ACTION_KEY(@"filler"): @(SBSegmentActionAutoSkip),
         SB_COLOR_KEY(@"sponsor"): @"#00D400",
@@ -581,6 +582,7 @@ static const void *kSBColorIndexPathKey = &kSBColorIndexPathKey;
         SB_COLOR_KEY(@"selfpromo"): @"#FFFF00",
         SB_COLOR_KEY(@"music_offtopic"): @"#FF9900",
         SB_COLOR_KEY(@"preview"): @"#0084D6",
+        SB_COLOR_KEY(@"hook"): @"#395699",
         SB_COLOR_KEY(@"poi_highlight"): @"#FF006A",
         SB_COLOR_KEY(@"filler"): @"#7300FF",
     }];

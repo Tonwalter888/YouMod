@@ -166,7 +166,7 @@ static NSArray<NSString *> *sbAllCategories() {
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         cats = @[@"sponsor", @"intro", @"outro", @"interaction", @"selfpromo",
-                 @"music_offtopic", @"preview", @"poi_highlight", @"filler"];
+                 @"music_offtopic", @"preview", @"hook", @"poi_highlight", @"filler"];
     });
     return cats;
 }

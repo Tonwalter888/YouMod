@@ -312,7 +312,7 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
 // Disable toggle time remaining - @bhackel
 %hook YTInlinePlayerBarContainerView
 - (void)setShouldDisplayTimeRemaining:(BOOL)arg1 {
-    BOOl temp;
+    BOOL temp;
     if (IS_ENABLED(DisablesShowRemaining)) {
         temp = NO;
         %orig(temp);
