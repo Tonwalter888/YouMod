@@ -411,7 +411,7 @@
 "SB_CAT_music_offtopic_DESC" = "Non-music sections in music videos (e.g. talking, introductions).";
 "SB_CAT_preview" = "Preview";
 "SB_CAT_preview_DESC" = "Recap or preview of content from another video or previous episode.";
-"SB_CAT_hook" = "Hook / Greetings";
+"SB_CAT_hook" = "Hook/Greetings";
 "SB_CAT_hook_DESC" = "Narrated trailers for the upcoming video, greetings and goodbyes.";
 "SB_CAT_poi_highlight" = "Highlight";
 "SB_CAT_poi_highlight_DESC" = "The key moment or highlight point of the video. Use 'Skip to' to jump directly to it.";
