@@ -59,6 +59,7 @@
 #import <YouTubeHeader/YTIStreamingData.h>
 #import <YouTubeHeader/YTIFormattedString.h>
 #import <YouTubeHeader/GOOHUDManagerInternal.h>
+#import <YouTubeHeader/MLInnerTubeCaptionTrack.h>
 
 // For Settings.x and SponsorBlockSettings.x
 #import <PSHeader/Misc.h>
@@ -341,8 +342,6 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 - (void)YouModAutoFullscreen;
 - (void)YouModShortsToRegular;
 - (void)YouModSetAutoSpeed;
-- (void)setActiveCaptionTrack:(YTICaptionTrackEntry *)arg1 source:(long long)arg2;
-- (void)setActiveCaptionTrack:(YTICaptionTrackEntry *)arg;
 - (void)setPlaybackRate:(float)rate;
 - (void)play;
 - (void)pause;
@@ -437,9 +436,19 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 - (BOOL)hasId_p;
 @end
 
+@interface MLInnerTubeCaptionTrack (YouMod)
+- (NSString *)languageCode;
+- (NSString *)VSSID;
+@end
+
+@interface YTCaptionTrackSwitchController : NSObject
+- (void)setActiveCaptionTrack:(MLInnerTubeCaptionTrack *)arg;
+@end
+
 // Player Gestures - @bhackel (YTLitePlus)
 @interface YTMainAppVideoPlayerOverlayViewController (YouMod)
 @property (nonatomic, assign) YTPlayerViewController *parentViewController;
+- (YTCaptionTrackSwitchController *)captionTrackController;
 - (NSString *)videoID;
 - (CGFloat)mediaTime;
 - (void)setVideoFreeZoomOverlayController:(id)arg;

@@ -814,37 +814,41 @@ static void YouModManageHoldToSpeed(UILongPressGestureRecognizer *gesture, YTMai
 
 %new
 - (void)YouModAutoCaptions {
-    if (INTFORVAL(CaptionTrack) == 1) {
-        [self setActiveCaptionTrack:nil source:0];
-        return;
-    }
-    YTPlayerResponse *response;
-    @try {
-        response = self.contentPlayerResponse;
-    } @catch (id ex) {
-        response = self.playerResponse;
-    }
-    YTIPlayerResponse *playerData = response.playerData;
-    YTICaptionsSupportedRenderers *captions = playerData.captions;
-    YTIPlayerCaptionsTrackListRenderer *tracklistRenderer = captions.playerCaptionsTracklistRenderer;
-    NSArray *tracks = tracklistRenderer.captionTracksArray;
+    YTMainAppVideoPlayerOverlayViewController *ovc = self.activeVideoPlayerOverlay;
+    YTCaptionTrackSwitchController *switchcon = ovc.captionTrackController;
     NSInteger selectedIndex = INTFORVAL(CaptionTrackLangIndex);
     NSArray *langCodes = getAllSystemLanguageValues();
     NSString *userTargetLang = langCodes[selectedIndex];
-    YTICaptionTrackEntry *matchedTrack;
-    for (YTICaptionTrackEntry *track in tracks) {
+    NSDictionary *allTracks = [switchcon valueForKey:@"_availableCaptionTracks"];
+    if (!allTracks || allTracks.count == 0) return;
+    MLInnerTubeCaptionTrack *currentTrack = [switchcon valueForKey:@"_activeCaptionTrack"];
+    MLInnerTubeCaptionTrack *matchedTrack;
+
+    if (INTFORVAL(CaptionTrack) == 1) {
+        if (currentTrack != nil) {
+            [switchcon setActiveCaptionTrack:nil];
+        }
+        return;
+    }
+
+    for (id key in allTracks) {
+        MLInnerTubeCaptionTrack *track = allTracks[key];
         if ([track.languageCode isEqualToString:userTargetLang]) {
             matchedTrack = track;
             break;
         }
     }
-    if (matchedTrack && [matchedTrack.vssId hasPrefix:@"a."] && IS_ENABLED(DisablesCaptionTrack)) {
+    if (matchedTrack == currentTrack) { // needs to test
         matchedTrack = nil;
-        [self setActiveCaptionTrack:nil source:0];
+        return;
+    }
+    if (matchedTrack && [matchedTrack.VSSID hasPrefix:@"a."] && IS_ENABLED(DisablesCaptionTrack)) {
+        matchedTrack = nil;
+        [switchcon setActiveCaptionTrack:nil];
         return;
     }
     if (matchedTrack) {
-        [self setActiveCaptionTrack:matchedTrack source:0];
+        [switchcon setActiveCaptionTrack:matchedTrack];
     }
 }
 %end
