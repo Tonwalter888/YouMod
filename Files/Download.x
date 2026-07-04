@@ -1465,7 +1465,6 @@ static void YouModCopyTextToPasteboard(NSString *text, NSString *successKey) {
 }
 
 static void YouModShowCopyVideoInfoSheet(YTPlayerViewController *player, UIViewController *presenter, UIView *sender) {
-    NSString *videoID = player.currentVideoID;
     NSString *author = YouModAuthorForPlayer(player);
     NSString *title = YouModTitleForPlayer(player);
     NSString *description = YouModDescriptionForPlayer(player);
