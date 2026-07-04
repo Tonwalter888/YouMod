@@ -709,13 +709,9 @@ extern BOOL useBackwardIconForButton;
 
         if (!segments || segments.count == 0) return;
 
-        UIView *playerBar;
         for (UIView *sub in scrub.subviews) {
             if ([sub isKindOfClass:%c(YTPlayerBarMarkerView)] && sub.frame.origin.y != 0) {
                 playerBar = sub;
-            } else if ([sub isKindOfClass:%c(YTModularPlayerBarView)] && sub.frame.origin.y != 0) {
-                playerBar = sub;
-                mainView = sub;
             } else if ([sub isKindOfClass:%c(YTInlineMutedPlaybackScrubbingSlider)]) {
                 if ([sub.accessibilityIdentifier isEqualToString:@"id.player.scrubber.slider"]) {
                     scrubberDot = sub;
@@ -726,27 +722,9 @@ extern BOOL useBackwardIconForButton;
 
         if (!playerBar || !scrubberDot) return;
 
-        if ([playerBar isKindOfClass:%c(YTModularPlayerBarView)]) {
-            // Remove old markers (tag 9900)
-            for (UIView *sub in [playerBar.subviews copy]) {
-                if (sub.tag == 9900) [sub removeFromSuperview];
-            }
-            for (UIView *sub in playerBar.subviews) {
-                if ([sub isKindOfClass:%c(YTPlayerBarRectangleDecorationView)] || [sub isKindOfClass:%c(YTPlayerBarProgressDecorationView)]) {
-                    if (!referenceView) referenceView = sub;
-                } else {
-                    scrubberDot = sub;
-                }
-                if (referenceView && scrubberDot) break;
-            }
-            barWidth = playerBar.bounds.size.width;
-            h = referenceView.bounds.size.height;
-            y = referenceView.frame.origin.y;
-        } else {
-            barWidth = playerBar.bounds.size.width;
-            h = playerBar.bounds.size.height;
-            y = playerBar.frame.origin.y;
-        }
+        barWidth = playerBar.bounds.size.width;
+        h = playerBar.bounds.size.height;
+        y = playerBar.frame.origin.y;
     } else {
         return;
     }

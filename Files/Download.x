@@ -668,9 +668,9 @@ static NSString *YouModFormatSubtitle(YouModMediaFormat *format, BOOL video) {
 
 static YTIPlayerResponse *YouModPlayerDataForPlayer(YTPlayerViewController *player) {
     YTPlayerResponse *response;
-    @try {
+    if ([player respondsToSelector:@selector(contentPlayerResponse)]) {
         response = player.contentPlayerResponse;
-    } @catch (id ex) {
+    } else {
         response = player.playerResponse;
     }
     YTIPlayerResponse *playerData = response.playerData;
