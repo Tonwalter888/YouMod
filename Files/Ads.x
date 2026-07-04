@@ -170,6 +170,16 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
 }
 %end
 
+%hook YTSectionListViewController
+- (void)loadWithModel:(YTISectionListRenderer *)model {
+    YTISectionListRenderer *renderer = model;
+    NSString *description = [model description];
+    // pcs is mostly ads path
+    if ([description containsString:@"https://www.youtube.com/pcs/"]) renderer = nil;
+    %orig(renderer);
+}
+%end
+
 %hook YTLocalPlaybackController
 - (id)createAdsPlaybackCoordinator { return nil; }
 %end
