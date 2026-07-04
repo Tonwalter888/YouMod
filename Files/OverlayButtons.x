@@ -162,6 +162,112 @@ static UIButton *YMCreateOverlayButton(YTMainAppControlsOverlayView *overlay, YM
 
 %end
 
+%hook YTPlayerViewController
+%new
+- (void)YouModShareButton:(UIView *)sourceView {
+    if (!self.currentVideoID) {
+        YTAlertView *alertView = [%c(YTAlertView) infoDialog];
+        alertView.title = LOC(@"ERROR");
+        alertView.subtitle = LOC(@"ERROR_VIDEOID");
+        [alertView show];
+        return;
+    } else if (self.isPlayingAd) {
+        YTAlertView *alertView = [%c(YTAlertView) infoDialog];
+        alertView.title = LOC(@"ERROR");
+        alertView.subtitle = LOC(@"ERROR_ADS");
+        [alertView show];
+        return;
+    }
+
+    // Prepare video link
+    NSString *videoURL = [NSString stringWithFormat:@"https://youtube.com/watch?v=%@", self.currentVideoID];
+    NSInteger seconds = (NSInteger)floor(self.currentVideoMediaTime);
+    NSString *timestampURL = [NSString stringWithFormat:@"%@&t=%lds", videoURL, (long)seconds];
+
+    // Create UIKit action sheet
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:nil message:nil preferredStyle:UIAlertControllerStyleActionSheet];
+    // Copy URL
+    UIAlertAction *copyURL =
+        [UIAlertAction actionWithTitle:LOC(@"COPY_URL")
+                                 style:UIAlertActionStyleDefault
+                               handler:^(UIAlertAction *a) {
+        UIPasteboard.generalPasteboard.string = videoURL;
+        [[%c(GOOHUDManagerInternal) sharedInstance]
+            showMessageMainThread:
+                [%c(YTHUDMessage)
+                    messageWithText:LOC(@"URL_COPIED")]];
+    }];
+
+    // Copy URL with timestamp
+    UIAlertAction *copyTimestamp =
+        [UIAlertAction actionWithTitle:LOC(@"COPY_URL_TIMESTAMP")
+                                 style:UIAlertActionStyleDefault
+                               handler:^(UIAlertAction *a) {
+        UIPasteboard.generalPasteboard.string = timestampURL;
+        [[%c(GOOHUDManagerInternal) sharedInstance]
+            showMessageMainThread:
+                [%c(YTHUDMessage)
+                    messageWithText:LOC(@"URL_TIMESTAMP_COPIED")]];
+    }];
+
+    // Cancel
+    UIAlertAction *cancel =
+        [UIAlertAction actionWithTitle:LOC(@"CANCEL")
+                                 style:UIAlertActionStyleCancel
+                               handler:nil];
+    [alert addAction:copyURL];
+    [alert addAction:copyTimestamp];
+    [alert addAction:cancel];
+
+    UIViewController *presenter = (UIViewController *)[self activeVideoPlayerOverlay];
+    // Prevent the dialog crashes on iPad
+    UIPopoverPresentationController *popover = alert.popoverPresentationController;
+    if (popover && sourceView) {
+        popover.sourceView = sourceView;
+        popover.sourceRect = sourceView.bounds;
+        popover.permittedArrowDirections = UIPopoverArrowDirectionUp | UIPopoverArrowDirectionDown;
+    }
+    [presenter presentViewController:alert animated:YES completion:nil];
+}
+%new
+- (void)YouModLoopButton {
+    id mainAppController = self.activeVideoPlayerOverlay;
+    // Check if type is YTMainAppVideoPlayerOverlayViewController
+    if ([mainAppController isKindOfClass:%c(YTMainAppVideoPlayerOverlayViewController)]) {
+        // Get the autoplay navigation controller
+        YTMainAppVideoPlayerOverlayViewController *playerOverlay = (YTMainAppVideoPlayerOverlayViewController *)mainAppController;
+        YTAutoplayAutonavController *autoplayController = (YTAutoplayAutonavController *)[playerOverlay valueForKey:@"_autonavController"];
+        // Set new loop status
+        BOOL isLoopEnabled = !IS_ENABLED(KeepLoopKey);
+        // Update the key for later use
+        [[NSUserDefaults standardUserDefaults] setBool:isLoopEnabled forKey:KeepLoopKey];
+        // Set the loop mode to the opposite of the current state
+        [autoplayController setLoopMode:isLoopEnabled ? 2 : 0];
+        // Display snackbar
+        [[%c(GOOHUDManagerInternal) sharedInstance] showMessageMainThread:[%c(YTHUDMessage) messageWithText:LOC(isLoopEnabled ? @"LOOP_ENABLED" : @"LOOP_DISABLED")]];
+    }
+}
+%end
+
+%hook YTAutoplayAutonavController
+// Modify the initializer to set the loop mode to the user's preference
+- (id)initWithParentResponder:(id)arg1 {
+    self = %orig;
+    if (self && IS_ENABLED(KeepLoopKey)) {
+        [self setLoopMode:2];
+    }
+    return self;
+}
+// Modify the setter to always follow the user's preference. This breaks normal functionality
+- (void)setLoopMode:(NSInteger)arg1 {
+    if (!IS_ENABLED(KeepLoopKey)) {
+        %orig;
+        return;
+    }
+    %orig(2);
+}
+%end
+
 %ctor {
     YMOverlayButtonSpec *mute = [[YMOverlayButtonSpec alloc] init];
     mute.identifier = @"mute.video";
@@ -194,5 +300,28 @@ static UIButton *YMCreateOverlayButton(YTMainAppControlsOverlayView *overlay, YM
         [ovcon didPressVarispeed:button];
     };
     YMRegisterOverlayButton(speed);
+    YMOverlayButtonSpec *share = [[YMOverlayButtonSpec alloc] init];
+    share.identifier = @"share.video";
+    share.symbolName = @"arrowshape.turn.up.right";
+    share.tintColor = [UIColor whiteColor];
+    share.sortOrder = 500;
+    share.isVisible = nil; // test first
+    share.onTap = ^(YTPlayerViewController *player, UIButton *button) {
+        [player YouModShareButton:button];
+    };
+    YMRegisterOverlayButton(share);
+    YMOverlayButtonSpec *loop = [[YMOverlayButtonSpec alloc] init];
+    loop.identifier = @"loop.video";
+    loop.symbolName = IS_ENABLED(KeepLoopKey) ? @"repeat.1" : @"repeat";
+    loop.tintColor = [UIColor whiteColor];
+    loop.sortOrder = 600;
+    loop.isVisible = nil; // test first
+    loop.onTap = ^(YTPlayerViewController *player, UIButton *button) {
+        [player YouModLoopButton];
+        UIImageSymbolConfiguration *config = [UIImageSymbolConfiguration configurationWithPointSize:20 weight:UIImageSymbolWeightMedium];
+        UIImage *newIcon = [UIImage systemImageNamed:IS_ENABLED(KeepLoopKey) ? @"repeat.1" : @"repeat" withConfiguration:config];
+        [button setImage:newIcon forState:UIControlStateNormal];
+    };
+    YMRegisterOverlayButton(loop);
     %init;
 }

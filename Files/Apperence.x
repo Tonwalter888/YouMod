@@ -52,7 +52,7 @@ static BOOL isDarkMode(UIView *view) {
         // Action dialog
         UIResponder *responder = self.nextResponder;
         while (responder != nil) {
-            if ([responder isKindOfClass:%c(YTActionSheetDialogViewController)] || [responder isKindOfClass:%c(YTBotttomSheetController)]) {
+            if ([responder isKindOfClass:%c(YTActionSheetDialogViewController)] || [responder isKindOfClass:%c(YTBottomSheetController)]) {
                 self.backgroundColor = [UIColor blackColor];
                 break;
             }
@@ -64,7 +64,7 @@ static BOOL isDarkMode(UIView *view) {
         // Action dialog
         UIResponder *responder = self.nextResponder;
         while (responder != nil) {
-            if ([responder isKindOfClass:%c(YTActionSheetDialogViewController)] || [responder isKindOfClass:%c(YTBotttomSheetController)]) {
+            if ([responder isKindOfClass:%c(YTActionSheetDialogViewController)] || [responder isKindOfClass:%c(YTBottomSheetController)]) {
                 self.backgroundColor = [UIColor clearColor];
                 break;
             }
@@ -84,7 +84,7 @@ static BOOL isDarkMode(UIView *view) {
         // Action dialog
         UIResponder *responder = self.nextResponder;
         while (responder != nil) {
-            if ([responder isKindOfClass:%c(YTActionSheetDialogViewController)] || [responder isKindOfClass:%c(YTBotttomSheetController)]) {
+            if ([responder isKindOfClass:%c(YTActionSheetDialogViewController)] || [responder isKindOfClass:%c(YTBottomSheetController)]) {
                 self.backgroundColor = [UIColor blackColor];
                 break;
             }
@@ -96,7 +96,7 @@ static BOOL isDarkMode(UIView *view) {
         // Action dialog
         UIResponder *responder = self.nextResponder;
         while (responder != nil) {
-            if ([responder isKindOfClass:%c(YTActionSheetDialogViewController)] || [responder isKindOfClass:%c(YTBotttomSheetController)]) {
+            if ([responder isKindOfClass:%c(YTActionSheetDialogViewController)] || [responder isKindOfClass:%c(YTBottomSheetController)]) {
                 self.backgroundColor = [UIColor clearColor];
                 break;
             }

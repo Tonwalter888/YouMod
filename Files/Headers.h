@@ -73,6 +73,7 @@
 #define MuteButton @"YouModMuteButton"
 #define SpeedButton @"YouModSpeedButton"
 #define KeepMutedKey @"YouModKeepMutedKey"
+#define KeepLoopKey @"YouModKeepLoopKey"
 // Downloading
 #define DownloadManager @"YouModDownloadManager"
 #define DownloadSaveToPhotos @"YouModDownloadSaveToPhotos"
@@ -347,10 +348,16 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 - (void)YouModAutoMute;
 - (void)YouModAutoAudioTrack;
 - (void)YouModAutoCaptions;
+- (void)YouModLoopButton;
+- (void)YouModShareButton:(UIView *)sourceView;
 - (NSInteger)playerState;
 - (YTPlayerResponse *)contentPlayerResponse;
 - (YTPlayerResponse *)playerResponse;
 - (YTAudioTrackSwitchController *)audioTrackController;
+@end
+
+@interface YTAutoplayAutonavController : NSObject
+- (void)setLoopMode:(NSInteger)loopMode;
 @end
 
 @interface YTInlineMutedPlaybackPlayerOverlayViewController : UIViewController

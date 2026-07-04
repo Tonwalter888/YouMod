@@ -1,6 +1,18 @@
 "SETTINGS" = "Settings";
 "INTERFACE" = "Interface";
 
+"URL_COPIED" = "Copied video link to clipboard";
+"COPY_URL" = "Copy video link";
+"COPY_URL_TIMESTAMP" = "Copy video link with timestamp";
+"URL_TIMESTAMP_COPIED" = "Copied video link with timestamp to clipboard";
+"CANCEL" = "Cancel";
+"ERROR" = "Error";
+"ERROR_VIDEOID" = "Cannot get the video ID";
+"ERROR_ADS" = "Cannot copy video link while playing ads";
+
+"LOOP_DISABLED" = "Loop disabled";
+"LOOP_ENABLED" = "Loop enabled";
+
 "NEW_ISSUES" = "Report issues or request new features";
 "NEW_ISSUES_DESC" = "Found bugs or want to request new features? Tap here.";
 "SOURCE_CODES" = "Source codes";
