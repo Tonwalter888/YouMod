@@ -20,9 +20,26 @@ static NSBundle *SBSettingsBundle() {
 
 #define SB_LOC(x) [SBSettingsBundle() localizedStringForKey:x value:nil table:nil]
 
-static NSArray<NSString *> *sbSettingsCategories() {
-    return @[@"sponsor", @"intro", @"outro", @"interaction", @"selfpromo",
-             @"music_offtopic", @"preview", @"hook", @"poi_highlight", @"filler"];
+// Purple accent used to tint the toggle switches and duration sliders on this
+// page. (Distinct from the player overlay button's accent in SponsorBlock.x.)
+static UIColor *SBControlTintColor(void) {
+    return [UIColor colorWithRed:0.6 green:0.2 blue:0.9 alpha:1.0];
+}
+
+// Tag base for a slider row's value label, offset by the row index so each
+// slider can find its own label via viewWithTag:.
+static const NSInteger SBSliderValueLabelTagBase = 100;
+
+// The localization key for a segment action's display name. Shared by the
+// selected-action label and the action picker menu so the two never disagree.
+static NSString *SBActionLocKey(SBSegmentAction action) {
+    switch (action) {
+        case SBSegmentActionAutoSkip: return @"SB_ACTION_AUTO_SKIP";
+        case SBSegmentActionAsk:      return @"SB_ACTION_ASK";
+        case SBSegmentActionDisplay:  return @"SB_ACTION_DISPLAY";
+        case SBSegmentActionSkipTo:   return @"SB_ACTION_SKIP_TO";
+        default:                      return @"SB_ACTION_DISABLE";
+    }
 }
 
 // One toggle row: the defaults key it controls and its localized title/description
@@ -56,13 +73,7 @@ static NSArray<SBToggleRow *> *sbToggleRows() {
 }
 
 static NSString *SBActionName(NSInteger action) {
-    switch (action) {
-        case SBSegmentActionAutoSkip: return SB_LOC(@"SB_ACTION_AUTO_SKIP");
-        case SBSegmentActionAsk:      return SB_LOC(@"SB_ACTION_ASK");
-        case SBSegmentActionDisplay:   return SB_LOC(@"SB_ACTION_DISPLAY");
-        case SBSegmentActionSkipTo:    return SB_LOC(@"SB_ACTION_SKIP_TO");
-        default:                       return SB_LOC(@"SB_ACTION_DISABLE");
-    }
+    return SB_LOC(SBActionLocKey((SBSegmentAction)action));
 }
 
 static NSString *SBHexFromColor(UIColor *color) {
@@ -226,7 +237,7 @@ static const void *kSBColorIndexPathKey = &kSBColorIndexPathKey;
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
     if (section == 0) return sbToggleRows().count;  // toggles
     if (section == 1) return 2;  // sliders
-    return sbSettingsCategories().count * 2;  // action + color per category
+    return sbAllCategories().count * 2;  // action + color per category
 }
 
 - (UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section {
@@ -290,7 +301,7 @@ static const void *kSBColorIndexPathKey = &kSBColorIndexPathKey;
 
     UISwitch *sw = [[UISwitch alloc] init];
     sw.on = [[NSUserDefaults standardUserDefaults] boolForKey:def.key];
-    sw.onTintColor = [UIColor colorWithRed:0.6 green:0.2 blue:0.9 alpha:1.0];
+    sw.onTintColor = SBControlTintColor();
     sw.tag = row;
     [sw addTarget:self action:@selector(toggleChanged:) forControlEvents:UIControlEventValueChanged];
     cell.accessoryView = sw;
@@ -315,7 +326,7 @@ static const void *kSBColorIndexPathKey = &kSBColorIndexPathKey;
     NSString *title = (row == 0) ? SB_LOC(@"SB_SKIP_ALERT_DURATION") : SB_LOC(@"SB_UNSKIP_ALERT_DURATION");
     NSString *key = (row == 0) ? SBSkipAlertDuration : SBUnskipAlertDuration;
     float currentVal = [[NSUserDefaults standardUserDefaults] floatForKey:key];
-    if (currentVal <= 0) currentVal = 4.0;
+    if (currentVal <= 0) currentVal = SBAlertDurationDefault;
 
     UILabel *titleLabel = [[UILabel alloc] init];
     titleLabel.text = title;
@@ -324,10 +335,10 @@ static const void *kSBColorIndexPathKey = &kSBColorIndexPathKey;
     titleLabel.translatesAutoresizingMaskIntoConstraints = NO;
 
     UISlider *slider = [[UISlider alloc] init];
-    slider.minimumValue = 2.0;
-    slider.maximumValue = 20.0;
+    slider.minimumValue = SBAlertDurationMin;
+    slider.maximumValue = SBAlertDurationMax;
     slider.value = currentVal;
-    slider.minimumTrackTintColor = [UIColor colorWithRed:0.6 green:0.2 blue:0.9 alpha:1.0];
+    slider.minimumTrackTintColor = SBControlTintColor();
     slider.maximumTrackTintColor = [UIColor colorWithWhite:0.3 alpha:1.0];
     slider.translatesAutoresizingMaskIntoConstraints = NO;
     slider.tag = row;
@@ -339,7 +350,7 @@ static const void *kSBColorIndexPathKey = &kSBColorIndexPathKey;
     valueLabel.font = [UIFont systemFontOfSize:13];
     valueLabel.textAlignment = NSTextAlignmentRight;
     valueLabel.translatesAutoresizingMaskIntoConstraints = NO;
-    valueLabel.tag = 100 + row;
+    valueLabel.tag = SBSliderValueLabelTagBase + row;
 
     [cell.contentView addSubview:titleLabel];
     [cell.contentView addSubview:slider];
@@ -369,7 +380,7 @@ static const void *kSBColorIndexPathKey = &kSBColorIndexPathKey;
     [[NSUserDefaults standardUserDefaults] setFloat:(float)rounded forKey:key];
     [[NSUserDefaults standardUserDefaults] synchronize];
     
-    UILabel *valueLabel = (UILabel *)[sender.superview viewWithTag:100 + sender.tag];
+    UILabel *valueLabel = (UILabel *)[sender.superview viewWithTag:SBSliderValueLabelTagBase + sender.tag];
     valueLabel.text = [NSString stringWithFormat:@"%d secs", rounded];
 }
 
@@ -378,7 +389,7 @@ static const void *kSBColorIndexPathKey = &kSBColorIndexPathKey;
 - (UITableViewCell *)segmentCellForRow:(NSInteger)row tableView:(UITableView *)tableView {
     NSInteger catIndex = row / 2;
     BOOL isColorRow = (row % 2 == 1);
-    NSString *category = sbSettingsCategories()[catIndex];
+    NSString *category = sbAllCategories()[catIndex];
     NSBundle *bundle = SBSettingsBundle();
     NSString *catLocKey = [NSString stringWithFormat:@"SB_CAT_%@", category];
     NSString *catName = [bundle localizedStringForKey:catLocKey value:category table:nil];
@@ -411,23 +422,21 @@ static const void *kSBColorIndexPathKey = &kSBColorIndexPathKey;
     menuButton.tintColor = [self sbSecondaryTextColor];
 
     NSMutableArray *menuActions = [NSMutableArray array];
-    NSArray *actionDefs;
+    // Which actions a category may take differs by kind: a highlight can only be
+    // disabled, skipped-to, or displayed, while a regular segment offers
+    // auto-skip / ask instead of skip-to. These are separate option sets, not
+    // duplication — each action's label is resolved through SBActionLocKey.
+    NSArray<NSNumber *> *actionOptions;
     if (isHighlight) {
-        actionDefs = @[@[@(SBSegmentActionDisable), @"SB_ACTION_DISABLE"],
-                       @[@(SBSegmentActionSkipTo), @"SB_ACTION_SKIP_TO"],
-                       @[@(SBSegmentActionDisplay), @"SB_ACTION_DISPLAY"]];
+        actionOptions = @[@(SBSegmentActionDisable), @(SBSegmentActionSkipTo), @(SBSegmentActionDisplay)];
     } else {
-        actionDefs = @[@[@(SBSegmentActionDisable), @"SB_ACTION_DISABLE"],
-                       @[@(SBSegmentActionAutoSkip), @"SB_ACTION_AUTO_SKIP"],
-                       @[@(SBSegmentActionAsk), @"SB_ACTION_ASK"],
-                       @[@(SBSegmentActionDisplay), @"SB_ACTION_DISPLAY"]];
+        actionOptions = @[@(SBSegmentActionDisable), @(SBSegmentActionAutoSkip), @(SBSegmentActionAsk), @(SBSegmentActionDisplay)];
     }
 
     NSBundle *bundle = SBSettingsBundle();
-    for (NSArray *def in actionDefs) {
-        NSInteger actionVal = [def[0] integerValue];
-        NSString *locKey = def[1];
-        NSString *actionTitle = [bundle localizedStringForKey:locKey value:nil table:nil];
+    for (NSNumber *option in actionOptions) {
+        NSInteger actionVal = [option integerValue];
+        NSString *actionTitle = [bundle localizedStringForKey:SBActionLocKey((SBSegmentAction)actionVal) value:nil table:nil];
         UIImageSymbolConfiguration *config = [UIImageSymbolConfiguration configurationWithPointSize:14];
         UIImage *checkImage = (actionVal == currentAction) ? [UIImage systemImageNamed:@"checkmark" withConfiguration:config] : nil;
 
@@ -470,7 +479,7 @@ static const void *kSBColorIndexPathKey = &kSBColorIndexPathKey;
     if (indexPath.row % 2 != 1) return; // only color rows are tappable
 
     NSInteger catIndex = indexPath.row / 2;
-    NSString *category = sbSettingsCategories()[catIndex];
+    NSString *category = sbAllCategories()[catIndex];
     NSString *colorKey = SB_COLOR_KEY(category);
 
     self.activeColorKey = colorKey;
@@ -572,35 +581,41 @@ static const void *kSBColorIndexPathKey = &kSBColorIndexPathKey;
         }
     }
 
-    [[NSUserDefaults standardUserDefaults] registerDefaults:@{
+    // Per-category default action and seek-bar color. Sponsor is the only
+    // category that auto-skips out of the box; the rest are disabled until the
+    // user opts in. The action/color default entries are generated from
+    // sbAllCategories() below so this table stays the sole per-category source.
+    NSDictionary<NSString *, NSArray *> *categoryDefaults = @{
+        @"sponsor":        @[@(SBSegmentActionAutoSkip), @"#00D400"],
+        @"intro":          @[@(SBSegmentActionDisable),  @"#00FFFF"],
+        @"outro":          @[@(SBSegmentActionDisable),  @"#0202ED"],
+        @"interaction":    @[@(SBSegmentActionDisable),  @"#FF00F7"],
+        @"selfpromo":      @[@(SBSegmentActionDisable),  @"#FFFF00"],
+        @"music_offtopic": @[@(SBSegmentActionDisable),  @"#FF9900"],
+        @"preview":        @[@(SBSegmentActionDisable),  @"#0084D6"],
+        @"hook":           @[@(SBSegmentActionDisable),  @"#395699"],
+        @"poi_highlight":  @[@(SBSegmentActionDisable),  @"#FF006A"],
+        @"filler":         @[@(SBSegmentActionDisable),  @"#7300FF"],
+    };
+
+    NSMutableDictionary *defaults = [@{
         SBEnabled: @YES,
         SBShowButton: @YES,
         SBShowNotifications: @YES,
         SBSegmentsInPlayer: @YES,
         SBSegmentsInFeed: @YES,
         SBSegmentsInMiniPlayer: @YES,
-        SBSkipAlertDuration: @4.0,
-        SBUnskipAlertDuration: @4.0,
-        SB_ACTION_KEY(@"sponsor"): @(SBSegmentActionAutoSkip),
-        SB_ACTION_KEY(@"intro"): @(SBSegmentActionDisable),
-        SB_ACTION_KEY(@"outro"): @(SBSegmentActionDisable),
-        SB_ACTION_KEY(@"interaction"): @(SBSegmentActionDisable),
-        SB_ACTION_KEY(@"selfpromo"): @(SBSegmentActionDisable),
-        SB_ACTION_KEY(@"music_offtopic"): @(SBSegmentActionDisable),
-        SB_ACTION_KEY(@"preview"): @(SBSegmentActionDisable),
-        SB_ACTION_KEY(@"hook"): @(SBSegmentActionDisable),
-        SB_ACTION_KEY(@"poi_highlight"): @(SBSegmentActionDisable),
-        SB_ACTION_KEY(@"filler"): @(SBSegmentActionDisable),
-        SB_COLOR_KEY(@"sponsor"): @"#00D400",
-        SB_COLOR_KEY(@"intro"): @"#00FFFF",
-        SB_COLOR_KEY(@"outro"): @"#0202ED",
-        SB_COLOR_KEY(@"interaction"): @"#FF00F7",
-        SB_COLOR_KEY(@"selfpromo"): @"#FFFF00",
-        SB_COLOR_KEY(@"music_offtopic"): @"#FF9900",
-        SB_COLOR_KEY(@"preview"): @"#0084D6",
-        SB_COLOR_KEY(@"hook"): @"#395699",
-        SB_COLOR_KEY(@"poi_highlight"): @"#FF006A",
-        SB_COLOR_KEY(@"filler"): @"#7300FF",
-    }];
+        SBSkipAlertDuration: @(SBAlertDurationDefault),
+        SBUnskipAlertDuration: @(SBAlertDurationDefault),
+    } mutableCopy];
+
+    for (NSString *category in sbAllCategories()) {
+        NSArray *def = categoryDefaults[category];
+        if (!def) continue;
+        defaults[SB_ACTION_KEY(category)] = def[0];
+        defaults[SB_COLOR_KEY(category)] = def[1];
+    }
+
+    [[NSUserDefaults standardUserDefaults] registerDefaults:defaults];
     %init;
 }

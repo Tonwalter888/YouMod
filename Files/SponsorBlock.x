@@ -3,6 +3,36 @@
 
 BOOL useBackwardIconForButton;
 
+// System sound played on skip when haptic/audio feedback is enabled.
+static const SystemSoundID SBSkipHapticSoundID = 1519;
+
+// Skipping is suppressed within this many seconds of a segment's end, so a
+// segment already almost over isn't re-triggered by a late time-change callback.
+static const CGFloat SBSegmentEndGuardSeconds = 0.5;
+
+// The skip banner is shown after this delay so the seek completes first —
+// otherwise the following time-change callback dismisses it immediately.
+static const NSTimeInterval SBSkipNotificationDelaySeconds = 0.3;
+
+// The YouMod resource bundle, resolved once. Localized strings for the skip
+// banners are looked up here.
+static NSBundle *SBBundle(void) {
+    static NSBundle *bundle = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        bundle = [NSBundle bundleWithPath:[[NSBundle mainBundle] pathForResource:@"YouMod" ofType:@"bundle"]];
+    });
+    return bundle;
+}
+
+// Clamps a stored banner duration to the supported range, falling back to the
+// default when unset or out of range.
+static float SBClampedAlertDuration(NSString *key) {
+    float duration = FLOAT_FOR_KEY(key);
+    if (duration < SBAlertDurationMin || duration > SBAlertDurationMax) return SBAlertDurationDefault;
+    return duration;
+}
+
 @interface SBPassthroughView : UIView
 @end
 @implementation SBPassthroughView
@@ -178,7 +208,7 @@ UIView *sbGetNotificationParent(void) {
 
 static NSMutableDictionary<NSString *, NSArray<SBSegment *> *> *sbSegmentCache;
 
-static NSArray<NSString *> *sbAllCategories() {
+NSArray<NSString *> *sbAllCategories(void) {
     static NSArray *cats;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
@@ -338,36 +368,20 @@ UIColor *SBColorFromHex(NSString *hexString) {
 
 - (void)singleVideo:(id)video currentVideoTimeDidChange:(id)time {
     %orig;
-    if (!IS_ENABLED(SBEnabled) || !self.sbEnabledForVideo || self.isPlayingAd) return;
-
-    CGFloat currentTime = [self currentVideoMediaTime];
-    float minDuration = FLOAT_FOR_KEY(SBMinDuration);
-
-    for (SBSegment *segment in self.sbSegments) {
-        SBSegmentAction action = [segment configuredAction];
-        if (action == SBSegmentActionDisable || action == SBSegmentActionDisplay) continue;
-        if (action == SBSegmentActionSkipTo) continue;
-
-        float duration = segment.endTime - segment.startTime;
-        if (duration < minDuration) continue;
-
-        if (currentTime >= segment.startTime && currentTime < segment.endTime - 0.5) {
-            NSString *segID = segment.UUID;
-            if ([self.sbSkippedSegments containsObject:segID]) continue;
-
-            if (action == SBSegmentActionAutoSkip) {
-                [self sbPerformSkip:segment];
-            } else if (action == SBSegmentActionAsk) {
-                [self sbShowAskNotification:segment];
-            }
-            break;
-        }
-    }
+    [self sbCheckSegmentsAtCurrentTime];
 }
 
-// Alternative hook for newer YouTube versions where method was renamed
+// Time-change hook for YouTube versions that use the renamed selector.
 - (void)potentiallyMutatedSingleVideo:(id)video currentVideoTimeDidChange:(id)time {
     %orig;
+    [self sbCheckSegmentsAtCurrentTime];
+}
+
+// Evaluates the loaded segments against the current playback time and performs
+// the configured skip / ask action for the first matching segment. Shared by
+// both time-change hooks so the skip logic lives in one place.
+%new
+- (void)sbCheckSegmentsAtCurrentTime {
     if (!IS_ENABLED(SBEnabled) || !self.sbEnabledForVideo || self.isPlayingAd) return;
 
     CGFloat currentTime = [self currentVideoMediaTime];
@@ -381,7 +395,7 @@ UIColor *SBColorFromHex(NSString *hexString) {
         float duration = segment.endTime - segment.startTime;
         if (duration < minDuration) continue;
 
-        if (currentTime >= segment.startTime && currentTime < segment.endTime - 0.5) {
+        if (currentTime >= segment.startTime && currentTime < segment.endTime - SBSegmentEndGuardSeconds) {
             NSString *segID = segment.UUID;
             if ([self.sbSkippedSegments containsObject:segID]) continue;
 
@@ -401,23 +415,22 @@ UIColor *SBColorFromHex(NSString *hexString) {
     [self seekToTime:(CGFloat)segment.endTime];
 
     if (IS_ENABLED(SBAudioNotification)) {
-        AudioServicesPlaySystemSound(1519);
+        AudioServicesPlaySystemSound(SBSkipHapticSoundID);
     }
 
     if (IS_ENABLED(SBShowNotifications)) {
         useBackwardIconForButton = YES;
-        NSBundle *bundle = [NSBundle bundleWithPath:[[NSBundle mainBundle] pathForResource:@"YouMod" ofType:@"bundle"]];
+        NSBundle *bundle = SBBundle();
         NSString *catName = [bundle localizedStringForKey:[NSString stringWithFormat:@"SB_CAT_%@", segment.category] value:segment.category table:nil];
         NSString *message = [NSString stringWithFormat:[bundle localizedStringForKey:@"SB_SKIPPED" value:@"%@ skipped" table:nil], catName];
         NSString *unskipTitle = [bundle localizedStringForKey:@"SB_UNSKIP" value:@"Unskip" table:nil];
 
-        float alertDuration = FLOAT_FOR_KEY(SBUnskipAlertDuration);
-        if (alertDuration < 2.0 || alertDuration > 20.0) alertDuration = 4.0;
+        float alertDuration = SBClampedAlertDuration(SBUnskipAlertDuration);
 
         __weak typeof(self) weakSelf = self;
         // Delay notification so the seek completes before the banner is shown,
         // preventing the time-change callback from dismissing it immediately.
-        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.3 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(SBSkipNotificationDelaySeconds * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
             __strong typeof(weakSelf) strongSelf = weakSelf;
             if (!strongSelf) return;
             UIView *parentView = sbGetNotificationParent();
@@ -438,12 +451,11 @@ UIColor *SBColorFromHex(NSString *hexString) {
     [self.sbSkippedSegments addObject:segment.UUID];
 
     useBackwardIconForButton = NO;
-    NSBundle *bundle = [NSBundle bundleWithPath:[[NSBundle mainBundle] pathForResource:@"YouMod" ofType:@"bundle"]];
+    NSBundle *bundle = SBBundle();
     NSString *catName = [bundle localizedStringForKey:[NSString stringWithFormat:@"SB_CAT_%@", segment.category] value:segment.category table:nil];
     NSString *message = [NSString stringWithFormat:[bundle localizedStringForKey:@"SB_DETECTED" value:@"%@ detected" table:nil], catName];
 
-    float alertDuration = FLOAT_FOR_KEY(SBSkipAlertDuration);
-    if (alertDuration < 2.0 || alertDuration > 20.0) alertDuration = 4.0;
+    float alertDuration = SBClampedAlertDuration(SBSkipAlertDuration);
 
     UIView *parentView = sbGetNotificationParent();
     __weak typeof(self) weakSelf = self;
@@ -462,12 +474,11 @@ UIColor *SBColorFromHex(NSString *hexString) {
     for (SBSegment *seg in segments) {
         if ([seg.category isEqualToString:@"poi_highlight"] && [seg configuredAction] == SBSegmentActionSkipTo) {
             useBackwardIconForButton = NO;
-            NSBundle *bundle = [NSBundle bundleWithPath:[[NSBundle mainBundle] pathForResource:@"YouMod" ofType:@"bundle"]];
+            NSBundle *bundle = SBBundle();
             NSString *message = [bundle localizedStringForKey:@"SB_JUMP_TO_HIGHLIGHT" value:@"Highlight available. Jump to the point?" table:nil];
             NSString *skipTitle = [bundle localizedStringForKey:@"SB_SKIP_NOW" value:@"Skip" table:nil];
 
-            float alertDuration = FLOAT_FOR_KEY(SBSkipAlertDuration);
-            if (alertDuration < 2.0 || alertDuration > 20.0) alertDuration = 4.0;
+            float alertDuration = SBClampedAlertDuration(SBSkipAlertDuration);
 
             UIView *parentView = sbGetNotificationParent();
             SBSkipNotificationView *pill = [SBSkipNotificationView showInView:parentView
@@ -495,12 +506,11 @@ UIColor *SBColorFromHex(NSString *hexString) {
 
             if (IS_ENABLED(SBShowNotifications)) {
                 useBackwardIconForButton = YES;
-                NSBundle *bundle = [NSBundle bundleWithPath:[[NSBundle mainBundle] pathForResource:@"YouMod" ofType:@"bundle"]];
+                NSBundle *bundle = SBBundle();
                 NSString *message = [bundle localizedStringForKey:@"SB_JUMPED_TO_HIGHLIGHT" value:@"Jumped to highlight" table:nil];
                 NSString *unskipTitle = [bundle localizedStringForKey:@"SB_UNSKIP" value:@"Unskip" table:nil];
 
-                float alertDuration = FLOAT_FOR_KEY(SBUnskipAlertDuration);
-                if (alertDuration < 2.0 || alertDuration > 20.0) alertDuration = 4.0;
+                float alertDuration = SBClampedAlertDuration(SBUnskipAlertDuration);
 
                 __weak typeof(self) weakSelf = self;
                 SBSkipNotificationView *pill = [SBSkipNotificationView showInView:sbGetNotificationParent()

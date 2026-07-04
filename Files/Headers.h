@@ -550,6 +550,23 @@ extern UIView *sbGetNotificationParent(void);
 extern void sbUpdateOverlayInsetForPivotBar(void);
 extern void YMPresentTabOrderModally(id parentResponder);
 
+// The ordered set of SponsorBlock categories YouMod supports. Both the core
+// (segment fetching / skipping) and the settings UI read from this single list,
+// so a category can never be fetchable without a control, or configurable
+// without being fetched.
+extern NSArray<NSString *> *sbAllCategories(void);
+
+// Tag stamped on every seek-bar segment marker view, used to find and remove
+// them across the player-bar layout hooks that don't hold a direct reference.
+static const NSInteger SBSegmentMarkerTag = 9900;
+
+// Supported range and default for the skip/unskip banner duration (seconds).
+// The settings sliders expose this range and the core clamps stored values to
+// it, so both read from one source and can never drift out of agreement.
+static const CGFloat SBAlertDurationMin = 2.0;
+static const CGFloat SBAlertDurationMax = 20.0;
+static const CGFloat SBAlertDurationDefault = 4.0;
+
 #pragma mark - Custom Overlay Button Registry
 
 // A registered button shown in the player's controls overlay (top-right, under
@@ -586,6 +603,7 @@ extern NSArray<YMOverlayButtonSpec *> *YMRegisteredOverlayButtons(void);
 @property (nonatomic, strong) NSMutableSet<NSString *> *sbSkippedSegments;
 @property (nonatomic, strong) SBSkipNotificationView *sbNotificationView;
 @property (nonatomic, assign) BOOL sbEnabledForVideo;
+- (void)sbCheckSegmentsAtCurrentTime;
 - (void)sbPerformSkip:(SBSegment *)segment;
 - (void)sbShowAskNotification:(SBSegment *)segment;
 - (void)sbShowHighlightBannerIfNeeded:(NSArray<SBSegment *> *)segments;

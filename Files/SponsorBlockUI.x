@@ -3,6 +3,17 @@
 
 extern BOOL useBackwardIconForButton;
 
+// Range segments render as a filled bar at least this wide so very short segments
+// stay visible. Point segments (poi_highlight) have no duration, so they render as
+// a fixed-width tick centered on their position via the x-offset.
+static const CGFloat SBMarkerMinWidth = 2.0;
+static const CGFloat SBPoiMarkerWidth = 3.0;
+static const CGFloat SBPoiMarkerXOffset = 1.5;
+
+// Height of the segment markers drawn on the inline (thumbnail) player bar,
+// bottom-aligned so they sit flush with the bottom edge of the bar.
+static const CGFloat SBInlineMarkerHeight = 4.0;
+
 #pragma mark - SBSkipNotificationView Implementation
 
 @implementation SBSkipNotificationView
@@ -458,9 +469,9 @@ extern BOOL useBackwardIconForButton;
         CGFloat endFrac = segment.endTime / totalTime;
         CGFloat x = startFrac * barWidth;
         CGFloat w = (endFrac - startFrac) * barWidth;
-        if (w < 2.0) w = 2.0;
+        if (w < SBMarkerMinWidth) w = SBMarkerMinWidth;
 
-        UIView *marker = [[UIView alloc] initWithFrame:CGRectMake(x, barHeight - 4.0, w, 4.0)];
+        UIView *marker = [[UIView alloc] initWithFrame:CGRectMake(x, barHeight - SBInlineMarkerHeight, w, SBInlineMarkerHeight)];
         marker.backgroundColor = [segment segmentColor];
         marker.userInteractionEnabled = NO;
         marker.layer.name = [NSString stringWithFormat:@"%f|%f", segment.startTime, segment.endTime];
@@ -495,9 +506,9 @@ extern BOOL useBackwardIconForButton;
         CGFloat endFrac = endTime / totalTime;
         CGFloat x = startFrac * barWidth;
         CGFloat w = (endFrac - startFrac) * barWidth;
-        if (w < 2.0) w = 2.0;
+        if (w < SBMarkerMinWidth) w = SBMarkerMinWidth;
 
-        marker.frame = CGRectMake(x, barHeight - 4.0, w, 4.0);
+        marker.frame = CGRectMake(x, barHeight - SBInlineMarkerHeight, w, SBInlineMarkerHeight);
     }
 }
 
@@ -532,7 +543,7 @@ extern BOOL useBackwardIconForButton;
     }
 
     for (UIView *sub in self.subviews) {
-        if (sub.tag != 9900) continue;
+        if (sub.tag != SBSegmentMarkerTag) continue;
         NSArray *data = objc_getAssociatedObject(sub, @selector(sbSegmentData));
         if (!data || data.count < 3) continue;
 
@@ -542,8 +553,8 @@ extern BOOL useBackwardIconForButton;
 
         CGFloat x = startFrac * barWidth;
         CGFloat w = (endFrac - startFrac) * barWidth;
-        if (isPoi) { w = 3.0; x = MAX(0, x - 1.5); }
-        else if (w < 2.0) w = 2.0;
+        if (isPoi) { w = SBPoiMarkerWidth; x = MAX(0, x - SBPoiMarkerXOffset); }
+        else if (w < SBMarkerMinWidth) w = SBMarkerMinWidth;
 
         sub.frame = CGRectMake(x, referenceView.frame.origin.y, w, referenceView.frame.size.height);
     }
@@ -580,7 +591,7 @@ extern BOOL useBackwardIconForButton;
     CGFloat barWidth = playerBar.bounds.size.width;
 
     for (UIView *sub in self.subviews) {
-        if (sub.tag != 9900) continue;
+        if (sub.tag != SBSegmentMarkerTag) continue;
         NSArray *data = objc_getAssociatedObject(sub, @selector(sbSegmentData));
         if (!data || data.count < 3) continue;
 
@@ -590,8 +601,8 @@ extern BOOL useBackwardIconForButton;
 
         CGFloat x = startFrac * barWidth;
         CGFloat w = (endFrac - startFrac) * barWidth;
-        if (isPoi) { w = 3.0; x = MAX(0, x - 1.5); }
-        else if (w < 2.0) w = 2.0;
+        if (isPoi) { w = SBPoiMarkerWidth; x = MAX(0, x - SBPoiMarkerXOffset); }
+        else if (w < SBMarkerMinWidth) w = SBMarkerMinWidth;
 
         sub.frame = CGRectMake(x, playerBar.frame.origin.y, w, playerBar.bounds.size.height);
     }
@@ -655,9 +666,9 @@ extern BOOL useBackwardIconForButton;
             }
             if (referenceView) break;
         }
-        // Remove old markers (tag 9900)
+        // Remove old markers
         for (UIView *sub in [controlsview.subviews copy]) {
-            if (sub.tag == 9900) [sub removeFromSuperview];
+            if (sub.tag == SBSegmentMarkerTag) [sub removeFromSuperview];
         }
         if (!segments || segments.count == 0) return;
 
@@ -679,9 +690,9 @@ extern BOOL useBackwardIconForButton;
         }
         if (!playerBar) return;
 
-        // Remove old markers (tag 9900)
+        // Remove old markers
         for (UIView *sub in [playerBar.subviews copy]) {
-            if (sub.tag == 9900) [sub removeFromSuperview];
+            if (sub.tag == SBSegmentMarkerTag) [sub removeFromSuperview];
         }
 
         if (!segments || segments.count == 0) return;
@@ -715,9 +726,9 @@ extern BOOL useBackwardIconForButton;
             }
         }
 
-        // Remove old markers (tag 9900)
+        // Remove old markers
         for (UIView *sub in [scrub.subviews copy]) {
-            if (sub.tag == 9900) [sub removeFromSuperview];
+            if (sub.tag == SBSegmentMarkerTag) [sub removeFromSuperview];
         }
 
         if (!segments || segments.count == 0) return;
@@ -761,16 +772,16 @@ extern BOOL useBackwardIconForButton;
         // poi_highlight is a point, not a range — give it fixed width
         BOOL isPoi = [segment.category isEqualToString:@"poi_highlight"];
         if (isPoi) {
-            w = 3.0;
-            x = MAX(0, x - 1.5);
+            w = SBPoiMarkerWidth;
+            x = MAX(0, x - SBPoiMarkerXOffset);
         } else {
-            if (w < 2.0) w = 2.0;
+            if (w < SBMarkerMinWidth) w = SBMarkerMinWidth;
         }
 
         UIView *marker = [[UIView alloc] initWithFrame:CGRectMake(x, y, w, h)];
         marker.backgroundColor = [segment segmentColor];
         marker.userInteractionEnabled = NO;
-        marker.tag = 9900;
+        marker.tag = SBSegmentMarkerTag;
         objc_setAssociatedObject(marker, @selector(sbSegmentData), @[@(startFrac), @(endFrac), @(isPoi)], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 
         // Insert each marker directly beneath the scrubber dot so the dot stays
