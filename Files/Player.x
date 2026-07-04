@@ -815,11 +815,7 @@ static void YouModManageHoldToSpeed(UILongPressGestureRecognizer *gesture, YTMai
 %new
 - (void)YouModAutoCaptions {
     if (INTFORVAL(CaptionTrack) == 1) {
-        @try {
-            [self setActiveCaptionTrack:nil source:0];
-        } @catch (id ex) {
-            [self setActiveCaptionTrack:nil];
-        }
+        [self setActiveCaptionTrack:nil source:0];
         return;
     }
     YTPlayerResponse *response;
@@ -844,19 +840,11 @@ static void YouModManageHoldToSpeed(UILongPressGestureRecognizer *gesture, YTMai
     }
     if (matchedTrack && [matchedTrack.vssId hasPrefix:@"a."] && IS_ENABLED(DisablesCaptionTrack)) {
         matchedTrack = nil;
-        @try {
-            [self setActiveCaptionTrack:nil source:0];
-        } @catch (id ex) {
-            [self setActiveCaptionTrack:nil];
-        }
+        [self setActiveCaptionTrack:nil source:0];
         return;
     }
     if (matchedTrack) {
-        @try {
-            [self setActiveCaptionTrack:matchedTrack source:0];
-        } @catch (id ex) {
-            [self setActiveCaptionTrack:matchedTrack];
-        }
+        [self setActiveCaptionTrack:matchedTrack source:0];
     }
 }
 %end
