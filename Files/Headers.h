@@ -210,6 +210,7 @@
 #define SBShowButton @"YouModSBShowButton"
 #define SBShowNotifications @"YouModSBShowNotifications"
 #define SBAudioNotification @"YouModSBAudioNotification"
+#define SBSegmentsInPlayer @"YouModSBSegmentsInPlayer"
 #define SBSegmentsInFeed @"YouModSBSegmentsInFeed"
 #define SBSegmentsInMiniPlayer @"YouModSBSegmentsInMiniPlayer"
 #define SBShowDuration @"YouModSBShowDuration"

@@ -547,6 +547,18 @@ extern BOOL useBackwardIconForButton;
 
         sub.frame = CGRectMake(x, referenceView.frame.origin.y, w, referenceView.frame.size.height);
     }
+
+    // Re-assert the scrubber dot on top every layout pass. The markers keep their
+    // z-order set at insertion time, but YouTube re-adds its own decoration views
+    // during scrubbing and playback progress, which can otherwise leave a marker
+    // covering the dot until the next full re-render. Only re-front when the dot
+    // isn't already the topmost subview, so a settled layout stays a no-op.
+    for (UIView *sub in self.subviews) {
+        if ([sub isKindOfClass:%c(YTPlayerBarScrubberDotDecorationView)]) {
+            if (self.subviews.lastObject != sub) [self bringSubviewToFront:sub];
+            break;
+        }
+    }
 }
 
 %end
@@ -617,7 +629,7 @@ extern BOOL useBackwardIconForButton;
 // currently-visible bar instead of an old detached one.
 %new
 - (void)sbRefreshMarkers:(NSArray<SBSegment *> *)segments {
-    if (!IS_ENABLED(SBSegmentsInMiniPlayer) && !IS_ENABLED(SBSegmentsInFeed)) return;
+    if (!IS_ENABLED(SBSegmentsInPlayer) && !IS_ENABLED(SBSegmentsInMiniPlayer) && !IS_ENABLED(SBSegmentsInFeed)) return;
     if (!segments) segments = self.sbSegments;
 
     CGFloat totalTime = [self currentVideoTotalMediaTime];
@@ -652,7 +664,7 @@ extern BOOL useBackwardIconForButton;
         barWidth = referenceView.bounds.size.width;
         h = referenceView.bounds.size.height;
         y = referenceView.frame.origin.y;
-    } else if ([[self activeVideoPlayerOverlay] isKindOfClass:%c(YTMainAppVideoPlayerOverlayViewController)] && IS_ENABLED(SBSegmentsInMiniPlayer)) {
+    } else if ([[self activeVideoPlayerOverlay] isKindOfClass:%c(YTMainAppVideoPlayerOverlayViewController)] && IS_ENABLED(SBSegmentsInPlayer)) {
         YTMainAppVideoPlayerOverlayViewController *overlay = [self activeVideoPlayerOverlay];
         YTPlayerBarController *barController = [overlay playerBarController];
         YTInlinePlayerBarContainerView *containerView = barController.playerBar;
@@ -694,6 +706,7 @@ extern BOOL useBackwardIconForButton;
         YTInlineMutedPlaybackPlayerOverlayViewController *viewcon = [self activeVideoPlayerOverlay];
         YTInlineMutedPlaybackPlayerOverlayView *view = (YTInlineMutedPlaybackPlayerOverlayView *)viewcon.view;
         UIView *scrub;
+        UIView *playerBar;
         for (UIView *sub in view.subviews) {
             if ([sub isKindOfClass:%c(YTInlineMutedPlaybackScrubberView)]) {
                 scrub = sub;
@@ -760,8 +773,15 @@ extern BOOL useBackwardIconForButton;
         marker.tag = 9900;
         objc_setAssociatedObject(marker, @selector(sbSegmentData), @[@(startFrac), @(endFrac), @(isPoi)], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 
-        [mainView addSubview:marker];
-        [mainView bringSubviewToFront:marker];
+        // Insert each marker directly beneath the scrubber dot so the dot stays
+        // visible on top. Where no dot is resolved (miniplayer/feed paths), fall
+        // back to adding on top of the track.
+        if (scrubberDot && scrubberDot.superview == mainView) {
+            [mainView insertSubview:marker belowSubview:scrubberDot];
+        } else {
+            [mainView addSubview:marker];
+            [mainView bringSubviewToFront:marker];
+        }
     }
     if (scrubberDot) {
         [mainView bringSubviewToFront:scrubberDot];

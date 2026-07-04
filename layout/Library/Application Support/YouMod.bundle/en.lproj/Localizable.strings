@@ -388,6 +388,8 @@
 "SB_SHOW_NOTIFICATIONS_DESC" = "Display notifications when segments are skipped. Notifications for manual-skip categories are always shown.";
 "SB_HAPTIC_FEEDBACK" = "Haptic feedback";
 "SB_HAPTIC_FEEDBACK_DESC" = "Provide haptic feedback when a segment is skipped.";
+"SB_SEGMENTS_IN_PLAYER" = "Segments in player";
+"SB_SEGMENTS_IN_PLAYER_DESC" = "Display colored segments on the progress bar of the main video player.";
 "SB_SEGMENTS_IN_FEED" = "Segments in feed";
 "SB_SEGMENTS_IN_FEED_DESC" = "Display colored segments on the progress bar of players in the feed.";
 "SB_SEGMENTS_IN_MINIPLAYER" = "Segments in mini-player";

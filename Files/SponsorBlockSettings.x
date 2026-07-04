@@ -25,6 +25,36 @@ static NSArray<NSString *> *sbSettingsCategories() {
              @"music_offtopic", @"preview", @"hook", @"poi_highlight", @"filler"];
 }
 
+// One toggle row: the defaults key it controls and its localized title/description
+// keys. This is the single source of truth for the toggle section — the row count,
+// each cell's contents, and the value written on change all read from it, so a row
+// can never display one setting while toggling another.
+@interface SBToggleRow : NSObject
+@property (nonatomic, copy) NSString *key;
+@property (nonatomic, copy) NSString *titleKey;
+@property (nonatomic, copy) NSString *descKey;
+@end
+@implementation SBToggleRow
++ (instancetype)key:(NSString *)key title:(NSString *)titleKey desc:(NSString *)descKey {
+    SBToggleRow *row = [SBToggleRow new];
+    row.key = key; row.titleKey = titleKey; row.descKey = descKey;
+    return row;
+}
+@end
+
+static NSArray<SBToggleRow *> *sbToggleRows() {
+    return @[
+        [SBToggleRow key:SBEnabled title:@"SB_ENABLE" desc:@"SB_ENABLE_DESC"],
+        [SBToggleRow key:SBShowButton title:@"SB_SHOW_BUTTON" desc:@"SB_SHOW_BUTTON_DESC"],
+        [SBToggleRow key:SBShowNotifications title:@"SB_SHOW_NOTIFICATIONS" desc:@"SB_SHOW_NOTIFICATIONS_DESC"],
+        [SBToggleRow key:SBSegmentsInPlayer title:@"SB_SEGMENTS_IN_PLAYER" desc:@"SB_SEGMENTS_IN_PLAYER_DESC"],
+        [SBToggleRow key:SBSegmentsInFeed title:@"SB_SEGMENTS_IN_FEED" desc:@"SB_SEGMENTS_IN_FEED_DESC"],
+        [SBToggleRow key:SBSegmentsInMiniPlayer title:@"SB_SEGMENTS_IN_MINIPLAYER" desc:@"SB_SEGMENTS_IN_MINIPLAYER_DESC"],
+        [SBToggleRow key:SBAudioNotification title:@"SB_HAPTIC_FEEDBACK" desc:@"SB_HAPTIC_FEEDBACK_DESC"],
+        [SBToggleRow key:SBShowDuration title:@"SB_SHOW_DURATION" desc:@"SB_SHOW_DURATION_DESC"],
+    ];
+}
+
 static NSString *SBActionName(NSInteger action) {
     switch (action) {
         case SBSegmentActionAutoSkip: return SB_LOC(@"SB_ACTION_AUTO_SKIP");
@@ -194,7 +224,7 @@ static const void *kSBColorIndexPathKey = &kSBColorIndexPathKey;
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView { return 3; }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
-    if (section == 0) return 7;  // toggles
+    if (section == 0) return sbToggleRows().count;  // toggles
     if (section == 1) return 2;  // sliders
     return sbSettingsCategories().count * 2;  // action + color per category
 }
@@ -253,22 +283,13 @@ static const void *kSBColorIndexPathKey = &kSBColorIndexPathKey;
     cell.detailTextLabel.font = [UIFont systemFontOfSize:13];
     cell.detailTextLabel.numberOfLines = 0;
 
-    NSString *title, *desc, *key;
-    switch (row) {
-        case 0: title = SB_LOC(@"SB_ENABLE"); desc = SB_LOC(@"SB_ENABLE_DESC"); key = SBEnabled; break;
-        case 1: title = SB_LOC(@"SB_SHOW_BUTTON"); desc = SB_LOC(@"SB_SHOW_BUTTON_DESC"); key = SBShowButton; break;
-        case 2: title = SB_LOC(@"SB_SHOW_NOTIFICATIONS"); desc = SB_LOC(@"SB_SHOW_NOTIFICATIONS_DESC"); key = SBShowNotifications; break;
-        case 3: title = SB_LOC(@"SB_SEGMENTS_IN_FEED"); desc = SB_LOC(@"SB_SEGMENTS_IN_FEED_DESC"); key = SBSegmentsInFeed; break;
-        case 4: title = SB_LOC(@"SB_SEGMENTS_IN_MINIPLAYER"); desc = SB_LOC(@"SB_SEGMENTS_IN_MINIPLAYER_DESC"); key = SBSegmentsInMiniPlayer; break;
-        case 5: title = SB_LOC(@"SB_HAPTIC_FEEDBACK"); desc = SB_LOC(@"SB_HAPTIC_FEEDBACK_DESC"); key = SBAudioNotification; break;
-        default: title = SB_LOC(@"SB_SHOW_DURATION"); desc = SB_LOC(@"SB_SHOW_DURATION_DESC"); key = SBShowDuration; break;
-    }
+    SBToggleRow *def = sbToggleRows()[row];
 
-    cell.textLabel.text = title;
-    cell.detailTextLabel.text = desc;
+    cell.textLabel.text = SB_LOC(def.titleKey);
+    cell.detailTextLabel.text = SB_LOC(def.descKey);
 
     UISwitch *sw = [[UISwitch alloc] init];
-    sw.on = [[NSUserDefaults standardUserDefaults] boolForKey:key];
+    sw.on = [[NSUserDefaults standardUserDefaults] boolForKey:def.key];
     sw.onTintColor = [UIColor colorWithRed:0.6 green:0.2 blue:0.9 alpha:1.0];
     sw.tag = row;
     [sw addTarget:self action:@selector(toggleChanged:) forControlEvents:UIControlEventValueChanged];
@@ -278,16 +299,9 @@ static const void *kSBColorIndexPathKey = &kSBColorIndexPathKey;
 }
 
 - (void)toggleChanged:(UISwitch *)sender {
-    NSString *key;
-    switch (sender.tag) {
-        case 0: key = SBEnabled; break;
-        case 1: key = SBShowButton; break;
-        case 2: key = SBShowNotifications; break;
-        case 3: key = SBSegmentsInFeed; break;
-        case 4: key = SBSegmentsInMiniPlayer; break;
-        case 5: key = SBAudioNotification; break;
-        default: key = SBShowDuration; break;
-    }
+    NSArray<SBToggleRow *> *rows = sbToggleRows();
+    if (sender.tag < 0 || sender.tag >= (NSInteger)rows.count) return;
+    NSString *key = rows[sender.tag].key;
     [[NSUserDefaults standardUserDefaults] setBool:sender.on forKey:key];
 }
 
@@ -562,6 +576,7 @@ static const void *kSBColorIndexPathKey = &kSBColorIndexPathKey;
         SBEnabled: @YES,
         SBShowButton: @YES,
         SBShowNotifications: @YES,
+        SBSegmentsInPlayer: @YES,
         SBSegmentsInFeed: @YES,
         SBSegmentsInMiniPlayer: @YES,
         SBSkipAlertDuration: @4.0,
