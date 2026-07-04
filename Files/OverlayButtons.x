@@ -179,20 +179,30 @@ static UIButton *YMCreateOverlayButton(YTMainAppControlsOverlayView *overlay, YM
 
 %end
 
+static void YouModShowShareNotification(NSString *message, BOOL success) {
+    UIView *parent = sbGetNotificationParent();
+    if (success) {
+        [SBSkipNotificationView showSuccessInView:parent message:message duration:3.0];
+    } else {
+        [SBSkipNotificationView showErrorInView:parent message:message duration:4.0];
+    }
+}
+
+static UIImage *YouModIconImage(NSInteger iconType) {
+    YTIIcon *icon = [%c(YTIIcon) new];
+    icon.iconType = iconType;
+    UIImage *image = [icon iconImageWithColor:[UIColor labelColor]];
+    return [image imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
+}
+
 %hook YTPlayerViewController
 %new
 - (void)YouModShareButton:(UIView *)sourceView {
     if (!self.currentVideoID) {
-        YTAlertView *alertView = [%c(YTAlertView) infoDialog];
-        alertView.title = LOC(@"ERROR");
-        alertView.subtitle = LOC(@"ERROR_VIDEOID");
-        [alertView show];
+        YouModShowShareNotification(LOC(@"ERROR_VIDEOID"), NO);
         return;
     } else if (self.isPlayingAd) {
-        YTAlertView *alertView = [%c(YTAlertView) infoDialog];
-        alertView.title = LOC(@"ERROR");
-        alertView.subtitle = LOC(@"ERROR_ADS");
-        [alertView show];
+        YouModShowShareNotification(LOC(@"ERROR_ADS"), NO);
         return;
     }
 
@@ -201,62 +211,42 @@ static UIButton *YMCreateOverlayButton(YTMainAppControlsOverlayView *overlay, YM
     NSInteger seconds = (NSInteger)floor(self.currentVideoMediaTime);
     NSString *timestampURL = [NSString stringWithFormat:@"%@&t=%lds", videoURL, (long)seconds];
 
-    // Create UIKit action sheet
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:nil message:nil preferredStyle:UIAlertControllerStyleActionSheet];
-    // Copy URL
-    UIAlertAction *copyURL =
-        [UIAlertAction actionWithTitle:LOC(@"COPY_URL")
-                                 style:UIAlertActionStyleDefault
-                               handler:^(UIAlertAction *a) {
-        UIPasteboard.generalPasteboard.string = videoURL;
-        [[%c(GOOHUDManagerInternal) sharedInstance] showMessageMainThread:[%c(YTHUDMessage) messageWithText:LOC(@"URL_COPIED")]];
-    }];
-
-    // Copy URL with timestamp
-    UIAlertAction *copyTimestamp =
-        [UIAlertAction actionWithTitle:LOC(@"COPY_URL_TIMESTAMP")
-                                 style:UIAlertActionStyleDefault
-                               handler:^(UIAlertAction *a) {
-        UIPasteboard.generalPasteboard.string = timestampURL;
-        [[%c(GOOHUDManagerInternal) sharedInstance] showMessageMainThread:[%c(YTHUDMessage) messageWithText:LOC(@"URL_TIMESTAMP_COPIED")]];
-    }];
-
-    // Cancel
-    UIAlertAction *cancel =
-        [UIAlertAction actionWithTitle:LOC(@"CANCEL")
-                                 style:UIAlertActionStyleCancel
-                               handler:nil];
-    [alert addAction:copyURL];
-    [alert addAction:copyTimestamp];
-    [alert addAction:cancel];
-
     UIViewController *presenter = (UIViewController *)[self activeVideoPlayerOverlay];
-    // Prevent the dialog crashes on iPad
-    UIPopoverPresentationController *popover = alert.popoverPresentationController;
-    if (popover && sourceView) {
-        popover.sourceView = sourceView;
-        popover.sourceRect = sourceView.bounds;
-        popover.permittedArrowDirections = UIPopoverArrowDirectionUp | UIPopoverArrowDirectionDown;
-    }
-    [presenter presentViewController:alert animated:YES completion:nil];
+    YTDefaultSheetController *sheet = [%c(YTDefaultSheetController) sheetControllerWithParentResponder:presenter];
+
+    YTActionSheetAction *copyURL = [%c(YTActionSheetAction) actionWithTitle:LOC(@"COPY_URL")
+                                                                    subtitle:nil
+                                                                   iconImage:YouModIconImage(250)
+                                                                    handler:^(__unused YTActionSheetAction *action) {
+        UIPasteboard.generalPasteboard.string = videoURL;
+        YouModShowShareNotification(LOC(@"URL_COPIED"), YES);
+    }];
+
+    YTActionSheetAction *copyTimestamp = [%c(YTActionSheetAction) actionWithTitle:LOC(@"COPY_URL_TIMESTAMP")
+                                                                         subtitle:nil
+                                                                        iconImage:YouModIconImage(250)
+                                                                         handler:^(__unused YTActionSheetAction *action) {
+        UIPasteboard.generalPasteboard.string = timestampURL;
+        YouModShowShareNotification(LOC(@"URL_TIMESTAMP_COPIED"), YES);
+    }];
+
+    [sheet addAction:copyURL];
+    [sheet addAction:copyTimestamp];
+
+    [sheet presentFromView:sourceView animated:YES completion:nil];
 }
 %new
 - (void)YouModLoopButton {
-    id mainAppController = self.activeVideoPlayerOverlay;
-    // Check if type is YTMainAppVideoPlayerOverlayViewController
-    if ([mainAppController isKindOfClass:%c(YTMainAppVideoPlayerOverlayViewController)]) {
-        // Get the autoplay navigation controller
-        YTMainAppVideoPlayerOverlayViewController *playerOverlay = (YTMainAppVideoPlayerOverlayViewController *)mainAppController;
-        YTAutoplayAutonavController *autoplayController = (YTAutoplayAutonavController *)[playerOverlay valueForKey:@"_autonavController"];
-        // Set new loop status
-        BOOL isLoopEnabled = !IS_ENABLED(KeepLoopKey);
-        // Update the key for later use
-        [[NSUserDefaults standardUserDefaults] setBool:isLoopEnabled forKey:KeepLoopKey];
-        // Set the loop mode to the opposite of the current state
-        [autoplayController setLoopMode:isLoopEnabled ? 2 : 0];
-        // Display snackbar
-        [[%c(GOOHUDManagerInternal) sharedInstance] showMessageMainThread:[%c(YTHUDMessage) messageWithText:LOC(isLoopEnabled ? @"LOOP_ENABLED" : @"LOOP_DISABLED")]];
-    }
+    YTMainAppVideoPlayerOverlayViewController *playerOverlay = self.activeVideoPlayerOverlay;
+    YTAutoplayAutonavController *autoplayController = [playerOverlay valueForKey:@"_autonavController"];
+    // Set new loop status
+    BOOL isLoopEnabled = !IS_ENABLED(KeepLoopKey);
+    // Update the key for later use
+    [[NSUserDefaults standardUserDefaults] setBool:isLoopEnabled forKey:KeepLoopKey];
+    // Set the loop mode to the opposite of the current state
+    [autoplayController setLoopMode:isLoopEnabled ? 2 : 0];
+    // Display snackbar
+    [[%c(GOOHUDManagerInternal) sharedInstance] showMessageMainThread:[%c(YTHUDMessage) messageWithText:LOC(isLoopEnabled ? @"LOOP_ENABLED" : @"LOOP_DISABLED")]];
 }
 %end
 
@@ -298,19 +288,6 @@ static UIButton *YMCreateOverlayButton(YTMainAppControlsOverlayView *overlay, YM
         [button setImage:newIcon forState:UIControlStateNormal];
     };
     YMRegisterOverlayButton(mute);
-    YMOverlayButtonSpec *speed = [[YMOverlayButtonSpec alloc] init];
-    speed.identifier = @"speed.video";
-    speed.symbolName = @"speedometer";
-    speed.tintColor = [UIColor whiteColor];
-    speed.sortOrder = 400;
-    speed.isVisible = ^BOOL(YTPlayerViewController *player) {
-        return IS_ENABLED(SpeedButton);
-    };
-    speed.onTap = ^(YTPlayerViewController *player, UIButton *button) {
-        YTMainAppVideoPlayerOverlayViewController *ovcon = [player activeVideoPlayerOverlay];
-        [ovcon didPressVarispeed:button];
-    };
-    YMRegisterOverlayButton(speed);
     YMOverlayButtonSpec *share = [[YMOverlayButtonSpec alloc] init];
     share.identifier = @"share.video";
     share.symbolName = @"arrowshape.turn.up.right";

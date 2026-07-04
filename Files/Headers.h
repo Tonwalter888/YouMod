@@ -73,7 +73,7 @@
 #define INTFORVAL(v) [[NSUserDefaults standardUserDefaults] integerForKey:v]
 #define FixPlaybackIssues @"YouModFixPlaybackIssues"
 #define MuteButton @"YouModMuteButton"
-#define SpeedButton @"YouModSpeedButton"
+// #define SpeedButton @"YouModSpeedButton"
 #define KeepMutedKey @"YouModKeepMutedKey"
 #define KeepLoopKey @"YouModKeepLoopKey"
 // Downloading

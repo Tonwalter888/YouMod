@@ -2,6 +2,16 @@ name: Build IPA with tweaks
 on:
   workflow_dispatch:
     inputs:
+      repo:
+        description: 'Repository to build from'
+        required: true
+        default: 'Tonwalter888/YouMod'
+
+      branch:
+        description: 'Branch to build from'
+        required: true
+        default: 'main'
+
       ipa_url:
         description: "URL to the decrypted IPA file"
         default: ""
@@ -62,18 +72,6 @@ on:
         required: false
         type: boolean
 
-      youmute:
-        description: "Integrate YouMute"
-        default: true
-        required: false
-        type: boolean
-
-      youloop:
-        description: "Integrate YouLoop"
-        default: true
-        required: false
-        type: boolean
-
       ytweaks:
         description: "Integrate YTweaks"
         default: true
@@ -82,12 +80,6 @@ on:
 
       youslider:
         description: "Integrate YouSlider"
-        default: true
-        required: false
-        type: boolean
-
-      youshare:
-        description: "Integrate YouShare"
         default: true
         required: false
         type: boolean
@@ -185,7 +177,7 @@ jobs:
 
       - name: Cache Theos
         id: cache-theos
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: theos
           key: 18.6-SDK-${{ env.THEOS_COMMIT }}
@@ -199,6 +191,8 @@ jobs:
             git sparse-checkout set --no-cone iPhoneOS18.6.sdk
             git checkout --quiet
             mv *.sdk "$THEOS/sdks"
+            cd ${{ github.workspace }}/theos/vendor/logos
+            git checkout a62370066a97e36d59b200a9fa10c5091f5e8972
             
       - name: Clone headers
         run: |
@@ -233,8 +227,10 @@ jobs:
            chmod +x /usr/local/bin/tbd
 
       - name: Checkout YouMod
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
+          repository: ${{ inputs.repo }}
+          ref: ${{ inputs.branch }}
           path: YouMod
 
       - name: Clone Open in YouTube (Safari Extension)
@@ -261,7 +257,7 @@ jobs:
         run: git clone --quiet --depth=1 https://github.com/PoomSmart/YouGroupSettings.git
            
       - name: Clone YTVideoOverlay
-        if: ${{ inputs.youpip || inputs.ytuhd || inputs.youquality || inputs.youspeed || inputs.youmute || inputs.youloop || inputs.youshare || inputs.getcap }}
+        if: ${{ inputs.youpip || inputs.ytuhd || inputs.youquality || inputs.youspeed || inputs.getcap }}
         run: git clone --quiet --depth=1 https://github.com/PoomSmart/YTVideoOverlay.git
           
       - name: Clone YTABConfig
@@ -284,23 +280,11 @@ jobs:
         if: ${{ inputs.demc }}
         run: git clone --quiet --depth=1 https://github.com/therealFoxster/DontEatMyContent.git
 
-      - name: Clone YouMute
-        if: ${{ inputs.youmute }}
-        run: git clone --quiet --depth=1 https://github.com/PoomSmart/YouMute.git
-    
-      - name: Clone YouLoop
-        if: ${{ inputs.youloop }}
-        run: git clone --quiet --depth=1 https://github.com/bhackel/YouLoop.git
-
       - name: Clone YouSlider
         if: ${{ inputs.youslider }}
         run: |
           git clone --quiet --depth=1 https://github.com/PoomSmart/YouSlider.git
           wget --no-verbose --quiet https://github.com/Tonwalter888/Tonwalter888.github.io/raw/refs/heads/main/deb/alderis.deb
-
-      - name: Clone YouShare
-        if: ${{ inputs.youshare }}
-        run: git clone --quiet --depth=1 https://github.com/Tonwalter888/YouShare.git
 
       - name: Clone YTweaks
         if: ${{ inputs.ytweaks }}
@@ -357,7 +341,7 @@ jobs:
           mv packages/*.deb ${{ github.workspace }}/ygs.deb
 
       - name: Build YTVideoOverlay
-        if: ${{ inputs.youpip || inputs.ytuhd || inputs.youquality || inputs.youspeed || inputs.youmute || inputs.youloop || inputs.youshare || inputs.getcap }}
+        if: ${{ inputs.youpip || inputs.ytuhd || inputs.youquality || inputs.youspeed || inputs.getcap }}
         run: |
           cd YTVideoOverlay
           make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
@@ -398,33 +382,12 @@ jobs:
           make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
           mv packages/*.deb ${{ github.workspace }}/demc.deb
 
-      - name: Build YouMute
-        if: ${{ inputs.youmute }}
-        run: |
-          cd YouMute
-          make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
-          mv packages/*.deb ${{ github.workspace }}/ym.deb
-
-      - name: Build YouLoop
-        if: ${{ inputs.youloop }}
-        run: |
-          cd YouLoop
-          make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
-          mv packages/*.deb ${{ github.workspace }}/youloop.deb
-
       - name: Build YouSlider
         if: ${{ inputs.youslider }}
         run: |
           cd YouSlider
           make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
           mv packages/*.deb ${{ github.workspace }}/youslider.deb
-
-      - name: Build YouShare
-        if: ${{ inputs.youshare }}
-        run: |
-          cd YouShare
-          make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
-          mv packages/*.deb ${{ github.workspace }}/youshare.deb
 
       - name: Build YTweaks
         if: ${{ inputs.ytweaks }}

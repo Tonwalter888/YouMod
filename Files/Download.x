@@ -686,12 +686,16 @@ static NSArray *YouModCaptionTracksForPlayer(YTPlayerViewController *player) {
     return nil;
 }
 
+static NSString *YouModAuthorForPlayer(YTPlayerViewController *player) {
+    YTIPlayerResponse *playerData = YouModPlayerDataForPlayer(player);
+    YTIVideoDetails *details = playerData.videoDetails;
+    return details.author;
+}
+
 static NSString *YouModTitleForPlayer(YTPlayerViewController *player) {
     YTIPlayerResponse *playerData = YouModPlayerDataForPlayer(player);
     YTIVideoDetails *details = playerData.videoDetails;
-    NSString *title = details.title;
-    NSString *author = details.author;
-    return [NSString stringWithFormat:@"%@ - %@", author, title];
+    return details.title;
 }
 
 static NSString *YouModDescriptionForPlayer(YTPlayerViewController *player) {
@@ -1462,19 +1466,19 @@ static void YouModCopyTextToPasteboard(NSString *text, NSString *successKey) {
 
 static void YouModShowCopyVideoInfoSheet(YTPlayerViewController *player, UIViewController *presenter, UIView *sender) {
     NSString *videoID = player.currentVideoID;
+    NSString *author = YouModAuthorForPlayer(player);
     NSString *title = YouModTitleForPlayer(player);
     NSString *description = YouModDescriptionForPlayer(player);
-    NSString *url = [NSString stringWithFormat:@"https://www.youtube.com/watch?v=%@", videoID];
 
     NSMutableArray *items = [NSMutableArray array];
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_AUTHOR") subtitle:LOC(@"COPY_AUTHOR_DESC") icon:YouModIconImage(250) handler:^{
+        YouModCopyTextToPasteboard(author, @"COPIED_AUTHOR");
+    }]];
     [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_TITLE") subtitle:LOC(@"COPY_TITLE_DESC") icon:YouModIconImage(250) handler:^{
         YouModCopyTextToPasteboard(title, @"COPIED_TITLE");
     }]];
     [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_DESCRIPTION") subtitle:LOC(@"COPY_DESCRIPTION_DESC") icon:YouModIconImage(250) handler:^{
         YouModCopyTextToPasteboard(description, @"COPIED_DESCRIPTION");
-    }]];
-    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_URL") subtitle:LOC(@"COPY_URL_DESC") icon:YouModIconImage(250) handler:^{
-        YouModCopyTextToPasteboard(url, @"COPIED_URL");
     }]];
 
     YouModPresentMenu(LOC(@"COPY_VID_INFO"), items, presenter, sender);

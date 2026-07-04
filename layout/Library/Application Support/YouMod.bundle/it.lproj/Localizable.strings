@@ -37,7 +37,7 @@
 "AUTO_CLEARCACHE_DESC" = "Pulisce automaticamente la cache all'avvio.";
 
 "DOWNLOADING" = "Downloading";
-"DOWNLOAD_MANAGER" = "Download Manager";
+"DOWNLOAD_MANAGER" = "Download manager";
 "DOWNLOAD_MANAGER_DESC" = "Replaces YouTube's video downloader with YouMod one. With ablity to downloading videos, audios, captions, and thumbnails.";
 "DOWNLOAD_SAVE_PHOTOS" = "Automatically save to Photos";
 "DOWNLOAD_SAVE_PHOTOS_DESC" = "Automatically saves downloaded videos and images directly to your Photos app.";
@@ -47,12 +47,20 @@
 "DOWNLOAD_SHORTS_DESC" = "Choose Shorts quality";
 "COPY_VID_INFO" = "Copy video information";
 "COPY_VID_INFO_DESC" = "Choose what to copy";
+"COPY_AUTHOR" = "Copy author";
+"COPY_AUTHOR_DESC" = "Copy the video author";
 "COPY_TITLE" = "Copy title";
 "COPY_TITLE_DESC" = "Copy the video title";
 "COPY_DESCRIPTION" = "Copy description";
 "COPY_DESCRIPTION_DESC" = "Copy the video description";
 "COPY_URL" = "Copy URL";
 "COPY_URL_DESC" = "Copy the video URL";
+"COPY_URL_TIMESTAMP" = "Copy URL with timestamp";
+"URL_COPIED" = "Copied video link to clipboard";
+"URL_TIMESTAMP_COPIED" = "Copied URL with timestamp to clipboard";
+"ERROR_VIDEOID" = "Cannot get the video ID";
+"ERROR_ADS" = "Cannot copy video link while playing ads";
+"COPIED_AUTHOR" = "Copied video author";
 "COPIED_TITLE" = "Copied video title";
 "COPIED_DESCRIPTION" = "Copied video description";
 "COPIED_URL" = "Copied video URL";
@@ -160,6 +168,10 @@
 "SPEED_BUTTON_DESC" = "Displays a speed controls button on overlay.";
 "MUTE_BUTTON" = "Mute button";
 "MUTE_BUTTON_DESC" = "Displays a button to mute or unmute the volume on the overlay.";
+"REMOTE_SKIP_ENABLED" = "Rewind/Fast-forward on media controls";
+"REMOTE_SKIP_ENABLED_DESC" = "Remap Previous/Next on the lock screen, Bluetooth, Control Center, and CarPlay to rewind and fast-forward.";
+"REWIND_SECONDS" = "Rewind seconds";
+"FORWARD_SECONDS" = "Fast-forward seconds";
 "HOLD_TO_SPEED" = "Hold to speed";
 "HOLD_TO_SPEED_DESC" = "Uses custom hold to speed playback rate.";
 "HIDE_AUTOPLAY" = "Nascondi interruttore riproduzione automatica";
