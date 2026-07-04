@@ -343,12 +343,15 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 - (void)YouModShortsToRegular;
 - (void)YouModSetAutoSpeed;
 - (void)setPlaybackRate:(float)rate;
+- (void)setActiveCaptionTrack:(MLInnerTubeCaptionTrack *)arg1 source:(NSInteger)arg2;
+- (void)setActiveCaptionTrack:(MLInnerTubeCaptionTrack *)arg;
 - (void)play;
 - (void)pause;
 - (void)YouModAutoMute;
 - (void)YouModAutoAudioTrack;
 - (void)YouModAutoCaptions;
 - (void)YouModLoopButton;
+- (void)YouModCaptionsHelper:(MLInnerTubeCaptionTrack *)arg;
 - (void)YouModShareButton:(UIView *)sourceView;
 - (NSInteger)playerState;
 - (YTPlayerResponse *)contentPlayerResponse;
@@ -442,7 +445,6 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 @end
 
 @interface YTCaptionTrackSwitchController : NSObject
-- (void)setActiveCaptionTrack:(MLInnerTubeCaptionTrack *)arg;
 @end
 
 // Player Gestures - @bhackel (YTLitePlus)

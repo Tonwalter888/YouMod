@@ -826,7 +826,7 @@ static void YouModManageHoldToSpeed(UILongPressGestureRecognizer *gesture, YTMai
 
     if (INTFORVAL(CaptionTrack) == 1) {
         if (currentTrack != nil) {
-            [switchcon setActiveCaptionTrack:nil];
+            [self YouModCaptionsHelper:nil];
         }
         return;
     }
@@ -844,11 +844,20 @@ static void YouModManageHoldToSpeed(UILongPressGestureRecognizer *gesture, YTMai
     }
     if (matchedTrack && [matchedTrack.VSSID hasPrefix:@"a."] && IS_ENABLED(DisablesCaptionTrack)) {
         matchedTrack = nil;
-        [switchcon setActiveCaptionTrack:nil];
+        [self YouModCaptionsHelper:nil];
         return;
     }
     if (matchedTrack) {
-        [switchcon setActiveCaptionTrack:matchedTrack];
+        [self YouModCaptionsHelper:matchedTrack];
+    }
+}
+
+%new
+- (void)YouModCaptionsHelper:(MLInnerTubeCaptionTrack *)track {
+    if ([self respondsToSelector:@selector(setActiveCaptionTrack:source:)]) {
+        [self setActiveCaptionTrack:track source:0];
+    } else {
+        [self setActiveCaptionTrack:track];
     }
 }
 %end
