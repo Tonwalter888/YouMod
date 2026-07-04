@@ -849,6 +849,13 @@ static void YouModManageHoldToSpeed(UILongPressGestureRecognizer *gesture, YTMai
 }
 %end
 
+%hook YTICaptionTrackEntry
+%new
+- (NSString *)URL {
+    return self.baseURL;
+}
+%end
+
 /*
 // Fix Playlist Mini-bar Height For Small Screens
 %hook YTPlaylistMiniBarView
