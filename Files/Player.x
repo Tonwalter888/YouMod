@@ -846,6 +846,9 @@ static void YouModManageHoldToSpeed(UILongPressGestureRecognizer *gesture, YTMai
         matchedTrack = nil;
         [self YouModCaptionsHelper:nil];
         return;
+    } else if (!matchedTrack && IS_ENABLED(DisablesCaptionTrack)) {
+        [self YouModCaptionsHelper:nil];
+        return;
     }
     if (matchedTrack) {
         [self YouModCaptionsHelper:matchedTrack];
