@@ -175,7 +175,7 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
     YTISectionListRenderer *renderer = model;
     NSString *description = [model description];
     // pcs is mostly ads path
-    if ([description containsString:@"https://www.youtube.com/pcs/"]) renderer = nil;
+    if ([description containsString:@"https://www.youtube.com/pcs/activeview"] && [description containsString:@"ad_cpn"]) renderer = nil;
     %orig(renderer);
 }
 %end
