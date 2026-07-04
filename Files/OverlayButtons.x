@@ -1,5 +1,7 @@
 #import "Headers.h"
 
+#define TweakName @"YouMod"
+
 static NSBundle *YouModBundle() {
     static NSBundle *bundle = nil;
     static dispatch_once_t onceToken;
@@ -207,10 +209,7 @@ static UIButton *YMCreateOverlayButton(YTMainAppControlsOverlayView *overlay, YM
                                  style:UIAlertActionStyleDefault
                                handler:^(UIAlertAction *a) {
         UIPasteboard.generalPasteboard.string = videoURL;
-        [[%c(GOOHUDManagerInternal) sharedInstance]
-            showMessageMainThread:
-                [%c(YTHUDMessage)
-                    messageWithText:LOC(@"URL_COPIED")]];
+        [[%c(GOOHUDManagerInternal) sharedInstance] showMessageMainThread:[%c(YTHUDMessage) messageWithText:LOC(@"URL_COPIED")]];
     }];
 
     // Copy URL with timestamp
@@ -219,10 +218,7 @@ static UIButton *YMCreateOverlayButton(YTMainAppControlsOverlayView *overlay, YM
                                  style:UIAlertActionStyleDefault
                                handler:^(UIAlertAction *a) {
         UIPasteboard.generalPasteboard.string = timestampURL;
-        [[%c(GOOHUDManagerInternal) sharedInstance]
-            showMessageMainThread:
-                [%c(YTHUDMessage)
-                    messageWithText:LOC(@"URL_TIMESTAMP_COPIED")]];
+        [[%c(GOOHUDManagerInternal) sharedInstance] showMessageMainThread:[%c(YTHUDMessage) messageWithText:LOC(@"URL_TIMESTAMP_COPIED")]];
     }];
 
     // Cancel
