@@ -273,7 +273,7 @@ static NSArray *getAllSystemLanguageTitles() {
             YMToggle(LOC(@"DISABLES_CAPTION_TRACK"), LOC(@"DISABLES_CAPTION_TRACK_DESC"), DisablesCaptionTrack),
             YMHeader(LOC(@"INTERFACE")),
             YMToggle(LOC(@"MUTE_BUTTON"), LOC(@"MUTE_BUTTON_DESC"), MuteButton),
-            YMToggle(LOC(@"SPEED_BUTTON"), LOC(@"SPEED_BUTTON_DESC"), SpeedButton),
+            // YMToggle(LOC(@"SPEED_BUTTON"), LOC(@"SPEED_BUTTON_DESC"), SpeedButton),
             YMPicker(LOC(@"HOLD_TO_SPEED"), LOC(@"HOLD_TO_SPEED_DESC"), HoldToSpeedIndex, (@[LOC(@"DEFAULT"), @"0.25x", @"0.5x", @"0.75x", @"1x", @"1.25x", @"1.5x", @"1.75x", @"2x", @"3x", @"4x", @"5x"]), 0),
             YMToggle(LOC(@"HIDE_AUTOPLAY"), LOC(@"HIDE_AUTOPLAY_DESC"), HideAutoPlayToggle),
             YMToggle(LOC(@"HIDE_FULL_VID_TITLE"), LOC(@"HIDE_FULL_VID_TITLE_DESC"), HideFullvidTitle),
