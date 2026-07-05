@@ -152,7 +152,7 @@ jobs:
           echo "YT_VERSION=$(grep -A 1 '<key>CFBundleVersion</key>' ytextracted/Payload/YouTube.app/Info.plist | grep '<string>' | awk -F'[><]' '{print $3}')" >> $GITHUB_ENV
 
       - name: Install Dependencies
-        run: brew install make ldid swiftlint
+        run: brew install make ldid
 
       - name: Set PATH Environment Variables
         run: |
@@ -215,10 +215,7 @@ jobs:
         run: sed -i '' 's/od -c "$i" | head/od -c "$i" 2>\/dev\/null | head/g' $THEOS/bin/convert_xml_plist.sh || true
 
       - name: Install cyan and tbd
-        run: |
-           pipx install https://github.com/asdfzxcvbn/pyzule-rw/archive/main.zip
-           wget --quiet --no-verbose "https://github.com/inoahdev/tbd/releases/download/2.2/tbd-mac" -O /usr/local/bin/tbd
-           chmod +x /usr/local/bin/tbd
+        run: pipx install https://github.com/asdfzxcvbn/pyzule-rw/archive/main.zip
 
       - name: Checkout YouMod
         uses: actions/checkout@v7
