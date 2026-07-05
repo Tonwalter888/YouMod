@@ -1727,7 +1727,6 @@ void YouModConfigureDownloadButton(_ASDisplayView *view) {
                 break;
             } else {
                 isFirstOneFound = YES;
-                likeButtonView = subview;
             }
         }
     }
