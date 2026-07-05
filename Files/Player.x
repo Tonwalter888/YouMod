@@ -1,5 +1,7 @@
 #import "Headers.h"
 
+#define TweakName @"YouMod"
+
 static NSBundle *YouModBundle() {
     static NSBundle *bundle = nil;
     static dispatch_once_t onceToken;
