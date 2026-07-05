@@ -820,7 +820,7 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
     NSArray *availableTracks = [switchcon valueForKey:@"_availableAudioTracks"];
     if (!availableTracks || availableTracks.count == 0) return;
     // Check if the current audio track is already the same as the user perferences
-    // YTIAudioTrack *currentTrack = [switchcon valueForKey:@"_lastSelectedAudioTrack"]; Doesn't work for some reasons
+    YTIAudioTrack *currentTrack = [switchcon valueForKey:@"_lastSelectedAudioTrack"];
     YTIAudioTrack *matchedTrack = nil;
 
     if (INTFORVAL(AudioTrack) == 1) {
@@ -848,7 +848,7 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
     }
 
     // If found, change to it
-    if (matchedTrack) {
+    if (matchedTrack && matchedTrack != currentTrack) {
         [switchcon notifyObserversAudioTrackWillChange:matchedTrack source:0];
         [switchcon switchToAudioTrack:matchedTrack source:0];
         [switchcon notifyObserversAudioTrackDidChange:matchedTrack source:0];
@@ -881,10 +881,6 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
             break;
         }
     }
-    if (matchedTrack == currentTrack) { // needs to test
-        matchedTrack = nil;
-        return;
-    }
     if (matchedTrack && [matchedTrack.VSSID hasPrefix:@"a."] && IS_ENABLED(DisablesCaptionTrack)) {
         matchedTrack = nil;
         [self YouModCaptionsHelper:nil];
@@ -893,7 +889,7 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
         [self YouModCaptionsHelper:nil];
         return;
     }
-    if (matchedTrack) {
+    if (matchedTrack && matchedTrack != currentTrack) {
         [self YouModCaptionsHelper:matchedTrack];
     }
 }

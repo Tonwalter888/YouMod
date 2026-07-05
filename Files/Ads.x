@@ -76,6 +76,14 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
             }];
             [itemsArray removeObjectsAtIndexes:removeItemsArrayIndexes];
         }
+
+        if ([sectionRenderer isKindOfClass:%c(YTISlimVideoMetadataSectionRenderer)]) {
+            NSMutableArray <YTIRenderer *> *itemsArray = ((YTISlimVideoMetadataSectionRenderer *)sectionRenderer).contentsArray;
+            NSIndexSet *removeItemsArrayIndexes = [itemsArray indexesOfObjectsPassingTest:^BOOL(YTIRenderer *renderer, NSUInteger idx2, BOOL *stop2) {
+                return IS_ENABLED(HideActionBar) && [renderer containsString:@"video_action_bar.eml"];
+            }];
+            [itemsArray removeObjectsAtIndexes:removeItemsArrayIndexes];
+        }
         
         // Filter item section renderers
         if (![sectionRenderer isKindOfClass:%c(YTIItemSectionRenderer)]) return NO;
@@ -115,6 +123,10 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
         }
 
         if (IS_ENABLED(HideSurveys) && [description containsString:@"in_feed_survey.eml"]) {
+            return YES;
+        }
+
+        if (IS_ENABLED(HideCommentsSection) && [description containsString:@"comment-item-section"] && [description containsString:@"comments-entry-point"]) {
             return YES;
         }
         
@@ -268,6 +280,7 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
 - (void)didMoveToWindow {
     %orig;
     if ([self.accessibilityIdentifier isEqualToString:@"eml.expandable_metadata.vpp"]) [self removeFromSuperview];
+    if (IS_ENABLED(HideCommentsPreview) && [self.accessibilityIdentifier isEqualToString:@"id.ui.comments_entry_point_teaser"]) [self removeFromSuperview];
 }
 %end
 

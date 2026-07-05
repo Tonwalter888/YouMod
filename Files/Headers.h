@@ -163,6 +163,9 @@
 #define DisablesFreeZoom @"YouModDisablesFreeZoom"
 #define TapToSeek @"YouModTapToSeek"
 #define PauseTwoFingers @"YouModPauseTwoFingers"
+#define HideActionBar @"YouModHideActionBar"
+#define HideCommentsSection @"YouModHideCommentsSection"
+#define HideCommentsPreview @"YouModHideCommentsPreview"
 // Shorts
 #define RemoveShortsLive @"YouModRemoveShortsLive"
 #define RemoveShortsPosts @"YouModRemoveShortsPosts"
@@ -266,6 +269,10 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 
 @interface YTReelPlayerResponder : NSObject
 - (id)parentResponder;
+@end
+
+@interface YTISlimVideoMetadataSectionRenderer : GPBMessage
+@property (nonatomic, strong, readwrite) NSMutableArray *contentsArray;
 @end
 
 @interface YTShortsAdsPlayerViewController : YTReelPlayerViewController

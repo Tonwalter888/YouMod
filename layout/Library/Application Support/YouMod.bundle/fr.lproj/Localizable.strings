@@ -61,10 +61,9 @@
 "COPY_DESCRIPTION" = "Copy descriptions";
 "COPY_DESCRIPTION_DESC" = "Copy the video descriptions";
 "COPY_URL" = "Copy video link";
-"COPY_URL_DESC" = "Copy the video link";
-"COPY_URL_TIMESTAMP" = "Copy URL with timestamp";
+"COPY_URL_TIMESTAMP" = "Copy video link with timestamp";
 "URL_COPIED" = "Copied video link";
-"URL_TIMESTAMP_COPIED" = "Copied URL with timestamp";
+"URL_TIMESTAMP_COPIED" = "Copied video link with timestamp";
 "ERROR_VIDEOID" = "Cannot get the video ID";
 "ERROR_ADS" = "Cannot copy video link while playing ads";
 "COPIED_AUTHOR" = "Copied video author";
@@ -185,8 +184,10 @@
 "LOOP_BUTTON_DESC" = "Displays a button to loop the video on the overlay.";
 "HOLD_TO_SPEED" = "Hold to speed";
 "HOLD_TO_SPEED_DESC" = "Uses custom hold to speed playback rate.";
-"REMOTE_SKIP_ENABLED" = "Rewind/Fast-forward on media controls";
-"REMOTE_SKIP_ENABLED_DESC" = "Remap Previous/Next on the lock screen, Bluetooth, Control Center, and CarPlay to rewind and fast-forward.";
+"SKIP_BACKWARD" = "Skip backward";
+"SKIP_BACKWARD_DESC" = "Replaces the previous track button in Control Center with a skip backward button by a set number of seconds.";
+"SKIP_FORWARD" = "Skip forward";
+"SKIP_FORWARD_DESC" = "Replaces the next track button in Control Center with a skip forward button by a set number of seconds.";
 "REWIND_SECONDS" = "Rewind seconds";
 "FORWARD_SECONDS" = "Fast-forward seconds";
 "HIDE_AUTOPLAY" = "Cacher le bouton lecture automatique";
@@ -283,6 +284,12 @@
 "USES_24_HOURS_TIME_DESC" = "Shows end time in 24-hour format.";
 "PAUSE_TWO_FINGERS" = "Pause using two fingers";
 "PAUSE_TWO_FINGERS_DESC" = "Pause/Resume playback by tapping on the screen using two fingers.";
+"HIDE_ACTION_BAR" = "Hide actions bar";
+"HIDE_ACTION_BAR_DESC" = "Removes the bar containing the like, dislike, share buttons etc. below the video player.";
+"HIDE_COMMENTS_SECTION" = "Hide comments section";
+"HIDE_COMMENTS_SECTION_DESC" = "Completely removes the entire comments section.";
+"HIDE_COMMENTS_PREVIEW" = "Hide preview comments";
+"HIDE_COMMENTS_PREVIEW_DESC" = "Removes the preview box for the top comment while keeping the full section expandable.";
 
 "SHORTS" = "Shorts";
 "SHORTS_ACTION" = "Shorts action after the video ends";
