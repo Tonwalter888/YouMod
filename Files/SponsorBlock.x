@@ -124,42 +124,77 @@ void sbUpdateOverlayInsetForPivotBar() {
     }
 }
 
+static const NSTimeInterval SBOverlayRestoreFadeDuration = 0.15;
+
+// Hide the pill overlay instantly (non-animated): iOS captures the app-switcher
+// snapshot synchronously as the app deactivates, so an animated hide wouldn't
+// land in time and the pill would leak into the switcher card.
+static void sbHideOverlayForSnapshot(void) {
+    if (sbOverlayWindow) sbOverlayWindow.hidden = YES;
+}
+
+// Restore the overlay, fading it back in so the reappearance isn't a hard pop.
+// Guarded to the hidden state so the two "became active" notifications don't
+// each re-trigger the fade.
+static void sbRestoreOverlayAfterSnapshot(void) {
+    if (!sbOverlayWindow || !sbOverlayWindow.hidden) return;
+    sbOverlayWindow.alpha = 0.0;
+    sbOverlayWindow.hidden = NO;
+    [UIView animateWithDuration:SBOverlayRestoreFadeDuration animations:^{
+        sbOverlayWindow.alpha = 1.0;
+    }];
+}
+
 // Tracks which scene's lifecycle is currently observed. When sbOverlayWindow is
 // recreated for a different scene (after the original goes Unattached), we
 // re-bind observers to the new scene rather than leaving stale registrations.
 static UIWindowScene *sbObservedScene = nil;
-static id sbBackgroundObserver = nil;
-static id sbForegroundObserver = nil;
+static id sbSceneDeactivateObserver = nil;
+static id sbSceneBackgroundObserver = nil;
+static id sbSceneActivateObserver = nil;
+static id sbAppResignObserver = nil;
 static id sbAppBackgroundObserver = nil;
-static id sbAppForegroundObserver = nil;
+static id sbAppActivateObserver = nil;
 static id sbOrientationObserver = nil;
 
 static void sbRegisterOverlayLifecycleObservers(UIWindowScene *targetScene) {
     if (!targetScene || sbObservedScene == targetScene) return;
     NSNotificationCenter *nc = [NSNotificationCenter defaultCenter];
 
-    if (sbBackgroundObserver) [nc removeObserver:sbBackgroundObserver];
-    if (sbForegroundObserver) [nc removeObserver:sbForegroundObserver];
+    if (sbSceneDeactivateObserver) [nc removeObserver:sbSceneDeactivateObserver];
+    if (sbSceneBackgroundObserver) [nc removeObserver:sbSceneBackgroundObserver];
+    if (sbSceneActivateObserver) [nc removeObserver:sbSceneActivateObserver];
+    if (sbAppResignObserver) [nc removeObserver:sbAppResignObserver];
     if (sbAppBackgroundObserver) [nc removeObserver:sbAppBackgroundObserver];
-    if (sbAppForegroundObserver) [nc removeObserver:sbAppForegroundObserver];
+    if (sbAppActivateObserver) [nc removeObserver:sbAppActivateObserver];
     if (sbOrientationObserver) [nc removeObserver:sbOrientationObserver];
 
     sbObservedScene = targetScene;
 
-    // Hide on background — synchronous change before the app-switcher snapshot
-    // is captured (Apple QA1838). queue:nil delivers on the posting thread
-    // without enqueuing, so the hide happens before iOS captures the snapshot.
-    sbBackgroundObserver = [nc addObserverForName:UISceneDidEnterBackgroundNotification object:targetScene queue:nil usingBlock:^(__unused NSNotification *note) {
-        if (sbOverlayWindow) sbOverlayWindow.hidden = YES;
+    // Hide on deactivation, restore on activation. Deactivation is the trigger
+    // (not backgrounding) because invoking the app switcher only moves the app to
+    // the inactive state — a background-only observer misses that path. queue:nil
+    // runs the hide synchronously before the snapshot is captured. Scene
+    // notifications are filtered to targetScene so one scene's interruption
+    // doesn't hide another's overlay on iPad multi-window; the app-level
+    // notifications (object:nil) are an app-wide backstop.
+    sbSceneDeactivateObserver = [nc addObserverForName:UISceneWillDeactivateNotification object:targetScene queue:nil usingBlock:^(__unused NSNotification *note) {
+        sbHideOverlayForSnapshot();
     }];
-    sbForegroundObserver = [nc addObserverForName:UISceneWillEnterForegroundNotification object:targetScene queue:nil usingBlock:^(__unused NSNotification *note) {
-        if (sbOverlayWindow) sbOverlayWindow.hidden = NO;
+    sbSceneBackgroundObserver = [nc addObserverForName:UISceneDidEnterBackgroundNotification object:targetScene queue:nil usingBlock:^(__unused NSNotification *note) {
+        sbHideOverlayForSnapshot();
+    }];
+    sbSceneActivateObserver = [nc addObserverForName:UISceneDidActivateNotification object:targetScene queue:nil usingBlock:^(__unused NSNotification *note) {
+        sbRestoreOverlayAfterSnapshot();
+    }];
+    sbAppResignObserver = [nc addObserverForName:UIApplicationWillResignActiveNotification object:nil queue:nil usingBlock:^(__unused NSNotification *note) {
+        sbHideOverlayForSnapshot();
     }];
     sbAppBackgroundObserver = [nc addObserverForName:UIApplicationDidEnterBackgroundNotification object:nil queue:nil usingBlock:^(__unused NSNotification *note) {
-        if (sbOverlayWindow) sbOverlayWindow.hidden = YES;
+        sbHideOverlayForSnapshot();
     }];
-    sbAppForegroundObserver = [nc addObserverForName:UIApplicationWillEnterForegroundNotification object:nil queue:nil usingBlock:^(__unused NSNotification *note) {
-        if (sbOverlayWindow) sbOverlayWindow.hidden = NO;
+    sbAppActivateObserver = [nc addObserverForName:UIApplicationDidBecomeActiveNotification object:nil queue:nil usingBlock:^(__unused NSNotification *note) {
+        sbRestoreOverlayAfterSnapshot();
     }];
 
     // Recompute pivot-bar inset on rotation / dynamic tabbar height changes.
