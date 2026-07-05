@@ -662,7 +662,7 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
                gesture.state == UIGestureRecognizerStateFailed) {
                
         [self.delegate setPlaybackRate:YouModRateBeforeHoldToSpeed];
-        [self youModHideSpeedToast];
+        [self YouModHideSpeedToast];
     }
 }
 %end
