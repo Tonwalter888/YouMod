@@ -99,14 +99,19 @@ static id gYouModForwardTarget = nil;
 // ran (video change or launch).
 static void YouModConfigureRemoteSkipCommands(void) {
     MPRemoteCommandCenter *cc = [MPRemoteCommandCenter sharedCommandCenter];
-    BOOL on = IS_ENABLED(RemoteSkipEnabled);
+    BOOL back = IS_ENABLED(SkipBackwardEnabled);
+    BOOL fwd = IS_ENABLED(SkipForwardEnabled);
 
-    cc.skipBackwardCommand.enabled = on;
+    // Each direction is independent: the previous/next track command is remapped
+    // to a skip only on the side the user enabled, so a mixed state (e.g. rewind
+    // on, fast-forward off) shows a skip-back control alongside the stock next
+    // track button.
+    cc.skipBackwardCommand.enabled = back;
     cc.skipBackwardCommand.preferredIntervals = @[@(YouModRewindSecondsValue())];
-    cc.skipForwardCommand.enabled = on;
+    cc.skipForwardCommand.enabled = fwd;
     cc.skipForwardCommand.preferredIntervals = @[@(YouModForwardSecondsValue())];
-    cc.previousTrackCommand.enabled = !on;
-    cc.nextTrackCommand.enabled = !on;
+    cc.previousTrackCommand.enabled = !back;
+    cc.nextTrackCommand.enabled = !fwd;
 
     if (!gYouModRewindTarget) {
         gYouModRewindTarget = [cc.skipBackwardCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *event) {

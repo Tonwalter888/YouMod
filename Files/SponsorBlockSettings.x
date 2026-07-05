@@ -249,8 +249,9 @@ static const void *kSBColorIndexPathKey = &kSBColorIndexPathKey;
     UIView *header = [[UIView alloc] init];
     UILabel *label = [[UILabel alloc] init];
     label.text = title;
-    label.textColor = [UIColor colorWithWhite:0.6 alpha:1.0];
-    label.font = [UIFont systemFontOfSize:13 weight:UIFontWeightRegular];
+    // Match the main YouMod settings section headers (ymSecondaryColor / size 14).
+    label.textColor = [UIColor colorWithWhite:0.55 alpha:1.0];
+    label.font = [UIFont systemFontOfSize:14 weight:UIFontWeightRegular];
     label.translatesAutoresizingMaskIntoConstraints = NO;
     [header addSubview:label];
     [NSLayoutConstraint activateConstraints:@[
