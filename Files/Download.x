@@ -734,8 +734,9 @@ static YouModMediaFormat *YouModMediaFormatFromStream(YTIFormatStream *stream, B
     if ([stream.qualityLabel hasSuffix:@"HDR"]) return nil;
     if (!video) {
         YTIAudioTrack *audio = stream.audioTrack;
-        NSString *audioidp = audio.id_p; 
+        NSString *audioidp = audio.id_p;
         if (audio.hasId_p) {
+            if (IS_ENABLED(UseOrigAudio) && ![audioidp hasSuffix:@".4"]) return nil;
             format.qualityLabel = audio.displayName;
             format.idp = audioidp;
         }
@@ -1468,8 +1469,12 @@ static void YouModShowCopyVideoInfoSheet(YTPlayerViewController *player, UIViewC
     NSString *author = YouModAuthorForPlayer(player);
     NSString *title = YouModTitleForPlayer(player);
     NSString *description = YouModDescriptionForPlayer(player);
+    NSString *all = [NSString stringWithFormat:@"%@ - %@\n%@", author, title, description];
 
     NSMutableArray *items = [NSMutableArray array];
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_ALL_VID_INFO") subtitle:LOC(@"COPY_ALL_VID_INFO_DESC") icon:YouModIconImage(250) handler:^{
+        YouModCopyTextToPasteboard(all, @"COPIED_VID_INFO");
+    }]];
     [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_AUTHOR") subtitle:LOC(@"COPY_AUTHOR_DESC") icon:YouModIconImage(250) handler:^{
         YouModCopyTextToPasteboard(author, @"COPIED_AUTHOR");
     }]];

@@ -103,10 +103,6 @@ static void YouModConfigureRemoteSkipCommands(void) {
     }
 }
 
-// static NSString *shortsVidID;
-
-// static BOOL isShortsTab;
-
 // Audio track list
 static NSArray *getAllSystemLanguageTitles() {
     NSMutableArray *titles = [NSMutableArray array];
@@ -590,19 +586,59 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
     return [values[index] floatValue];
 }
 
-static void YouModManageHoldToSpeed(UILongPressGestureRecognizer *gesture, YTMainAppVideoPlayerOverlayViewController *delegate) {
-    NSInteger speedIndex = INTFORVAL(HoldToSpeedIndex);
-    CGFloat speed = YouModSpeedForHoldIndex(speedIndex);
-
-    if (gesture.state == UIGestureRecognizerStateBegan) {
-        YouModRateBeforeHoldToSpeed = [delegate currentPlaybackRate];
-        [delegate setPlaybackRate:speed];
-    } else if (gesture.state == UIGestureRecognizerStateEnded || gesture.state == UIGestureRecognizerStateCancelled || gesture.state == UIGestureRecognizerStateFailed) {
-        [delegate setPlaybackRate:YouModRateBeforeHoldToSpeed];
-    }
-}
-
 %hook YTMainAppVideoPlayerOverlayView
+%property (nonatomic, strong) UIView *youModSpeedToastView;
+%property (nonatomic, strong) UILabel *youModSpeedToastLabel;
+%new
+- (void)YouModShowSpeedToast:(CGFloat)speed {
+    if (!self.youModSpeedToastView) {
+        self.youModSpeedToastView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 160, 44)];
+        self.youModSpeedToastView.layer.cornerRadius = 22;
+        self.youModSpeedToastView.clipsToBounds = YES;
+        self.youModSpeedToastView.alpha = 0.0;
+        
+        UIBlurEffect *blurEffect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleLight];
+        UIVisualEffectView *blurView = [[UIVisualEffectView alloc] initWithEffect:blurEffect];
+        blurView.frame = self.youModSpeedToastView.bounds;
+        blurView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+        [self.youModSpeedToastView addSubview:blurView];
+
+        self.youModSpeedToastLabel = [[UILabel alloc] initWithFrame:self.youModSpeedToastView.bounds];
+        self.youModSpeedToastLabel.textAlignment = NSTextAlignmentCenter;
+        self.youModSpeedToastLabel.textColor = [UIColor blackColor];
+        self.youModSpeedToastLabel.font = [UIFont systemFontOfSize:13 weight:UIFontWeightMedium];
+        self.youModSpeedToastLabel.numberOfLines = 2;
+        [self.youModSpeedToastView addSubview:self.youModSpeedToastLabel];
+        
+        [self addSubview:self.youModSpeedToastView];
+    }
+    
+    self.youModSpeedToastView.center = CGPointMake(self.bounds.size.width / 2, 70);
+    self.youModSpeedToastView.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin | UIViewAutoresizingFlexibleBottomMargin;
+    [self bringSubviewToFront:self.youModSpeedToastView];
+    
+    NSTextAttachment *attachment = [[NSTextAttachment alloc] init];
+    attachment.image = [[UIImage systemImageNamed:@"hare.fill"] imageWithTintColor:[UIColor blackColor]];
+    attachment.bounds = CGRectMake(0, -2, 14, 14);
+    
+    NSMutableAttributedString *attrString = [[NSMutableAttributedString alloc] initWithString:[NSString stringWithFormat:@" Playback Speed\n%g x", speed]];
+    if (attachment.image) {
+        NSAttributedString *iconString = [NSAttributedString attributedStringWithAttachment:attachment];
+        [attrString insertAttributedString:iconString atIndex:0];
+    }
+    
+    self.youModSpeedToastLabel.attributedText = attrString;
+
+    [UIView animateWithDuration:0.2 animations:^{
+        self.youModSpeedToastView.alpha = 1.0;
+    }];
+}
+%new
+- (void)YouModHideSpeedToast {
+    [UIView animateWithDuration:0.2 animations:^{
+        self.youModSpeedToastView.alpha = 0.0;
+    }];
+}
 - (void)setLongPressGestureRecognizer:(id)arg1 {
     if (INTFORVAL(HoldToSpeedIndex) != 0) {
         UILongPressGestureRecognizer *longPress = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(YouModHoldToSpeed:)];
@@ -614,43 +650,22 @@ static void YouModManageHoldToSpeed(UILongPressGestureRecognizer *gesture, YTMai
 }
 %new
 - (void)YouModHoldToSpeed:(UILongPressGestureRecognizer *)gesture {
-    YouModManageHoldToSpeed(gesture, self.delegate);
-}
-%end
+    NSInteger speedIndex = INTFORVAL(HoldToSpeedIndex);
+    CGFloat speed = YouModSpeedForHoldIndex(speedIndex);
 
-/*
-
-%hook YTReelPlayerViewController
-
-- (void)loadPlayerBar {
-    %orig;
-    if (!IS_ENABLED(ShortsToRegular)) return;
-    YTPlayerViewController *playerviewController = self.player;
-    if (shortsVidID != playerviewController.currentVideoID && !isShortsTab) {
-        [playerviewController performSelector:@selector(YouModShortsToRegular)];
-    }
-    shortsVidID = playerviewController.currentVideoID;
-}
-
-%end
-
-// Check if it's Shorts tab
-%hook YTInlinePlayerBarContainerView
-- (void)setLayout:(int)arg {
-    %orig;
-    if (![self.superview isKindOfClass:NSClassFromString(@"YTPivotBarView")]) return;
-    YTPivotBarView *pivotView = (YTPivotBarView *)self.superview;
-    YTPivotBarViewController *pivotController = [pivotView valueForKey:@"_delegate"];
-    NSString *pivotIdentifier = [pivotController valueForKey:@"_pivotIdentifier"];
-    if ([pivotIdentifier isEqualToString:@"FEshorts"]) {
-        isShortsTab = YES;
-    } else {
-        isShortsTab = NO;
+    if (gesture.state == UIGestureRecognizerStateBegan) {
+        YouModRateBeforeHoldToSpeed = [self.delegate currentPlaybackRate];
+        [self.delegate setPlaybackRate:speed];
+        [self YouModShowSpeedToast:speed];
+    } else if (gesture.state == UIGestureRecognizerStateEnded || 
+               gesture.state == UIGestureRecognizerStateCancelled || 
+               gesture.state == UIGestureRecognizerStateFailed) {
+               
+        [self.delegate setPlaybackRate:YouModRateBeforeHoldToSpeed];
+        [self youModHideSpeedToast];
     }
 }
 %end
-
-*/
 
 %hook YTSingleVideoController
 
@@ -749,16 +764,6 @@ static void YouModManageHoldToSpeed(UILongPressGestureRecognizer *gesture, YTMai
 - (void)setPlaybackRate:(float)rate {
     playbackRate = rate;
     %orig;
-}
-
-%new
-- (void)YouModShortsToRegular {
-    if (self.contentVideoID != nil && ([self.parentViewController isKindOfClass:NSClassFromString(@"YTReelPlayerViewController")] || [self.parentViewController isKindOfClass:NSClassFromString(@"YTShortsPlayerViewController")])) {
-        NSString *vidLink = [NSString stringWithFormat:@"vnd.youtube://%@", self.contentVideoID];
-        if ([[UIApplication sharedApplication] canOpenURL:[NSURL URLWithString:vidLink]]) {
-            [[UIApplication sharedApplication] openURL:[NSURL URLWithString:vidLink] options:@{} completionHandler:nil];
-        }
-    }
 }
 
 %new

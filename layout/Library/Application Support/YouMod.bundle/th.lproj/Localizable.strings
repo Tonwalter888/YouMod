@@ -55,6 +55,8 @@
 "DOWNLOAD_SAVE_PHOTOS_DESC" = "บันทึกวิดีโอและรูปภาพที่ดาวน์โหลดไปยังแอปรูปภาพของคุณโดยอัตโนมัติ";
 "ADD_SHORTS_DOWNLOAD" = "เพิ่มปุ่มดาวน์โหลดไปยัง Shorts";
 "ADD_SHORTS_DOWNLOAD_DESC" = "เพิ่มปุ่มดาวน์โหลดไปยังโอเวอร์เลย์วิดีโอ Shorts";
+"USE_ORIG_AUDIO" = "ใช้แทร็กเสียงต้นฉบับโดยอัตโนมัติ";
+"USE_ORIG_AUDIO_DESC" = "ใช้แทร็กเสียงต้นฉบับโดยอัตโนมัติแทนการแสดงกล่องตัวเลือก";
 "DOWNLOAD_SHORTS" = "ดาวน์โหลด Shorts";
 "DOWNLOAD_SHORTS_DESC" = "เลือกคุณภาพ Shorts";
 "COPY_VID_INFO" = "คัดลอกข้อมูลวิดีโอ";
@@ -63,6 +65,8 @@
 "COPY_TITLE_DESC" = "คัดลอกชื่อวิดีโอ";
 "COPY_DESCRIPTION" = "คัดลอกคำอธิบาย";
 "COPY_DESCRIPTION_DESC" = "คัดลอกคำอธิบายวิดีโอ";
+"COPY_ALL_VID_INFO" = "คัดลอกทั้งหมด";
+"COPY_ALL_VID_INFO_DESC" = "คัดลอกข้อมูลวิดีโอทั้งหมด";
 "COPY_URL" = "คัดลอก URL";
 "COPY_URL_DESC" = "คัดลอก URL ของวิดีโอ";
 "COPIED_TITLE" = "คัดลอกชื่อวิดีโอแล้ว";
@@ -87,7 +91,7 @@
 "NO_CAPTIONS" = "ไม่มีคำบรรยายสำหรับวิดีโอนี้";
 "NO_AUDIO_STREAM_FOUND" = "ไม่พบสตรีมเสียง";
 "NO_VID_AUDIO_STREAM_FOUND" = "ไม่พบสตรีมวิดีโอ/เสียง";
-"COPIED_VID_INFO" = "คัดลอกข้อมูลวิดีโอเรียบร้อยแล้ว";
+"COPIED_VID_INFO" = "คัดลอกข้อมูลวิดีโอทั้งหมดแล้ว";
 "SAVED_TO_PHOTOS" = "บันทึกลงในแอปรูปภาพแล้ว";
 "SAVE_FAILED" = "บันทึกไม่สำเร็จ";
 "PHOTO_ACCESS_DENINED" = "การเข้าถึงแอปรูปภาพถูกปฏิเสธ";
@@ -136,11 +140,13 @@
 "HIDE_SUBBAR" = "ซ่อนแถบหมวดหมู่";
 "HIDE_SUBBAR_DESC" = "ซ่อนแถบหมวดหมู่ในฟีด";
 "HIDE_HORI_SHELF" = "ซ่อนฟีดแนวนอน";
-"HIDE_HORI_SHELF_DESC" = "ลบฟีดแนวนอนทั้งหมด (เช่น ข่าวสาร, รับชมต่อ, โพสต์ ฯลฯ) ออกจากหน้าฟีด";
+"HIDE_HORI_SHELF_DESC" = "ลบฟีดแนวนอนทั้งหมด (เช่น ข่าวสาร, รับชมต่อ, โพสต์ ฯลฯ) ออกจากหน้าฟีด ยกเว้นเกม";
 "HIDE_MUSIC_PLAYLISTS" = "ซ่อนเพลย์ลิสต์เพลง";
 "HIDE_MUSIC_PLAYLISTS_DESC" = "ซ่อนตัวสร้างเพลย์ลิสต์ในฟีด";
 "HIDE_FEED_POST" = "ซ่อนโพส";
 "HIDE_FEED_POST_DESC" = "ซ่อนโพสในฟีด";
+"HIDE_SURVEYS" = "ซ่อนแบบสำรวจ";
+"HIDE_SURVEYS_DESC" = "ซ่อนแบบสำรวจวิดีโอที่ YouTube แสดงในบางครั้ง";
 "HIDE_SHORTS_SHELF" = "ซ่อน Shorts";
 "HIDE_SHORTS_SHELF_DESC" = "ซ่อน Shorts ในฟีด";
 "KEEP_SHORTS_SUBSCRIPT" = "แสดง Shorts ในหน้าการติดตาม";
@@ -178,6 +184,10 @@
 "SPEED_BUTTON_DESC" = "แสดงปุ่มควบคุมความเร็ววิดีโอบนโอเวอร์เลย์";
 "MUTE_BUTTON" = "ปุ่มปิดเสียง";
 "MUTE_BUTTON_DESC" = "แสดงปุ่มปิด/เปิดเสียงบนโอเวอร์เลย์";
+"SHARE_BUTTON" = "ปุ่มแชร์";
+"SHARE_BUTTON_DESC" = "แสดงปุ่มแชร์ลิงก์วิดีโอบนโอเวอร์เลย์";
+"LOOP_BUTTON" = "ปุ่มวนซ้ำวิดีโอ";
+"LOOP_BUTTON_DESC" = "แสดงปุ่มสำหรับวนซ้ำวิดีโอบนโอเวอร์เลย์";
 "HOLD_TO_SPEED" = "ความเร็วเมื่อกดค้าง";
 "HOLD_TO_SPEED_DESC" = "ใช้ความเร็วในการเล่นวิดีโอแบบกำหนดเองเมื่อกดค้างที่หน้าจอ";
 "HIDE_AUTOPLAY" = "ซ่อนสวิตซ์เล่นอัตโนมัติ";
@@ -294,8 +304,8 @@
 "ENABLES_SHORTS_QUALITY_DESC" = "สามารถเลือกคุณภาพ Shorts ได้";
 "SHOW_SHORTS_SEEKBAR" = "แสดงแถบเลื่อนเสมอ";
 "SHOW_SHORTS_SEEKBAR_DESC" = "แสดงแถบความคืบหน้าเสมอ";
-"SHORTS_TO_REGULAR" = "เปลี่ยน Shorts เป็นวิดีโอธรรมมดา";
-"SHORTS_TO_REGULAR_DESC" = "เปิด Shorts เป็นวิดีโอธรรมมดา";
+"REMOVE_POSTS_SHORTS" = "ลบโพสต์";
+"REMOVE_POSTS_SHORTS_DESC" = "นำโพสต์ออกจากฟีด";
 
 "TABBAR" = "แท็บนำทาง";
 "DEFAULT_TAB" = "แท็บเริ่มต้น";

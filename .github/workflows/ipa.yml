@@ -60,12 +60,6 @@ on:
         required: false
         type: boolean
 
-      youspeed:
-        description: "Integrate YouSpeed"
-        default: true
-        required: false
-        type: boolean
-
       demc:
         description: "Integrate DontEatMyContent"
         default: true
@@ -257,7 +251,7 @@ jobs:
         run: git clone --quiet --depth=1 https://github.com/PoomSmart/YouGroupSettings.git
            
       - name: Clone YTVideoOverlay
-        if: ${{ inputs.youpip || inputs.ytuhd || inputs.youquality || inputs.youspeed || inputs.getcap }}
+        if: ${{ inputs.youpip || inputs.ytuhd || inputs.youquality || inputs.getcap }}
         run: git clone --quiet --depth=1 https://github.com/PoomSmart/YTVideoOverlay.git
           
       - name: Clone YTABConfig
@@ -268,12 +262,7 @@ jobs:
         if: ${{ inputs.youquality }}
         run: git clone --quiet --depth=1 https://github.com/PoomSmart/YouQuality.git
 
-      - name: Clone YouSpeed
-        if: ${{ inputs.youspeed }}
-        run: git clone --quiet --depth=1 https://github.com/PoomSmart/YouSpeed.git
-
       - name: Clone UncappedAVPlayer
-        if: ${{ inputs.youspeed }}
         run: git clone --quiet --depth=1 https://github.com/PoomSmart/UncappedAVPlayer.git
 
       - name: Clone DontEatMyContent
@@ -341,7 +330,7 @@ jobs:
           mv packages/*.deb ${{ github.workspace }}/ygs.deb
 
       - name: Build YTVideoOverlay
-        if: ${{ inputs.youpip || inputs.ytuhd || inputs.youquality || inputs.youspeed || inputs.getcap }}
+        if: ${{ inputs.youpip || inputs.ytuhd || inputs.youquality || inputs.getcap }}
         run: |
           cd YTVideoOverlay
           make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
@@ -361,15 +350,7 @@ jobs:
           make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
           mv packages/*.deb ${{ github.workspace }}/youquality.deb
 
-      - name: Build YouSpeed
-        if: ${{ inputs.youspeed }}
-        run: |
-          cd YouSpeed
-          make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
-          mv packages/*.deb ${{ github.workspace }}/youspeed.deb
-
       - name: Build UncappedAVPlayer
-        if: ${{ inputs.youspeed }}
         run: |
           cd UncappedAVPlayer
           make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless

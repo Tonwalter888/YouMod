@@ -62,8 +62,9 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
                 if ([description containsString:@"shorts_video_cell.eml"]) return YES;
                 if ([description containsString:@"shelf_header.eml"] && [description containsString:@"youtube_shorts_24_cairo"]) return YES;
             }
+            if ([description containsString:@"community-tab-chip-posts-section"]) return NO;
             // Filter feed posts
-            if (IS_ENABLED(HideFeedPost) && ([description containsString:@"poll_post_root.eml"] || [description containsString:@"options_post_root.eml"] || [description containsString:@"images_post_root_slim.eml"] || [description containsString:@"options_post_responsive_root.eml"] || [description containsString:@"text_post_root_slim.eml"])) {
+            if (IS_ENABLED(HideFeedPost) && ([description containsString:@"poll_post_root.eml"] || [description containsString:@"options_post_root.eml"] || [description containsString:@"images_post_root_slim.eml"] || [description containsString:@"options_post_responsive_root.eml"] || [description containsString:@"post_base_wrapper_slim.eml"] || [description containsString:@"text_post_root_slim.eml"])) {
                 return YES;
             }
             YTIShelfSupportedRenderers *content = ((YTIShelfRenderer *)sectionRenderer).content;
@@ -103,12 +104,17 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
             return YES;
         }
         
+        if ([description containsString:@"community-tab-chip-posts-section"]) return NO;
         // Filter feed posts
-        if (IS_ENABLED(HideFeedPost) && ([description containsString:@"poll_post_root.eml"] || [description containsString:@"options_post_root.eml"] || [description containsString:@"images_post_root_slim.eml"] || [description containsString:@"options_post_responsive_root.eml"] || [description containsString:@"text_post_root_slim.eml"])) {
+        if (IS_ENABLED(HideFeedPost) && ([description containsString:@"poll_post_root.eml"] || [description containsString:@"options_post_root.eml"] || [description containsString:@"images_post_root_slim.eml"] || [description containsString:@"options_post_responsive_root.eml"] || [description containsString:@"post_base_wrapper_slim.eml"] || [description containsString:@"text_post_root_slim.eml"])) {
             return YES;
         }
 
         if (IS_ENABLED(HideGenMusicShelf) && [description containsString:@"feed_nudge.eml"]) {
+            return YES;
+        }
+
+        if (IS_ENABLED(HideSurveys) && [description containsString:@"in_feed_survey.eml"]) {
             return YES;
         }
         
@@ -179,12 +185,16 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
 - (void)adPlaying:(id)ad {}
 %end
 
-// Live video type = 4 and Live preview = 7
+// Live video type = 4 and Live preview = 7, 9 is Playables ads, 10 posts
 %hook YTReelDataSource
 - (YTReelModel *)makeContentModelForEntry:(id)entry {
     YTReelModel *model = %orig;
     YTReelPlayerResponder *responder = [model valueForKey:@"_reelPlayerResponder"];
     if ([model respondsToSelector:@selector(videoType)] && model.videoType == 3)
+        return nil;
+    if ([model respondsToSelector:@selector(videoType)] && model.videoType == 9)
+        return nil;
+    if ([model respondsToSelector:@selector(videoType)] && model.videoType == 10 && IS_ENABLED(RemoveShortsPosts))
         return nil;
     if ([responder.parentResponder isKindOfClass:%c(YTShortsAdsPlayerViewController)])
         return nil;
@@ -200,6 +210,10 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
     YTReelPlayerResponder *responder = [model valueForKey:@"_reelPlayerResponder"];
     if ([model respondsToSelector:@selector(videoType)] && model.videoType == 3)
         return nil;
+    if ([model respondsToSelector:@selector(videoType)] && model.videoType == 9)
+        return nil;
+    if ([model respondsToSelector:@selector(videoType)] && model.videoType == 10 && IS_ENABLED(RemoveShortsPosts))
+        return nil;
     if ([responder.parentResponder isKindOfClass:%c(YTShortsAdsPlayerViewController)])
         return nil;
     if ([model respondsToSelector:@selector(videoType)] && (model.videoType == 4 || model.videoType == 7) && IS_ENABLED(RemoveShortsLive))
@@ -210,6 +224,8 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
     [reels removeObjectsAtIndexes:[reels indexesOfObjectsPassingTest:^BOOL(YTReelModel *obj, NSUInteger idx, BOOL *stop) {
         YTReelPlayerResponder *responder = [obj valueForKey:@"_reelPlayerResponder"];
         if ([obj respondsToSelector:@selector(videoType)] && obj.videoType == 3) return YES;
+        if ([obj respondsToSelector:@selector(videoType)] && obj.videoType == 9) return YES;
+        if ([obj respondsToSelector:@selector(videoType)] && obj.videoType == 10 && IS_ENABLED(RemoveShortsPosts)) return YES;
         if ([responder.parentResponder isKindOfClass:%c(YTShortsAdsPlayerViewController)]) return YES;
         if ([obj respondsToSelector:@selector(videoType)] && (obj.videoType == 4 || obj.videoType == 7) && IS_ENABLED(RemoveShortsLive)) return YES;
         return NO;

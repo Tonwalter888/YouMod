@@ -288,12 +288,27 @@ static UIImage *YouModIconImage(NSInteger iconType) {
         [button setImage:newIcon forState:UIControlStateNormal];
     };
     YMRegisterOverlayButton(mute);
+    YMOverlayButtonSpec *speed = [[YMOverlayButtonSpec alloc] init];
+    speed.identifier = @"speed.video";
+    speed.symbolName = @"speedometer";
+    speed.tintColor = [UIColor whiteColor];
+    speed.sortOrder = 400;
+    speed.isVisible = ^BOOL(YTPlayerViewController *player) {
+        return IS_ENABLED(SpeedButton);
+    };
+    speed.onTap = ^(YTPlayerViewController *player, UIButton *button) {
+        YTMainAppVideoPlayerOverlayViewController *ovcon = [player activeVideoPlayerOverlay];
+        [ovcon didPressVarispeed:button];
+    };
+    YMRegisterOverlayButton(speed);
     YMOverlayButtonSpec *share = [[YMOverlayButtonSpec alloc] init];
     share.identifier = @"share.video";
     share.symbolName = @"arrowshape.turn.up.right";
     share.tintColor = [UIColor whiteColor];
     share.sortOrder = 500;
-    share.isVisible = nil; // test first
+    share.isVisible = ^BOOL(YTPlayerViewController *player) {
+        return IS_ENABLED(ShareButton);
+    };
     share.onTap = ^(YTPlayerViewController *player, UIButton *button) {
         [player YouModShareButton:button];
     };
@@ -303,7 +318,9 @@ static UIImage *YouModIconImage(NSInteger iconType) {
     loop.symbolName = IS_ENABLED(KeepLoopKey) ? @"repeat.1" : @"repeat";
     loop.tintColor = [UIColor whiteColor];
     loop.sortOrder = 600;
-    loop.isVisible = nil; // test first
+    loop.isVisible = ^BOOL(YTPlayerViewController *player) {
+        return IS_ENABLED(LoopButton);
+    };
     loop.onTap = ^(YTPlayerViewController *player, UIButton *button) {
         [player YouModLoopButton];
         UIImageSymbolConfiguration *config = [UIImageSymbolConfiguration configurationWithPointSize:20 weight:UIImageSymbolWeightMedium];

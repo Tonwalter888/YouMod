@@ -73,14 +73,16 @@
 #define INTFORVAL(v) [[NSUserDefaults standardUserDefaults] integerForKey:v]
 #define FixPlaybackIssues @"YouModFixPlaybackIssues"
 #define MuteButton @"YouModMuteButton"
-// #define SpeedButton @"YouModSpeedButton"
+#define SpeedButton @"YouModSpeedButton"
+#define ShareButton @"YouModShareButton"
+#define LoopButton @"YouModLoopButton"
 #define KeepMutedKey @"YouModKeepMutedKey"
 #define KeepLoopKey @"YouModKeepLoopKey"
 // Downloading
 #define DownloadManager @"YouModDownloadManager"
 #define DownloadSaveToPhotos @"YouModDownloadSaveToPhotos"
 #define AddDownloadToShorts @"YouModAddDownloadToShorts"
-// #define PreferDRC @"YouModDownloadPreferDRC"
+#define UseOrigAudio @"YouModUseOrigAudio"
 // Cache
 #define AutoClearCache @"YouModAutoClearCache"
 // Appearance
@@ -102,6 +104,7 @@
 #define HideShortsShelf @"YouModHideShortsShelf"
 #define KeepShortsSubscript @"YouModKeepShortsSubscript"
 #define HideSearchHis @"YouModHideSearchHistoryAndSuggestions"
+#define HideSurveys @"YouModHideSurveys"
 // Player
 #define WifiQualityIndex @"YouModWifiQualityIndex"
 #define CellQualityIndex @"YouModCellQualityIndex"
@@ -161,7 +164,7 @@
 #define PauseTwoFingers @"YouModPauseTwoFingers"
 // Shorts
 #define RemoveShortsLive @"YouModRemoveShortsLive"
-#define ShortsToRegular @"YouModShortsToRegular"
+#define RemoveShortsPosts @"YouModRemoveShortsPosts"
 #define HideShortsProducts @"YouModHideShortsProducts"
 #define HideShortsRecbar @"YouModHideShortsRecbar"
 #define EnablesShortsQuality @"YouModEnablesShortsQuality"
@@ -286,7 +289,11 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 @interface YTMainAppVideoPlayerOverlayView (YouMod)
 @property (nonatomic, weak, readwrite) YTMainAppVideoPlayerOverlayViewController *delegate;
 @property (nonatomic, strong) YTQTMButton *playbackRouteButton;
+@property (nonatomic, strong) UIView *youModSpeedToastView;
+@property (nonatomic, strong) UILabel *youModSpeedToastLabel;
 - (void)YouModHoldToSpeed:(UILongPressGestureRecognizer *)gesture;
+- (void)YouModShowSpeedToast:(CGFloat)speed;
+- (void)YouModHideSpeedToast;
 @end
 
 @interface YTNavigationBarTitleView : UIView
@@ -341,7 +348,6 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 @property (nonatomic, assign, readonly) BOOL isPlayingAd;
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer;
 - (void)YouModAutoFullscreen;
-- (void)YouModShortsToRegular;
 - (void)YouModSetAutoSpeed;
 - (void)setPlaybackRate:(float)rate;
 - (void)setActiveCaptionTrack:(MLInnerTubeCaptionTrack *)arg1 source:(NSInteger)arg2;
