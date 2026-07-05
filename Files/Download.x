@@ -1718,10 +1718,17 @@ void YouModConfigureDownloadButton(_ASDisplayView *view) {
     %orig;
     if (!IS_ENABLED(DownloadManager) || !IS_ENABLED(AddDownloadToShorts)) return;
     UIView *likeButtonView = nil;
+    static BOOL isFirstOneFound = NO;
     for (UIView *subview in self.subviews) {
         if ([subview isKindOfClass:%c(YTReelPlayerButton)]) {
-            likeButtonView = subview;
-            break;
+            if (isFirstOneFound) {
+                isFirstOneFound = NO;
+                likeButtonView = subview;
+                break;
+            } else {
+                isFirstOneFound = YES;
+                likeButtonView = subview;
+            }
         }
     }
     
