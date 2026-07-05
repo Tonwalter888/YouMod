@@ -192,8 +192,6 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
     YTReelPlayerResponder *responder = [model valueForKey:@"_reelPlayerResponder"];
     if ([model respondsToSelector:@selector(videoType)] && model.videoType == 3)
         return nil;
-    if ([model respondsToSelector:@selector(videoType)] && model.videoType == 9)
-        return nil;
     if ([model respondsToSelector:@selector(videoType)] && model.videoType == 10 && IS_ENABLED(RemoveShortsPosts))
         return nil;
     if ([responder.parentResponder isKindOfClass:%c(YTShortsAdsPlayerViewController)])
@@ -204,13 +202,20 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
 }
 %end
 
+%hook YTReelContainerViewController
+- (void)setModel:(YTReelModel *)model {
+    if ([model respondsToSelector:@selector(videoType)] && model.videoType == 9) {
+        model = nil; 
+    }
+    %orig(model);
+}
+%end
+
 %hook YTReelInfinitePlaybackDataSource
 - (YTReelModel *)makeContentModelForEntry:(id)entry {
     YTReelModel *model = %orig;
     YTReelPlayerResponder *responder = [model valueForKey:@"_reelPlayerResponder"];
     if ([model respondsToSelector:@selector(videoType)] && model.videoType == 3)
-        return nil;
-    if ([model respondsToSelector:@selector(videoType)] && model.videoType == 9)
         return nil;
     if ([model respondsToSelector:@selector(videoType)] && model.videoType == 10 && IS_ENABLED(RemoveShortsPosts))
         return nil;
@@ -224,7 +229,6 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
     [reels removeObjectsAtIndexes:[reels indexesOfObjectsPassingTest:^BOOL(YTReelModel *obj, NSUInteger idx, BOOL *stop) {
         YTReelPlayerResponder *responder = [obj valueForKey:@"_reelPlayerResponder"];
         if ([obj respondsToSelector:@selector(videoType)] && obj.videoType == 3) return YES;
-        if ([obj respondsToSelector:@selector(videoType)] && obj.videoType == 9) return YES;
         if ([obj respondsToSelector:@selector(videoType)] && obj.videoType == 10 && IS_ENABLED(RemoveShortsPosts)) return YES;
         if ([responder.parentResponder isKindOfClass:%c(YTShortsAdsPlayerViewController)]) return YES;
         if ([obj respondsToSelector:@selector(videoType)] && (obj.videoType == 4 || obj.videoType == 7) && IS_ENABLED(RemoveShortsLive)) return YES;

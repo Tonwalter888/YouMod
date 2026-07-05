@@ -591,13 +591,16 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
 %property (nonatomic, strong) UILabel *youModSpeedToastLabel;
 %new
 - (void)YouModShowSpeedToast:(CGFloat)speed {
+    UIColor *themeTextColor = [UIColor labelColor];
+    UIBlurEffectStyle blurStyle = UIBlurEffectStyleSystemMaterial;
+
     if (!self.youModSpeedToastView) {
         self.youModSpeedToastView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 160, 44)];
         self.youModSpeedToastView.layer.cornerRadius = 22;
         self.youModSpeedToastView.clipsToBounds = YES;
         self.youModSpeedToastView.alpha = 0.0;
         
-        UIBlurEffect *blurEffect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleLight];
+        UIBlurEffect *blurEffect = [UIBlurEffect effectWithStyle:blurStyle];
         UIVisualEffectView *blurView = [[UIVisualEffectView alloc] initWithEffect:blurEffect];
         blurView.frame = self.youModSpeedToastView.bounds;
         blurView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
@@ -605,7 +608,7 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
 
         self.youModSpeedToastLabel = [[UILabel alloc] initWithFrame:self.youModSpeedToastView.bounds];
         self.youModSpeedToastLabel.textAlignment = NSTextAlignmentCenter;
-        self.youModSpeedToastLabel.textColor = [UIColor blackColor];
+        self.youModSpeedToastLabel.textColor = themeTextColor;
         self.youModSpeedToastLabel.font = [UIFont systemFontOfSize:13 weight:UIFontWeightMedium];
         self.youModSpeedToastLabel.numberOfLines = 2;
         [self.youModSpeedToastView addSubview:self.youModSpeedToastLabel];
@@ -613,15 +616,19 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
         [self addSubview:self.youModSpeedToastView];
     }
     
+    self.youModSpeedToastLabel.textColor = themeTextColor;
+    
     self.youModSpeedToastView.center = CGPointMake(self.bounds.size.width / 2, 70);
     self.youModSpeedToastView.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin | UIViewAutoresizingFlexibleBottomMargin;
     [self bringSubviewToFront:self.youModSpeedToastView];
     
     NSTextAttachment *attachment = [[NSTextAttachment alloc] init];
-    attachment.image = [[UIImage systemImageNamed:@"hare.fill"] imageWithTintColor:[UIColor blackColor]];
+    attachment.image = [[UIImage systemImageNamed:@"hare.fill"] imageWithTintColor:themeTextColor];
     attachment.bounds = CGRectMake(0, -2, 14, 14);
     
-    NSMutableAttributedString *attrString = [[NSMutableAttributedString alloc] initWithString:[NSString stringWithFormat:@" Playback Speed\n%g x", speed]];
+    NSString *localizedText = LOC(@"Playback Speed"); // will change this
+    NSMutableAttributedString *attrString = [[NSMutableAttributedString alloc] initWithString:[NSString stringWithFormat:@" %@\n%g x", localizedText, speed]];
+    
     if (attachment.image) {
         NSAttributedString *iconString = [NSAttributedString attributedStringWithAttachment:attachment];
         [attrString insertAttributedString:iconString atIndex:0];
