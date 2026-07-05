@@ -148,6 +148,7 @@
 "HIDE_SEARCH_HISTORY_DESC" = "검색창을 누를 때 이전 검색 기록이나 추천 검색어가 안 보이게 숨깁니다.\n참고: 이 앱에서만 안 보일 뿐, 다른 기기의 유튜브에는 기록이 남아있습니다.";
 
 "PLAYER" = "동영상 플레이어";
+"PLAYBACK_SPEED" = "Playback speed";
 "CONTROL_CENTER" = "Control Center";
 "PLAYER_ACTIONS" = "Player actions";
 "GESTURE_HEADER" = "Gestures";

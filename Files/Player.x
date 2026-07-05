@@ -657,7 +657,7 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
     attachment.image = [[UIImage systemImageNamed:@"hare.fill"] imageWithTintColor:themeTextColor];
     attachment.bounds = CGRectMake(0, -2, 14, 14);
     
-    NSString *localizedText = LOC(@"Playback Speed"); // will change this
+    NSString *localizedText = LOC(@"PLAYBACK_SPEED");
     NSMutableAttributedString *attrString = [[NSMutableAttributedString alloc] initWithString:[NSString stringWithFormat:@" %@\n%gx", localizedText, speed]];
     
     if (attachment.image) {

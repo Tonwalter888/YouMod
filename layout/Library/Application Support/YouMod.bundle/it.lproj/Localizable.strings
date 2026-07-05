@@ -149,6 +149,7 @@
 "HIDE_SEARCH_HISTORY_DESC" = "Nasconde la cronologia delle ricerche precedenti e i suggerimenti quando si usa la barra di ricerca.\nNOTA: La tua cronologia delle ricerche sarà ancora accessibile negli altri client YouTube.";
 
 "PLAYER" = "Player";
+"PLAYBACK_SPEED" = "Playback speed";
 "CONTROL_CENTER" = "Control Center";
 "QUALITY_WIFI" = "Playback quality on WiFi";
 "QUALITY_WIFI_DESC" = "Automatically applies the selected quality when streaming over Wi-Fi.";

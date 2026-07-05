@@ -149,6 +149,7 @@
 "HIDE_SEARCH_HISTORY_DESC" = "Cache l'historique de recherche et les suggestions lors de l'utilisation de la barre de recherche.\nNOTE: Ton historique de recherche restera accessible sur tes autres clients YouTube.";
 
 "PLAYER" = "Lecteur";
+"PLAYBACK_SPEED" = "Playback speed";
 "CONTROL_CENTER" = "Control Center";
 "PLAYER_ACTIONS" = "Player actions";
 "GESTURE_HEADER" = "Gestures";

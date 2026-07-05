@@ -149,6 +149,7 @@
 "HIDE_SEARCH_HISTORY_DESC" = "Ẩn lịch sử tìm kiếm và các đề xuất trước đó khi sử dụng thanh tìm kiếm.\nGHI CHÚ: Lịch sử tìm kiếm của bạn vẫn khả dụng trên các ứng dụng YouTube khác.";
 
 "PLAYER" = "Trình phát video";
+"PLAYBACK_SPEED" = "Playback speed";
 "CONTROL_CENTER" = "Control Center";
 "PLAYER_ACTIONS" = "Player actions";
 "GESTURE_HEADER" = "Gestures";

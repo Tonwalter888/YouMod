@@ -149,6 +149,7 @@
 "HIDE_SEARCH_HISTORY_DESC" = "Hide previous search history and suggestions when using the search bar.\nNOTE: Your search history will still be accessible in your other YouTube clients.";
 
 "PLAYER" = "Player";
+"PLAYBACK_SPEED" = "Playback speed";
 "CONTROL_CENTER" = "Control Center";
 "PLAYER_ACTIONS" = "Player actions";
 "GESTURE_HEADER" = "Gestures";
