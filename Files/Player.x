@@ -614,13 +614,21 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
 %new
 - (void)YouModShowSpeedToast:(CGFloat)speed {
     UIColor *themeTextColor = [UIColor labelColor];
-    UIBlurEffectStyle blurStyle = UIBlurEffectStyleSystemMaterial;
+    UIColor *bgColor = toastBgColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
+        if (traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark) {
+            return [UIColor colorWithWhite:0.1 alpha:0.75];
+        } else {
+            return [UIColor colorWithWhite:0.95 alpha:0.75];
+        }
+    }];
 
     if (!self.youModSpeedToastView) {
-        self.youModSpeedToastView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 160, 44)];
+        self.youModSpeedToastView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 160, 18)];
         self.youModSpeedToastView.layer.cornerRadius = 22;
         self.youModSpeedToastView.clipsToBounds = YES;
         self.youModSpeedToastView.alpha = 0.0;
+
+        self.youModSpeedToastView.backgroundColor = bgColor;
         
         UIBlurEffect *blurEffect = [UIBlurEffect effectWithStyle:blurStyle];
         UIVisualEffectView *blurView = [[UIVisualEffectView alloc] initWithEffect:blurEffect];
@@ -637,7 +645,8 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
         
         [self addSubview:self.youModSpeedToastView];
     }
-    
+
+    self.youModSpeedToastView.backgroundColor = bgColor;
     self.youModSpeedToastLabel.textColor = themeTextColor;
     
     self.youModSpeedToastView.center = CGPointMake(self.bounds.size.width / 2, 70);
@@ -649,7 +658,7 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
     attachment.bounds = CGRectMake(0, -2, 14, 14);
     
     NSString *localizedText = LOC(@"Playback Speed"); // will change this
-    NSMutableAttributedString *attrString = [[NSMutableAttributedString alloc] initWithString:[NSString stringWithFormat:@" %@\n%g x", localizedText, speed]];
+    NSMutableAttributedString *attrString = [[NSMutableAttributedString alloc] initWithString:[NSString stringWithFormat:@" %@\n%gx", localizedText, speed]];
     
     if (attachment.image) {
         NSAttributedString *iconString = [NSAttributedString attributedStringWithAttachment:attachment];
