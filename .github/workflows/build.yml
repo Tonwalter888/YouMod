@@ -11,8 +11,12 @@ on:
 
       branch:
         description: 'Branch to build from'
-        required: false
+        required: true
         default: 'main'
+      repo:
+        description: 'Repository to build from'
+        required: true
+        default: 'Tonwalter888/YouMod'
    
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
