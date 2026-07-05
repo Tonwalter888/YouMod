@@ -642,11 +642,11 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
     self.YouModSpeedToastView.backgroundColor = toastBgColor;
     self.YouModSpeedToastLabel.textColor = themeTextColor;
     
-    CGRect toastFrame = self.youModSpeedToastView.frame;
+    CGRect toastFrame = self.YouModSpeedToastView.frame;
     toastFrame.origin.y = 18;
     toastFrame.origin.x = (self.bounds.size.width - toastFrame.size.width) / 2.0;
-    self.youModSpeedToastView.frame = toastFrame;
-    
+    self.YouModSpeedToastView.frame = toastFrame;
+
     self.YouModSpeedToastView.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin | UIViewAutoresizingFlexibleBottomMargin;
     [self bringSubviewToFront:self.YouModSpeedToastView];
     
