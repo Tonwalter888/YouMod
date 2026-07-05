@@ -60,6 +60,7 @@
 #import <YouTubeHeader/YTIFormattedString.h>
 #import <YouTubeHeader/GOOHUDManagerInternal.h>
 #import <YouTubeHeader/MLInnerTubeCaptionTrack.h>
+#import <YouTubeHeader/YTIRenderer.h>
 
 // For Settings.x and SponsorBlockSettings.x
 #import <PSHeader/Misc.h>
