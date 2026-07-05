@@ -298,8 +298,8 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 @interface YTMainAppVideoPlayerOverlayView (YouMod)
 @property (nonatomic, weak, readwrite) YTMainAppVideoPlayerOverlayViewController *delegate;
 @property (nonatomic, strong) YTQTMButton *playbackRouteButton;
-@property (nonatomic, strong) UIView *youModSpeedToastView;
-@property (nonatomic, strong) UILabel *youModSpeedToastLabel;
+@property (nonatomic, strong) UIView *YouModSpeedToastView;
+@property (nonatomic, strong) UILabel *YouModSpeedToastLabel;
 - (void)YouModHoldToSpeed:(UILongPressGestureRecognizer *)gesture;
 - (void)YouModShowSpeedToast:(CGFloat)speed;
 - (void)YouModHideSpeedToast;

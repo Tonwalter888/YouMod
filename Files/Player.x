@@ -609,12 +609,12 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
 }
 
 %hook YTMainAppVideoPlayerOverlayView
-%property (nonatomic, strong) UIView *youModSpeedToastView;
-%property (nonatomic, strong) UILabel *youModSpeedToastLabel;
+%property (nonatomic, strong) UIView *YouModSpeedToastView;
+%property (nonatomic, strong) UILabel *YouModSpeedToastLabel;
 %new
 - (void)YouModShowSpeedToast:(CGFloat)speed {
     UIColor *themeTextColor = [UIColor labelColor];
-    UIColor *bgColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
+    UIColor *toastBgColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
         if (traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark) {
             return [UIColor colorWithWhite:0.1 alpha:0.75];
         } else {
@@ -622,36 +622,29 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
         }
     }];
 
-    if (!self.youModSpeedToastView) {
-        self.youModSpeedToastView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 160, 18)];
-        self.youModSpeedToastView.layer.cornerRadius = 22;
-        self.youModSpeedToastView.clipsToBounds = YES;
-        self.youModSpeedToastView.alpha = 0.0;
+    if (!self.YouModSpeedToastView) {
+        self.YouModSpeedToastView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 160, 44)];
+        self.YouModSpeedToastView.layer.cornerRadius = 22;
+        self.YouModSpeedToastView.clipsToBounds = YES;
+        self.YouModSpeedToastView.alpha = 0.0;
+        self.YouModSpeedToastView.backgroundColor = toastBgColor;
 
-        self.youModSpeedToastView.backgroundColor = bgColor;
+        self.YouModSpeedToastLabel = [[UILabel alloc] initWithFrame:self.YouModSpeedToastView.bounds];
+        self.YouModSpeedToastLabel.textAlignment = NSTextAlignmentCenter;
+        self.YouModSpeedToastLabel.textColor = themeTextColor;
+        self.YouModSpeedToastLabel.font = [UIFont systemFontOfSize:13 weight:UIFontWeightMedium];
+        self.YouModSpeedToastLabel.numberOfLines = 2;
+        [self.YouModSpeedToastView addSubview:self.YouModSpeedToastLabel];
         
-        UIBlurEffect *blurEffect = [UIBlurEffect effectWithStyle:blurStyle];
-        UIVisualEffectView *blurView = [[UIVisualEffectView alloc] initWithEffect:blurEffect];
-        blurView.frame = self.youModSpeedToastView.bounds;
-        blurView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-        [self.youModSpeedToastView addSubview:blurView];
-
-        self.youModSpeedToastLabel = [[UILabel alloc] initWithFrame:self.youModSpeedToastView.bounds];
-        self.youModSpeedToastLabel.textAlignment = NSTextAlignmentCenter;
-        self.youModSpeedToastLabel.textColor = themeTextColor;
-        self.youModSpeedToastLabel.font = [UIFont systemFontOfSize:13 weight:UIFontWeightMedium];
-        self.youModSpeedToastLabel.numberOfLines = 2;
-        [self.youModSpeedToastView addSubview:self.youModSpeedToastLabel];
-        
-        [self addSubview:self.youModSpeedToastView];
+        [self addSubview:self.YouModSpeedToastView];
     }
-
-    self.youModSpeedToastView.backgroundColor = bgColor;
-    self.youModSpeedToastLabel.textColor = themeTextColor;
     
-    self.youModSpeedToastView.center = CGPointMake(self.bounds.size.width / 2, 70);
-    self.youModSpeedToastView.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin | UIViewAutoresizingFlexibleBottomMargin;
-    [self bringSubviewToFront:self.youModSpeedToastView];
+    self.YouModSpeedToastView.backgroundColor = toastBgColor;
+    self.YouModSpeedToastLabel.textColor = themeTextColor;
+    
+    self.YouModSpeedToastView.center = CGPointMake(self.bounds.size.width / 2, 70);
+    self.YouModSpeedToastView.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin | UIViewAutoresizingFlexibleBottomMargin;
+    [self bringSubviewToFront:self.YouModSpeedToastView];
     
     NSTextAttachment *attachment = [[NSTextAttachment alloc] init];
     attachment.image = [[UIImage systemImageNamed:@"hare.fill"] imageWithTintColor:themeTextColor];
@@ -665,16 +658,16 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
         [attrString insertAttributedString:iconString atIndex:0];
     }
     
-    self.youModSpeedToastLabel.attributedText = attrString;
+    self.YouModSpeedToastLabel.attributedText = attrString;
 
     [UIView animateWithDuration:0.2 animations:^{
-        self.youModSpeedToastView.alpha = 1.0;
+        self.YouModSpeedToastView.alpha = 1.0;
     }];
 }
 %new
 - (void)YouModHideSpeedToast {
     [UIView animateWithDuration:0.2 animations:^{
-        self.youModSpeedToastView.alpha = 0.0;
+        self.YouModSpeedToastView.alpha = 0.0;
     }];
 }
 - (void)setLongPressGestureRecognizer:(id)arg1 {
