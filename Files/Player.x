@@ -1,6 +1,21 @@
 #import "Headers.h"
 
-BOOL isWiFiConnected(void) {
+static NSBundle *YouModBundle() {
+    static NSBundle *bundle = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        NSString *tweakBundlePath = [[NSBundle mainBundle] pathForResource:TweakName ofType:@"bundle"];
+        if (tweakBundlePath)
+            bundle = [NSBundle bundleWithPath:tweakBundlePath];
+        else
+            bundle = [NSBundle bundleWithPath:[NSString stringWithFormat:PS_ROOT_PATH_NS(@"/Library/Application Support/%@.bundle"), TweakName]];
+    });
+    return bundle;
+}
+
+#define LOC(x) [YouModBundle() localizedStringForKey:x value:nil table:nil]
+
+static BOOL isWiFiConnected() {
     struct sockaddr_in zeroAddress;
     bzero(&zeroAddress, sizeof(zeroAddress));
     zeroAddress.sin_len = sizeof(zeroAddress);
