@@ -623,7 +623,7 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
     }];
 
     if (!self.YouModSpeedToastView) {
-        self.YouModSpeedToastView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 160, 18)];
+        self.YouModSpeedToastView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 160, 44)];
         self.YouModSpeedToastView.layer.cornerRadius = 22;
         self.YouModSpeedToastView.clipsToBounds = YES;
         self.YouModSpeedToastView.alpha = 0.0;
@@ -642,7 +642,11 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
     self.YouModSpeedToastView.backgroundColor = toastBgColor;
     self.YouModSpeedToastLabel.textColor = themeTextColor;
     
-    self.YouModSpeedToastView.center = CGPointMake(self.bounds.size.width / 2, 70);
+    CGRect toastFrame = self.youModSpeedToastView.frame;
+    toastFrame.origin.y = 18;
+    toastFrame.origin.x = (self.bounds.size.width - toastFrame.size.width) / 2.0;
+    self.youModSpeedToastView.frame = toastFrame;
+    
     self.YouModSpeedToastView.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin | UIViewAutoresizingFlexibleBottomMargin;
     [self bringSubviewToFront:self.YouModSpeedToastView];
     

@@ -268,10 +268,6 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 @interface YTContextualSheetView : UIView
 @end
 
-@interface YTReelPlayerResponder : NSObject
-- (id)parentResponder;
-@end
-
 @interface YTISlimVideoMetadataSectionRenderer : GPBMessage
 @property (nonatomic, strong, readwrite) NSMutableArray *contentsArray;
 @end
