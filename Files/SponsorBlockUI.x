@@ -657,9 +657,11 @@ static const CGFloat SBInlineMarkerHeight = 4.0;
     CGFloat barWidth;
     CGFloat h;
     CGFloat y;
-    UIView *mainView;
-    UIView *scrubberDot;
-    UIView *referenceView;
+    // Explicitly nil so the surface branches can rely on "unassigned == nil"
+    // when deciding marker ordering, without depending on ARC zero-init.
+    UIView *mainView = nil;
+    UIView *scrubberDot = nil;
+    UIView *referenceView = nil;
 
     if ([self.parentViewController isKindOfClass:%c(YTWatchFloatingMiniplayerViewController)] && IS_ENABLED(SBSegmentsInMiniPlayer)) {
         YTWatchFloatingMiniplayerViewController *miniplayercontroller = (YTWatchFloatingMiniplayerViewController *)self.parentViewController;
@@ -793,10 +795,12 @@ static const CGFloat SBInlineMarkerHeight = 4.0;
         marker.tag = SBSegmentMarkerTag;
         objc_setAssociatedObject(marker, @selector(sbSegmentData), @[@(startFrac), @(endFrac), @(isPoi)], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 
-        // Insert each marker directly beneath the scrubber dot so the dot stays
-        // visible on top. Where no dot is resolved (miniplayer/feed paths), fall
-        // back to adding on top of the track.
-        if (scrubberDot && scrubberDot.superview == mainView) {
+        // Insert above the track (main player bar) so the marker paints on it;
+        // the dot is re-fronted after the loop. Miniplayer/feed keep dot-relative
+        // or top ordering.
+        if (referenceView && referenceView.superview == mainView) {
+            [mainView insertSubview:marker aboveSubview:referenceView];
+        } else if (scrubberDot && scrubberDot.superview == mainView) {
             [mainView insertSubview:marker belowSubview:scrubberDot];
         } else {
             [mainView addSubview:marker];
