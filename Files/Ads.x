@@ -80,7 +80,8 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
         if ([sectionRenderer isKindOfClass:%c(YTISlimVideoMetadataSectionRenderer)]) {
             NSMutableArray <YTIRenderer *> *itemsArray = ((YTISlimVideoMetadataSectionRenderer *)sectionRenderer).contentsArray;
             NSIndexSet *removeItemsArrayIndexes = [itemsArray indexesOfObjectsPassingTest:^BOOL(YTIRenderer *renderer, NSUInteger idx2, BOOL *stop2) {
-                return (IS_ENABLED(HideActionBar) && [renderer containsString:@"video_action_bar.eml"]);
+                NSString *description = [renderer description];
+                return IS_ENABLED(HideActionBar) && [description containsString:@"video_action_bar.eml"];
             }];
             [itemsArray removeObjectsAtIndexes:removeItemsArrayIndexes];
         }
