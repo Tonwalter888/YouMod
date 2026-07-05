@@ -565,7 +565,7 @@ static const CGFloat SBInlineMarkerHeight = 4.0;
     // covering the dot until the next full re-render. Only re-front when the dot
     // isn't already the topmost subview, so a settled layout stays a no-op.
     for (UIView *sub in self.subviews) {
-        if ([sub isKindOfClass:%c(YTPlayerBarScrubberDotDecorationView)]) {
+        if ([sub isKindOfClass:%c(YTPlayerBarScrubberDotDecorationView)] || [sub isKindOfClass:%c(YTPlayerBarScrubberDotDecorationViewV2)]) {
             if (self.subviews.lastObject != sub) [self bringSubviewToFront:sub];
             break;
         }
@@ -717,8 +717,8 @@ static const CGFloat SBInlineMarkerHeight = 4.0;
                 if (!referenceView) referenceView = sub;
             } else if ([sub isKindOfClass:%c(YTPlayerBarProgressDecorationView)]) {
                 if (!referenceView) referenceView = sub;
-            } else if ([sub isKindOfClass:%c(YTPlayerBarScrubberDotDecorationView)]) {
-                scrubberDot = sub;
+            } else if ([sub isKindOfClass:%c(YTPlayerBarScrubberDotDecorationView)] || [sub isKindOfClass:%c(YTPlayerBarScrubberDotDecorationViewV2)]) {
+                scrubberDot = sub.subviews.firstObject;
             }
             if (referenceView && scrubberDot) break;
         }

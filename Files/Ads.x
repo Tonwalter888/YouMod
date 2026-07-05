@@ -202,15 +202,6 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
 }
 %end
 
-%hook YTReelContainerViewController
-- (void)setModel:(YTReelModel *)model {
-    if ([model respondsToSelector:@selector(videoType)] && model.videoType == 9) {
-        model = nil; 
-    }
-    %orig(model);
-}
-%end
-
 %hook YTReelInfinitePlaybackDataSource
 - (YTReelModel *)makeContentModelForEntry:(id)entry {
     YTReelModel *model = %orig;
