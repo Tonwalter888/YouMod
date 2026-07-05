@@ -623,7 +623,7 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
     }];
 
     if (!self.YouModSpeedToastView) {
-        self.YouModSpeedToastView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 160, 44)];
+        self.YouModSpeedToastView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 160, 18)];
         self.YouModSpeedToastView.layer.cornerRadius = 22;
         self.YouModSpeedToastView.clipsToBounds = YES;
         self.YouModSpeedToastView.alpha = 0.0;
