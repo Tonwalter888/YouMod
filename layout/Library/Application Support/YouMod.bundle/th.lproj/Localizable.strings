@@ -56,7 +56,7 @@
 "ADD_SHORTS_DOWNLOAD" = "เพิ่มปุ่มดาวน์โหลดไปยัง Shorts";
 "ADD_SHORTS_DOWNLOAD_DESC" = "เพิ่มปุ่มดาวน์โหลดไปยังโอเวอร์เลย์วิดีโอ Shorts";
 "USE_ORIG_AUDIO" = "ใช้แทร็กเสียงต้นฉบับโดยอัตโนมัติ";
-"USE_ORIG_AUDIO_DESC" = "ใช้แทร็กเสียงต้นฉบับโดยอัตโนมัติแทนการแสดงกล่องตัวเลือก";
+"USE_ORIG_AUDIO_DESC" = "ใช้แทร็กเสียงต้นฉบับโดยอัตโนมัติแทนแสดงกล่องตัวเลือก";
 "DOWNLOAD_SHORTS" = "ดาวน์โหลด Shorts";
 "DOWNLOAD_SHORTS_DESC" = "เลือกคุณภาพ Shorts";
 "COPY_VID_INFO" = "คัดลอกข้อมูลวิดีโอ";
