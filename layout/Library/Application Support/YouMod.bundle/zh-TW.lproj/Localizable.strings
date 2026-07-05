@@ -1,6 +1,9 @@
 "SETTINGS" = "Settings";
 "INTERFACE" = "Interface";
 
+"LOOP_DISABLED" = "Loop disabled";
+"LOOP_ENABLED" = "Loop enabled";
+
 "NEW_ISSUES" = "Report issues or request new features";
 "NEW_ISSUES_DESC" = "Found bugs or want to request new features? Tap here.";
 "SOURCE_CODES" = "Source codes";
@@ -142,6 +145,7 @@
 "HIDE_SEARCH_HISTORY_DESC" = "Hide previous search history and suggestions when using the search bar.\nNOTE: Your search history will still be accessible in your other YouTube clients.";
 
 "PLAYER" = "Player";
+"CONTROL_CENTER" = "Control Center";
 "PLAYER_ACTIONS" = "Player actions";
 "GESTURE_HEADER" = "Gestures";
 "QUALITY_WIFI" = "Playback quality on WiFi";
@@ -162,8 +166,8 @@
 "CAPTION_TRACK" = "Preferred captions";
 "CAPTION_TRACK_SELECT" = "Selected captions";
 "CAPTION_TRACK_SELECT_DESC" = "Specifies the preferred captions language to display, if available.";
-"DISABLES_CAPTION_TRACK" = "Disable auto-generated captions";
-"DISABLES_CAPTION_TRACK_DESC" = "Disable captions if the preferred language is auto-generated.";
+"DISABLES_CAPTION_TRACK" = "Automatically disable captions";
+"DISABLES_CAPTION_TRACK_DESC" = "Automatically disable captions if the preferred language is auto-generated or not found.";
 "DEFAULT_SPEED" = "Default playback rate";
 "DEFAULT_SPEED_DESC" = "Overrides the default playback speed.";
 "SPEED_BUTTON" = "Speed controls button";

@@ -1,6 +1,9 @@
 "SETTINGS" = "Paramètres";
 "INTERFACE" = "Interface";
 
+"LOOP_DISABLED" = "Loop disabled";
+"LOOP_ENABLED" = "Loop enabled";
+
 "NEW_ISSUES" = "Signaler des problèmes ou demander de nouvelles fonctionnalités";
 "NEW_ISSUES_DESC" = "Des bugs ou des demandes de nouvelles fonctionnalités ? Appuie ici.";
 "SOURCE_CODES" = "Code source";
@@ -141,6 +144,7 @@
 "HIDE_SEARCH_HISTORY_DESC" = "Cache l'historique de recherche et les suggestions lors de l'utilisation de la barre de recherche.\nNOTE: Ton historique de recherche restera accessible sur tes autres clients YouTube.";
 
 "PLAYER" = "Lecteur";
+"CONTROL_CENTER" = "Control Center";
 "PLAYER_ACTIONS" = "Player actions";
 "GESTURE_HEADER" = "Gestures";
 "QUALITY_WIFI" = "Playback quality on WiFi";
@@ -161,8 +165,8 @@
 "CAPTION_TRACK" = "Preferred captions";
 "CAPTION_TRACK_SELECT" = "Selected captions";
 "CAPTION_TRACK_SELECT_DESC" = "Specifies the preferred captions language to display, if available.";
-"DISABLES_CAPTION_TRACK" = "Disable auto-generated captions";
-"DISABLES_CAPTION_TRACK_DESC" = "Disable captions if the preferred language is auto-generated.";
+"DISABLES_CAPTION_TRACK" = "Automatically disable captions";
+"DISABLES_CAPTION_TRACK_DESC" = "Automatically disable captions if the preferred language is auto-generated or not found.";
 "DEFAULT_SPEED" = "Default playback rate";
 "DEFAULT_SPEED_DESC" = "Overrides the default playback speed.";
 "SPEED_BUTTON" = "Speed controls button";
@@ -395,6 +399,8 @@
 "SB_SHOW_NOTIFICATIONS_DESC" = "Display notifications when segments are skipped. Notifications for manual-skip categories are always shown.";
 "SB_HAPTIC_FEEDBACK" = "Haptic feedback";
 "SB_HAPTIC_FEEDBACK_DESC" = "Provide haptic feedback when a segment is skipped.";
+"SB_SEGMENTS_IN_PLAYER" = "Segments in player";
+"SB_SEGMENTS_IN_PLAYER_DESC" = "Display colored segments on the progress bar of the main video player.";
 "SB_SEGMENTS_IN_FEED" = "Segments in feed";
 "SB_SEGMENTS_IN_FEED_DESC" = "Display colored segments on the progress bar of players in the feed.";
 "SB_SEGMENTS_IN_MINIPLAYER" = "Segments in mini-player";

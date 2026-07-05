@@ -58,11 +58,8 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
             NSString *description = [sectionRenderer description];
             // Filter shorts
             if (IS_ENABLED(HideShortsShelf)) {
-                if (IS_ENABLED(KeepShortsSubscript)) {
-                    if ([description containsString:@"shorts_video_cell.eml"] && ![description containsString:@"subscriptions-shorts-shelf-item"]) return YES;
-                } else {
-                    if ([description containsString:@"shorts_video_cell.eml"]) return YES;
-                }
+                if (IS_ENABLED(KeepShortsSubscript) && [description containsString:@"subscriptions-shorts-shelf-item"]) return NO;
+                if ([description containsString:@"shorts_video_cell.eml"]) return YES;
                 if ([description containsString:@"shelf_header.eml"] && [description containsString:@"youtube_shorts_24_cairo"]) return YES;
             }
             // Filter feed posts

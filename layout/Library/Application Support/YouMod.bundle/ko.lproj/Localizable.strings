@@ -1,6 +1,9 @@
 "SETTINGS" = "설정";
 "INTERFACE" = "Interface";
 
+"LOOP_DISABLED" = "Loop disabled";
+"LOOP_ENABLED" = "Loop enabled";
+
 "NEW_ISSUES" = "버그 신고 및 새 기능 요청";
 "NEW_ISSUES_DESC" = "버그를 발견했거나 새로운 기능을 원하시나요? 여기를 눌러주세요.";
 "SOURCE_CODES" = "소스 코드";
@@ -142,6 +145,7 @@
 "HIDE_SEARCH_HISTORY_DESC" = "검색창을 누를 때 이전 검색 기록이나 추천 검색어가 안 보이게 숨깁니다.\n참고: 이 앱에서만 안 보일 뿐, 다른 기기의 유튜브에는 기록이 남아있습니다.";
 
 "PLAYER" = "동영상 플레이어";
+"CONTROL_CENTER" = "Control Center";
 "PLAYER_ACTIONS" = "Player actions";
 "GESTURE_HEADER" = "Gestures";
 "QUALITY_WIFI" = "Playback quality on WiFi";
@@ -162,8 +166,8 @@
 "CAPTION_TRACK" = "Preferred captions";
 "CAPTION_TRACK_SELECT" = "Selected captions";
 "CAPTION_TRACK_SELECT_DESC" = "Specifies the preferred captions language to display, if available.";
-"DISABLES_CAPTION_TRACK" = "Disable auto-generated captions";
-"DISABLES_CAPTION_TRACK_DESC" = "Disable captions if the preferred language is auto-generated.";
+"DISABLES_CAPTION_TRACK" = "Automatically disable captions";
+"DISABLES_CAPTION_TRACK_DESC" = "Automatically disable captions if the preferred language is auto-generated or not found.";
 "DEFAULT_SPEED" = "Default playback rate";
 "DEFAULT_SPEED_DESC" = "Overrides the default playback speed.";
 "SPEED_BUTTON" = "Speed controls button";
@@ -397,6 +401,8 @@
 "SB_SHOW_NOTIFICATIONS_DESC" = "Display notifications when segments are skipped. Notifications for manual-skip categories are always shown.";
 "SB_HAPTIC_FEEDBACK" = "Haptic feedback";
 "SB_HAPTIC_FEEDBACK_DESC" = "Provide haptic feedback when a segment is skipped.";
+"SB_SEGMENTS_IN_PLAYER" = "Segments in player";
+"SB_SEGMENTS_IN_PLAYER_DESC" = "Display colored segments on the progress bar of the main video player.";
 "SB_SEGMENTS_IN_FEED" = "Segments in feed";
 "SB_SEGMENTS_IN_FEED_DESC" = "Display colored segments on the progress bar of players in the feed.";
 "SB_SEGMENTS_IN_MINIPLAYER" = "Segments in mini-player";
