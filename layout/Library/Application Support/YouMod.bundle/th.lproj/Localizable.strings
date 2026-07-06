@@ -70,8 +70,8 @@
 "COPIED_TITLE" = "คัดลอกชื่อวิดีโอแล้ว";
 "COPIED_DESCRIPTION" = "คัดลอกคำอธิบายวิดีโอแล้ว";
 "COPY_AUTHOR" = "คัดลอกชื่อช่อง";
-"COPY_AUTHOR_DESC" = "คัดลอกชื่อช่องของวิดีโอ";
-"COPIED_AUTHOR" = "คัดลอกชื่อช่องของวิดีโอแล้ว";
+"COPY_AUTHOR_DESC" = "คัดลอกชื่อช่องวิดีโอ";
+"COPIED_AUTHOR" = "คัดลอกชื่อช่องวิดีโอแล้ว";
 "SAVE_THUMBNAIL" = "บันทึกปกคลิป";
 "SAVE_THUMBNAIL_DESC" = "บันทึกลงในแอปรูปภาพ";
 "DOWNLOAD_CAPTIONS" = "ดาวน์โหลดคำบรรยาย";
