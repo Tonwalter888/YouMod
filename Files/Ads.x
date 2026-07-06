@@ -198,6 +198,9 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
 - (void)adPlaying:(id)ad {}
 %end
 
+@interface YTReelDataSource : NSObject
+@end
+
 // Live video type = 4 and Live preview = 7, 9 is Playables ads, 10 posts
 %hook YTReelDataSource
 - (YTReelModel *)makeContentModelForEntry:(id)entry {
