@@ -215,6 +215,7 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
         return nil;
     return model;
 }
+/*
 - (void)setReels:(NSMutableOrderedSet <YTReelModel *> *)reels {
     [reels removeObjectsAtIndexes:[reels indexesOfObjectsPassingTest:^BOOL(YTReelModel *obj, NSUInteger idx, BOOL *stop) {
         if ([obj isKindOfClass:%c(YTReelNonVideoContentModel)]) return YES;
@@ -229,6 +230,22 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
         [self setValue:nil forKey:@"_adsAPIV2Internal"];
     } @catch (id ex) {}
     %orig(reels);
+}
+*/
+%end
+
+%hook YTReelContentModel
+- (YTReelModel *)makeContentModelForEntry:(id)entry {
+    YTReelModel *model = %orig;
+    if ([model respondsToSelector:@selector(videoType)] && model.videoType == 3)
+        return nil;
+    if ([model respondsToSelector:@selector(videoType)] && model.videoType == 9)
+        return nil;
+    if ([model respondsToSelector:@selector(videoType)] && model.videoType == 10 && IS_ENABLED(RemoveShortsPosts))
+        return nil;
+    if ([model respondsToSelector:@selector(videoType)] && (model.videoType == 4 || model.videoType == 7) && IS_ENABLED(RemoveShortsLive))
+        return nil;
+    return model;
 }
 %end
 
