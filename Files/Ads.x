@@ -214,13 +214,14 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
 }
 - (void)setReels:(NSMutableOrderedSet <YTReelModel *> *)reels {
     [reels removeObjectsAtIndexes:[reels indexesOfObjectsPassingTest:^BOOL(YTReelModel *obj, NSUInteger idx, BOOL *stop) {
+        if ([obj isKindOfClass:%c(YTReelNonVideoContentModel)]) return YES;
         if ([obj respondsToSelector:@selector(videoType)] && obj.videoType == 3) return YES;
         if ([obj respondsToSelector:@selector(videoType)] && obj.videoType == 9) return YES;
         if ([obj respondsToSelector:@selector(videoType)] && obj.videoType == 10 && IS_ENABLED(RemoveShortsPosts)) return YES;
         if ([obj respondsToSelector:@selector(videoType)] && (obj.videoType == 4 || obj.videoType == 7) && IS_ENABLED(RemoveShortsLive)) return YES;
         return NO;
     }]];
-    %orig;
+    %orig(reels);
 }
 %end
 
