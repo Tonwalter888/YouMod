@@ -616,9 +616,9 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
     UIColor *themeTextColor = [UIColor labelColor];
     UIColor *toastBgColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
         if (traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark) {
-            return [UIColor colorWithWhite:0.1 alpha:0.9];
+            return [UIColor colorWithWhite:0.1 alpha:0.95];
         } else {
-            return [UIColor colorWithWhite:0.95 alpha:0.9];
+            return [UIColor colorWithWhite:0.95 alpha:0.95];
         }
     }];
 
