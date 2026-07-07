@@ -337,6 +337,7 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
 }
 %end
 
+// YTAnotherMiniplayer (https://github.com/PoomSmart/YTAnotherMiniplayer)
 %hook YTWatchMiniplayerConstants
 + (NSInteger)miniplayerVariant { return IS_ENABLED(UseAnotherMiniplayer) ? 2 : %orig; }
 %end
