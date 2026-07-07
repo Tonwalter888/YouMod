@@ -107,7 +107,7 @@ static YTQTMButton *YMCreateOverlayButton(YTMainAppControlsOverlayView *overlay,
     [button sizeToFit];
     button.exclusiveTouch = YES;
     button.minHitTargetSize = 44;
-    button.viewTag = spec.viewTag;
+    button.tag = spec.viewTag;
     button.tintColor = spec.tintColor ?: [UIColor whiteColor];
     button.frame = CGRectMake(0, 0, YMOverlayButtonSize, YMOverlayButtonSize); // Will fix this
     [button addTarget:overlay action:@selector(ymOverlayButtonTapped:) forControlEvents:UIControlEventTouchUpInside];
