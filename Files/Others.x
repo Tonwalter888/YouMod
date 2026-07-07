@@ -19,10 +19,18 @@ Class YTILikeResponseClass, YTIDislikeResponseClass, YTIRemoveLikeResponseClass;
 - (BOOL)isPlayableInBackground { return IS_ENABLED(BackgroundPlayback) ? YES : %orig; }
 %end
 
-// Try to disable Shorts PiP
 %hook YTColdConfig
+// Try to disable Shorts PiP
 - (BOOL)shortsPlayerGlobalConfigEnableReelsPictureInPicture { return IS_ENABLED(DisablesShortsPiP) ? NO : %orig; }
 - (BOOL)shortsPlayerGlobalConfigEnableReelsPictureInPictureIos { return IS_ENABLED(DisablesShortsPiP) ? NO : %orig; }
+// Hide startup animations
+- (BOOL)mainAppCoreClientIosEnableStartupAnimation { return IS_ENABLED(HideStartupAni) ? NO : %orig; }
+// Prevent YouTube from asking "Are you there?"
+- (BOOL)enableYouthereCommandsOnIos { return IS_ENABLED(BlockUpgradeDialogs) ? NO : %orig; }
+// Fixes slow miniplayer
+- (BOOL)enableIosFloatingMiniplayerDoubleTapToResize { return IS_ENABLED(FixesSlowMiniPlayer) ? NO : %orig; }
+// Use old miniplayer
+- (BOOL)enableIosFloatingMiniplayer { return IS_ENABLED(DisablesNewMiniPlayer) ? NO : %orig; }
 %end
 
 %hook YTHotConfig
@@ -75,11 +83,6 @@ Class YTILikeResponseClass, YTIDislikeResponseClass, YTIRemoveLikeResponseClass;
 - (BOOL)shouldForceUpgrade { return IS_ENABLED(BlockUpgradeDialogs) ? NO : %orig; }
 %end
 
-// Prevent YouTube from asking "Are you there?"
-%hook YTColdConfig
-- (BOOL)enableYouthereCommandsOnIos { return IS_ENABLED(BlockUpgradeDialogs) ? NO : %orig; }
-%end
-
 %hook YTYouThereController
 - (BOOL)shouldShowYouTherePrompt { return IS_ENABLED(HideAreYouThereDialog) ? NO : %orig; }
 - (void)showYouTherePrompt { if (!IS_ENABLED(HideAreYouThereDialog)) %orig; }
@@ -90,27 +93,12 @@ Class YTILikeResponseClass, YTIDislikeResponseClass, YTIRemoveLikeResponseClass;
 - (void)showYouTherePrompt { if (!IS_ENABLED(HideAreYouThereDialog)) %orig; }
 %end
 
-// Fixes slow miniplayer
-%hook YTColdConfig
-- (BOOL)enableIosFloatingMiniplayerDoubleTapToResize { return IS_ENABLED(FixesSlowMiniPlayer) ? NO : %orig; }
-%end
-
-// Use old miniplayer
-%hook YTColdConfig
-- (BOOL)enableIosFloatingMiniplayer { return IS_ENABLED(DisablesNewMiniPlayer) ? NO : %orig; }
-%end
-
 // Disables Snackbar
 %hook GOOHUDManagerInternal
 - (id)sharedInstance { return IS_ENABLED(DisablesSnackBar) ? nil : %orig; }
 - (void)showMessageMainThread:(id)arg { if (!IS_ENABLED(DisablesSnackBar)) %orig; }
 - (void)activateOverlay:(id)arg { if (!IS_ENABLED(DisablesSnackBar)) %orig; }
 - (void)displayHUDViewForMessage:(id)arg { if (!IS_ENABLED(DisablesSnackBar)) %orig; }
-%end
-
-// Hide startup animations
-%hook YTColdConfig
-- (BOOL)mainAppCoreClientIosEnableStartupAnimation { return IS_ENABLED(HideStartupAni) ? NO : %orig; }
 %end
 
 // Remove "Play next in queue" from the menu @PoomSmart (https://github.com/qnblackcat/uYouPlus/issues/1138#issuecomment-1606415080)

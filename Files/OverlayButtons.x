@@ -106,7 +106,6 @@ static YTQTMButton *YMCreateOverlayButton(YTMainAppControlsOverlayView *overlay,
     [button setImage:icon forState:UIControlStateNormal];
     [button sizeToFit];
     button.exclusiveTouch = YES;
-    button.minHitTargetSize = 44;
     button.tag = spec.viewTag;
     button.tintColor = spec.tintColor ?: [UIColor whiteColor];
     button.frame = CGRectMake(0, 0, YMOverlayButtonSize, YMOverlayButtonSize); // Will fix this

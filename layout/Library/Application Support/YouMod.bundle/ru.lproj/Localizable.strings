@@ -291,6 +291,8 @@
 "HIDE_COMMENTS_SECTION_DESC" = "Completely removes the entire comments section.";
 "HIDE_COMMENTS_PREVIEW" = "Hide preview comments";
 "HIDE_COMMENTS_PREVIEW_DESC" = "Removes the preview box for the top comment while keeping the full section expandable.";
+"USE_ANOTHER_MINIPLAYER" = "Uses another miniplayer style";
+"USE_ANOTHER_MINIPLAYER_DESC" = "Uses another miniplayer style redesigned from older YT versions.";
 
 "SHORTS" = "Shorts";
 "SHORTS_ACTION" = "Shorts action after the video ends";

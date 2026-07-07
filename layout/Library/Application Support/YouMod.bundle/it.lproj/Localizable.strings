@@ -129,6 +129,8 @@
 "HIDE_VOICE_SEARCH_BUTTON_DESC" = "Nasconde il pulsante ricerca vocale nella barra di navigazione.";
 "HIDE_CAST_BUTTON_NAVBAR" = "Nascondi pulsante cast";
 "HIDE_CAST_BUTTON_NAVBAR_DESC" = "Nasconde il pulsante cast nella barra di navigazione.";
+"USE_ANOTHER_MINIPLAYER" = "Uses another miniplayer style";
+"USE_ANOTHER_MINIPLAYER_DESC" = "Uses another miniplayer style redesigned from older YT versions.";
 
 "FEED" = "Feed";
 "HIDE_SUBBAR" = "Nascondi barra superiore";

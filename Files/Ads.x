@@ -226,11 +226,7 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
         if ([obj respondsToSelector:@selector(videoType)] && (obj.videoType == 4 || obj.videoType == 7) && IS_ENABLED(RemoveShortsLive)) return YES;
         return NO;
     }]];
-    %orig(reels);
-    @try {
-        [self setValue:nil forKey:@"_adsAPIImpl"];
-        [self setValue:nil forKey:@"_adsAPIV2Internal"];
-    } @catch (id ex) {}
+    %orig;
 }
 %end
 

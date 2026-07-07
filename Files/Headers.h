@@ -167,6 +167,7 @@
 #define HideActionBar @"YouModHideActionBar"
 #define HideCommentsSection @"YouModHideCommentsSection"
 #define HideCommentsPreview @"YouModHideCommentsPreview"
+#define UseAnotherMiniplayer @"YouModUseAnotherMiniplayer"
 // Shorts
 #define RemoveShortsLive @"YouModRemoveShortsLive"
 #define RemoveShortsPosts @"YouModRemoveShortsPosts"
@@ -337,6 +338,12 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 - (void)notifyObserversAudioTrackWillChange:(id)arg1 source:(NSInteger)arg2;
 @end
 
+@interface YTAudioTrackSwitchControllerImpl : NSObject
+- (void)switchToAudioTrack:(id)track source:(NSInteger)source;
+- (void)notifyObserversAudioTrackDidChange:(id)arg1 source:(NSInteger)arg2;
+- (void)notifyObserversAudioTrackWillChange:(id)arg1 source:(NSInteger)arg2;
+@end
+
 @interface YTICaptionTrackEntry : GPBMessage
 - (NSString *)baseURL;
 - (NSString *)vssId;
@@ -368,7 +375,7 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 - (NSInteger)playerState;
 - (YTPlayerResponse *)contentPlayerResponse;
 - (YTPlayerResponse *)playerResponse;
-- (YTAudioTrackSwitchController *)audioTrackController;
+- (id)audioTrackController;
 @end
 
 @interface YTAutoplayAutonavController : NSObject
@@ -589,7 +596,7 @@ static const CGFloat SBAlertDurationDefault = 4.0;
 @property (nonatomic, copy) NSString *symbolName;       // SF Symbol name
 @property (nonatomic, strong) UIColor *tintColor;       // default tint (used if tintProvider is nil)
 @property (nonatomic, assign) NSInteger sortOrder;      // ascending; lower = closer to gear (rightmost)
-@property (nonatomic, copy) void (^onTap)(YTPlayerViewController *player, UIButton *button);
+@property (nonatomic, copy) void (^onTap)(YTPlayerViewController *player, YTQTMButton *button);
 @property (nonatomic, copy) BOOL (^isVisible)(YTPlayerViewController *player);     // nil = always visible
 @property (nonatomic, copy) UIColor *(^tintProvider)(YTPlayerViewController *player); // nil = use tintColor
 @property (nonatomic, assign) NSInteger viewTag;        // assigned by the registry; do not set

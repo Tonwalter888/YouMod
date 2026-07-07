@@ -169,8 +169,6 @@ static NSArray *getAllSystemLanguageValues() {
 
 static float playbackRate = 1.0;
 
-// static BOOL isExternal = NO;
-
 static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoController *video, YTSingleVideoTime *time) {
     if (!IS_ENABLED(ShowExtraTimeRemaining)) return;
 
@@ -279,7 +277,7 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
             while (responder && ![responder isKindOfClass:%c(YTMainAppVideoPlayerOverlayViewController)]) {
                 responder = responder.nextResponder;
             }
-            
+  
             if (responder) {
                 YTMainAppVideoPlayerOverlayViewController *controller = (YTMainAppVideoPlayerOverlayViewController *)responder;
                 YTPlayerViewController *controller2 = controller.parentViewController;
@@ -289,6 +287,28 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
             }
         }
     }
+}
+// Disable toggle time remaining - @bhackel
+- (void)setShouldDisplayTimeRemaining:(BOOL)arg1 {
+    BOOL temp;
+    if (IS_ENABLED(DisablesShowRemaining)) {
+        temp = NO;
+    } else if (IS_ENABLED(AlwaysShowRemaining)) {
+        temp = YES;
+    } else {
+        temp = arg1;
+    }
+    %orig(temp);
+}
+// Always show seekbar
+- (void)setPlayerBarAlpha:(CGFloat)alpha { 
+    CGFloat temp = IS_ENABLED(AlwaysShowSeekbar) ? 1.0 : alpha;
+    %orig(temp);
+}
+// Disables snap to chapter
+- (void)inlinePlayerBarView:(id)arg1 didScrubToChapteredTime:(CGFloat)arg2 shouldSnap:(BOOL)arg3 { 
+    BOOL temp = IS_ENABLED(DontSnapToChapter) ? NO : arg3;
+    %orig(arg1, arg2, temp);
 }
 %end
 
@@ -317,6 +337,10 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
 }
 %end
 
+%hook YTWatchMiniplayerConstants
++ (NSInteger)miniplayerVariant { return IS_ENABLED(UseAnotherMiniplayer) ? 2 : %orig; }
+%end
+
 %hook YTSettings
 - (BOOL)isAutoplayEnabled { return IS_ENABLED(HideAutoPlayToggle) ? NO : %orig; }
 %end
@@ -327,25 +351,11 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
 
 %hook YTColdConfig
 - (BOOL)isLandscapeEngagementPanelEnabled { return IS_ENABLED(DisablesEngagementPanel) ? NO : %orig; }
-%end
-
-// Remove Dark Background in Overlay
-%hook YTMainAppVideoPlayerOverlayView
-- (void)setBackgroundVisible:(BOOL)arg1 isGradientBackground:(BOOL)arg2 {
-    BOOL temp = IS_ENABLED(RemoveDarkOverlay) ? NO : arg1;
-    %orig(temp, arg2);
-}
-// Hide Watermarks
-- (BOOL)isWatermarkEnabled { return IS_ENABLED(HideWaterMark) ? NO : %orig; }
-- (void)setWatermarkEnabled:(BOOL)arg { 
-    BOOL temp = IS_ENABLED(HideWaterMark) ? NO : arg;
-    %orig(temp);
-}
-- (void)layoutSubviews {
-    %orig;
-    if (IS_ENABLED(HideCastButtonPlayer)) self.playbackRouteButton.hidden = YES;    
-}
-- (BOOL)isFullscreenActionsVisible { return IS_ENABLED(HideFullAction) ? NO : %orig; }
+- (BOOL)removeNextPaddleForAllVideos { return IS_ENABLED(HideNextAndPrevButtons) ? YES : %orig; }
+- (BOOL)removePreviousPaddleForAllVideos { return IS_ENABLED(HideNextAndPrevButtons) ? YES : %orig; }
+// Replace previous/next buttons with back and forward
+- (BOOL)replaceNextPaddleWithFastForwardButtonForSingletonVods { return IS_ENABLED(ReplacePrevNextButtons) ? YES : %orig; }
+- (BOOL)replacePreviousPaddleWithRewindButtonForSingletonVods { return IS_ENABLED(ReplacePrevNextButtons) ? YES : %orig; }
 %end
 
 // No Endscreen Cards
@@ -376,18 +386,10 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
         UIPasteboard.generalPasteboard.string = [NSString stringWithFormat:@"https://www.youtube.com/watch?v=%@&t=%lds", vidID, (long)mediaTimeIn];
 }
 - (BOOL)isZoomEnabled { return IS_ENABLED(DisablesFreeZoom) ? NO : %orig; }
-%end
-
-%hook YTColdConfig
-- (BOOL)removeNextPaddleForAllVideos { return IS_ENABLED(HideNextAndPrevButtons) ? YES : %orig; }
-- (BOOL)removePreviousPaddleForAllVideos { return IS_ENABLED(HideNextAndPrevButtons) ? YES : %orig; }
-%end
-
-// YTNoPaidPromo (https://github.com/PoomSmart/YTNoPaidPromo)
-%hook YTMainAppVideoPlayerOverlayViewController
 - (void)setPaidContentWithPlayerData:(id)data { if (!IS_ENABLED(HidePaidPromoOverlay)) %orig; }
 %end
 
+// YTNoPaidPromo (https://github.com/PoomSmart/YTNoPaidPromo)
 %hook YTInlineMutedPlaybackPlayerOverlayViewController
 - (void)setPaidContentWithPlayerData:(id)data { if (!IS_ENABLED(HidePaidPromoOverlay)) %orig; }
 %end
@@ -401,21 +403,6 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
 // Exit Fullscreen on Finish
 %hook YTWatchFlowController
 - (BOOL)shouldExitFullScreenOnFinish { return IS_ENABLED(AutoExitFullScreen) ? YES : %orig; }
-%end
-
-// Disable toggle time remaining - @bhackel
-%hook YTInlinePlayerBarContainerView
-- (void)setShouldDisplayTimeRemaining:(BOOL)arg1 {
-    BOOL temp;
-    if (IS_ENABLED(DisablesShowRemaining)) {
-        temp = NO;
-    } else if (IS_ENABLED(AlwaysShowRemaining)) {
-        temp = YES;
-    } else {
-        temp = arg1;
-    }
-    %orig(temp);
-}
 %end
 
 // Always use remaining time in the video player - @bhackel
@@ -473,14 +460,6 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
 - (void)showConfirmAlert { IS_ENABLED(HideContentWarning) ? [self confirmAlertDidPressConfirm] : %orig; }
 %end
 
-// Always show seekbar
-%hook YTInlinePlayerBarContainerView
-- (void)setPlayerBarAlpha:(CGFloat)alpha { 
-    CGFloat temp = IS_ENABLED(AlwaysShowSeekbar) ? 1.0 : alpha;
-    %orig(temp);
-}
-%end
-
 // Portrait Fullscreen
 %hook YTWatchViewController
 - (unsigned long long)allowedFullScreenOrientations { return IS_ENABLED(PortFull) ? UIInterfaceOrientationMaskAllButUpsideDown : %orig; }
@@ -492,19 +471,6 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
     %orig; 
     if (IS_ENABLED(DontSnapToChapter)) self.enableSnapToChapter = NO;
 }
-%end
-
-%hook YTInlinePlayerBarContainerView
-- (void)inlinePlayerBarView:(id)arg1 didScrubToChapteredTime:(CGFloat)arg2 shouldSnap:(BOOL)arg3 { 
-    BOOL temp = IS_ENABLED(DontSnapToChapter) ? NO : arg3;
-    %orig(arg1, arg2, temp);
-}
-%end
-
-// Replace previous/next buttons with back and forward
-%hook YTColdConfig
-- (BOOL)replaceNextPaddleWithFastForwardButtonForSingletonVods { return IS_ENABLED(ReplacePrevNextButtons) ? YES : %orig; }
-- (BOOL)replacePreviousPaddleWithRewindButtonForSingletonVods { return IS_ENABLED(ReplacePrevNextButtons) ? YES : %orig; }
 %end
 
 %group ForceMiniPlayer
@@ -700,6 +666,22 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
         [self YouModHideSpeedToast];
     }
 }
+// Remove Dark Background in Overlay
+- (void)setBackgroundVisible:(BOOL)arg1 isGradientBackground:(BOOL)arg2 {
+    BOOL temp = IS_ENABLED(RemoveDarkOverlay) ? NO : arg1;
+    %orig(temp, arg2);
+}
+// Hide Watermarks
+- (BOOL)isWatermarkEnabled { return IS_ENABLED(HideWaterMark) ? NO : %orig; }
+- (void)setWatermarkEnabled:(BOOL)arg { 
+    BOOL temp = IS_ENABLED(HideWaterMark) ? NO : arg;
+    %orig(temp);
+}
+- (void)layoutSubviews {
+    %orig;
+    if (IS_ENABLED(HideCastButtonPlayer)) self.playbackRouteButton.hidden = YES;    
+}
+- (BOOL)isFullscreenActionsVisible { return IS_ENABLED(HideFullAction) ? NO : %orig; }
 %end
 
 %hook YTSingleVideoController
@@ -769,147 +751,6 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
     }
 }
 %end
-
-%hook YTPlayerViewController
-
-%new
-- (void)YouModAutoFullscreen {
-    YTWatchController *watchController = [self valueForKey:@"_UIDelegate"];
-    [watchController showFullScreen];
-}
-
-%new
-- (void)YouModSetAutoSpeed {
-    if ([self.view.superview isKindOfClass:NSClassFromString(@"YTWatchView")]) {
-        NSArray *speedLabels = @[@0.01, @0.25, @0.5, @0.75, @1.0, @1.25, @1.5, @1.75, @2.0, @3.0, @4.0, @5.0];
-        [self setPlaybackRate:[speedLabels[INTFORVAL(AutoSpeedIndex)] floatValue]];
-    }
-}
-
-- (void)singleVideo:(YTSingleVideoController *)video currentVideoTimeDidChange:(YTSingleVideoTime *)time {
-    %orig;
-    YouModAddEndTime(self, video, time);
-}
-
-- (void)potentiallyMutatedSingleVideo:(YTSingleVideoController *)video currentVideoTimeDidChange:(YTSingleVideoTime *)time {
-    %orig;
-    YouModAddEndTime(self, video, time);
-}
-
-- (void)setPlaybackRate:(float)rate {
-    playbackRate = rate;
-    %orig;
-}
-
-%new
-- (void)YouModAutoMute {
-    YTSingleVideoController *sgvid = self.activeVideo;
-    BOOL muted = [sgvid isMuted];
-    [sgvid setMuted:[self isInlinePlaybackActive] ? muted : IS_ENABLED(KeepMutedKey)];
-}
-
-%new
-- (void)YouModAutoAudioTrack {
-    NSInteger selectedIndex = INTFORVAL(AudioTrackLangIndex);
-    NSArray *langCodes = getAllSystemLanguageValues();
-    NSString *userTargetLang = langCodes[selectedIndex];
-    YTAudioTrackSwitchController *switchcon = self.audioTrackController;
-    NSArray *availableTracks = [switchcon valueForKey:@"_availableAudioTracks"];
-    if (!availableTracks || availableTracks.count == 0) return;
-    // Check if the current audio track is already the same as the user perferences
-    YTIAudioTrack *currentTrack = [switchcon valueForKey:@"_lastSelectedAudioTrack"];
-    YTIAudioTrack *matchedTrack = nil;
-
-    if (INTFORVAL(AudioTrack) == 1) {
-        // Loop for all tracks
-        for (YTIAudioTrack *track in availableTracks) {
-            if ([track.id_p hasSuffix:@".4"]) {
-                matchedTrack = track;
-                break;
-            }
-        }
-    } else if (INTFORVAL(AudioTrack) == 2) {
-        // Loop for all tracks
-        for (YTIAudioTrack *track in availableTracks) {
-            if ([track.id_p hasPrefix:userTargetLang]) {
-                matchedTrack = track;
-                break;
-            }
-        }
-
-        // Check if it's dubbed
-        if (matchedTrack && [matchedTrack isAutoDubbed] && IS_ENABLED(NoDubbedAudioTrack)) {
-            matchedTrack = nil;
-            return;
-        }
-    }
-
-    // If found, change to it
-    if (matchedTrack && matchedTrack != currentTrack) {
-        [switchcon notifyObserversAudioTrackWillChange:matchedTrack source:0];
-        [switchcon switchToAudioTrack:matchedTrack source:0];
-        [switchcon notifyObserversAudioTrackDidChange:matchedTrack source:0];
-    }
-}
-
-%new
-- (void)YouModAutoCaptions {
-    YTMainAppVideoPlayerOverlayViewController *ovc = self.activeVideoPlayerOverlay;
-    YTCaptionTrackSwitchController *switchcon = ovc.captionTrackController;
-    NSInteger selectedIndex = INTFORVAL(CaptionTrackLangIndex);
-    NSArray *langCodes = getAllSystemLanguageValues();
-    NSString *userTargetLang = langCodes[selectedIndex];
-    NSDictionary *allTracks = [switchcon valueForKey:@"_availableCaptionTracks"];
-    if (!allTracks || allTracks.count == 0) return;
-    MLInnerTubeCaptionTrack *currentTrack = [switchcon valueForKey:@"_activeCaptionTrack"];
-    MLInnerTubeCaptionTrack *matchedTrack;
-
-    if (INTFORVAL(CaptionTrack) == 1) {
-        if (currentTrack != nil) {
-            [self YouModCaptionsHelper:nil];
-        }
-        return;
-    }
-
-    for (id key in allTracks) {
-        MLInnerTubeCaptionTrack *track = allTracks[key];
-        if ([track.languageCode isEqualToString:userTargetLang]) {
-            matchedTrack = track;
-            break;
-        }
-    }
-    if (matchedTrack && [matchedTrack.VSSID hasPrefix:@"a."] && IS_ENABLED(DisablesCaptionTrack)) {
-        matchedTrack = nil;
-        [self YouModCaptionsHelper:nil];
-        return;
-    } else if (!matchedTrack && IS_ENABLED(DisablesCaptionTrack)) {
-        [self YouModCaptionsHelper:nil];
-        return;
-    }
-    if (matchedTrack && matchedTrack != currentTrack) {
-        [self YouModCaptionsHelper:matchedTrack];
-    }
-}
-
-%new
-- (void)YouModCaptionsHelper:(MLInnerTubeCaptionTrack *)track {
-    if ([self respondsToSelector:@selector(setActiveCaptionTrack:source:)]) {
-        [self setActiveCaptionTrack:track source:0];
-    } else {
-        [self setActiveCaptionTrack:track];
-    }
-}
-%end
-
-/*
-// Fix Playlist Mini-bar Height For Small Screens
-%hook YTPlaylistMiniBarView
-- (void)setFrame:(CGRect)frame {
-    if (frame.size.height < 54.0) frame.size.height = 54.0; // what
-    %orig(frame);
-}
-%end
-*/
 
 // YTClassicVideoQuality (https://github.com/PoomSmart/YTClassicVideoQuality)
 %group OldVideoQuality
@@ -1195,6 +1036,142 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
         } else if (self.playerState == 4) {
             [self play];
         }
+    }
+}
+
+%new
+- (void)YouModAutoFullscreen {
+    YTWatchController *watchController = [self valueForKey:@"_UIDelegate"];
+    [watchController showFullScreen];
+}
+
+%new
+- (void)YouModSetAutoSpeed {
+    if ([self.view.superview isKindOfClass:NSClassFromString(@"YTWatchView")]) {
+        NSArray *speedLabels = @[@0.01, @0.25, @0.5, @0.75, @1.0, @1.25, @1.5, @1.75, @2.0, @3.0, @4.0, @5.0];
+        [self setPlaybackRate:[speedLabels[INTFORVAL(AutoSpeedIndex)] floatValue]];
+    }
+}
+
+- (void)singleVideo:(YTSingleVideoController *)video currentVideoTimeDidChange:(YTSingleVideoTime *)time {
+    %orig;
+    YouModAddEndTime(self, video, time);
+}
+
+- (void)potentiallyMutatedSingleVideo:(YTSingleVideoController *)video currentVideoTimeDidChange:(YTSingleVideoTime *)time {
+    %orig;
+    YouModAddEndTime(self, video, time);
+}
+
+- (void)setPlaybackRate:(float)rate {
+    playbackRate = rate;
+    %orig;
+}
+
+%new
+- (void)YouModAutoMute {
+    YTSingleVideoController *sgvid = self.activeVideo;
+    BOOL muted = [sgvid isMuted];
+    [sgvid setMuted:[self isInlinePlaybackActive] ? muted : IS_ENABLED(KeepMutedKey)];
+}
+
+%new
+- (void)YouModAutoAudioTrack {
+    NSInteger selectedIndex = INTFORVAL(AudioTrackLangIndex);
+    NSArray *langCodes = getAllSystemLanguageValues();
+    NSString *userTargetLang = langCodes[selectedIndex];
+    id switchcon = self.audioTrackController;
+    NSArray *availableTracks = [switchcon valueForKey:@"_availableAudioTracks"];
+    if (!availableTracks || availableTracks.count == 0) return;
+    // Check if the current audio track is already the same as the user perferences
+    YTIAudioTrack *currentTrack = [switchcon valueForKey:@"_lastSelectedAudioTrack"];
+    YTIAudioTrack *matchedTrack = nil;
+
+    if (INTFORVAL(AudioTrack) == 1) {
+        // Loop for all tracks
+        for (YTIAudioTrack *track in availableTracks) {
+            if ([track.id_p hasSuffix:@".4"]) {
+                matchedTrack = track;
+                break;
+            }
+        }
+    } else if (INTFORVAL(AudioTrack) == 2) {
+        // Loop for all tracks
+        for (YTIAudioTrack *track in availableTracks) {
+            if ([track.id_p hasPrefix:userTargetLang]) {
+                matchedTrack = track;
+                break;
+            }
+        }
+
+        // Check if it's dubbed
+        if (matchedTrack && [matchedTrack isAutoDubbed] && IS_ENABLED(NoDubbedAudioTrack)) {
+            matchedTrack = nil;
+            return;
+        }
+    }
+
+    // If found, change to it
+    if (matchedTrack && matchedTrack != currentTrack) {
+        if ([switchcon isKindOfClass:%c(YTAudioTrackSwitchController)]) {
+            YTAudioTrackSwitchController *realswitch = (YTAudioTrackSwitchController *)switchcon;
+            [realswitch notifyObserversAudioTrackWillChange:matchedTrack source:0];
+            [realswitch switchToAudioTrack:matchedTrack source:0];
+            [realswitch notifyObserversAudioTrackDidChange:matchedTrack source:0];
+        } else if ([switchcon isKindOfClass:%c(YTAudioTrackSwitchControllerImpl)]) {
+            YTAudioTrackSwitchControllerImpl *realswitch = (YTAudioTrackSwitchControllerImpl *)switchcon;
+            [realswitch notifyObserversAudioTrackWillChange:matchedTrack source:0];
+            [realswitch switchToAudioTrack:matchedTrack source:0];
+            [realswitch notifyObserversAudioTrackDidChange:matchedTrack source:0];
+        }
+    }
+}
+
+%new
+- (void)YouModAutoCaptions {
+    YTMainAppVideoPlayerOverlayViewController *ovc = self.activeVideoPlayerOverlay;
+    YTCaptionTrackSwitchController *switchcon = ovc.captionTrackController;
+    NSInteger selectedIndex = INTFORVAL(CaptionTrackLangIndex);
+    NSArray *langCodes = getAllSystemLanguageValues();
+    NSString *userTargetLang = langCodes[selectedIndex];
+    NSDictionary *allTracks = [switchcon valueForKey:@"_availableCaptionTracks"];
+    if (!allTracks || allTracks.count == 0) return;
+    MLInnerTubeCaptionTrack *currentTrack = [switchcon valueForKey:@"_activeCaptionTrack"];
+    MLInnerTubeCaptionTrack *matchedTrack;
+
+    if (INTFORVAL(CaptionTrack) == 1) {
+        if (currentTrack != nil) {
+            [self YouModCaptionsHelper:nil];
+        }
+        return;
+    }
+
+    for (id key in allTracks) {
+        MLInnerTubeCaptionTrack *track = allTracks[key];
+        if ([track.languageCode isEqualToString:userTargetLang]) {
+            matchedTrack = track;
+            break;
+        }
+    }
+    if (matchedTrack && [matchedTrack.VSSID hasPrefix:@"a."] && IS_ENABLED(DisablesCaptionTrack)) {
+        matchedTrack = nil;
+        [self YouModCaptionsHelper:nil];
+        return;
+    } else if (!matchedTrack && IS_ENABLED(DisablesCaptionTrack)) {
+        [self YouModCaptionsHelper:nil];
+        return;
+    }
+    if (matchedTrack && matchedTrack != currentTrack) {
+        [self YouModCaptionsHelper:matchedTrack];
+    }
+}
+
+%new
+- (void)YouModCaptionsHelper:(MLInnerTubeCaptionTrack *)track {
+    if ([self respondsToSelector:@selector(setActiveCaptionTrack:source:)]) {
+        [self setActiveCaptionTrack:track source:0];
+    } else {
+        [self setActiveCaptionTrack:track];
     }
 }
 %end

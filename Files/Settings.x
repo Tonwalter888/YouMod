@@ -299,6 +299,7 @@ static NSArray *getAllSystemLanguageTitles() {
             YMToggle(LOC(@"USES_24_HOURS_TIME"), LOC(@"USES_24_HOURS_TIME_DESC"), Uses24HoursTime),
             YMToggle(LOC(@"OLD_QUALITY_PICKER"), LOC(@"OLD_QUALITY_PICKER_DESC"), OldQualityPicker),
             YMToggle(LOC(@"EXTRA_SPEED"), LOC(@"EXTRA_SPEED_DESC"), ExtraSpeed),
+            YMToggle(LOC(@"USE_ANOTHER_MINIPLAYER"), LOC(@"USE_ANOTHER_MINIPLAYER_DESC"), UseAnotherMiniplayer),
             YMToggle(LOC(@"HIDE_ACTION_BAR"), LOC(@"HIDE_ACTION_BAR_DESC"), HideActionBar),
             YMToggle(LOC(@"HIDE_COMMENTS_SECTION"), LOC(@"HIDE_COMMENTS_SECTION_DESC"), HideCommentsSection),
             YMToggle(LOC(@"HIDE_COMMENTS_PREVIEW"), LOC(@"HIDE_COMMENTS_PREVIEW_DESC"), HideCommentsPreview),

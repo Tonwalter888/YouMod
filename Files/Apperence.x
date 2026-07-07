@@ -48,7 +48,7 @@ static BOOL isDarkMode(UIView *view) {
     ];  
     if (localPageStyle == 1) {
         if ([blackViews containsObject:self.accessibilityIdentifier]) self.backgroundColor = [UIColor blackColor];
-        // if ([self.accessibilityIdentifier isEqualToString:@"brand_promo.view"]) self.subviews[0].backgroundColor = [UIColor blackColor]; 
+        if ([self.accessibilityIdentifier isEqualToString:@"brand_promo.view"]) self.subviews[0].backgroundColor = [UIColor blackColor]; 
         // Action dialog
         UIResponder *responder = self.nextResponder;
         while (responder != nil) {
@@ -60,7 +60,7 @@ static BOOL isDarkMode(UIView *view) {
         }
     } else {
         if ([blackViews containsObject:self.accessibilityIdentifier]) self.backgroundColor = [UIColor clearColor];
-        // if ([self.accessibilityIdentifier isEqualToString:@"brand_promo.view"]) self.subviews[0].backgroundColor = [UIColor clearColor];  
+        if ([self.accessibilityIdentifier isEqualToString:@"brand_promo.view"]) self.subviews[0].backgroundColor = [UIColor clearColor];  
         // Action dialog
         UIResponder *responder = self.nextResponder;
         while (responder != nil) {
@@ -80,7 +80,7 @@ static BOOL isDarkMode(UIView *view) {
     ];  
     if (localPageStyle == 1) {
         if ([blackViews containsObject:self.accessibilityIdentifier]) self.backgroundColor = [UIColor blackColor];
-        // if ([self.accessibilityIdentifier isEqualToString:@"brand_promo.view"]) self.subviews[0].backgroundColor = [UIColor blackColor]; 
+        if ([self.accessibilityIdentifier isEqualToString:@"brand_promo.view"]) self.subviews[0].backgroundColor = [UIColor blackColor]; 
         // Action dialog
         UIResponder *responder = self.nextResponder;
         while (responder != nil) {
@@ -92,7 +92,7 @@ static BOOL isDarkMode(UIView *view) {
         }
     } else {
         if ([blackViews containsObject:self.accessibilityIdentifier]) self.backgroundColor = [UIColor clearColor];
-        // if ([self.accessibilityIdentifier isEqualToString:@"brand_promo.view"]) self.subviews[0].backgroundColor = [UIColor clearColor];  
+        if ([self.accessibilityIdentifier isEqualToString:@"brand_promo.view"]) self.subviews[0].backgroundColor = [UIColor clearColor];  
         // Action dialog
         UIResponder *responder = self.nextResponder;
         while (responder != nil) {

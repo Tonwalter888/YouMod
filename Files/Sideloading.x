@@ -167,6 +167,6 @@ static NSString *accessGroupID() {
         NSURL *documentsURL = [paths lastObject];
         return [documentsURL URLByAppendingPathComponent:@"AppGroup"];
     }
-    return %orig(groupIdentifier);
+    return %orig;
 }
 %end

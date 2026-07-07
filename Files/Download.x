@@ -663,7 +663,8 @@ static NSString *YouModFormatSubtitle(YouModMediaFormat *format, BOOL video) {
         if (size.length) [parts addObject:size];
         return [parts componentsJoinedByString:@" - "];
     }
-    return format.idp;
+    NSString *cut = [[format.idp componentsSeparatedByString:@"."] firstObject];
+    return cut;
 }
 
 static YTIPlayerResponse *YouModPlayerDataForPlayer(YTPlayerViewController *player) {
