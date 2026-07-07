@@ -98,20 +98,21 @@ static CGFloat YMGearCenterXInOverlay(YTMainAppControlsOverlayView *overlay) {
     return bestMidX;
 }
 
-// Might use YTQTMButton
-static UIButton *YMCreateOverlayButton(YTMainAppControlsOverlayView *overlay, YMOverlayButtonSpec *spec) {
-    UIButton *btn = [UIButton buttonWithType:UIButtonTypeCustom];
-    btn.tag = spec.viewTag;
-    btn.frame = CGRectMake(0, 0, YMOverlayButtonSize, YMOverlayButtonSize);
-
+// Adapted from YTVideoOverlay
+static YTQTMButton *YMCreateOverlayButton(YTMainAppControlsOverlayView *overlay, YMOverlayButtonSpec *spec) {
     UIImageSymbolConfiguration *config = [UIImageSymbolConfiguration configurationWithPointSize:20 weight:UIImageSymbolWeightMedium];
-    UIImage *icon = [UIImage systemImageNamed:spec.symbolName withConfiguration:config];
-    [btn setImage:icon forState:UIControlStateNormal];
-    btn.tintColor = spec.tintColor ?: [UIColor whiteColor];
-
-    [btn addTarget:overlay action:@selector(ymOverlayButtonTapped:) forControlEvents:UIControlEventTouchUpInside];
-    [overlay addSubview:btn];
-    return btn;
+    UIImage *icon = [UIImage systemImageNamed:spec.symbolName withConfiguration:config]; // Will use custom image, maybe
+    YTQTMButton *button = [%c(YTQTMButton) iconButton];
+    [button setImage:icon forState:UIControlStateNormal];
+    [button sizeToFit];
+    button.exclusiveTouch = YES;
+    button.minHitTargetSize = 44;
+    button.viewTag = spec.viewTag;
+    button.tintColor = spec.tintColor ?: [UIColor whiteColor];
+    button.frame = CGRectMake(0, 0, YMOverlayButtonSize, YMOverlayButtonSize); // Will fix this
+    [button addTarget:overlay action:@selector(ymOverlayButtonTapped:) forControlEvents:UIControlEventTouchUpInside];
+    [overlay addSubview:button];
+    return button;
 }
 
 #pragma mark - YTMainAppControlsOverlayView Hook
@@ -137,7 +138,7 @@ static UIButton *YMCreateOverlayButton(YTMainAppControlsOverlayView *overlay, YM
     NSInteger row = 0;
     for (YMOverlayButtonSpec *spec in specs) {
         BOOL visible = (spec.isVisible == nil) || spec.isVisible(player);
-        UIButton *btn = (UIButton *)[self viewWithTag:spec.viewTag];
+        YTQTMButton *btn = (YTQTMButton *)[self viewWithTag:spec.viewTag];
 
         if (!visible) {
             if (btn) [btn removeFromSuperview];
@@ -160,13 +161,13 @@ static UIButton *YMCreateOverlayButton(YTMainAppControlsOverlayView *overlay, YM
 - (void)setOverlayVisible:(BOOL)visible {
     %orig;
     for (YMOverlayButtonSpec *spec in YMRegisteredOverlayButtons()) {
-        UIButton *btn = (UIButton *)[self viewWithTag:spec.viewTag];
+        YTQTMButton *btn = (YTQTMButton *)[self viewWithTag:spec.viewTag];
         if (btn) btn.hidden = !visible;
     }
 }
 
 %new
-- (void)ymOverlayButtonTapped:(UIButton *)sender {
+- (void)ymOverlayButtonTapped:(YTQTMButton *)sender {
     YMOverlayButtonSpec *matched = nil;
     for (YMOverlayButtonSpec *spec in YMRegisteredOverlayButtons()) {
         if (spec.viewTag == sender.tag) { matched = spec; break; }
@@ -278,7 +279,7 @@ static UIImage *YouModIconImage(NSInteger iconType) {
     mute.isVisible = ^BOOL(YTPlayerViewController *player) {
         return IS_ENABLED(MuteButton);
     };
-    mute.onTap = ^(YTPlayerViewController *player, UIButton *button) {
+    mute.onTap = ^(YTPlayerViewController *player, YTQTMButton *button) {
         YTSingleVideoController *sgvid = player.activeVideo;
         BOOL muteStatus = ![sgvid isMuted];
         [[NSUserDefaults standardUserDefaults] setBool:muteStatus forKey:KeepMutedKey];
@@ -296,7 +297,7 @@ static UIImage *YouModIconImage(NSInteger iconType) {
     speed.isVisible = ^BOOL(YTPlayerViewController *player) {
         return IS_ENABLED(SpeedButton);
     };
-    speed.onTap = ^(YTPlayerViewController *player, UIButton *button) {
+    speed.onTap = ^(YTPlayerViewController *player, YTQTMButton *button) {
         YTMainAppVideoPlayerOverlayViewController *ovcon = [player activeVideoPlayerOverlay];
         [ovcon didPressVarispeed:button];
     };
@@ -309,7 +310,7 @@ static UIImage *YouModIconImage(NSInteger iconType) {
     share.isVisible = ^BOOL(YTPlayerViewController *player) {
         return IS_ENABLED(ShareButton);
     };
-    share.onTap = ^(YTPlayerViewController *player, UIButton *button) {
+    share.onTap = ^(YTPlayerViewController *player, YTQTMButton *button) {
         [player YouModShareButton:button];
     };
     YMRegisterOverlayButton(share);
@@ -321,7 +322,7 @@ static UIImage *YouModIconImage(NSInteger iconType) {
     loop.isVisible = ^BOOL(YTPlayerViewController *player) {
         return IS_ENABLED(LoopButton);
     };
-    loop.onTap = ^(YTPlayerViewController *player, UIButton *button) {
+    loop.onTap = ^(YTPlayerViewController *player, YTQTMButton *button) {
         [player YouModLoopButton];
         UIImageSymbolConfiguration *config = [UIImageSymbolConfiguration configurationWithPointSize:20 weight:UIImageSymbolWeightMedium];
         UIImage *newIcon = [UIImage systemImageNamed:IS_ENABLED(KeepLoopKey) ? @"repeat.1" : @"repeat" withConfiguration:config];
