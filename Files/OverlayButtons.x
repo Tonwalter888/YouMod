@@ -34,7 +34,6 @@ static const NSInteger YMOverlayButtonBaseTag = 9910;
 static const CGFloat YMOverlayButtonSize = 40.0;
 static const CGFloat YMOverlayButtonGap = 8.0;
 static const CGFloat YMOverlayButtonTopInset = 52.0;
-static const CGFloat YMOverlayButtonEdgePadding = 12.0; // fallback right padding when the gear isn't found
 
 static NSMutableArray<YMOverlayButtonSpec *> *gOverlayButtons = nil;
 static NSInteger gOverlayButtonNextTag = YMOverlayButtonBaseTag;
