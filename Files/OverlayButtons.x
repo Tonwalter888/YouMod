@@ -79,15 +79,13 @@ static YTPlayerViewController *YMPlayerVCFromOverlay(YTMainAppControlsOverlayVie
 // The gear is the right-most YTQTMButton sitting in the overlay's top region. Returns
 // its center-x in the overlay's coordinate space, or zero if not found.
 static CGFloat YMGearCenterXInOverlay(YTMainAppControlsOverlayView *overlay) {
-    CGFloat bestMidX;
     for (UIView *sub in overlay.subviews) {
         if ([sub isKindOfClass:%c(YTQTMButton)] && [sub.accessibilityIdentifier isEqualToString:@"id.player.overflow.button"]) {
             CGRect f = [sub convertRect:sub.bounds toView:overlay];
-            bestMidX = CGRectGetMidX(f);
-            break;
+            return CGRectGetMidX(f);
         }
     }
-    return bestMidX;
+    return 0;
 }
 
 // Adapted from YTVideoOverlay
