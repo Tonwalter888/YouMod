@@ -217,16 +217,23 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
         return nil;
     return model;
 }
-- (void)setReels:(NSMutableOrderedSet <YTReelModel *> *)reels {
-    [reels removeObjectsAtIndexes:[reels indexesOfObjectsPassingTest:^BOOL(YTReelModel *obj, NSUInteger idx, BOOL *stop) {
-        if ([obj isKindOfClass:%c(YTReelNonVideoContentModel)]) return YES;
-        if ([obj respondsToSelector:@selector(videoType)] && obj.videoType == 3) return YES;
-        if ([obj respondsToSelector:@selector(videoType)] && obj.videoType == 9) return YES;
-        if ([obj respondsToSelector:@selector(videoType)] && obj.videoType == 10 && IS_ENABLED(RemoveShortsPosts)) return YES;
-        if ([obj respondsToSelector:@selector(videoType)] && (obj.videoType == 4 || obj.videoType == 7) && IS_ENABLED(RemoveShortsLive)) return YES;
-        return NO;
-    }]];
-    %orig;
+%end
+
+%hook YTReelContentModel
+// Bro why is it a class method?
++ (YTReelModel *)makeContentModelForEntry:(id)entry {
+    YTReelModel *model = %orig;
+    if (model respondsToSelector:@selector(videoType)] && model.videoType == 3)
+        return nil;
+    if ([model respondsToSelector:@selector(videoType)] && model.videoType == 9)
+        return nil;
+    if ([model isKindOfClass:%c(YTReelNonVideoContentModel)])
+        return nil;
+    if ([model respondsToSelector:@selector(videoType)] && model.videoType == 10 && IS_ENABLED(RemoveShortsPosts))
+        return nil;
+    if ([model respondsToSelector:@selector(videoType)] && (model.videoType == 4 || model.videoType == 7) && IS_ENABLED(RemoveShortsLive))
+        return nil;
+    return model;
 }
 %end
 
