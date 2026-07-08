@@ -81,8 +81,8 @@ static YTPlayerViewController *YMPlayerVCFromOverlay(YTMainAppControlsOverlayVie
 // its center-x in the overlay's coordinate space, or zero if not found.
 static CGFloat YMGearCenterXInOverlay(YTMainAppControlsOverlayView *overlay) {
     CGFloat bestMidX;
-    for (YTQTMButton *sub in overlay.subviews) {
-        if ([sub isKindOfClass:%c(YTQTMButton)] && [sub.accessibilityIdentifier isEqualtoString:@"id.player.overflow.button"]) {
+    for (UIView *sub in overlay.subviews) {
+        if ([sub isKindOfClass:%c(YTQTMButton)] && [sub.accessibilityIdentifier isEqualToString:@"id.player.overflow.button"]) {
             CGRect f = [sub convertRect:sub.bounds toView:overlay];
             bestMidX = CGRectGetMidX(f);
             break;
