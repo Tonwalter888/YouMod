@@ -223,7 +223,7 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
 // Bro why is it a class method?
 + (YTReelModel *)makeContentModelForEntry:(id)entry {
     YTReelModel *model = %orig;
-    if (model respondsToSelector:@selector(videoType)] && model.videoType == 3)
+    if ([model respondsToSelector:@selector(videoType)] && model.videoType == 3)
         return nil;
     if ([model respondsToSelector:@selector(videoType)] && model.videoType == 9)
         return nil;
