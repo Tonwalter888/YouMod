@@ -695,13 +695,17 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
 
 %new
 - (void)YouModAutoQuality {
+    NSArray *videoFormats = self.selectableVideoFormats;
+    // Return early if there aren't any video formats available
+    // eg. Voice comments and others
+    if (!videoFormats || videoFormats.count == 0) return;
     NSInteger kQualityIndex = isWiFiConnected() ? INTFORVAL(WifiQualityIndex) : INTFORVAL(CellQualityIndex);
     if ([NSProcessInfo processInfo].lowPowerModeEnabled) kQualityIndex = INTFORVAL(LowPowerQualityIndex);
     if (kQualityIndex == 0) return;
 
     NSString *bestQualityLabel;
     int highestResolution = 0;
-    for (MLFormat *format in self.selectableVideoFormats) {
+    for (MLFormat *format in videoFormats) {
         int reso = format.singleDimensionResolution;
         if (reso > highestResolution) {
             highestResolution = reso;
@@ -716,7 +720,7 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
         BOOL exactMatch = NO;
         NSString *closestQualityLabel = qualityLabel;
 
-        for (MLFormat *format in self.selectableVideoFormats) {
+        for (MLFormat *format in videoFormats) {
             if ([format.qualityLabel isEqualToString:qualityLabel]) {
                 exactMatch = YES;
                 break;
@@ -726,7 +730,7 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
         if (!exactMatch) {
             NSInteger bestQualityDifference = NSIntegerMax;
 
-            for (MLFormat *format in self.selectableVideoFormats) {
+            for (MLFormat *format in videoFormats) {
                 NSArray *formatСomponents = [format.qualityLabel componentsSeparatedByString:@"p"];
                 NSArray *targetComponents = [qualityLabel componentsSeparatedByString:@"p"];
                 if (formatСomponents.count == 2) {
