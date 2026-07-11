@@ -45,6 +45,7 @@
 #import <MediaPlayer/MediaPlayer.h>
 #import <YouTubeHeader/ASCollectionView.h>
 #import <YouTubeHeader/YTColor.h>
+#import <YouTubeHeader/YTTypeStyle.h>
 #import <YouTubeHeader/YTModularPlayerBarController.h>
 #import <dlfcn.h>
 #import <SystemConfiguration/SystemConfiguration.h>
@@ -593,7 +594,8 @@ static const CGFloat SBAlertDurationDefault = 4.0;
 // single YTMainAppControlsOverlayView hook in OverlayButtons.x lays them all out.
 @interface YMOverlayButtonSpec : NSObject
 @property (nonatomic, copy) NSString *identifier;       // unique, e.g. @"sponsorblock.toggle"
-@property (nonatomic, copy) NSString *symbolName;       // SF Symbol name
+@property (nonatomic, copy) NSString *symbolName;       // SF Symbol name (icon button)
+@property (nonatomic, copy) NSString *title;            // text label; set this instead of symbolName for a text button
 @property (nonatomic, strong) UIColor *tintColor;       // default tint (used if tintProvider is nil)
 @property (nonatomic, assign) NSInteger sortOrder;      // ascending; lower = closer to gear (rightmost)
 @property (nonatomic, copy) void (^onTap)(YTPlayerViewController *player, YTQTMButton *button);

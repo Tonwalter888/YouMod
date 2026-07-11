@@ -36,6 +36,12 @@ static const CGFloat YMOverlayButtonGap = 8.0;
 static const CGFloat YMOverlayButtonTopInset = 52.0;
 static const CGFloat YMOverlayButtonEdgePadding = 12.0; // fallback right padding when the gear isn't found
 
+// Point size of a text button's label. Tweak this to change how large the text renders.
+static const CGFloat YMOverlayTextButtonFontSize = 12.0;
+// Width of a text button. Tweak this to make text buttons wider or narrower; icon
+// buttons stay square at YMOverlayButtonSize.
+static const CGFloat YMOverlayTextButtonWidth = 40.0;
+
 static NSMutableArray<YMOverlayButtonSpec *> *gOverlayButtons = nil;
 static NSInteger gOverlayButtonNextTag = YMOverlayButtonBaseTag;
 
@@ -107,15 +113,41 @@ static CGFloat YMGearCenterXInOverlay(YTMainAppControlsOverlayView *overlay) {
     return bestMidX;
 }
 
+// The font for a text button's label, in YouTube Sans to match native controls,
+// with a plain system-font fallback on versions lacking the YouTube Sans style API.
+static UIFont *YMOverlayTextButtonFont(void) {
+    YTDefaultTypeStyle *typeStyle = [%c(YTTypeStyle) defaultTypeStyle];
+    if ([typeStyle respondsToSelector:@selector(ytSansFontOfSize:weight:)]) {
+        return [typeStyle ytSansFontOfSize:YMOverlayTextButtonFontSize weight:UIFontWeightSemibold];
+    }
+    return [UIFont systemFontOfSize:YMOverlayTextButtonFontSize weight:UIFontWeightSemibold];
+}
+
 static YTQTMButton *YMCreateOverlayButton(YTMainAppControlsOverlayView *overlay, YMOverlayButtonSpec *spec) {
-    UIImageSymbolConfiguration *config = [UIImageSymbolConfiguration configurationWithPointSize:20 weight:UIImageSymbolWeightMedium];
-    // Template rendering so YTQTMButton's tint colours the glyph reliably.
-    UIImage *icon = [[UIImage systemImageNamed:spec.symbolName withConfiguration:config] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
-    YTQTMButton *button = [%c(YTQTMButton) iconButton];
-    [button setImage:icon forState:UIControlStateNormal];
+    YTQTMButton *button;
+    UIColor *tint = spec.tintColor ?: [UIColor whiteColor];
+
+    if (spec.title.length > 0) {
+        // Text button: a label instead of an icon. customTitleColor is YTQTMButton's
+        // own text-colour channel; sizeWithPaddingAndInsets is disabled so the width
+        // stays fixed rather than expanding to fit the text.
+        button = [%c(YTQTMButton) textButton];
+        [button setTitle:spec.title forState:UIControlStateNormal];
+        button.customTitleColor = tint;
+        button.titleLabel.font = YMOverlayTextButtonFont();
+        button.titleLabel.textAlignment = NSTextAlignmentCenter;
+        button.sizeWithPaddingAndInsets = NO;
+    } else {
+        UIImageSymbolConfiguration *config = [UIImageSymbolConfiguration configurationWithPointSize:20 weight:UIImageSymbolWeightMedium];
+        // Template rendering so YTQTMButton's tint colours the glyph reliably.
+        UIImage *icon = [[UIImage systemImageNamed:spec.symbolName withConfiguration:config] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
+        button = [%c(YTQTMButton) iconButton];
+        [button setImage:icon forState:UIControlStateNormal];
+        button.tintColor = tint;
+    }
+
     button.exclusiveTouch = YES;
     button.tag = spec.viewTag;
-    button.tintColor = spec.tintColor ?: [UIColor whiteColor];
     // The row's frame is assigned authoritatively in layoutSubviews.
     button.frame = CGRectMake(0, 0, YMOverlayButtonSize, YMOverlayButtonSize);
     [button addTarget:overlay action:@selector(ymOverlayButtonTapped:) forControlEvents:UIControlEventTouchUpInside];
@@ -141,10 +173,13 @@ static YTQTMButton *YMCreateOverlayButton(YTMainAppControlsOverlayView *overlay,
 
     // Anchor the row's right-most button under the gear; grow leftward. Fall back to
     // the screen edge when the gear can't be located, so buttons never collapse to x=0.
+    // trailingCenterX is the center of the button placed in the previous iteration;
+    // each button steps left by half of both widths plus the gap, so text buttons
+    // (which may be wider than icon buttons) still pack without overlap.
     CGFloat gearMidX = YMGearCenterXInOverlay(self);
-    CGFloat anchorCenterX = (gearMidX > 0) ? gearMidX : self.bounds.size.width - YMOverlayButtonEdgePadding - YMOverlayButtonSize / 2.0;
+    CGFloat trailingCenterX = (gearMidX > 0) ? gearMidX : self.bounds.size.width - YMOverlayButtonEdgePadding - YMOverlayButtonSize / 2.0;
+    CGFloat prevHalfWidth = 0;
 
-    NSInteger row = 0;
     for (YMOverlayButtonSpec *spec in specs) {
         BOOL visible = (spec.isVisible == nil) || spec.isVisible(player);
         YTQTMButton *btn = (YTQTMButton *)[self viewWithTag:spec.viewTag];
@@ -156,14 +191,25 @@ static YTQTMButton *YMCreateOverlayButton(YTMainAppControlsOverlayView *overlay,
         if (!btn) btn = YMCreateOverlayButton(self, spec);
 
         btn.hidden = !overlayVisible;
-        if (spec.tintProvider) btn.tintColor = spec.tintProvider(player);
+        if (spec.tintProvider) {
+            // Text buttons colour their label through customTitleColor; icon buttons
+            // through tintColor. Route the dynamic colour to the right channel.
+            UIColor *dynamic = spec.tintProvider(player);
+            if (spec.title.length > 0) btn.customTitleColor = dynamic;
+            else btn.tintColor = dynamic;
+        }
 
-        CGFloat centerX = anchorCenterX - row * (YMOverlayButtonSize + YMOverlayButtonGap);
-        btn.frame = CGRectMake(centerX - YMOverlayButtonSize / 2.0,
+        CGFloat width = (spec.title.length > 0) ? YMOverlayTextButtonWidth : YMOverlayButtonSize;
+        CGFloat centerX = (prevHalfWidth == 0)
+            ? trailingCenterX
+            : trailingCenterX - prevHalfWidth - YMOverlayButtonGap - width / 2.0;
+
+        btn.frame = CGRectMake(centerX - width / 2.0,
                                 YMOverlayButtonTopInset,
-                                YMOverlayButtonSize,
+                                width,
                                 YMOverlayButtonSize);
-        row++;
+        trailingCenterX = centerX;
+        prevHalfWidth = width / 2.0;
     }
 }
 
