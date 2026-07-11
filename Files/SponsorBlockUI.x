@@ -559,20 +559,34 @@ static const CGFloat SBInlineMarkerHeight = 4.0;
         sub.frame = CGRectMake(x, referenceView.frame.origin.y, w, referenceView.frame.size.height);
     }
 
-    // Re-assert z-order every layout pass: markers above YouTube's decoration
-    // views, then the scrubber dot above the markers, giving track < markers < dot.
-    // YouTube rebuilds its own decoration subviews on top of ours on each layout
-    // (and splits the progress view per chapter), so markers inserted once sink to
-    // the back and disappear; re-fronting here keeps them visible. Iterating a copy
-    // keeps the enumeration safe while the subview order is mutated.
+    // Keep the segment markers above YouTube's decoration views, and the scrubber
+    // dot above the markers, so the stack stays track < markers < dot. YouTube
+    // rebuilds its own decorations on top of ours on each layout (splitting the
+    // progress view per chapter), which would otherwise bury the markers.
+    NSArray<UIView *> *subs = self.subviews;
+    NSMutableArray<UIView *> *markers = [NSMutableArray array];
     UIView *scrubberDot = nil;
-    for (UIView *sub in [self.subviews copy]) {
+    for (UIView *sub in subs) {
         if (sub.tag == SBSegmentMarkerTag) {
-            [self bringSubviewToFront:sub];
+            [markers addObject:sub];
         } else if ([sub isKindOfClass:%c(YTPlayerBarScrubberDotDecorationView)] || [sub isKindOfClass:%c(YTPlayerBarScrubberDotDecorationViewV2)]) {
             scrubberDot = sub;
         }
     }
+    if (markers.count == 0) return;
+
+    // Desired top group, front-most last: the markers followed by the dot. Reorder
+    // only when the subview tail doesn't already match it, so a settled layout is a
+    // no-op and doesn't trigger a fresh layout pass on every runloop cycle.
+    NSMutableArray<UIView *> *desiredTail = [markers mutableCopy];
+    if (scrubberDot) [desiredTail addObject:scrubberDot];
+    BOOL settled = subs.count >= desiredTail.count;
+    for (NSUInteger i = 0; settled && i < desiredTail.count; i++) {
+        if (subs[subs.count - desiredTail.count + i] != desiredTail[i]) settled = NO;
+    }
+    if (settled) return;
+
+    for (UIView *marker in markers) [self bringSubviewToFront:marker];
     if (scrubberDot) [self bringSubviewToFront:scrubberDot];
 }
 
