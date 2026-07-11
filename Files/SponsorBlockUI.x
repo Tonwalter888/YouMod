@@ -618,6 +618,7 @@ static const CGFloat SBInlineMarkerHeight = 4.0;
         if (sub.tag == SBSegmentMarkerTag) sub.hidden = NO;
     }
 
+    CGFloat barWidth = playerBar.bounds.size.width;
     for (UIView *sub in mainView.subviews) {
         if (sub.tag != SBSegmentMarkerTag) continue;
         NSArray *data = objc_getAssociatedObject(sub, @selector(sbSegmentData));
@@ -641,7 +642,6 @@ static const CGFloat SBInlineMarkerHeight = 4.0;
     // progress view per chapter), which would otherwise bury the markers.
     NSArray<UIView *> *subs = mainView.subviews;
     NSMutableArray<UIView *> *markers = [NSMutableArray array];
-    UIView *scrubberDot = nil;
     for (UIView *sub in subs) {
         if (sub.tag == SBSegmentMarkerTag) {
             [markers addObject:sub];
@@ -653,7 +653,6 @@ static const CGFloat SBInlineMarkerHeight = 4.0;
     // only when the subview tail doesn't already match it, so a settled layout is a
     // no-op and doesn't trigger a fresh layout pass on every runloop cycle.
     NSMutableArray<UIView *> *desiredTail = [markers mutableCopy];
-    if (scrubberDot) [desiredTail addObject:scrubberDot];
     BOOL settled = subs.count >= desiredTail.count;
     for (NSUInteger i = 0; settled && i < desiredTail.count; i++) {
         if (subs[subs.count - desiredTail.count + i] != desiredTail[i]) settled = NO;
