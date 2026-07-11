@@ -429,7 +429,7 @@ static const void *kSBColorIndexPathKey = &kSBColorIndexPathKey;
     // duplication — each action's label is resolved through SBActionLocKey.
     NSArray<NSNumber *> *actionOptions;
     if (isHighlight) {
-        actionOptions = @[@(SBSegmentActionDisable), @(SBSegmentActionSkipTo), @(SBSegmentActionDisplay)];
+        actionOptions = @[@(SBSegmentActionDisable), @(SBSegmentActionAsk), @(SBSegmentActionDisplay)];
     } else {
         actionOptions = @[@(SBSegmentActionDisable), @(SBSegmentActionAutoSkip), @(SBSegmentActionAsk), @(SBSegmentActionDisplay)];
     }

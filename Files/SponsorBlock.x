@@ -507,7 +507,7 @@ UIColor *SBColorFromHex(NSString *hexString) {
 %new
 - (void)sbShowHighlightBannerIfNeeded:(NSArray<SBSegment *> *)segments {
     for (SBSegment *seg in segments) {
-        if ([seg.category isEqualToString:@"poi_highlight"] && [seg configuredAction] == SBSegmentActionSkipTo) {
+        if ([seg.category isEqualToString:@"poi_highlight"] && [seg configuredAction] == SBSegmentActionAsk) {
             useBackwardIconForButton = NO;
             NSBundle *bundle = SBBundle();
             NSString *message = [bundle localizedStringForKey:@"SB_JUMP_TO_HIGHLIGHT" value:@"Highlight available. Jump to the point?" table:nil];

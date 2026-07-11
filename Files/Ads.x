@@ -105,12 +105,11 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
         }
         
         // Filter horizontal shelf
-        if (IS_ENABLED(HideHoriShelf) && [description containsString:@"horizontal_shelf.eml"] && 
-            ![description containsString:@"UCYfdidRxbB8Qhf0Nx7ioOYw"] && 
-            ![description containsString:@"FElibrary"] && 
-            ![description containsString:@"mini_game_card.eml"] &&
-            ![description containsString:@"FEplaylist_aggregation"]) {
-            return YES;
+        if (IS_ENABLED(HideHoriShelf) && [description containsString:@"horizontal_shelf.eml"]) {
+            // if (IS_ENABLED(HidePlayables) && [description containsString:@"FEmini_app_destination"]) return YES;
+            if (![description containsString:@"UCYfdidRxbB8Qhf0Nx7ioOYw"] && ![description containsString:@"FElibrary"] && ![description containsString:@"mini_game_card.eml"] && ![description containsString:@"FEplaylist_aggregation"]) {
+                return YES;
+            }
         }
         
         if ([description containsString:@"community-tab-chip-posts-section"]) return NO;

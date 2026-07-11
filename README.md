@@ -1,5 +1,7 @@
 # YouMod
 
+TODO: Remove AUDIO_SAVED, and update download localizations
+
 <p align="center">
 <a href="https://www.star-history.com/?repos=Tonwalter888%2FYouMod&type=date&legend=bottom-right">
  <picture>
@@ -68,10 +70,10 @@ This project uses GPLv3 license. See [LICENSE](https://github.com/Tonwalter888/Y
 - [YTLitePlus](https://github.com/YTLitePlus/YTLitePlus)
 - [uYouEnhanced](https://github.com/arichornlover/uYouEnhanced) - arichornlover
 - [YTweaks](https://github.com/fosterbarnes/YTweaks) - fosterbarnes
-- [daisuke1227](https://github.com/daisuke1227) - Implementing download features and others
-- [grohit1810](https://github.com/grohit1810) - Implementing built-in SponsorBlock, whole new settings logic, and others
+- [jefemagril](https://github.com/jefemagril) - Implemented rewind/fast forward buttons to system Control Center
+- [grohit1810](https://github.com/grohit1810) - Implemented built-in SponsorBlock, whole new settings logic, and others
 - [SponsorBlock](https://sponsor.ajay.app) - SponsorBlock segments API
 - [Google Fonts](https://fonts.google.com/icons) - Icons for custom tabs
 - And [PoomSmart](https://github.com/PoomSmart)'s tweaks
 
-Also thanks to all the contributors in the past!
+Also thanks to the other contributors in the past!

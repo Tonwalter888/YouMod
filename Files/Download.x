@@ -1375,10 +1375,9 @@ static void YouModPresentMenu(NSString *title, NSArray <YouModMenuItem *> *items
     [self updateProgressTitle:LOC(@"DOWNLOAD_COMPLETED") progress:1.0f];
     if (self.progressPill) { [self.progressPill dismiss]; self.progressPill = nil; }
     self.progressView = nil;
+    [self cleanupTemporaryFiles];
 
-    BOOL canSaveToPhotos = isVideo && YouModVideoFileCanSaveToPhotos(fileURL);
-    if (isVideo && IS_ENABLED(DownloadSaveToPhotos) && canSaveToPhotos) {
-        [self cleanupTemporaryFiles];
+    if (isVideo && IS_ENABLED(DownloadSaveToPhotos) && YouModVideoFileCanSaveToPhotos(fileURL)) {
         YouModSaveVideoToPhotos(fileURL, presenter, ^(BOOL success, NSError *error) {
             if (success) {
                 YouModSendSuccess(LOC(@"SAVED_TO_PHOTOS"));
@@ -1388,9 +1387,8 @@ static void YouModPresentMenu(NSString *title, NSArray <YouModMenuItem *> *items
             }
         });
     } else {
-        [self cleanupTemporaryFiles];
-        YouModSendSuccess(isVideo ? LOC(@"DOWNLOAD_COMPLETED") : LOC(@"AUDIO_SAVED"));
-        if (!isVideo || (isVideo && !canSaveToPhotos)) YouModShareFile(fileURL, presenter);
+        YouModSendSuccess(LOC(@"DOWNLOAD_COMPLETED"));
+        YouModShareFile(fileURL, presenter);
     }
 }
 
@@ -1728,15 +1726,16 @@ void YouModConfigureDownloadButton(_ASDisplayView *view) {
     
     if (!likeButtonView) return;
     
-    UIButton *downloadBtn = (UIButton *)[self viewWithTag:1501];
+    YTQTMButton *downloadBtn = (YTQTMButton *)[self viewWithTag:1501];
     if (!downloadBtn) {
-        downloadBtn = [UIButton buttonWithType:UIButtonTypeCustom];
-        downloadBtn.tag = 1501;
-
         UIImageSymbolConfiguration *config = [UIImageSymbolConfiguration configurationWithPointSize:20 weight:UIImageSymbolWeightMedium];
-        UIImage *icon = [UIImage systemImageNamed:@"arrow.down.circle" withConfiguration:config];
+        // Template rendering so YTQTMButton's tint colours the glyph reliably.
+        UIImage *icon = [[UIImage systemImageNamed:@"arrow.down.circle" withConfiguration:config] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
+        downloadBtn = [%c(YTQTMButton) iconButton];
         [downloadBtn setImage:icon forState:UIControlStateNormal];
         downloadBtn.tintColor = [UIColor whiteColor];
+        downloadBtn.exclusiveTouch = YES;
+        downloadBtn.tag = 1501;
         
         [downloadBtn addTarget:self action:@selector(didTapYouModShortsDownload:) forControlEvents:UIControlEventTouchUpInside];
         [self addSubview:downloadBtn];
@@ -1749,7 +1748,7 @@ void YouModConfigureDownloadButton(_ASDisplayView *view) {
     CGFloat pY;
     // In older YT versions, the button frame is 0, 0. So we will manually set the button frame.
     if (likeButtonView.frame.origin.y == 0) {
-        pY = likeButtonView.frame.origin.y + 60.0;
+        pY = likeButtonView.frame.origin.y + 120.0;
     } else {
         pY = likeButtonView.frame.origin.y + 25.0;
     }

@@ -99,13 +99,11 @@ static void YMScanForGearMidX(UIView *view, YTMainAppControlsOverlayView *overla
 // the overlay's top region. Returns its center-x in the overlay's coordinate space, or a
 // negative value if not found (the caller then falls back to the screen edge).
 static CGFloat YMGearCenterXInOverlay(YTMainAppControlsOverlayView *overlay) {
-    @try {
-        UIView *overflow = [overlay valueForKey:@"_overflowButton"];
-        if ([overflow isKindOfClass:%c(YTQTMButton)] && overflow.window) {
-            CGRect f = [overflow convertRect:overflow.bounds toView:overlay];
-            return CGRectGetMidX(f);
-        }
-    } @catch (id ex) {}
+    YTQTMButton *overflow = [overlay valueForKey:@"_overflowButton"];
+    if (overflow.window) {
+        CGRect f = [overflow convertRect:overflow.bounds toView:overlay];
+        return CGRectGetMidX(f);
+    }
 
     CGFloat topRegionMaxY = overlay.bounds.size.height * 0.25;
     CGFloat bestMidX = -1.0;
@@ -262,7 +260,6 @@ static UIImage *YouModIconImage(NSInteger iconType) {
         return;
     }
 
-    // Prepare video link
     NSString *videoURL = [NSString stringWithFormat:@"https://youtube.com/watch?v=%@", self.currentVideoID];
     NSInteger seconds = (NSInteger)floor(self.currentVideoMediaTime);
     NSString *timestampURL = [NSString stringWithFormat:@"%@&t=%lds", videoURL, (long)seconds];
@@ -270,18 +267,12 @@ static UIImage *YouModIconImage(NSInteger iconType) {
     UIViewController *presenter = (UIViewController *)[self activeVideoPlayerOverlay];
     YTDefaultSheetController *sheet = [%c(YTDefaultSheetController) sheetControllerWithParentResponder:presenter];
 
-    YTActionSheetAction *copyURL = [%c(YTActionSheetAction) actionWithTitle:LOC(@"COPY_URL")
-                                                                    subtitle:nil
-                                                                   iconImage:YouModIconImage(250)
-                                                                    handler:^(__unused YTActionSheetAction *action) {
+    YTActionSheetAction *copyURL = [%c(YTActionSheetAction) actionWithTitle:LOC(@"COPY_URL") iconImage:YouModIconImage(250) style:0 handler:^(__unused YTActionSheetAction *action) {
         UIPasteboard.generalPasteboard.string = videoURL;
         YouModShowShareNotification(LOC(@"URL_COPIED"), YES);
     }];
 
-    YTActionSheetAction *copyTimestamp = [%c(YTActionSheetAction) actionWithTitle:LOC(@"COPY_URL_TIMESTAMP")
-                                                                         subtitle:nil
-                                                                        iconImage:YouModIconImage(250)
-                                                                         handler:^(__unused YTActionSheetAction *action) {
+    YTActionSheetAction *copyTimestamp = [%c(YTActionSheetAction) actionWithTitle:LOC(@"COPY_URL_TIMESTAMP") iconImage:YouModIconImage(250) style:0 handler:^(__unused YTActionSheetAction *action) {
         UIPasteboard.generalPasteboard.string = timestampURL;
         YouModShowShareNotification(LOC(@"URL_TIMESTAMP_COPIED"), YES);
     }];
@@ -295,33 +286,24 @@ static UIImage *YouModIconImage(NSInteger iconType) {
 - (void)YouModLoopButton {
     YTMainAppVideoPlayerOverlayViewController *playerOverlay = self.activeVideoPlayerOverlay;
     YTAutoplayAutonavController *autoplayController = [playerOverlay valueForKey:@"_autonavController"];
-    // Set new loop status
     BOOL isLoopEnabled = !IS_ENABLED(KeepLoopKey);
-    // Update the key for later use
     [[NSUserDefaults standardUserDefaults] setBool:isLoopEnabled forKey:KeepLoopKey];
-    // Set the loop mode to the opposite of the current state
     [autoplayController setLoopMode:isLoopEnabled ? 2 : 0];
-    // Display snackbar
     [[%c(GOOHUDManagerInternal) sharedInstance] showMessageMainThread:[%c(YTHUDMessage) messageWithText:LOC(isLoopEnabled ? @"LOOP_ENABLED" : @"LOOP_DISABLED")]];
 }
 %end
 
 %hook YTAutoplayAutonavController
-// Modify the initializer to set the loop mode to the user's preference
-- (id)initWithParentResponder:(id)arg1 {
+- (id)initWithParentResponder:(id)arg {
     self = %orig;
     if (self && IS_ENABLED(KeepLoopKey)) {
         [self setLoopMode:2];
     }
     return self;
 }
-// Modify the setter to always follow the user's preference. This breaks normal functionality
-- (void)setLoopMode:(NSInteger)arg1 {
-    if (!IS_ENABLED(KeepLoopKey)) {
-        %orig;
-        return;
-    }
-    %orig(2);
+- (void)setLoopMode:(NSInteger)arg {
+    NSInteger set = IS_ENABLED(KeepLoopKey) ? 2 : arg;
+    %orig(set);
 }
 %end
 

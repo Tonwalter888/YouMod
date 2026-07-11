@@ -269,9 +269,16 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
         if (barWidth > 0) {
             CGFloat relativeX = touchPointInWindow.x - barStartX;
             CGFloat percentage = relativeX / barWidth;
+            CGFloat snapThreshold = 15.0;
             
-            if (percentage < 0.0) percentage = 0.0;
-            if (percentage > 1.0) percentage = 1.0;
+            if (relativeX <= snapThreshold) {
+                percentage = 0.0;
+            } else if (relativeX >= barWidth - snapThreshold) {
+                percentage = 1.0;
+            } else {
+                if (percentage < 0.0) percentage = 0.0;
+                if (percentage > 1.0) percentage = 1.0;
+            }
             
             UIResponder *responder = self.nextResponder;
             while (responder && ![responder isKindOfClass:%c(YTMainAppVideoPlayerOverlayViewController)]) {
