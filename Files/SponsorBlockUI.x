@@ -559,17 +559,21 @@ static const CGFloat SBInlineMarkerHeight = 4.0;
         sub.frame = CGRectMake(x, referenceView.frame.origin.y, w, referenceView.frame.size.height);
     }
 
-    // Re-assert the scrubber dot on top every layout pass. The markers keep their
-    // z-order set at insertion time, but YouTube re-adds its own decoration views
-    // during scrubbing and playback progress, which can otherwise leave a marker
-    // covering the dot until the next full re-render. Only re-front when the dot
-    // isn't already the topmost subview, so a settled layout stays a no-op.
-    for (UIView *sub in self.subviews) {
-        if ([sub isKindOfClass:%c(YTPlayerBarScrubberDotDecorationView)] || [sub isKindOfClass:%c(YTPlayerBarScrubberDotDecorationViewV2)]) {
-            if (self.subviews.lastObject != sub) [self bringSubviewToFront:sub];
-            break;
+    // Re-assert z-order every layout pass: markers above YouTube's decoration
+    // views, then the scrubber dot above the markers, giving track < markers < dot.
+    // YouTube rebuilds its own decoration subviews on top of ours on each layout
+    // (and splits the progress view per chapter), so markers inserted once sink to
+    // the back and disappear; re-fronting here keeps them visible. Iterating a copy
+    // keeps the enumeration safe while the subview order is mutated.
+    UIView *scrubberDot = nil;
+    for (UIView *sub in [self.subviews copy]) {
+        if (sub.tag == SBSegmentMarkerTag) {
+            [self bringSubviewToFront:sub];
+        } else if ([sub isKindOfClass:%c(YTPlayerBarScrubberDotDecorationView)] || [sub isKindOfClass:%c(YTPlayerBarScrubberDotDecorationViewV2)]) {
+            scrubberDot = sub;
         }
     }
+    if (scrubberDot) [self bringSubviewToFront:scrubberDot];
 }
 
 %end
