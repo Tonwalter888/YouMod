@@ -34,6 +34,7 @@ static const NSInteger YMOverlayButtonBaseTag = 9910;
 static const CGFloat YMOverlayButtonSize = 40.0;
 static const CGFloat YMOverlayButtonGap = 8.0;
 static const CGFloat YMOverlayButtonTopInset = 52.0;
+static const CGFloat YMOverlayButtonEdgePadding = 12.0; // fallback right padding when the gear isn't found
 
 static NSMutableArray<YMOverlayButtonSpec *> *gOverlayButtons = nil;
 static NSInteger gOverlayButtonNextTag = YMOverlayButtonBaseTag;
@@ -72,33 +73,51 @@ static YTPlayerViewController *YMPlayerVCFromOverlay(YTMainAppControlsOverlayVie
 }
 
 // Recursively find the right-most YTQTMButton in the overlay's top region. YouTube
-// sometimes nests the gear/CC/cast buttons inside a container, so a one-level scan
-// would miss them and silently fall back to the screen edge.
-
-// Find YouTube's settings/gear button so we can anchor our row directly beneath it.
-// The gear is the right-most YTQTMButton sitting in the overlay's top region. Returns
-// its center-x in the overlay's coordinate space, or zero if not found.
-static CGFloat YMGearCenterXInOverlay(YTMainAppControlsOverlayView *overlay) {
-    for (UIView *sub in overlay.subviews) {
-        if ([sub isKindOfClass:%c(YTQTMButton)] && [sub.accessibilityIdentifier isEqualToString:@"id.player.overflow.button"]) {
+// nests the gear/CC/cast buttons inside a container, so a one-level scan would miss
+// them; recursion reaches the nested buttons wherever they sit.
+static void YMScanForGearMidX(UIView *view, YTMainAppControlsOverlayView *overlay, CGFloat topRegionMaxY, CGFloat *bestMidX) {
+    for (UIView *sub in view.subviews) {
+        if ([sub isKindOfClass:%c(YTQTMButton)]) {
             CGRect f = [sub convertRect:sub.bounds toView:overlay];
-            return CGRectGetMidX(f);
+            if (CGRectGetMidY(f) <= topRegionMaxY) { // in the top button row
+                CGFloat midX = CGRectGetMidX(f);
+                if (midX > *bestMidX) *bestMidX = midX;
+            }
         }
+        YMScanForGearMidX(sub, overlay, topRegionMaxY, bestMidX);
     }
-    return 0;
 }
 
-// Adapted from YTVideoOverlay
+// Find YouTube's settings/overflow button so we can anchor our row directly beneath it.
+// Prefer the overlay's own overflowButton; otherwise take the right-most YTQTMButton in
+// the overlay's top region. Returns its center-x in the overlay's coordinate space, or a
+// negative value if not found (the caller then falls back to the screen edge).
+static CGFloat YMGearCenterXInOverlay(YTMainAppControlsOverlayView *overlay) {
+    @try {
+        UIView *overflow = [overlay valueForKey:@"_overflowButton"];
+        if ([overflow isKindOfClass:%c(YTQTMButton)] && overflow.window) {
+            CGRect f = [overflow convertRect:overflow.bounds toView:overlay];
+            return CGRectGetMidX(f);
+        }
+    } @catch (id ex) {}
+
+    CGFloat topRegionMaxY = overlay.bounds.size.height * 0.25;
+    CGFloat bestMidX = -1.0;
+    YMScanForGearMidX(overlay, overlay, topRegionMaxY, &bestMidX);
+    return bestMidX;
+}
+
 static YTQTMButton *YMCreateOverlayButton(YTMainAppControlsOverlayView *overlay, YMOverlayButtonSpec *spec) {
     UIImageSymbolConfiguration *config = [UIImageSymbolConfiguration configurationWithPointSize:20 weight:UIImageSymbolWeightMedium];
-    UIImage *icon = [UIImage systemImageNamed:spec.symbolName withConfiguration:config]; // Will use custom image, maybe
+    // Template rendering so YTQTMButton's tint colours the glyph reliably.
+    UIImage *icon = [[UIImage systemImageNamed:spec.symbolName withConfiguration:config] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
     YTQTMButton *button = [%c(YTQTMButton) iconButton];
     [button setImage:icon forState:UIControlStateNormal];
-    [button sizeToFit];
     button.exclusiveTouch = YES;
     button.tag = spec.viewTag;
     button.tintColor = spec.tintColor ?: [UIColor whiteColor];
-    button.frame = CGRectMake(0, 0, YMOverlayButtonSize, YMOverlayButtonSize); // Will fix this
+    // The row's frame is assigned authoritatively in layoutSubviews.
+    button.frame = CGRectMake(0, 0, YMOverlayButtonSize, YMOverlayButtonSize);
     [button addTarget:overlay action:@selector(ymOverlayButtonTapped:) forControlEvents:UIControlEventTouchUpInside];
     [overlay addSubview:button];
     return button;
@@ -120,8 +139,10 @@ static YTQTMButton *YMCreateOverlayButton(YTMainAppControlsOverlayView *overlay,
     // faded-out overlay until the next setOverlayVisible: call.
     BOOL overlayVisible = self.isOverlayVisible;
 
-    // Anchor the row's right-most button under the gear; grow leftward.
+    // Anchor the row's right-most button under the gear; grow leftward. Fall back to
+    // the screen edge when the gear can't be located, so buttons never collapse to x=0.
     CGFloat gearMidX = YMGearCenterXInOverlay(self);
+    CGFloat anchorCenterX = (gearMidX > 0) ? gearMidX : self.bounds.size.width - YMOverlayButtonEdgePadding - YMOverlayButtonSize / 2.0;
 
     NSInteger row = 0;
     for (YMOverlayButtonSpec *spec in specs) {
@@ -137,7 +158,7 @@ static YTQTMButton *YMCreateOverlayButton(YTMainAppControlsOverlayView *overlay,
         btn.hidden = !overlayVisible;
         if (spec.tintProvider) btn.tintColor = spec.tintProvider(player);
 
-        CGFloat centerX = gearMidX - row * (YMOverlayButtonSize + YMOverlayButtonGap);
+        CGFloat centerX = anchorCenterX - row * (YMOverlayButtonSize + YMOverlayButtonGap);
         btn.frame = CGRectMake(centerX - YMOverlayButtonSize / 2.0,
                                 YMOverlayButtonTopInset,
                                 YMOverlayButtonSize,
