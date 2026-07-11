@@ -1029,8 +1029,6 @@ static void YouModPresentMenu(NSString *title, NSArray <YouModMenuItem *> *items
 - (void)updateDownloadProgressWithCurrentBytes:(unsigned long long)currentBytes expectedBytes:(unsigned long long)expectedBytes {
     unsigned long long total = self.totalBytes ?: expectedBytes;
     float progress = total ? (float)(self.completedBytes + currentBytes) / (float)total : 0.0f;
-    // Allow the progress pill to reflect near-complete download percentages
-    // and update every percent — cap at 99.9% while downloading.
     progress = fminf(fmaxf(progress, 0.0f), 1.0f);
 
     NSTimeInterval now = [NSDate timeIntervalSinceReferenceDate];
