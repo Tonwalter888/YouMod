@@ -269,7 +269,7 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
         if (barWidth > 0) {
             CGFloat relativeX = touchPointInWindow.x - barStartX;
             CGFloat percentage = relativeX / barWidth;
-            CGFloat snapThreshold = 15.0;
+            CGFloat snapThreshold = 5.0;
             
             if (relativeX <= snapThreshold) {
                 percentage = 0.0;

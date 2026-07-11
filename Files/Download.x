@@ -1748,9 +1748,9 @@ void YouModConfigureDownloadButton(_ASDisplayView *view) {
     CGFloat pY;
     // In older YT versions, the button frame is 0, 0. So we will manually set the button frame.
     if (likeButtonView.frame.origin.y == 0) {
-        pY = likeButtonView.frame.origin.y + 120.0;
+        pY = likeButtonView.frame.origin.y + 80.0;
     } else {
-        pY = likeButtonView.frame.origin.y + 25.0;
+        pY = likeButtonView.frame.origin.y + 85.0;
     }
     
     downloadBtn.frame = CGRectMake(pX, pY, btnWidth, btnHeight);
