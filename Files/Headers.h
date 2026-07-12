@@ -377,6 +377,7 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 - (YTPlayerResponse *)contentPlayerResponse;
 - (YTPlayerResponse *)playerResponse;
 - (id)audioTrackController;
+- (void)setAudioTrack:(YTIAudioTrack *)arg1 source:(NSInteger)arg2;
 @end
 
 @interface YTAutoplayAutonavController : NSObject

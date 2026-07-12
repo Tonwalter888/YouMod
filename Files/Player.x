@@ -659,6 +659,9 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
 }
 %new
 - (void)YouModHoldToSpeed:(UILongPressGestureRecognizer *)gesture {
+    YTMainAppVideoPlayerOverlayViewController *ovcon = self.delegate;
+    YTPlayerViewController *pvcon = ovcon.parentViewController;
+    if (pvcon.playerState != 3) return;
     NSInteger speedIndex = INTFORVAL(HoldToSpeedIndex);
     CGFloat speed = YouModSpeedForHoldIndex(speedIndex);
 
@@ -1123,9 +1126,8 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
         }
     }
 
-    // If found, change to it
-    if (matchedTrack && matchedTrack != currentTrack) {
-        if ([switchcon isKindOfClass:%c(YTAudioTrackSwitchController)]) {
+    /*
+    if ([switchcon isKindOfClass:%c(YTAudioTrackSwitchController)]) {
             YTAudioTrackSwitchController *realswitch = (YTAudioTrackSwitchController *)switchcon;
             [realswitch notifyObserversAudioTrackWillChange:matchedTrack source:0];
             [realswitch switchToAudioTrack:matchedTrack source:0];
@@ -1136,6 +1138,11 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
             [realswitch switchToAudioTrack:matchedTrack source:0];
             [realswitch notifyObserversAudioTrackDidChange:matchedTrack source:0];
         }
+    */
+
+    // If found, change to it
+    if (matchedTrack && matchedTrack != currentTrack) {
+        [self setAudioTrack:matchedTrack source:0];
     }
 }
 
