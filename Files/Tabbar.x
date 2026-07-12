@@ -196,7 +196,7 @@ static BOOL isGestureRegistered = NO;
 %end
 
 // Startup Tab
-BOOL isTabSelected = NO;
+static BOOL isTabSelected = NO;
 %hook YTPivotBarViewController
 - (void)viewDidAppear:(BOOL)animated {
     %orig;
