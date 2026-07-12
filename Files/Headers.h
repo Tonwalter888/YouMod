@@ -333,20 +333,6 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 - (void)showPivotBar;
 @end
 
-/*
-@interface YTAudioTrackSwitchController : NSObject
-- (void)switchToAudioTrack:(id)track source:(NSInteger)source;
-- (void)notifyObserversAudioTrackDidChange:(id)arg1 source:(NSInteger)arg2;
-- (void)notifyObserversAudioTrackWillChange:(id)arg1 source:(NSInteger)arg2;
-@end
-
-@interface YTAudioTrackSwitchControllerImpl : NSObject
-- (void)switchToAudioTrack:(id)track source:(NSInteger)source;
-- (void)notifyObserversAudioTrackDidChange:(id)arg1 source:(NSInteger)arg2;
-- (void)notifyObserversAudioTrackWillChange:(id)arg1 source:(NSInteger)arg2;
-@end
-*/
-
 @interface YTICaptionTrackEntry : GPBMessage
 - (NSString *)baseURL;
 - (NSString *)vssId;

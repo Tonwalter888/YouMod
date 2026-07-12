@@ -1098,8 +1098,6 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
     id switchcon = self.audioTrackController;
     NSArray *availableTracks = [switchcon valueForKey:@"_availableAudioTracks"];
     if (!availableTracks || availableTracks.count == 0) return;
-    // Check if the current audio track is already the same as the user perferences
-    YTIAudioTrack *currentTrack = [switchcon valueForKey:@"_lastSelectedAudioTrack"];
     YTIAudioTrack *matchedTrack = nil;
 
     if (INTFORVAL(AudioTrack) == 1) {
@@ -1126,22 +1124,8 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
         }
     }
 
-    /*
-    if ([switchcon isKindOfClass:%c(YTAudioTrackSwitchController)]) {
-            YTAudioTrackSwitchController *realswitch = (YTAudioTrackSwitchController *)switchcon;
-            [realswitch notifyObserversAudioTrackWillChange:matchedTrack source:0];
-            [realswitch switchToAudioTrack:matchedTrack source:0];
-            [realswitch notifyObserversAudioTrackDidChange:matchedTrack source:0];
-        } else if ([switchcon isKindOfClass:%c(YTAudioTrackSwitchControllerImpl)]) {
-            YTAudioTrackSwitchControllerImpl *realswitch = (YTAudioTrackSwitchControllerImpl *)switchcon;
-            [realswitch notifyObserversAudioTrackWillChange:matchedTrack source:0];
-            [realswitch switchToAudioTrack:matchedTrack source:0];
-            [realswitch notifyObserversAudioTrackDidChange:matchedTrack source:0];
-        }
-    */
-
     // If found, change to it
-    if (matchedTrack && matchedTrack != currentTrack) {
+    if (matchedTrack) {
         [self setAudioTrack:matchedTrack source:0];
     }
 }
