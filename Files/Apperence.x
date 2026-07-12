@@ -114,7 +114,7 @@ static BOOL isDarkMode(UIView *view) {
                 YTMySubsFilterHeaderViewController *controller = (YTMySubsFilterHeaderViewController *)responder;
                 YTIMySubsFilterHeaderRenderer *renderer = [controller valueForKey:@"_renderer"];
                 NSString *description = [renderer description];
-                if ([description containsString:@"subscriptions_chip_bar.eml"]) {
+                if ([description containsString:@"subscriptions_chip_bar.eml"] || [description containsString:@"channel_list_page_sort_chip"]) {
                     self.backgroundColor = [UIColor blackColor];
                     break;
                 }
@@ -138,7 +138,7 @@ static BOOL isDarkMode(UIView *view) {
                 YTMySubsFilterHeaderViewController *controller = (YTMySubsFilterHeaderViewController *)responder;
                 YTIMySubsFilterHeaderRenderer *renderer = [controller valueForKey:@"_renderer"];
                 NSString *description = [renderer description];
-                if ([description containsString:@"subscriptions_chip_bar.eml"]) {
+                if ([description containsString:@"subscriptions_chip_bar.eml"] || [description containsString:@"channel_list_page_sort_chip"]) {
                     self.backgroundColor = [UIColor clearColor];
                     break;
                 }
@@ -166,7 +166,7 @@ static BOOL isDarkMode(UIView *view) {
                 YTMySubsFilterHeaderViewController *controller = (YTMySubsFilterHeaderViewController *)responder;
                 YTIMySubsFilterHeaderRenderer *renderer = [controller valueForKey:@"_renderer"];
                 NSString *description = [renderer description];
-                if ([description containsString:@"subscriptions_chip_bar.eml"]) {
+                if ([description containsString:@"subscriptions_chip_bar.eml"] || [description containsString:@"channel_list_page_sort_chip"]) {
                     self.backgroundColor = [UIColor blackColor];
                     break;
                 }
@@ -190,7 +190,7 @@ static BOOL isDarkMode(UIView *view) {
                 YTMySubsFilterHeaderViewController *controller = (YTMySubsFilterHeaderViewController *)responder;
                 YTIMySubsFilterHeaderRenderer *renderer = [controller valueForKey:@"_renderer"];
                 NSString *description = [renderer description];
-                if ([description containsString:@"subscriptions_chip_bar.eml"]) {
+                if ([description containsString:@"subscriptions_chip_bar.eml"] || [description containsString:@"channel_list_page_sort_chip"]) {
                     self.backgroundColor = [UIColor clearColor];
                     break;
                 }
