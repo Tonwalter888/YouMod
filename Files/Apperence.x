@@ -110,7 +110,6 @@ static BOOL isDarkMode(UIView *view) {
 - (void)didMoveToWindow {
     %orig;
     if (localPageStyle == 1) {
-        if ([self.accessibilityIdentifier isEqualToString:@"subs_channel_bar.collection"]) self.backgroundColor = [UIColor blackColor];
         // Subbars
         UIResponder *responder = self.nextResponder;
         while (responder != nil) {
@@ -134,7 +133,6 @@ static BOOL isDarkMode(UIView *view) {
             responder = responder.nextResponder;
         }
     } else {
-        if ([self.accessibilityIdentifier isEqualToString:@"subs_channel_bar.collection"]) self.backgroundColor = [UIColor clearColor];
         // Subbars
         UIResponder *responder = self.nextResponder;
         while (responder != nil) {
@@ -162,7 +160,6 @@ static BOOL isDarkMode(UIView *view) {
 - (void)layoutSubviews {
     %orig;
     if (localPageStyle == 1) {
-        if ([self.accessibilityIdentifier isEqualToString:@"subs_channel_bar.collection"]) self.backgroundColor = [UIColor blackColor];
         // Subbars
         UIResponder *responder = self.nextResponder;
         while (responder != nil) {
@@ -186,7 +183,6 @@ static BOOL isDarkMode(UIView *view) {
             responder = responder.nextResponder;
         }
     } else {
-        if ([self.accessibilityIdentifier isEqualToString:@"subs_channel_bar.collection"]) self.backgroundColor = [UIColor clearColor];
         // Subbars
         UIResponder *responder = self.nextResponder;
         while (responder != nil) {
