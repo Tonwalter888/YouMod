@@ -755,16 +755,14 @@ static const CGFloat SBInlineMarkerHeight = 4.0;
             }
         }
 
-        // Remove old markers
-        for (UIView *sub in [scrub.subviews copy]) {
-            if (sub.tag == SBSegmentMarkerTag) [sub removeFromSuperview];
-        }
-
         if (!segments || segments.count == 0) return;
 
         for (UIView *sub in scrub.subviews) {
             if ([sub isKindOfClass:%c(YTPlayerBarMarkerView)] && sub.frame.origin.y != 0) {
                 playerBar = sub;
+            } else if ([sub isKindOfClass:%c(YTModularPlayerBarView)] && sub.frame.origin.y != 0) {
+                playerBar = sub;
+                mainView = sub;
             } else if ([sub isKindOfClass:%c(YTInlineMutedPlaybackScrubbingSlider)]) {
                 if ([sub.accessibilityIdentifier isEqualToString:@"id.player.scrubber.slider"]) {
                     scrubberDot = sub;
@@ -773,11 +771,33 @@ static const CGFloat SBInlineMarkerHeight = 4.0;
             if (playerBar && scrubberDot) break;
         }
 
-        if (!playerBar || !scrubberDot) return;
+        if (!playerBar) return;
 
-        barWidth = playerBar.bounds.size.width;
-        h = playerBar.bounds.size.height;
-        y = playerBar.frame.origin.y;
+        // Remove old markers
+        for (UIView *sub in [mainView.subviews copy]) {
+            if (sub.tag == SBSegmentMarkerTag) [sub removeFromSuperview];
+        }
+
+        if ([mainView isKindOfClass:%c(YTModularPlayerBarView)]) {
+            // Find reference track view for Y position and height
+            for (UIView *sub in mainView.subviews) {
+                if ([sub isKindOfClass:%c(YTPlayerBarRectangleDecorationView)]) {
+                    if (!referenceView) referenceView = sub;
+                } else if ([sub isKindOfClass:%c(YTPlayerBarProgressDecorationView)]) {
+                    if (!referenceView) referenceView = sub;
+                } else if ([sub isKindOfClass:%c(YTPlayerBarScrubberDotDecorationView)] || [sub isKindOfClass:%c(YTPlayerBarScrubberDotDecorationViewV2)]) {
+                    scrubberDot = sub.subviews.firstObject;
+                }
+                if (referenceView && scrubberDot) break;
+            }
+            barWidth = playerBar.bounds.size.width;
+            h = referenceView.bounds.size.height;
+            y = referenceView.frame.origin.y;
+        } else {
+            barWidth = playerBar.bounds.size.width;
+            h = playerBar.bounds.size.height;
+            y = playerBar.frame.origin.y;
+        }
     } else {
         return;
     }

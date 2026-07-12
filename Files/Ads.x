@@ -64,7 +64,7 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
             }
             if ([description containsString:@"community-tab-chip-posts-section"]) return NO;
             // Filter feed posts
-            if (IS_ENABLED(HideFeedPost) && ([description containsString:@"poll_post_root.eml"] || [description containsString:@"options_post_root.eml"] || [description containsString:@"images_post_root_slim.eml"] || [description containsString:@"options_post_responsive_root.eml"] || [description containsString:@"post_base_wrapper_slim.eml"] || [description containsString:@"text_post_root_slim.eml"])) {
+            if (IS_ENABLED(HideFeedPost) && ([description containsString:@"poll_post_root.eml"] || [description containsString:@"options_post_root.eml"] || [description containsString:@"images_post_root_slim.eml"] || [description containsString:@"images_post_responsive_root.eml"] || [description containsString:@"options_post_responsive_root.eml"] || [description containsString:@"post_base_wrapper_slim.eml"] || [description containsString:@"text_post_root_slim.eml"])) {
                 return YES;
             }
             YTIShelfSupportedRenderers *content = ((YTIShelfRenderer *)sectionRenderer).content;
@@ -114,7 +114,7 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
         
         if ([description containsString:@"community-tab-chip-posts-section"]) return NO;
         // Filter feed posts
-        if (IS_ENABLED(HideFeedPost) && ([description containsString:@"poll_post_root.eml"] || [description containsString:@"options_post_root.eml"] || [description containsString:@"images_post_root_slim.eml"] || [description containsString:@"options_post_responsive_root.eml"] || [description containsString:@"post_base_wrapper_slim.eml"] || [description containsString:@"text_post_root_slim.eml"])) {
+        if (IS_ENABLED(HideFeedPost) && ([description containsString:@"poll_post_root.eml"] || [description containsString:@"options_post_root.eml"] || [description containsString:@"images_post_root_slim.eml"] || [description containsString:@"images_post_responsive_root.eml"] || [description containsString:@"options_post_responsive_root.eml"] || [description containsString:@"post_base_wrapper_slim.eml"] || [description containsString:@"text_post_root_slim.eml"])) {
             return YES;
         }
 
