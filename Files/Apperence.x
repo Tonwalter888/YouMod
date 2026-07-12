@@ -42,27 +42,29 @@ static BOOL isDarkMode(UIView *view) {
 %hook _ASDisplayView
 - (void)didMoveToWindow {
     %orig;
-    NSSet *blackViews = [NSSet setWithObjects:
-        @"id.subs.subscriptions_channel_bar",
-        @"eml.live_chat_text_message", nil
-    ];  
     if (localPageStyle == 1) {
-        if ([blackViews containsObject:self.accessibilityIdentifier]) self.backgroundColor = [UIColor blackColor]; 
+        if ([self.accessibilityIdentifier isEqualToString:@"id.subs.subscriptions_channel_bar"]) self.backgroundColor = [UIColor blackColor];
         // Action dialog
         UIResponder *responder = self.nextResponder;
         while (responder != nil) {
             if ([responder isKindOfClass:%c(YTActionSheetDialogViewController)] || [responder isKindOfClass:%c(YTBottomSheetController)]) {
                 self.backgroundColor = [UIColor blackColor];
                 break;
+            } else if ([self.accessibilityIdentifier isEqualToString:@"eml.live_chat_text_message"] && [responder isKindOfClass:%c(YCHAsyncLiveChatCollectionViewController)]) {
+                self.backgroundColor = [UIColor blackColor];
+                break;
             }
             responder = responder.nextResponder;
         }
     } else {
-        if ([blackViews containsObject:self.accessibilityIdentifier]) self.backgroundColor = [UIColor clearColor]; 
+        if ([self.accessibilityIdentifier isEqualToString:@"id.subs.subscriptions_channel_bar"]) self.backgroundColor = [UIColor clearColor];
         // Action dialog
         UIResponder *responder = self.nextResponder;
         while (responder != nil) {
             if ([responder isKindOfClass:%c(YTActionSheetDialogViewController)] || [responder isKindOfClass:%c(YTBottomSheetController)]) {
+                self.backgroundColor = [UIColor clearColor];
+                break;
+            } else if ([self.accessibilityIdentifier isEqualToString:@"eml.live_chat_text_message"] && [responder isKindOfClass:%c(YCHAsyncLiveChatCollectionViewController)]) {
                 self.backgroundColor = [UIColor clearColor];
                 break;
             }
@@ -72,27 +74,29 @@ static BOOL isDarkMode(UIView *view) {
 }
 - (void)layoutSubviews {
     %orig;
-    NSSet *blackViews = [NSSet setWithObjects:
-        @"id.subs.subscriptions_channel_bar",
-        @"eml.live_chat_text_message", nil
-    ];  
     if (localPageStyle == 1) {
-        if ([blackViews containsObject:self.accessibilityIdentifier]) self.backgroundColor = [UIColor blackColor]; 
+        if ([self.accessibilityIdentifier isEqualToString:@"id.subs.subscriptions_channel_bar"]) self.backgroundColor = [UIColor blackColor];
         // Action dialog
         UIResponder *responder = self.nextResponder;
         while (responder != nil) {
             if ([responder isKindOfClass:%c(YTActionSheetDialogViewController)] || [responder isKindOfClass:%c(YTBottomSheetController)]) {
                 self.backgroundColor = [UIColor blackColor];
                 break;
+            } else if ([self.accessibilityIdentifier isEqualToString:@"eml.live_chat_text_message"] && [responder isKindOfClass:%c(YCHAsyncLiveChatCollectionViewController)]) {
+                self.backgroundColor = [UIColor blackColor];
+                break;
             }
             responder = responder.nextResponder;
         }
     } else {
-        if ([blackViews containsObject:self.accessibilityIdentifier]) self.backgroundColor = [UIColor clearColor]; 
+        if ([self.accessibilityIdentifier isEqualToString:@"id.subs.subscriptions_channel_bar"]) self.backgroundColor = [UIColor clearColor];
         // Action dialog
         UIResponder *responder = self.nextResponder;
         while (responder != nil) {
             if ([responder isKindOfClass:%c(YTActionSheetDialogViewController)] || [responder isKindOfClass:%c(YTBottomSheetController)]) {
+                self.backgroundColor = [UIColor clearColor];
+                break;
+            } else if ([self.accessibilityIdentifier isEqualToString:@"eml.live_chat_text_message"] && [responder isKindOfClass:%c(YCHAsyncLiveChatCollectionViewController)]) {
                 self.backgroundColor = [UIColor clearColor];
                 break;
             }
