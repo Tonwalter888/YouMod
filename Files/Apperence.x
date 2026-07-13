@@ -50,7 +50,9 @@ static BOOL isDarkMode(UIView *view) {
             if ([responder isKindOfClass:%c(YTActionSheetDialogViewController)] || [responder isKindOfClass:%c(YTBottomSheetController)]) {
                 self.backgroundColor = [UIColor blackColor];
                 break;
-            } else if ([self.accessibilityIdentifier isEqualToString:@"eml.live_chat_text_message"] && [responder isKindOfClass:%c(YCHAsyncLiveChatCollectionViewController)]) {
+            } else if ([responder isKindOfClass:%c(YCHAsyncLiveChatImmersiveCollectionViewController)]) {
+                break;
+            } else if ([self.accessibilityIdentifier isEqualToString:@"eml.live_chat_text_message"]) {
                 self.backgroundColor = [UIColor blackColor];
                 break;
             }
@@ -64,7 +66,9 @@ static BOOL isDarkMode(UIView *view) {
             if ([responder isKindOfClass:%c(YTActionSheetDialogViewController)] || [responder isKindOfClass:%c(YTBottomSheetController)]) {
                 self.backgroundColor = [UIColor clearColor];
                 break;
-            } else if ([self.accessibilityIdentifier isEqualToString:@"eml.live_chat_text_message"] && [responder isKindOfClass:%c(YCHAsyncLiveChatCollectionViewController)]) {
+            } else if ([responder isKindOfClass:%c(YCHAsyncLiveChatImmersiveCollectionViewController)]) {
+                break;
+            } else if ([self.accessibilityIdentifier isEqualToString:@"eml.live_chat_text_message"]) {
                 self.backgroundColor = [UIColor clearColor];
                 break;
             }
@@ -82,7 +86,9 @@ static BOOL isDarkMode(UIView *view) {
             if ([responder isKindOfClass:%c(YTActionSheetDialogViewController)] || [responder isKindOfClass:%c(YTBottomSheetController)]) {
                 self.backgroundColor = [UIColor blackColor];
                 break;
-            } else if ([self.accessibilityIdentifier isEqualToString:@"eml.live_chat_text_message"] && [responder isKindOfClass:%c(YCHAsyncLiveChatCollectionViewController)]) {
+            } else if ([responder isKindOfClass:%c(YCHAsyncLiveChatImmersiveCollectionViewController)]) {
+                break;
+            } else if ([self.accessibilityIdentifier isEqualToString:@"eml.live_chat_text_message"]) {
                 self.backgroundColor = [UIColor blackColor];
                 break;
             }
@@ -96,7 +102,9 @@ static BOOL isDarkMode(UIView *view) {
             if ([responder isKindOfClass:%c(YTActionSheetDialogViewController)] || [responder isKindOfClass:%c(YTBottomSheetController)]) {
                 self.backgroundColor = [UIColor clearColor];
                 break;
-            } else if ([self.accessibilityIdentifier isEqualToString:@"eml.live_chat_text_message"] && [responder isKindOfClass:%c(YCHAsyncLiveChatCollectionViewController)]) {
+            } else if ([responder isKindOfClass:%c(YCHAsyncLiveChatImmersiveCollectionViewController)]) {
+                break;
+            } else if ([self.accessibilityIdentifier isEqualToString:@"eml.live_chat_text_message"]) {
                 self.backgroundColor = [UIColor clearColor];
                 break;
             }
