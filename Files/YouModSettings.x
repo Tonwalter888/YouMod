@@ -692,6 +692,7 @@ static NSString * const kYMTabIDs[] = {
 };
 static const NSInteger kYMTabCount = 20;
 static const NSInteger kYMTabMaxEnabled = 6;
+static const NSInteger kYMTabMinEnabled = 1;
 
 @interface YMTabOrderViewController : UIViewController <UITableViewDelegate, UITableViewDataSource>
 - (UITableView *)tableView;
@@ -1007,7 +1008,7 @@ static const void *kYMTabSavedScrollEdgeAppearanceKey = &kYMTabSavedScrollEdgeAp
         alert.subtitle = YMLOC(@"TAB_LIMIT_DESC");
         [alert show];
         return;
-    } else if (!wantsEnabled && [self enabledCount] <= 0) {
+    } else if (!wantsEnabled && [self enabledCount] < kYMTabMinEnabled) {
         sender.on = YES;
         YTAlertView *alert = [%c(YTAlertView) infoDialog];
         alert.title = YMLOC(@"WARNING");
