@@ -225,7 +225,7 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
     YTLabel *durationLabel = overlay.playerBar.durationLabel;
 
     if ((![durationLabel.text containsString:remainingTimeText] && IS_ENABLED(ShowExtraTimeRemaining)) || (SBTimeRemaining != nil && ![durationLabel.text containsString:SBTimeRemaining] && IS_ENABLED(SBShowDuration))) {
-        if ((IS_ENABLED(SBShowDuration) && SBRemaining != nil) && IS_ENABLED(ShowExtraTimeRemaining)) {
+        if ((IS_ENABLED(SBShowDuration) && SBTimeRemaining != nil) && IS_ENABLED(ShowExtraTimeRemaining)) {
             durationLabel.text = [durationLabel.text stringByAppendingString:[NSString stringWithFormat:@" (%@) • %@", SBTimeRemaining, remainingTimeText]];
         } else if (IS_ENABLED(ShowExtraTimeRemaining)) {
             durationLabel.text = [durationLabel.text stringByAppendingString:[NSString stringWithFormat:@" • %@", remainingTimeText]];
