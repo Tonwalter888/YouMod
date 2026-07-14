@@ -1704,9 +1704,6 @@ void YouModConfigureDownloadButton(_ASDisplayView *view) {
 
 %end
 
-@interface YTReelWatchPlaybackOverlayView : UIView
-@end
-
 // Download button in Shorts
 %hook YTReelWatchPlaybackOverlayView
 
