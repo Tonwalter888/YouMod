@@ -176,7 +176,7 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
     NSTimeInterval remainingSeconds = (lround(video.totalMediaTime) - lround(time.time)) / rate;
 
     NSString *remainingTimeText;
-    NSString *SBTimeRemaining;
+    NSString *SBTimeRemaining = nil;
     NSTimeInterval SBTotalTimeRemaining = 0.0;
     if (IS_ENABLED(SBShowDuration)) {
         if (self.sbSegments && self.sbSegments.count > 0) {
@@ -187,10 +187,11 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
                 CGFloat timeValue = segment.endTime - segment.startTime;
                 SBTotalTimeRemaining = SBTotalTimeRemaining + timeValue;
             }
-            int hours = (int)(SBTotalTimeRemaining / 3600);
-            int minutes = (int)(((int)SBTotalTimeRemaining % 3600) / 60);
-            int seconds = (int)((int)SBTotalTimeRemaining % 60);
+            NSTimeInterval SBRemaining = video.totalMediaTime - SBTotalTimeRemaining;
             if (SBTotalTimeRemaining != 0.0) { 
+                int hours = (int)(SBRemaining / 3600);
+                int minutes = (int)(((int)SBRemaining % 3600) / 60);
+                int seconds = (int)((int)SBRemaining % 60);
                 if (hours > 0) {
                     SBTimeRemaining = [NSString stringWithFormat:@"%d:%02d:%02d", hours, minutes, seconds];
                 } else {
@@ -223,12 +224,12 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
     YTMainAppVideoPlayerOverlayView *overlay = (YTMainAppVideoPlayerOverlayView*)playerView.overlayView;
     YTLabel *durationLabel = overlay.playerBar.durationLabel;
 
-    if ((![durationLabel.text containsString:remainingTimeText] && IS_ENABLED(ShowExtraTimeRemaining)) || (SBTimeRemaining.length && ![durationLabel.text containsString:SBTimeRemaining] && IS_ENABLED(SBShowDuration))) {
-        if (IS_ENABLED(SBShowDuration) && IS_ENABLED(ShowExtraTimeRemaining)) {
+    if ((![durationLabel.text containsString:remainingTimeText] && IS_ENABLED(ShowExtraTimeRemaining)) || (SBRemaining != nil && ![durationLabel.text containsString:SBTimeRemaining] && IS_ENABLED(SBShowDuration))) {
+        if ((IS_ENABLED(SBShowDuration) && SBRemaining != nil) && IS_ENABLED(ShowExtraTimeRemaining)) {
             durationLabel.text = [durationLabel.text stringByAppendingString:[NSString stringWithFormat:@" (%@) • %@", SBTimeRemaining, remainingTimeText]];
         } else if (IS_ENABLED(ShowExtraTimeRemaining)) {
             durationLabel.text = [durationLabel.text stringByAppendingString:[NSString stringWithFormat:@" • %@", remainingTimeText]];
-        } else if (IS_ENABLED(SBShowDuration)) {
+        } else if (IS_ENABLED(SBShowDuration) && SBRemaining != nil) {
             durationLabel.text = [durationLabel.text stringByAppendingString:[NSString stringWithFormat:@" (%@)", SBTimeRemaining]];
         }
         [durationLabel sizeToFit];
