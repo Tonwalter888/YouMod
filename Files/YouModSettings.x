@@ -1000,6 +1000,7 @@ static const void *kYMTabSavedScrollEdgeAppearanceKey = &kYMTabSavedScrollEdgeAp
     if (!entry) return;
 
     BOOL wantsEnabled = sender.on;
+    BOOL wantsDisabled = sender.off;
 
     if (wantsEnabled && [self enabledCount] >= kYMTabMaxEnabled) {
         sender.on = NO;
@@ -1008,8 +1009,8 @@ static const void *kYMTabSavedScrollEdgeAppearanceKey = &kYMTabSavedScrollEdgeAp
         alert.subtitle = YMLOC(@"TAB_LIMIT_DESC");
         [alert show];
         return;
-    } else if (!wantsEnabled && [self enabledCount] < kYMTabMinEnabled) {
-        sender.on = YES;
+    } else if (wantsDisabled && [self enabledCount] < kYMTabMinEnabled) {
+        sender.off = NO;
         YTAlertView *alert = [%c(YTAlertView) infoDialog];
         alert.title = YMLOC(@"WARNING");
         alert.subtitle = YMLOC(@"ZERO_TAB_DESC");
