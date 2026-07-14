@@ -91,7 +91,7 @@ extern void YouModConfigureDownloadButton(_ASDisplayView *view);
 %new
 - (void)YouModFullscrrenGestureHandler:(UIPinchGestureRecognizer *)gesture {
     if (gesture.state != UIGestureRecognizerStateBegan) return;
-    if ([self valueForKey:@"_pivotBarProvider"] isKindOfClass:%c(YTAppViewControllerImpl)) {
+    if ([[self valueForKey:@"_pivotBarProvider"] isKindOfClass:%c(YTAppViewControllerImpl)]) {
         YTAppViewControllerImpl *appcon = [self valueForKey:@"_pivotBarProvider"];
         if ([appcon isPivotBarHidden]) {
             [appcon showPivotBar];
