@@ -655,7 +655,6 @@ static const CGFloat SBInlineMarkerHeight = 4.0;
     %orig;
 }
 
-
 %new
 - (void)sbSegmentsDidLoad:(NSNotification *)notification {
     [self sbRefreshMarkers:notification.userInfo[@"segments"]];

@@ -58,8 +58,8 @@
 "COPY_AUTHOR_DESC" = "Copy the video author";
 "COPY_TITLE" = "Copy title";
 "COPY_TITLE_DESC" = "Copy the video title";
-"COPY_DESCRIPTION" = "Copy descriptions";
-"COPY_DESCRIPTION_DESC" = "Copy the video descriptions";
+"COPY_DESCRIPTION" = "Copy description";
+"COPY_DESCRIPTION_DESC" = "Copy the video description";
 "COPY_URL" = "Copy video link";
 "COPY_URL_TIMESTAMP" = "Copy video link with timestamp";
 "URL_COPIED" = "Copied video link";
@@ -68,7 +68,7 @@
 "ERROR_ADS" = "Cannot copy video link while playing ads";
 "COPIED_AUTHOR" = "Copied video author";
 "COPIED_TITLE" = "Copied video title";
-"COPIED_DESCRIPTION" = "Copied video descriptions";
+"COPIED_DESCRIPTION" = "Copied video description";
 "SAVE_THUMBNAIL" = "Save thumbnail";
 "SAVE_THUMBNAIL_DESC" = "Save to Photos";
 "DOWNLOAD_CAPTIONS" = "Download captions";
@@ -147,6 +147,8 @@
 "KEEP_SHORTS_SUBSCRIPT_DESC" = "Prevents removing Shorts from Subscriptions tab.";
 "HIDE_SEARCH_HISTORY" = "Ẩn lịch sử tìm kiếm";
 "HIDE_SEARCH_HISTORY_DESC" = "Ẩn lịch sử tìm kiếm và các đề xuất trước đó khi sử dụng thanh tìm kiếm.\nGHI CHÚ: Lịch sử tìm kiếm của bạn vẫn khả dụng trên các ứng dụng YouTube khác.";
+"HIDE_PLAYABLES" = "Remove playables";
+"HIDE_PLAYABLES_DESC" = "Removes playables (mini-games) from the feed.";
 
 "PLAYER" = "Trình phát video";
 "PLAYBACK_SPEED" = "Playback speed";
@@ -166,8 +168,8 @@
 "SELECT_MANUALLY" = "Select manually";
 "AUDIO_TRACK_SELECT" = "Selected audio track";
 "AUDIO_TRACK_SELECT_DESC" = "Specifies the preferred audio track language to use for playback, if available.";
-"NO_AUTO_DUBBED" = "Ignore auto-dubbed tracks";
-"NO_AUTO_DUBBED_DESC" = "Skips manual selection if the preferred language track is auto-dubbed.";
+"NO_AUTO_DUBBED" = "Uses original audio track";
+"NO_AUTO_DUBBED_DESC" = "Uses original audio track if the preferred language track is auto-dubbed or not found.";
 "CAPTION_TRACK" = "Preferred captions";
 "CAPTION_TRACK_SELECT" = "Selected captions";
 "CAPTION_TRACK_SELECT_DESC" = "Specifies the preferred captions language to display, if available.";
@@ -311,6 +313,8 @@
 "SHOW_SHORTS_SEEKBAR_DESC" = "Đảm bảo thanh tiến trình/thanh tua luôn hiển thị ở dưới cùng của trình phát Shorts.";
 "REMOVE_POSTS_SHORTS" = "Remove posts";
 "REMOVE_POSTS_SHORTS_DESC" = "Remove posts from the feed.";
+"SHORTS_FULLSCREEN" = "Pinch to Fullscreen";
+"SHORTS_FULLSCREEN_DESC" = "Manages visibility of the overlay with pinch in and pinch out gestures, displaying Shorts in fullscreen mode.";
 
 "TABBAR" = "Thanh Tab";
 "DEFAULT_TAB" = "Tab khởi động mặc định";
@@ -345,9 +349,7 @@
 "TAB_REORDER_HINT" = "Drag to reorder. Toggle to show/hide.\nTab settings are also accessible by long-pressing the first tab in the tab bar.";
 "TAB_LIMIT" = "Tab limit";
 "TAB_LIMIT_DESC" = "Only 6 tabs are allowed.";
-"RESTART_REQUIRED" = "Restart required";
-"RESTART_REQUIRED_DESC" = "Tab bar changes require a restart to take effect.";
-"RESTART_NOW" = "OK";
+"ZERO_TAB_DESC" = "At least 1 tab has to be enabled.";
 
 "MISCELLANEOUS" = "Khác";
 "BACKGROUND_PLAYBACK" = "Phát trong nền";
@@ -409,6 +411,8 @@
 "REMOVE_HELP_OPTION_DESC" = "Remove 'Help & feedback' option from the flyout menu.";
 "REMOVE_NOTIFY_OPTION" = "Remove 'Notify me' option";
 "REMOVE_NOTIFY_OPTION_DESC" = "Remove 'Notify me' option from the flyout menu.";
+"REMOVE_CLEARSCREEN_OPTION" = "Remove 'Clear Screen' option";
+"REMOVE_CLEARSCREEN_OPTION_DESC" = "Remove 'Clear Screen' option from the flyout menu.";
 
 "SB_DESCRIPTION" = "Skip sponsored segments automatically using community-submitted data.";
 "SB_ENABLE" = "Enable SponsorBlock";

@@ -52,6 +52,14 @@ static void YouModMakeAShortsAction(YTReelPlayerViewController *self, YTSingleVi
     %orig;
     YouModMakeAShortsAction(self, video, time);
 }
+- (void)loadPlayerBar {
+    %orig;
+    YTPlayerViewController *main = self.player;
+    // if (IS_ENABLED(MuteButton)) [main YouModAutoMute];
+    if (INTFORVAL(CaptionTrack) != 0) [main performSelector:@selector(YouModAutoCaptions) withObject:nil afterDelay:0.5];
+    if (INTFORVAL(AutoSpeedIndex) != 0) [main performSelector:@selector(YouModSetAutoSpeed) withObject:nil afterDelay:0.5];
+    if (INTFORVAL(AudioTrack) != 0) [main performSelector:@selector(YouModAutoAudioTrack) withObject:nil afterDelay:0.5];
+}
 %end
 
 extern void YouModConfigureDownloadButton(_ASDisplayView *view);
@@ -67,5 +75,36 @@ extern void YouModConfigureDownloadButton(_ASDisplayView *view);
         @"id.elements.components.suggested_action": @(IS_ENABLED(HideShortsRecbar))
     };
     if ([elements[self.accessibilityIdentifier] boolValue]) [self removeFromSuperview]; 
+}
+%end
+
+%hook YTReelWatchPlaybackOverlayView
+%property (nonatomic, retain) UIPinchGestureRecognizer *YouModFullscreenGesture;
+- (void)layoutPlayerOverlayView {
+    %orig;
+    if (!IS_ENABLED(FullScreenShorts)) return;
+    if (!self.YouModFullscreenGesture) {
+        self.YouModFullscreenGesture = [[UIPinchGestureRecognizer alloc] initWithTarget:self action:@selector(YouModFullscrrenGestureHandler:)];
+        [self addGestureRecognizer:self.YouModFullscreenGesture];
+    }
+}
+%new
+- (void)YouModFullscrrenGestureHandler:(UIPinchGestureRecognizer *)gesture {
+    if (gesture.state != UIGestureRecognizerStateBegan) return;
+    if ([self valueForKey:@"_pivotBarProvider"] isKindOfClass:%c(YTAppViewControllerImpl)) {
+        YTAppViewControllerImpl *appcon = [self valueForKey:@"_pivotBarProvider"];
+        if ([appcon isPivotBarHidden]) {
+            [appcon showPivotBar];
+        } else {
+            [appcon hidePivotBar];
+        }
+    } else {
+        YTAppViewController *appcon = [self valueForKey:@"_pivotBarProvider"];
+        if ([appcon isPivotBarHidden]) {
+            [appcon showPivotBar];
+        } else {
+            [appcon hidePivotBar];
+        }
+    }
 }
 %end

@@ -1,7 +1,5 @@
 #import "Headers.h"
 
-Class YTILikeResponseClass, YTIDislikeResponseClass, YTIRemoveLikeResponseClass;
-
 // Background playback
 %hook MLVideo
 - (BOOL)playableInBackground { return IS_ENABLED(BackgroundPlayback) ? YES : %orig; }
@@ -160,6 +158,7 @@ Class YTILikeResponseClass, YTIDislikeResponseClass, YTIRemoveLikeResponseClass;
         @"person_x": @(IS_ENABLED(RemoveUnSubOption)),
         @"help_circle": @(IS_ENABLED(RemoveHelpOption)),
         @"eye_slash": @(IS_ENABLED(RemoveHideFromPlaylistOption)),
+        @"player_full_enter_alt": @(IS_ENABLED(RemoveClearScreenOption)),
         @"info_circle": @(IS_ENABLED(RemoveInfoOption))
     };
     for (NSString *key in imageNameToRemove) {
@@ -175,23 +174,12 @@ Class YTILikeResponseClass, YTIDislikeResponseClass, YTIRemoveLikeResponseClass;
 %end
 
 // YTSlientVote (https://github.com/PoomSmart/YTSilentVote)
-%group SlientVote
 %hook YTInnerTubeResponseWrapper
 - (id)initWithResponse:(id)response cacheContext:(id)arg2 requestStatistics:(id)arg3 mutableSharedData:(id)arg4 {
-    if ([response isKindOfClass:YTILikeResponseClass]
-        || [response isKindOfClass:YTIDislikeResponseClass]
-        || [response isKindOfClass:YTIRemoveLikeResponseClass]) return nil;
+    if (!IS_ENABLED(HideLikeDislikeVotes)) return %orig;
+    if ([response isKindOfClass:%c(YTILikeResponse)]
+        || [response isKindOfClass:%c(YTIDislikeResponse)]
+        || [response isKindOfClass:%c(YTIRemoveLikeResponse)]) return nil;
     return %orig;
 }
 %end
-%end
-
-%ctor {
-    YTILikeResponseClass = %c(YTILikeResponse);
-    YTIDislikeResponseClass = %c(YTIDislikeResponse);
-    YTIRemoveLikeResponseClass = %c(YTIRemoveLikeResponse);
-    %init;
-    if (IS_ENABLED(HideLikeDislikeVotes)) {
-        %init(SlientVote);
-    }
-}

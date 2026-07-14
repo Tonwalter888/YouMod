@@ -1,6 +1,6 @@
 # YouMod
 
-TODO: Remove AUDIO_SAVED, and update download localizations
+TODO: Cleanup download things and update Flyout menu localizations
 
 <p align="center">
 <a href="https://www.star-history.com/?repos=Tonwalter888%2FYouMod&type=date&legend=bottom-right">

@@ -438,10 +438,8 @@ static const void *kSBColorIndexPathKey = &kSBColorIndexPathKey;
     for (NSNumber *option in actionOptions) {
         NSInteger actionVal = [option integerValue];
         NSString *actionTitle = [bundle localizedStringForKey:SBActionLocKey((SBSegmentAction)actionVal) value:nil table:nil];
-        UIImageSymbolConfiguration *config = [UIImageSymbolConfiguration configurationWithPointSize:14];
-        UIImage *checkImage = (actionVal == currentAction) ? [UIImage systemImageNamed:@"checkmark" withConfiguration:config] : nil;
 
-        UIAction *action = [UIAction actionWithTitle:actionTitle image:checkImage identifier:nil handler:^(__kindof UIAction *a) {
+        UIAction *action = [UIAction actionWithTitle:actionTitle image:nil identifier:nil handler:^(__kindof UIAction *a) {
             [[NSUserDefaults standardUserDefaults] setInteger:actionVal forKey:actionKey];
             [self.tableView reloadData];
         }];

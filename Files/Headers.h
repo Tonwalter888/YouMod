@@ -103,6 +103,7 @@
 #define HideHoriShelf @"YouModHideHoriShelf"
 #define HideGenMusicShelf @"YouModHideGenMusicShelf"
 #define HideFeedPost @"YouModHideFeedPost"
+#define HidePlayables @"YouModHidePlayables"
 #define HideShortsShelf @"YouModHideShortsShelf"
 #define KeepShortsSubscript @"YouModKeepShortsSubscript"
 #define HideSearchHis @"YouModHideSearchHistoryAndSuggestions"
@@ -170,6 +171,7 @@
 #define HideCommentsPreview @"YouModHideCommentsPreview"
 #define UseAnotherMiniplayer @"YouModUseAnotherMiniplayer"
 // Shorts
+#define FullScreenShorts @"YouModFullScreenShorts"
 #define RemoveShortsLive @"YouModRemoveShortsLive"
 #define RemoveShortsPosts @"YouModRemoveShortsPosts"
 #define HideShortsProducts @"YouModHideShortsProducts"
@@ -215,6 +217,7 @@
 #define RemoveHideFromPlaylistOption @"YouModRemoveHideFromPlaylistOption"
 #define RemoveHelpOption @"YouModRemoveHelpOption"
 #define RemoveNotifyOption @"YouModRemoveNotifyOption"
+#define RemoveClearScreenOption @"YouModRemoveClearScreenOption"
 // SponsorBlock
 #define SBEnabled @"YouModSBEnabled"
 #define SBShowButton @"YouModSBShowButton"
@@ -298,6 +301,7 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 @property (nonatomic, strong) YTQTMButton *playbackRouteButton;
 @property (nonatomic, strong) UIView *YouModSpeedToastView;
 @property (nonatomic, strong) UILabel *YouModSpeedToastLabel;
+@property (nonatomic, retain) UILongPressGestureRecognizer *YouModHoldGesture;
 - (void)YouModHoldToSpeed:(UILongPressGestureRecognizer *)gesture;
 - (void)YouModShowSpeedToast:(CGFloat)speed;
 - (void)YouModHideSpeedToast;
@@ -319,18 +323,32 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 
 @interface YTPivotBarViewController : UIViewController
 - (void)selectItemWithPivotIdentifier:(id)pivotIndentifier;
+- (void)YouModReloadTabBar:(id)arg;
 @end
 
 @interface YTAppViewController (YouMod)
 @property (nonatomic, assign, readonly) YTPivotBarViewController *pivotBarViewController;
 - (void)hidePivotBar;
 - (void)showPivotBar;
+- (void)refreshPivotBarWithTriggedByNotification:(BOOL)arg;
+- (BOOL)isPivotBarHidden;
 @end
 
 @interface YTAppViewControllerImpl (YouMod)
 @property (nonatomic, assign, readonly) YTPivotBarViewController *pivotBarViewController;
 - (void)hidePivotBar;
 - (void)showPivotBar;
+- (void)refreshPivotBarWithTriggedByNotification:(BOOL)arg;
+- (BOOL)isPivotBarHidden;
+@end
+
+@interface YTReelWatchPlaybackOverlayView : UIView
+@property (nonatomic, retain) UIPinchGestureRecognizer *YouModFullscreenGesture;
+- (void)YouModFullscrrenGestureHandler:(UIPinchGestureRecognizer *)gesture;
+@end
+
+@interface YTLanguages : NSObject
++ (instancetype)languageList;
 @end
 
 @interface YTICaptionTrackEntry : GPBMessage
@@ -512,6 +530,9 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 
 @interface YTDataUtils : NSObject
 + (instancetype)generateClientSideNonce;
+@end
+
+@interface YCHAsyncLiveChatCollectionViewController : UIViewController
 @end
 
 // SponsorBlock action modes

@@ -56,13 +56,13 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
         // Filter shelf renderer items (ads and shorts)
         if ([sectionRenderer isKindOfClass:%c(YTIShelfRenderer)]) {
             NSString *description = [sectionRenderer description];
+            if ([description containsString:@"community-tab-chip-posts-section"]) return NO;
             // Filter shorts
             if (IS_ENABLED(HideShortsShelf)) {
                 if (IS_ENABLED(KeepShortsSubscript) && [description containsString:@"subscriptions-shorts-shelf-item"]) return NO;
                 if ([description containsString:@"shorts_video_cell.eml"]) return YES;
                 if ([description containsString:@"shelf_header.eml"] && [description containsString:@"youtube_shorts_24_cairo"]) return YES;
             }
-            if ([description containsString:@"community-tab-chip-posts-section"]) return NO;
             // Filter feed posts
             if (IS_ENABLED(HideFeedPost) && ([description containsString:@"poll_post_root.eml"] || [description containsString:@"options_post_root.eml"] || [description containsString:@"images_post_root_slim.eml"] || [description containsString:@"images_post_responsive_root.eml"] || [description containsString:@"options_post_responsive_root.eml"] || [description containsString:@"post_base_wrapper_slim.eml"] || [description containsString:@"text_post_root_slim.eml"])) {
                 return YES;
@@ -90,6 +90,7 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
         if (![sectionRenderer isKindOfClass:%c(YTIItemSectionRenderer)]) return NO;
             
         NSString *description = [sectionRenderer description];
+        if ([description containsString:@"community-tab-chip-posts-section"]) return NO;
         
         // Filter shorts shelf
         BOOL isShortsShelf = [description containsString:@"shorts_shelf.eml"];
@@ -105,14 +106,13 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
         }
         
         // Filter horizontal shelf
-        if (IS_ENABLED(HideHoriShelf) && [description containsString:@"horizontal_shelf.eml"]) {
-            // if (IS_ENABLED(HidePlayables) && [description containsString:@"FEmini_app_destination"]) return YES;
-            if (![description containsString:@"UCYfdidRxbB8Qhf0Nx7ioOYw"] && ![description containsString:@"FElibrary"] && ![description containsString:@"mini_game_card.eml"] && ![description containsString:@"FEplaylist_aggregation"]) {
+        if ([description containsString:@"horizontal_shelf.eml"]) {
+            if (IS_ENABLED(HidePlayables) && [description containsString:@"FEmini_app_destination"]) return YES;
+            if (IS_ENABLED(HideHoriShelf) && ![description containsString:@"UCYfdidRxbB8Qhf0Nx7ioOYw"] && ![description containsString:@"FElibrary"] && ![description containsString:@"mini_game_card.eml"] && ![description containsString:@"FEplaylist_aggregation"]) {
                 return YES;
             }
         }
         
-        if ([description containsString:@"community-tab-chip-posts-section"]) return NO;
         // Filter feed posts
         if (IS_ENABLED(HideFeedPost) && ([description containsString:@"poll_post_root.eml"] || [description containsString:@"options_post_root.eml"] || [description containsString:@"images_post_root_slim.eml"] || [description containsString:@"images_post_responsive_root.eml"] || [description containsString:@"options_post_responsive_root.eml"] || [description containsString:@"post_base_wrapper_slim.eml"] || [description containsString:@"text_post_root_slim.eml"])) {
             return YES;
@@ -197,9 +197,6 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
 - (void)adPlaying:(id)ad {}
 %end
 
-@interface YTReelDataSource : NSObject
-@end
-
 // Live video type = 4 and Live preview = 7, 9 is Playables ads, 10 posts
 %hook YTReelDataSource
 - (YTReelModel *)makeContentModelForEntry:(id)entry {
@@ -219,7 +216,6 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
 %end
 
 %hook YTReelContentModel
-// Bro why is it a class method?
 + (YTReelModel *)makeContentModelForEntry:(id)entry {
     YTReelModel *model = %orig;
     if ([model respondsToSelector:@selector(videoType)] && model.videoType == 3)

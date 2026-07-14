@@ -128,7 +128,7 @@ static void YouModConfigureRemoteSkipCommands(void) {
 // Audio track list
 static NSArray *getAllSystemLanguageTitles() {
     NSMutableArray *titles = [NSMutableArray array];
-    NSArray *allLocales = [NSLocale availableLocaleIdentifiers];
+    NSArray *allLocales = [%c(YTLanguages) languageList];
     NSMutableSet *seenLanguages = [NSMutableSet set];
     NSLocale *currentLocale = [NSLocale currentLocale];
     
@@ -148,7 +148,7 @@ static NSArray *getAllSystemLanguageTitles() {
 static NSArray *getAllSystemLanguageValues() {
     NSArray *sortedTitles = getAllSystemLanguageTitles();
     NSMutableArray *sortedCodes = [NSMutableArray array];
-    NSArray *allLocales = [NSLocale availableLocaleIdentifiers];
+    NSArray *allLocales = [%c(YTLanguages) languageList];
     NSLocale *currentLocale = [NSLocale currentLocale];
     
     NSMutableDictionary *titleToCodeMap = [NSMutableDictionary dictionary];
@@ -170,12 +170,35 @@ static NSArray *getAllSystemLanguageValues() {
 static float playbackRate = 1.0;
 
 static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoController *video, YTSingleVideoTime *time) {
-    if (!IS_ENABLED(ShowExtraTimeRemaining)) return;
+    if (!IS_ENABLED(ShowExtraTimeRemaining) && !IS_ENABLED(SBShowDuration)) return;
 
     CGFloat rate = playbackRate != 0 ? playbackRate : 1.0;
     NSTimeInterval remainingSeconds = (lround(video.totalMediaTime) - lround(time.time)) / rate;
 
     NSString *remainingTimeText;
+    NSString *SBTimeRemaining;
+    NSTimeInterval SBTotalTimeRemaining = 0.0;
+    if (IS_ENABLED(SBShowDuration)) {
+        if (self.segments && self.segments.count > 0) {
+            for (SBSegment *segment in self.segments) {
+                SBSegmentAction action = [segment configuredAction];
+                if (action == SBSegmentActionDisable) continue;
+
+                CGFloat timeValue = segment.endTime - segment.startTime;
+                SBTotalTimeRemaining = SBTotalTimeRemaining + timeValue;
+            }
+            int hours = (int)(SBTotalTimeRemaining / 3600);
+            int minutes = (int)(((int)SBTotalTimeRemaining % 3600) / 60);
+            int seconds = (int)((int)SBTotalTimeRemaining % 60);
+            if (SBTotalTimeRemaining != 0.0) { 
+                if (hours > 0) {
+                    SBTimeRemaining = [NSString stringWithFormat:@"%d:%02d:%02d", hours, minutes, seconds];
+                } else {
+                    SBTimeRemaining = [NSString stringWithFormat:@"%d:%02d", minutes, seconds];
+                }
+            }
+        }
+    }
     if (IS_ENABLED(Uses24HoursTime)) {
         NSDate *estimatedEndTime = [NSDate dateWithTimeIntervalSinceNow:remainingSeconds];
 
@@ -200,8 +223,14 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
     YTMainAppVideoPlayerOverlayView *overlay = (YTMainAppVideoPlayerOverlayView*)playerView.overlayView;
     YTLabel *durationLabel = overlay.playerBar.durationLabel;
 
-    if (![durationLabel.text containsString:remainingTimeText]) {
-        durationLabel.text = [durationLabel.text stringByAppendingString:[NSString stringWithFormat:@" • %@", remainingTimeText]];
+    if ((![durationLabel.text containsString:remainingTimeText] && IS_ENABLED(ShowExtraTimeRemaining)) || (SBTimeRemaining.length && ![durationLabel.text containsString:SBTimeRemaining] && IS_ENABLED(SBShowDuration))) {
+        if (IS_ENABLED(SBShowDuration) && IS_ENABLED(ShowExtraTimeRemaining)) {
+            durationLabel.text = [durationLabel.text stringByAppendingString:[NSString stringWithFormat:@" (%@) • %@", SBTimeRemaining, remainingTimeText]];
+        } else if (IS_ENABLED(ShowExtraTimeRemaining)) {
+            durationLabel.text = [durationLabel.text stringByAppendingString:[NSString stringWithFormat:@" • %@", remainingTimeText]];
+        } else if (IS_ENABLED(SBShowDuration)) {
+            durationLabel.text = [durationLabel.text stringByAppendingString:[NSString stringWithFormat:@" (%@)", SBTimeRemaining]];
+        }
         [durationLabel sizeToFit];
     }
 }
@@ -585,6 +614,7 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
 %hook YTMainAppVideoPlayerOverlayView
 %property (nonatomic, strong) UIView *YouModSpeedToastView;
 %property (nonatomic, strong) UILabel *YouModSpeedToastLabel;
+%property (nonatomic, retain) UILongPressGestureRecognizer *YouModHoldGesture;
 %new
 - (void)YouModShowSpeedToast:(CGFloat)speed {
     UIColor *themeTextColor = [UIColor labelColor];
@@ -648,12 +678,25 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
         self.YouModSpeedToastView.alpha = 0.0;
     }];
 }
-- (void)setLongPressGestureRecognizer:(id)arg1 {
+- (void)setLongPressGestureRecognizer:(id)arg {
+    [self.delegate setPlaybackRate:YouModRateBeforeHoldToSpeed];
+    [self YouModHideSpeedToast];
+
     if (INTFORVAL(HoldToSpeedIndex) != 0) {
-        UILongPressGestureRecognizer *longPress = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(YouModHoldToSpeed:)];
-        longPress.minimumPressDuration = 0.4;
-        [self addGestureRecognizer:longPress];
+        if (self.YouModHoldGesture) {
+            [self removeGestureRecognizer:self.YouModHoldGesture];
+            self.YouModHoldGesture = nil;
+        }
+
+        self.YouModHoldGesture = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(YouModHoldToSpeed:)];
+        self.YouModHoldGesture.minimumPressDuration = 0.4;
+        
+        [self addGestureRecognizer:self.YouModHoldGesture];
     } else {
+        if (self.YouModHoldGesture) {
+            [self removeGestureRecognizer:self.YouModHoldGesture];
+            self.YouModHoldGesture = nil;
+        }
         %orig;
     }
 }
@@ -1062,10 +1105,8 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
 
 %new
 - (void)YouModSetAutoSpeed {
-    if ([self.view.superview isKindOfClass:NSClassFromString(@"YTWatchView")]) {
-        NSArray *speedLabels = @[@0.01, @0.25, @0.5, @0.75, @1.0, @1.25, @1.5, @1.75, @2.0, @3.0, @4.0, @5.0];
-        [self setPlaybackRate:[speedLabels[INTFORVAL(AutoSpeedIndex)] floatValue]];
-    }
+    NSArray *speedLabels = @[@0.01, @0.25, @0.5, @0.75, @1.0, @1.25, @1.5, @1.75, @2.0, @3.0, @4.0, @5.0];
+    [self setPlaybackRate:[speedLabels[INTFORVAL(AutoSpeedIndex)] floatValue]];
 }
 
 - (void)singleVideo:(YTSingleVideoController *)video currentVideoTimeDidChange:(YTSingleVideoTime *)time {
@@ -1127,6 +1168,13 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
     // If found, change to it
     if (matchedTrack) {
         [self setAudioTrack:matchedTrack source:0];
+    } else if (!matchedTrack && IS_ENABLED(NoDubbedAudioTrack)) {
+        for (YTIAudioTrack *track in availableTracks) {
+            if ([track.id_p hasSuffix:@".4"]) {
+                [self setAudioTrack:track source:0];
+                break;
+            }
+        }
     }
 }
 

@@ -57,7 +57,7 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
 // Audio track list
 static NSArray *getAllSystemLanguageTitles() {
     NSMutableArray *titles = [NSMutableArray array];
-    NSArray *allLocales = [NSLocale availableLocaleIdentifiers];
+    NSArray *allLocales = [%c(YTLanguages) languageList];
     NSMutableSet *seenLanguages = [NSMutableSet set];
     NSLocale *currentLocale = [NSLocale currentLocale];
     
@@ -249,6 +249,7 @@ static NSArray *getAllSystemLanguageTitles() {
             YMToggle(LOC(@"HIDE_MUSIC_PLAYLISTS"), LOC(@"HIDE_MUSIC_PLAYLISTS_DESC"), HideGenMusicShelf),
             YMToggle(LOC(@"HIDE_SURVEYS"), LOC(@"HIDE_SURVEYS_DESC"), HideSurveys),
             YMToggle(LOC(@"HIDE_FEED_POST"), LOC(@"HIDE_FEED_POST_DESC"), HideFeedPost),
+            YMToggle(LOC(@"HIDE_PLAYABLES"), LOC(@"HIDE_PLAYABLES_DESC"), HidePlayables),
             YMToggle(LOC(@"HIDE_SHORTS_SHELF"), LOC(@"HIDE_SHORTS_SHELF_DESC"), HideShortsShelf),
             YMToggle(LOC(@"KEEP_SHORTS_SUBSCRIPT"), LOC(@"KEEP_SHORTS_SUBSCRIPT_DESC"), KeepShortsSubscript),
             YMToggle(LOC(@"HIDE_SEARCH_HISTORY"), LOC(@"HIDE_SEARCH_HISTORY_DESC"), HideSearchHis),
@@ -300,6 +301,7 @@ static NSArray *getAllSystemLanguageTitles() {
             YMToggle(LOC(@"OLD_QUALITY_PICKER"), LOC(@"OLD_QUALITY_PICKER_DESC"), OldQualityPicker),
             YMToggle(LOC(@"EXTRA_SPEED"), LOC(@"EXTRA_SPEED_DESC"), ExtraSpeed),
             YMToggle(LOC(@"USE_ANOTHER_MINIPLAYER"), LOC(@"USE_ANOTHER_MINIPLAYER_DESC"), UseAnotherMiniplayer),
+            YMToggle(LOC(@"PORTRAIT_FULLSCREEN"), LOC(@"PORTRAIT_FULLSCREEN_DESC"), PortFull),
             YMToggle(LOC(@"HIDE_ACTION_BAR"), LOC(@"HIDE_ACTION_BAR_DESC"), HideActionBar),
             YMToggle(LOC(@"HIDE_COMMENTS_SECTION"), LOC(@"HIDE_COMMENTS_SECTION_DESC"), HideCommentsSection),
             YMToggle(LOC(@"HIDE_COMMENTS_PREVIEW"), LOC(@"HIDE_COMMENTS_PREVIEW_DESC"), HideCommentsPreview),
@@ -348,6 +350,7 @@ static NSArray *getAllSystemLanguageTitles() {
             YMTextSegment(LOC(@"SHORTS_ACTION"), ShortsActionIndex, (@[LOC(@"LOOP"), LOC(@"SKIP_TO_NEXT_SHORTS"), LOC(@"PAUSE_SHORTS")]), 0),
             YMToggle(LOC(@"ENABLES_SHORTS_QUALITY"), LOC(@"ENABLES_SHORTS_QUALITY_DESC"), EnablesShortsQuality),
             YMToggle(LOC(@"SHOW_SHORTS_SEEKBAR"), LOC(@"SHOW_SHORTS_SEEKBAR_DESC"), ShowShortsSeekbar),
+            YMToggle(LOC(@"SHORTS_FULLSCREEN"), LOC(@"SHORTS_FULLSCREEN_DESC"), FullScreenShorts),
             YMToggle(LOC(@"REMOVE_LIVE_SHORTS"), LOC(@"REMOVE_LIVE_SHORTS_DESC"), RemoveShortsLive),
             YMToggle(LOC(@"REMOVE_POSTS_SHORTS"), LOC(@"REMOVE_POSTS_SHORTS_DESC"), RemoveShortsPosts),
             YMHeader(LOC(@"INTERFACE")),
@@ -456,6 +459,7 @@ static NSArray *getAllSystemLanguageTitles() {
             YMToggle(LOC(@"REMOVE_HIDE_FROM_PLAYLIST_OPTION"), LOC(@"REMOVE_HIDE_FROM_PLAYLIST_OPTION_DESC"), RemoveHideFromPlaylistOption),
             YMToggle(LOC(@"REMOVE_HELP_OPTION"), LOC(@"REMOVE_HELP_OPTION_DESC"), RemoveHelpOption),
             YMToggle(LOC(@"REMOVE_NOTIFY_OPTION"), LOC(@"REMOVE_NOTIFY_OPTION_DESC"), RemoveNotifyOption),
+            YMToggle(LOC(@"REMOVE_CLEARSCREEN_OPTION"), LOC(@"REMOVE_CLEARSCREEN_OPTION_DESC"), RemoveClearScreenOption),
         ], settingsViewController, [self parentResponder]);
         return YES;
     }];

@@ -862,18 +862,6 @@ static const void *kYMTabSavedScrollEdgeAppearanceKey = &kYMTabSavedScrollEdgeAp
     UINavigationBar *navBar = self.navigationController.navigationBar;
     navBar.standardAppearance = objc_getAssociatedObject(self, kYMTabSavedStdAppearanceKey);
     navBar.scrollEdgeAppearance = objc_getAssociatedObject(self, kYMTabSavedScrollEdgeAppearanceKey);
-
-    if ([self hasRealChanges]) {
-        YTAlertView *alert = [%c(YTAlertView) confirmationDialogWithAction:^{
-            [[UIApplication sharedApplication] performSelector:@selector(suspend)];
-            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.3 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-                exit(0);
-            });
-        } actionTitle:YMLOC(@"RESTART_NOW")];
-        alert.title = YMLOC(@"RESTART_REQUIRED");
-        alert.subtitle = YMLOC(@"RESTART_REQUIRED_DESC");
-        [alert show];
-    }
 }
 
 - (void)viewDidLayoutSubviews {
@@ -930,6 +918,7 @@ static const void *kYMTabSavedScrollEdgeAppearanceKey = &kYMTabSavedScrollEdgeAp
     }
     [[NSUserDefaults standardUserDefaults] setObject:toSave forKey:TabOrder];
     [[NSUserDefaults standardUserDefaults] synchronize];
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"YouModUpdateTabBar" object:nil];
 }
 
 - (void)takeSnapshot {
@@ -938,19 +927,6 @@ static const void *kYMTabSavedScrollEdgeAppearanceKey = &kYMTabSavedScrollEdgeAp
         [snap addObject:@{@"id": entry[@"id"], @"enabled": entry[@"enabled"]}];
     }
     self.initialSnapshot = [snap copy];
-}
-
-- (BOOL)hasRealChanges {
-    if (!self.initialSnapshot) return NO;
-    NSArray *current = self.tabData;
-    if (current.count != self.initialSnapshot.count) return YES;
-    for (NSUInteger i = 0; i < current.count; i++) {
-        NSDictionary *a = self.initialSnapshot[i];
-        NSDictionary *b = current[i];
-        if (![a[@"id"] isEqualToString:b[@"id"]]) return YES;
-        if (![a[@"enabled"] isEqual:b[@"enabled"]]) return YES;
-    }
-    return NO;
 }
 
 - (NSInteger)enabledCount {
@@ -1029,6 +1005,13 @@ static const void *kYMTabSavedScrollEdgeAppearanceKey = &kYMTabSavedScrollEdgeAp
         YTAlertView *alert = [%c(YTAlertView) infoDialog];
         alert.title = YMLOC(@"TAB_LIMIT");
         alert.subtitle = YMLOC(@"TAB_LIMIT_DESC");
+        [alert show];
+        return;
+    } else if (!wantsEnabled && [self enabledCount] <= 0) {
+        sender.on = YES;
+        YTAlertView *alert = [%c(YTAlertView) infoDialog];
+        alert.title = YMLOC(@"WARNING");
+        alert.subtitle = YMLOC(@"ZERO_TAB_DESC");
         [alert show];
         return;
     }
@@ -1191,6 +1174,27 @@ static void ymRegisterStyledSubclass(Class sourceClass, const char *name) {
         } else {
             self.tintColor = [UIColor blackColor];
         }
+    }
+}
+%end
+
+%hook YTPivotBarViewController
+- (void)viewDidLoad {
+    %orig;
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:@"YouModUpdateTabBar" object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(YouModReloadTabBar:)
+                                                 name:@"YouModUpdateTabBar"
+                                               object:nil];
+}
+%new
+- (void)YouModReloadTabBar:(id)arg {
+    if ([self.parentViewController isKindOfClass:%c(YTAppViewControllerImpl)]) {
+        YTAppViewControllerImpl *appcon = (YTAppViewControllerImpl *)self.parentViewController;
+        [appcon refreshPivotBarWithTriggedByNotification:YES];
+    } else {
+        YTAppViewController *appcon = (YTAppViewController *)self.parentViewController;
+        [appcon refreshPivotBarWithTriggedByNotification:YES];
     }
 }
 %end
