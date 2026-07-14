@@ -359,10 +359,15 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
 // Pause On Overlay
 - (void)setOverlayVisible:(BOOL)visible {
     %orig;
-    if (!IS_ENABLED(PauseOnOverlay)) return;
+    if (!IS_ENABLED(PauseOnOverlay) && !IS_ENABLED(ShowExtraTimeRemaining) && !IS_ENABLED(SBShowDuration)) return;
     YTMainAppVideoPlayerOverlayViewController *mainOverlayController = (YTMainAppVideoPlayerOverlayViewController *)self.eventsDelegate;
     YTPlayerViewController *playerViewController = mainOverlayController.parentViewController;
-    visible ? [playerViewController pause] : [playerViewController play];
+    if (IS_ENABLED(PauseOnOverlay)) {
+        visible ? [playerViewController pause] : [playerViewController play];
+    }
+    if (IS_ENABLED(ShowExtraTimeRemaining) ||  IS_ENABLED(SBShowDuration)) {
+        YouModAddEndTime(self, self.activVideo, self.activeVideo.currentVideoTime);
+    }
 }
 %end
 
