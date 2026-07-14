@@ -187,8 +187,8 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
                 CGFloat timeValue = segment.endTime - segment.startTime;
                 SBTotalTimeRemaining = SBTotalTimeRemaining + timeValue;
             }
-            NSTimeInterval SBRemaining = video.totalMediaTime - SBTotalTimeRemaining;
             if (SBTotalTimeRemaining != 0.0) { 
+                NSTimeInterval SBRemaining = video.totalMediaTime - SBTotalTimeRemaining;
                 int hours = (int)(SBRemaining / 3600);
                 int minutes = (int)(((int)SBRemaining % 3600) / 60);
                 int seconds = (int)((int)SBRemaining % 60);
@@ -224,12 +224,12 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
     YTMainAppVideoPlayerOverlayView *overlay = (YTMainAppVideoPlayerOverlayView*)playerView.overlayView;
     YTLabel *durationLabel = overlay.playerBar.durationLabel;
 
-    if ((![durationLabel.text containsString:remainingTimeText] && IS_ENABLED(ShowExtraTimeRemaining)) || (SBRemaining != nil && ![durationLabel.text containsString:SBTimeRemaining] && IS_ENABLED(SBShowDuration))) {
+    if ((![durationLabel.text containsString:remainingTimeText] && IS_ENABLED(ShowExtraTimeRemaining)) || (SBTimeRemaining != nil && ![durationLabel.text containsString:SBTimeRemaining] && IS_ENABLED(SBShowDuration))) {
         if ((IS_ENABLED(SBShowDuration) && SBRemaining != nil) && IS_ENABLED(ShowExtraTimeRemaining)) {
             durationLabel.text = [durationLabel.text stringByAppendingString:[NSString stringWithFormat:@" (%@) • %@", SBTimeRemaining, remainingTimeText]];
         } else if (IS_ENABLED(ShowExtraTimeRemaining)) {
             durationLabel.text = [durationLabel.text stringByAppendingString:[NSString stringWithFormat:@" • %@", remainingTimeText]];
-        } else if (IS_ENABLED(SBShowDuration) && SBRemaining != nil) {
+        } else if (IS_ENABLED(SBShowDuration) && SBTimeRemaining != nil) {
             durationLabel.text = [durationLabel.text stringByAppendingString:[NSString stringWithFormat:@" (%@)", SBTimeRemaining]];
         }
         [durationLabel sizeToFit];
