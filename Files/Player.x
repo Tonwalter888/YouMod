@@ -366,7 +366,7 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
         visible ? [playerViewController pause] : [playerViewController play];
     }
     if (IS_ENABLED(ShowExtraTimeRemaining) ||  IS_ENABLED(SBShowDuration)) {
-        YouModAddEndTime(self, self.activVideo, self.activeVideo.currentVideoTime);
+        YouModAddEndTime(playerViewController, playerViewController.activeVideo, playerViewController.activeVideo.currentVideoTime);
     }
 }
 %end
