@@ -109,4 +109,11 @@ extern void YouModConfigureDownloadButton(_ASDisplayView *view);
         }
     }
 }
+%new
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
+    if (gestureRecognizer == self.YouModFullscreenGesture) {
+        return YES;
+    }
+    return NO;
+}
 %end
