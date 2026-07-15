@@ -676,7 +676,7 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
     }];
 }
 - (void)setLongPressGestureRecognizer:(id)arg {
-    [self.delegate setPlaybackRate:YouModRateBeforeHoldToSpeed];
+    [self.delegate setPlaybackRate:1.0];
     [self YouModHideSpeedToast];
 
     if (INTFORVAL(HoldToSpeedIndex) != 0) {
