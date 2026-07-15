@@ -55,7 +55,7 @@ static BOOL isDarkMode(UIView *view) {
                 break;
             } else if ([self.accessibilityIdentifier isEqualToString:@"eml.live_chat_text_message"] && [responder isKindOfClass:%c(YCHAsyncLiveChatCollectionViewController)]) {
                 YCHAsyncLiveChatCollectionViewController *con = (YCHAsyncLiveChatCollectionViewController *)responder;
-                if ([con.view isKindOfClass:%c(YCHAsyncLiveChatCollectionView)]) {
+                if ([con.view isKindOfClass:%c(YTAsyncCollectionView)]) {
                     self.backgroundColor = [UIColor blackColor];
                 }
                 break;
@@ -75,7 +75,7 @@ static BOOL isDarkMode(UIView *view) {
                 break;
             } else if ([self.accessibilityIdentifier isEqualToString:@"eml.live_chat_text_message"] && [responder isKindOfClass:%c(YCHAsyncLiveChatCollectionViewController)]) {
                 YCHAsyncLiveChatCollectionViewController *con = (YCHAsyncLiveChatCollectionViewController *)responder;
-                if ([con.view isKindOfClass:%c(YCHAsyncLiveChatCollectionView)]) {
+                if ([con.view isKindOfClass:%c(YTAsyncCollectionView)]) {
                     self.backgroundColor = [UIColor clearColor];
                 }
                 break;
@@ -99,7 +99,7 @@ static BOOL isDarkMode(UIView *view) {
                 break;
             } else if ([self.accessibilityIdentifier isEqualToString:@"eml.live_chat_text_message"] && [responder isKindOfClass:%c(YCHAsyncLiveChatCollectionViewController)]) {
                 YCHAsyncLiveChatCollectionViewController *con = (YCHAsyncLiveChatCollectionViewController *)responder;
-                if ([con.view isKindOfClass:%c(YCHAsyncLiveChatCollectionView)]) {
+                if ([con.view isKindOfClass:%c(YTAsyncCollectionView)]) {
                     self.backgroundColor = [UIColor blackColor];
                 }
                 break;
@@ -119,7 +119,7 @@ static BOOL isDarkMode(UIView *view) {
                 break;
             } else if ([self.accessibilityIdentifier isEqualToString:@"eml.live_chat_text_message"] && [responder isKindOfClass:%c(YCHAsyncLiveChatCollectionViewController)]) {
                 YCHAsyncLiveChatCollectionViewController *con = (YCHAsyncLiveChatCollectionViewController *)responder;
-                if ([con.view isKindOfClass:%c(YCHAsyncLiveChatCollectionView)]) {
+                if ([con.view isKindOfClass:%c(YTAsyncCollectionView)]) {
                     self.backgroundColor = [UIColor clearColor];
                 }
                 break;

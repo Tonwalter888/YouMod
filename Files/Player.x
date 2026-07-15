@@ -200,23 +200,14 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
             }
         }
     }
-    if (IS_ENABLED(Uses24HoursTime)) {
+    if (IS_ENABLED(ShowExtraTimeRemaining)) {
         NSDate *estimatedEndTime = [NSDate dateWithTimeIntervalSinceNow:remainingSeconds];
 
         NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
         [dateFormatter setLocale:[[NSLocale alloc] initWithLocaleIdentifier:@"en_US_POSIX"]];
-        [dateFormatter setDateFormat:@"HH:mm"];
+        [dateFormatter setDateFormat:IS_ENABLED(Uses24HoursTime) ? @"HH:mm" : @"h:mm a"];
 
         remainingTimeText = [dateFormatter stringFromDate:estimatedEndTime];
-    } else {
-        int hours = (int)(remainingSeconds / 3600);
-        int minutes = (int)(((int)remainingSeconds % 3600) / 60);
-        int seconds = (int)((int)remainingSeconds % 60);
-        if (hours > 0) {
-            remainingTimeText = [NSString stringWithFormat:@"%d:%02d:%02d", hours, minutes, seconds];
-        } else {
-            remainingTimeText = [NSString stringWithFormat:@"%d:%02d", minutes, seconds];
-        }
     }
     YTPlayerView *playerView = (YTPlayerView *)self.playerView;
     if (![playerView.overlayView isKindOfClass:%c(YTMainAppVideoPlayerOverlayView)]) return;
@@ -225,7 +216,7 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
     YTLabel *durationLabel = overlay.playerBar.durationLabel;
 
     if ((![durationLabel.text containsString:remainingTimeText] && IS_ENABLED(ShowExtraTimeRemaining)) || (SBTimeRemaining != nil && ![durationLabel.text containsString:SBTimeRemaining] && IS_ENABLED(SBShowDuration))) {
-        if ((IS_ENABLED(SBShowDuration) && SBTimeRemaining != nil) && IS_ENABLED(ShowExtraTimeRemaining)) {
+        if (IS_ENABLED(SBShowDuration) && SBTimeRemaining != nil && IS_ENABLED(ShowExtraTimeRemaining)) {
             durationLabel.text = [durationLabel.text stringByAppendingString:[NSString stringWithFormat:@" (%@) • %@", SBTimeRemaining, remainingTimeText]];
         } else if (IS_ENABLED(ShowExtraTimeRemaining)) {
             durationLabel.text = [durationLabel.text stringByAppendingString:[NSString stringWithFormat:@" • %@", remainingTimeText]];
