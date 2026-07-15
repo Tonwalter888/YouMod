@@ -347,6 +347,12 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 - (void)YouModFullscrrenGestureHandler:(UIPinchGestureRecognizer *)gesture;
 @end
 
+@interface YTReelContainerView : UIView <UIGestureRecognizerDelegate>
+@property (nonatomic, retain) UIPinchGestureRecognizer *YouModFullscreenGesture;
+- (UIView *)overlayView;
+- (void)YouModFullscrrenGestureHandler:(UIPinchGestureRecognizer *)gesture;
+@end
+
 @interface YTLanguages : NSObject
 + (instancetype)languageList;
 @end
@@ -407,14 +413,6 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 @end
 
 @interface SSOConfiguration : NSObject
-@end
-
-@interface YTEngagementPanelIdentifier : NSObject
-@property (nonatomic, copy, readonly) NSString *tag;
-@end
-
-@interface YTEngagementPanelHeaderView : UIView
-- (YTEngagementPanelIdentifier *)engagementPanelIdentifier;
 @end
 
 @interface YTIMySubsFilterHeaderRenderer : GPBMessage

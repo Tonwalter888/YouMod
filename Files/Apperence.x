@@ -1,7 +1,5 @@
 #import "Headers.h"
 
-static int localPageStyle;
-
 // OLEDKeyboard (https://github.com/dayanch96/OledKeyboard)
 static BOOL isDarkMode(UIView *view) {
     if ([view respondsToSelector:@selector(_mapkit_isDarkModeEnabled)]) {
@@ -39,14 +37,46 @@ static BOOL isDarkMode(UIView *view) {
 - (UIColor *)backgroundColor:(NSInteger)pageStyle { return pageStyle == 1 ? [UIColor blackColor] : %orig; }
 %end
 
+%hook UITableViewCell
+- (void)_layoutSystemBackgroundView {
+    %orig;
+    UIView *systemBackgroundView = [self valueForKey:@"_systemBackgroundView"];
+    NSString *backgroundViewKey = class_getInstanceVariable(systemBackgroundView.class, "_colorView") ? @"_colorView" : @"_backgroundView";
+    if (isDarkMode(self)) {
+        ((UIView *)[systemBackgroundView valueForKey:backgroundViewKey]).backgroundColor = [UIColor blackColor];
+    } else {
+        ((UIView *)[systemBackgroundView valueForKey:backgroundViewKey]).backgroundColor = [UIColor whiteColor];
+    }
+}
+- (void)_layoutSystemBackgroundView:(BOOL)arg1 {
+    %orig;
+    if (isDarkMode(self)) {
+        ((UIView *)[[self valueForKey:@"_systemBackgroundView"] valueForKey:@"_colorView"]).backgroundColor = [UIColor blackColor];
+    } else {
+        ((UIView *)[[self valueForKey:@"_systemBackgroundView"] valueForKey:@"_colorView"]).backgroundColor = [UIColor whiteColor];
+    }
+}
+- (void)traitCollectionDidChange:(UITraitCollection *)previousTraitCollection {
+    %orig;
+    if ([self.traitCollection hasDifferentColorAppearanceComparedToTraitCollection:previousTraitCollection]) {
+        [self setNeedsLayout];
+    }
+}
+%end
+
 %hook _ASDisplayView
 - (void)didMoveToWindow {
     %orig;
-    if (localPageStyle == 1) {
-        if ([self.accessibilityIdentifier isEqualToString:@"id.subs.subscriptions_channel_bar"]) {
-            self.backgroundColor = [UIColor blackColor];
-            return;
-        }
+    NSSet *blackViews = [NSSet setWithObjects:
+        @"id.elements.components.comment_composer",
+        // @"eml.cvr",
+        @"id.subs.subscriptions_channel_bar", nil
+        // @"eml.vwc", nil
+    ];  
+    if (isDarkMode(self)) {
+        if ([blackViews containsObject:self.accessibilityIdentifier]) self.backgroundColor = [UIColor blackColor];
+        if ([self.accessibilityIdentifier isEqualToString:@"id.elements.components.text_field"]) self.superview.backgroundColor = [UIColor blackColor];
+        // if ([self.accessibilityIdentifier isEqualToString:@"brand_promo.view"]) self.superview.backgroundColor = [UIColor blackColor]; 
         // Action dialog
         UIResponder *responder = self.nextResponder;
         while (responder != nil) {
@@ -55,18 +85,21 @@ static BOOL isDarkMode(UIView *view) {
                 break;
             } else if ([self.accessibilityIdentifier isEqualToString:@"eml.live_chat_text_message"] && [responder isKindOfClass:%c(YCHAsyncLiveChatCollectionViewController)]) {
                 YCHAsyncLiveChatCollectionViewController *con = (YCHAsyncLiveChatCollectionViewController *)responder;
-                if ([con.view isKindOfClass:%c(YTAsyncCollectionView)]) {
-                    self.backgroundColor = [UIColor blackColor];
-                }
+                if ([con.view isKindOfClass:%c(YCHAsyncLiveChatImmersiveCollectionView)]) break;
+                self.backgroundColor = [UIColor blackColor];
                 break;
             }
             responder = responder.nextResponder;
         }
-    } else {
-        if ([self.accessibilityIdentifier isEqualToString:@"id.subs.subscriptions_channel_bar"]) {
-            self.backgroundColor = [UIColor clearColor];
+        if ([self.accessibilityIdentifier isEqualToString:@"id.elements.components.filter_chip_bar"]) {
+            self.backgroundColor = [UIColor blackColor];
+            self.superview.backgroundColor = [UIColor blackColor];
             return;
         }
+    } else {
+        if ([blackViews containsObject:self.accessibilityIdentifier]) self.backgroundColor = [UIColor clearColor];      
+        if ([self.accessibilityIdentifier isEqualToString:@"id.elements.components.text_field"]) self.superview.backgroundColor = [UIColor clearColor];
+        // if ([self.accessibilityIdentifier isEqualToString:@"brand_promo.view"]) self.superview.backgroundColor = [UIColor clearColor];  
         // Action dialog
         UIResponder *responder = self.nextResponder;
         while (responder != nil) {
@@ -75,22 +108,31 @@ static BOOL isDarkMode(UIView *view) {
                 break;
             } else if ([self.accessibilityIdentifier isEqualToString:@"eml.live_chat_text_message"] && [responder isKindOfClass:%c(YCHAsyncLiveChatCollectionViewController)]) {
                 YCHAsyncLiveChatCollectionViewController *con = (YCHAsyncLiveChatCollectionViewController *)responder;
-                if ([con.view isKindOfClass:%c(YTAsyncCollectionView)]) {
-                    self.backgroundColor = [UIColor whiteColor];
-                }
+                if ([con.view isKindOfClass:%c(YCHAsyncLiveChatImmersiveCollectionView)]) break;
+                self.backgroundColor = [UIColor whiteColor];
                 break;
             }
             responder = responder.nextResponder;
+        }
+        if ([self.accessibilityIdentifier isEqualToString:@"id.elements.components.filter_chip_bar"]) {
+            self.backgroundColor = [UIColor clearColor];
+            self.superview.backgroundColor = [UIColor clearColor];
+            return;
         }
     }
 }
 - (void)layoutSubviews {
     %orig;
-    if (localPageStyle == 1) {
-        if ([self.accessibilityIdentifier isEqualToString:@"id.subs.subscriptions_channel_bar"]) {
-            self.backgroundColor = [UIColor blackColor];
-            return;
-        }
+    NSSet *blackViews = [NSSet setWithObjects:
+        @"id.elements.components.comment_composer",
+        // @"eml.cvr",
+        @"id.subs.subscriptions_channel_bar", nil
+        // @"eml.vwc", nil
+    ];  
+    if (isDarkMode(self)) {
+        if ([blackViews containsObject:self.accessibilityIdentifier]) self.backgroundColor = [UIColor blackColor];
+        if ([self.accessibilityIdentifier isEqualToString:@"id.elements.components.text_field"]) self.superview.backgroundColor = [UIColor blackColor];
+        // if ([self.accessibilityIdentifier isEqualToString:@"brand_promo.view"]) self.superview.backgroundColor = [UIColor blackColor]; 
         // Action dialog
         UIResponder *responder = self.nextResponder;
         while (responder != nil) {
@@ -99,18 +141,21 @@ static BOOL isDarkMode(UIView *view) {
                 break;
             } else if ([self.accessibilityIdentifier isEqualToString:@"eml.live_chat_text_message"] && [responder isKindOfClass:%c(YCHAsyncLiveChatCollectionViewController)]) {
                 YCHAsyncLiveChatCollectionViewController *con = (YCHAsyncLiveChatCollectionViewController *)responder;
-                if ([con.view isKindOfClass:%c(YTAsyncCollectionView)]) {
-                    self.backgroundColor = [UIColor blackColor];
-                }
+                if ([con.view isKindOfClass:%c(YCHAsyncLiveChatImmersiveCollectionView)]) break;
+                self.backgroundColor = [UIColor blackColor];
                 break;
             }
             responder = responder.nextResponder;
         }
-    } else {
-        if ([self.accessibilityIdentifier isEqualToString:@"id.subs.subscriptions_channel_bar"]) {
-            self.backgroundColor = [UIColor clearColor];
+        if ([self.accessibilityIdentifier isEqualToString:@"id.elements.components.filter_chip_bar"]) {
+            self.backgroundColor = [UIColor blackColor];
+            self.superview.backgroundColor = [UIColor blackColor];
             return;
         }
+    } else {
+        if ([blackViews containsObject:self.accessibilityIdentifier]) self.backgroundColor = [UIColor clearColor];      
+        if ([self.accessibilityIdentifier isEqualToString:@"id.elements.components.text_field"]) self.superview.backgroundColor = [UIColor clearColor];
+        // if ([self.accessibilityIdentifier isEqualToString:@"brand_promo.view"]) self.superview.backgroundColor = [UIColor clearColor];  
         // Action dialog
         UIResponder *responder = self.nextResponder;
         while (responder != nil) {
@@ -119,13 +164,23 @@ static BOOL isDarkMode(UIView *view) {
                 break;
             } else if ([self.accessibilityIdentifier isEqualToString:@"eml.live_chat_text_message"] && [responder isKindOfClass:%c(YCHAsyncLiveChatCollectionViewController)]) {
                 YCHAsyncLiveChatCollectionViewController *con = (YCHAsyncLiveChatCollectionViewController *)responder;
-                if ([con.view isKindOfClass:%c(YTAsyncCollectionView)]) {
-                    self.backgroundColor = [UIColor whiteColor];
-                }
+                if ([con.view isKindOfClass:%c(YCHAsyncLiveChatImmersiveCollectionView)]) break;
+                self.backgroundColor = [UIColor whiteColor];
                 break;
             }
             responder = responder.nextResponder;
         }
+        if ([self.accessibilityIdentifier isEqualToString:@"id.elements.components.filter_chip_bar"]) {
+            self.backgroundColor = [UIColor clearColor];
+            self.superview.backgroundColor = [UIColor clearColor];
+            return;
+        }
+    }
+}
+- (void)traitCollectionDidChange:(UITraitCollection *)previousTraitCollection {
+    %orig;
+    if ([self.traitCollection hasDifferentColorAppearanceComparedToTraitCollection:previousTraitCollection]) {
+        [self setNeedsLayout];
     }
 }
 %end
@@ -133,118 +188,40 @@ static BOOL isDarkMode(UIView *view) {
 %hook ASCollectionView
 - (void)didMoveToWindow {
     %orig;
-    if (localPageStyle == 1) {
-        if ([self.accessibilityIdentifier isEqualToString:@"subs_channel_bar.collection"]) {
-            self.backgroundColor = [UIColor blackColor];
-            return;
-        }
-        // Subbars
-        UIResponder *responder = self.nextResponder;
-        while (responder != nil) {
-            if ([responder isKindOfClass:%c(YTMySubsFilterHeaderViewController)]) {
-                YTMySubsFilterHeaderViewController *controller = (YTMySubsFilterHeaderViewController *)responder;
-                YTIMySubsFilterHeaderRenderer *renderer = [controller valueForKey:@"_renderer"];
-                NSString *description = [renderer description];
-                if ([description containsString:@"subscriptions_chip_bar.eml"] || [description containsString:@"channel_list_page_sort_chip"]) {
-                    self.backgroundColor = [UIColor blackColor];
-                    break;
-                }
-            } else if ([responder isKindOfClass:%c(YTELMViewController)]) {
-                YTELMViewController *controller = (YTELMViewController *)responder;
-                YTIElementRenderer *renderer = controller.renderer;
-                NSString *description = [renderer description];
-                if ([description containsString:@"chip_bar.eml"]) {
-                    self.backgroundColor = [UIColor blackColor];
-                    break;
-                }
-            }
-            responder = responder.nextResponder;
-        }
+    NSSet *blackViews = [NSSet setWithObjects:
+        @"eml.chip_bar_collection",
+        @"subs_channel_bar.collection", nil
+    ];  
+    if (isDarkMode(self)) {
+        if ([blackViews containsObject:self.accessibilityIdentifier]) self.backgroundColor = [UIColor blackColor];
+        if ([self.accessibilityIdentifier isEqualToString:@"subs_channel_bar.collection"]) self.backgroundColor = [UIColor blackColor];
+        if ([self.accessibilityIdentifier isEqualToString:@"id.elements.components.more_drawer_collection"]) self.superview.backgroundColor = [UIColor blackColor];
     } else {
-        if ([self.accessibilityIdentifier isEqualToString:@"subs_channel_bar.collection"]) {
-            self.backgroundColor = [UIColor clearColor];
-            return;
-        }
-        // Subbars
-        UIResponder *responder = self.nextResponder;
-        while (responder != nil) {
-            if ([responder isKindOfClass:%c(YTMySubsFilterHeaderViewController)]) {
-                YTMySubsFilterHeaderViewController *controller = (YTMySubsFilterHeaderViewController *)responder;
-                YTIMySubsFilterHeaderRenderer *renderer = [controller valueForKey:@"_renderer"];
-                NSString *description = [renderer description];
-                if ([description containsString:@"subscriptions_chip_bar.eml"] || [description containsString:@"channel_list_page_sort_chip"]) {
-                    self.backgroundColor = [UIColor clearColor];
-                    break;
-                }
-            } else if ([responder isKindOfClass:%c(YTELMViewController)]) {
-                YTELMViewController *controller = (YTELMViewController *)responder;
-                YTIElementRenderer *renderer = controller.renderer;
-                NSString *description = [renderer description];
-                if ([description containsString:@"chip_bar.eml"]) {
-                    self.backgroundColor = [UIColor clearColor];
-                    break;
-                }
-            }
-            responder = responder.nextResponder;
-        }
+        if ([blackViews containsObject:self.accessibilityIdentifier]) self.backgroundColor = [UIColor clearColor];
+        if ([self.accessibilityIdentifier isEqualToString:@"subs_channel_bar.collection"]) self.backgroundColor = [UIColor clearColor];
+        if ([self.accessibilityIdentifier isEqualToString:@"id.elements.components.more_drawer_collection"]) self.superview.backgroundColor = [UIColor whiteColor];
     }
 }
 - (void)layoutSubviews {
     %orig;
-    if (localPageStyle == 1) {
-        if ([self.accessibilityIdentifier isEqualToString:@"subs_channel_bar.collection"]) {
-            self.backgroundColor = [UIColor blackColor];
-            return;
-        }
-        // Subbars
-        UIResponder *responder = self.nextResponder;
-        while (responder != nil) {
-            if ([responder isKindOfClass:%c(YTMySubsFilterHeaderViewController)]) {
-                YTMySubsFilterHeaderViewController *controller = (YTMySubsFilterHeaderViewController *)responder;
-                YTIMySubsFilterHeaderRenderer *renderer = [controller valueForKey:@"_renderer"];
-                NSString *description = [renderer description];
-                if ([description containsString:@"subscriptions_chip_bar.eml"] || [description containsString:@"channel_list_page_sort_chip"]) {
-                    self.backgroundColor = [UIColor blackColor];
-                    break;
-                }
-            } else if ([responder isKindOfClass:%c(YTELMViewController)]) {
-                YTELMViewController *controller = (YTELMViewController *)responder;
-                YTIElementRenderer *renderer = controller.renderer;
-                NSString *description = [renderer description];
-                if ([description containsString:@"chip_bar.eml"]) {
-                    self.backgroundColor = [UIColor blackColor];
-                    break;
-                }
-            }
-            responder = responder.nextResponder;
-        }
+    NSSet *blackViews = [NSSet setWithObjects:
+        @"eml.chip_bar_collection",
+        @"subs_channel_bar.collection", nil
+    ];  
+    if (isDarkMode(self)) {
+        if ([blackViews containsObject:self.accessibilityIdentifier]) self.backgroundColor = [UIColor blackColor];
+        if ([self.accessibilityIdentifier isEqualToString:@"subs_channel_bar.collection"]) self.backgroundColor = [UIColor blackColor];
+        if ([self.accessibilityIdentifier isEqualToString:@"id.elements.components.more_drawer_collection"]) self.superview.backgroundColor = [UIColor blackColor];
     } else {
-        if ([self.accessibilityIdentifier isEqualToString:@"subs_channel_bar.collection"]) {
-            self.backgroundColor = [UIColor clearColor];
-            return;
-        }
-        // Subbars
-        UIResponder *responder = self.nextResponder;
-        while (responder != nil) {
-            if ([responder isKindOfClass:%c(YTMySubsFilterHeaderViewController)]) {
-                YTMySubsFilterHeaderViewController *controller = (YTMySubsFilterHeaderViewController *)responder;
-                YTIMySubsFilterHeaderRenderer *renderer = [controller valueForKey:@"_renderer"];
-                NSString *description = [renderer description];
-                if ([description containsString:@"subscriptions_chip_bar.eml"] || [description containsString:@"channel_list_page_sort_chip"]) {
-                    self.backgroundColor = [UIColor clearColor];
-                    break;
-                }
-            } else if ([responder isKindOfClass:%c(YTELMViewController)]) {
-                YTELMViewController *controller = (YTELMViewController *)responder;
-                YTIElementRenderer *renderer = controller.renderer;
-                NSString *description = [renderer description];
-                if ([description containsString:@"chip_bar.eml"]) {
-                    self.backgroundColor = [UIColor clearColor];
-                    break;
-                }
-            }
-            responder = responder.nextResponder;
-        }
+        if ([blackViews containsObject:self.accessibilityIdentifier]) self.backgroundColor = [UIColor clearColor];
+        if ([self.accessibilityIdentifier isEqualToString:@"subs_channel_bar.collection"]) self.backgroundColor = [UIColor clearColor];
+        if ([self.accessibilityIdentifier isEqualToString:@"id.elements.components.more_drawer_collection"]) self.superview.backgroundColor = [UIColor whiteColor];
+    }
+}
+- (void)traitCollectionDidChange:(UITraitCollection *)previousTraitCollection {
+    %orig;
+    if ([self.traitCollection hasDifferentColorAppearanceComparedToTraitCollection:previousTraitCollection]) {
+        [self setNeedsLayout];
     }
 }
 %end
@@ -254,7 +231,7 @@ static BOOL isDarkMode(UIView *view) {
     %orig;
     for (UIView *subview in self.subviews) {
         if ([subview isKindOfClass:%c(YTContextualWrapView)]) {
-            if (localPageStyle == 1) {
+            if (isDarkMode(self)) {
                 subview.backgroundColor = [UIColor blackColor];
             } else {
                 subview.backgroundColor = [UIColor whiteColor];
@@ -263,17 +240,10 @@ static BOOL isDarkMode(UIView *view) {
         }
     }
 }
-%end
-
-%hook YTEngagementPanelHeaderView
-- (void)layoutSubviews {
+- (void)traitCollectionDidChange:(UITraitCollection *)previousTraitCollection {
     %orig;
-    YTEngagementPanelIdentifier *identifier = self.engagementPanelIdentifier;
-    if ([identifier.tag isEqualToString:@"PAmodern_transcript_view"]) return;
-    if (localPageStyle == 1) {
-        self.backgroundColor = [UIColor blackColor];
-    } else {
-        self.backgroundColor = [UIColor clearColor];
+    if ([self.traitCollection hasDifferentColorAppearanceComparedToTraitCollection:previousTraitCollection]) {
+        [self setNeedsLayout];
     }
 }
 %end

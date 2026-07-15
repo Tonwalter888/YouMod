@@ -95,17 +95,27 @@ extern void YouModConfigureDownloadButton(_ASDisplayView *view);
     if (gesture.state != UIGestureRecognizerStateBegan) return;
     if ([[self valueForKey:@"_pivotBarProvider"] isKindOfClass:%c(YTAppViewControllerImpl)]) {
         YTAppViewControllerImpl *appcon = [self valueForKey:@"_pivotBarProvider"];
-        if ([appcon isPivotBarHidden]) {
-            [appcon showPivotBar];
-        } else {
-            [appcon hidePivotBar];
+        BOOL isTabBarHidden = [appcon isPivotBarHidden];
+        if (gesture.scale > 1.0) {
+            if (!isTabBarHidden) {
+                [appcon hidePivotBar];
+            }
+        } else if (gesture.scale < 1.0) {
+            if (isTabBarHidden) {
+                [appcon showPivotBar];
+            }
         }
     } else {
         YTAppViewController *appcon = [self valueForKey:@"_pivotBarProvider"];
-        if ([appcon isPivotBarHidden]) {
-            [appcon showPivotBar];
-        } else {
-            [appcon hidePivotBar];
+        BOOL isTabBarHidden = [appcon isPivotBarHidden];
+        if (gesture.scale > 1.0) {
+            if (!isTabBarHidden) {
+                [appcon hidePivotBar];
+            }
+        } else if (gesture.scale < 1.0) {
+            if (isTabBarHidden) {
+                [appcon showPivotBar];
+            }
         }
     }
 }
@@ -117,3 +127,55 @@ extern void YouModConfigureDownloadButton(_ASDisplayView *view);
     return NO;
 }
 %end
+
+/*
+%hook YTReelContainerView
+%property (nonatomic, retain) UIPinchGestureRecognizer *YouModFullscreenGesture;
+- (void)setOverlayView:(id)arg {
+    %orig;
+    if (!IS_ENABLED(FullScreenShorts)) return;
+    if (!self.YouModFullscreenGesture) {
+        self.YouModFullscreenGesture = [[UIPinchGestureRecognizer alloc] initWithTarget:self action:@selector(YouModFullscrrenGestureHandler:)];
+        self.YouModFullscreenGesture.delegate = (id<UIGestureRecognizerDelegate>)self.overlayView;
+        
+        [self.overlayView addGestureRecognizer:self.YouModFullscreenGesture];
+    }
+}
+%new
+- (void)YouModFullscrrenGestureHandler:(UIPinchGestureRecognizer *)gesture {
+    if (gesture.state != UIGestureRecognizerStateBegan) return;
+    if ([[self valueForKey:@"_pivotBarProvider"] isKindOfClass:%c(YTAppViewControllerImpl)]) {
+        YTAppViewControllerImpl *appcon = [self valueForKey:@"_pivotBarProvider"];
+        BOOL isTabBarHidden = [appcon isPivotBarHidden];
+        if (gesture.scale > 1.0) {
+            if (!isTabBarHidden) {
+                [appcon hidePivotBar];
+            }
+        } else if (gesture.scale < 1.0) {
+            if (isTabBarHidden) {
+                [appcon showPivotBar];
+            }
+        }
+    } else {
+        YTAppViewController *appcon = [self valueForKey:@"_pivotBarProvider"];
+        BOOL isTabBarHidden = [appcon isPivotBarHidden];
+        if (gesture.scale > 1.0) {
+            if (!isTabBarHidden) {
+                [appcon hidePivotBar];
+            }
+        } else if (gesture.scale < 1.0) {
+            if (isTabBarHidden) {
+                [appcon showPivotBar];
+            }
+        }
+    }
+}
+%new
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
+    if (gestureRecognizer == self.YouModFullscreenGesture) {
+        return YES;
+    }
+    return NO;
+}
+%end
+*/
