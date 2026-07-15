@@ -26,11 +26,6 @@ static BOOL isDarkMode(UIView *view) {
 - (UIColor *)raisedBackground { return self.pageStyle == 1 ? [UIColor blackColor] : %orig; }
 - (UIColor *)staticBrandBlack { return self.pageStyle == 1 ? [UIColor blackColor] : %orig; }
 - (UIColor *)generalBackgroundA { return self.pageStyle == 1 ? [UIColor blackColor] : %orig; }
-- (NSInteger)pageStyle {
-    int value = %orig;
-    localPageStyle = value;
-    return value;
-}
 %end
 
 %hook YTInnerTubeCollectionViewController
