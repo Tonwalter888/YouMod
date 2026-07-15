@@ -342,7 +342,7 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 - (BOOL)isPivotBarHidden;
 @end
 
-@interface YTReelWatchPlaybackOverlayView : UIView
+@interface YTReelWatchPlaybackOverlayView : UIView <UIGestureRecognizerDelegate>
 @property (nonatomic, retain) UIPinchGestureRecognizer *YouModFullscreenGesture;
 - (void)YouModFullscrrenGestureHandler:(UIPinchGestureRecognizer *)gesture;
 @end

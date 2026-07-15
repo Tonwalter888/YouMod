@@ -85,7 +85,9 @@ extern void YouModConfigureDownloadButton(_ASDisplayView *view);
     if (!IS_ENABLED(FullScreenShorts)) return;
     if (!self.YouModFullscreenGesture) {
         self.YouModFullscreenGesture = [[UIPinchGestureRecognizer alloc] initWithTarget:self action:@selector(YouModFullscrrenGestureHandler:)];
-        [self addGestureRecognizer:self.YouModFullscreenGesture];
+        self.YouModFullscreenGesture.delegate = (id<UIGestureRecognizerDelegate>)self;
+        
+        [self.superview addGestureRecognizer:self.YouModFullscreenGesture];
     }
 }
 %new
