@@ -76,7 +76,7 @@ static BOOL isDarkMode(UIView *view) {
             } else if ([self.accessibilityIdentifier isEqualToString:@"eml.live_chat_text_message"] && [responder isKindOfClass:%c(YCHAsyncLiveChatCollectionViewController)]) {
                 YCHAsyncLiveChatCollectionViewController *con = (YCHAsyncLiveChatCollectionViewController *)responder;
                 if ([con.view isKindOfClass:%c(YTAsyncCollectionView)]) {
-                    self.backgroundColor = [UIColor clearColor];
+                    self.backgroundColor = [UIColor whiteColor];
                 }
                 break;
             }
@@ -120,7 +120,7 @@ static BOOL isDarkMode(UIView *view) {
             } else if ([self.accessibilityIdentifier isEqualToString:@"eml.live_chat_text_message"] && [responder isKindOfClass:%c(YCHAsyncLiveChatCollectionViewController)]) {
                 YCHAsyncLiveChatCollectionViewController *con = (YCHAsyncLiveChatCollectionViewController *)responder;
                 if ([con.view isKindOfClass:%c(YTAsyncCollectionView)]) {
-                    self.backgroundColor = [UIColor clearColor];
+                    self.backgroundColor = [UIColor whiteColor];
                 }
                 break;
             }
