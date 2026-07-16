@@ -1424,6 +1424,52 @@ static void YouModPresentMenu(NSString *title, NSArray <YouModMenuItem *> *items
 
 @end
 
+static void YouModShowThumbnailViewer(NSString *videoID, UIViewController *presenter) {
+    NSURL *thumbnailURL = YouModThumbnailURLForVideoID(videoID);
+    if (!thumbnailURL) {
+        YouModSendError(LOC(@"NO_THUMBNAIL_FOUND"));
+        return;
+    }
+
+    [[NSURLSession.sharedSession dataTaskWithURL:thumbnailURL completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+        UIImage *image = data ? [UIImage imageWithData:data] : nil;
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (!image || error) {
+                YouModSendError(error.localizedDescription ?: LOC(@"THUMBNAIL_FAILED"));
+                return;
+            }
+            
+            YouModThumbnailViewController *viewerVC = [[YouModThumbnailViewController alloc] init];
+            viewerVC.thumbnailImage = image;
+            viewerVC.modalPresentationStyle = UIModalPresentationOverFullScreen;
+            viewerVC.modalTransitionStyle = UIModalTransitionStyleCrossDissolve;
+            
+            [presenter presentViewController:viewerVC animated:YES completion:nil];
+        });
+    }] resume];
+}
+
+static void YouModCopyThumbnail(NSString *videoID, UIViewController *presenter) {
+    NSURL *thumbnailURL = YouModThumbnailURLForVideoID(videoID);
+    if (!thumbnailURL) {
+        YouModSendError(LOC(@"NO_THUMBNAIL_FOUND"));
+        return;
+    }
+
+    YouModSendToast(LOC(@"DOWNLOADING_THUMBNAIL"));
+    [[NSURLSession.sharedSession dataTaskWithURL:thumbnailURL completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+        UIImage *image = data ? [UIImage imageWithData:data] : nil;
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (!image || error) {
+                YouModSendError(error.localizedDescription ?: LOC(@"THUMBNAIL_FAILED"));
+                return;
+            }
+            [[UIPasteboard generalPasteboard] setImage:image];
+            YouModSendSuccess(LOC(@"COPIED_TO_CLIPBOARD"));
+        });
+    }] resume];
+}
+
 static void YouModDownloadThumbnail(NSString *videoID, UIViewController *presenter) {
     NSURL *thumbnailURL = YouModThumbnailURLForVideoID(videoID);
     if (!thumbnailURL) {
@@ -1596,13 +1642,28 @@ static void YouModShowCaptionsSheet(YTPlayerViewController *player, UIViewContro
     YouModPresentMenu(LOC(@"DOWNLOAD_CAPTIONS"), items, presenter, sender);
 }
 
+static void YouModShowThumbnailSheet(YTPlayerViewController *player, UIViewController *presenter, UIView *sender) {
+    NSString *videoID = player.currentVideoID;
+
+    NSMutableArray *items = [NSMutableArray array];
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"SAVE_THUMBNAIL") subtitle:LOC(@"SAVE_THUMBNAIL_DESC") icon:YouModIconImage(57) handler:^{
+        YouModDownloadThumbnail(videoID, presenter);
+    }]];
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_ALL_VID_INFO") subtitle:LOC(@"COPY_ALL_VID_INFO_DESC") icon:YouModIconImage(208) handler:^{
+        YouModCopyTextToPasteboard(videoID, presenter);
+    }]];
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_THUMBNAIL") subtitle:LOC(@"COPY_THUMBNAIL_DESC") icon:YouModIconImage(250) handler:^{
+        YouModCopyThumbnail(videoID, presenter);
+    }]];
+
+    YouModPresentMenu(LOC(@"COPY_VID_INFO"), items, presenter, sender);
+}
+
 static void YouModShowDownloadManager(YTPlayerViewController *player, UIViewController *presenter, UIView *sender, BOOL isShorts) {
     if (!player) {
         YouModSendError(LOC(@"OPEN_VID_BEFORE"));
         return;
     }
-
-    NSString *videoID = player.currentVideoID;
     NSMutableArray *items = [NSMutableArray array];
 
     if (isShorts) {
@@ -1620,8 +1681,8 @@ static void YouModShowDownloadManager(YTPlayerViewController *player, UIViewCont
     [items addObject:[YouModMenuItem itemWithTitle:LOC(@"DOWNLOAD_CAPTIONS") subtitle:LOC(@"DOWNLOAD_CAPTIONS_DESC") icon:YouModIconImage(50) handler:^{
         YouModShowCaptionsSheet(player, presenter, sender);
     }]];
-    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"SAVE_THUMBNAIL") subtitle:LOC(@"SAVE_THUMBNAIL_DESC") icon:YouModIconImage(367) handler:^{
-        YouModDownloadThumbnail(videoID, presenter);
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"THUMBNAIL_OPTIONS") subtitle:LOC(@"THUMBNAIL_OPTIONS_DESC") icon:YouModIconImage(367) handler:^{
+        YouModShowThumbnailSheet(player, presenter, sender);
     }]];
     [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_VID_INFO") subtitle:LOC(@"COPY_VID_INFO_DESC") icon:YouModIconImage(250) handler:^{
         YouModShowCopyVideoInfoSheet(player, presenter, sender);

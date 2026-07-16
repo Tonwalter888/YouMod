@@ -117,7 +117,7 @@ jobs:
       - name: Hide Sensitive Inputs
         uses: levibostian/action-hide-sensitive-inputs@v1
         with:
-          exclude_inputs: bundle_id,display_name,youpip,ytuhd,ryd,abconfig,youquality,youspeed,youmute,youloop,ytweaks,youslider,ytholdspeed,youchoose,youshare,gonerino,getcap,demc,ytshare,volboost
+          exclude_inputs: bundle_id,display_name,youpip,ytuhd,ryd,abconfig,youquality,ytweaks,youslider,gonerino,getcap,demc,volboost
           
       - name: Install MEGA downloader
         if: ${{ startsWith(inputs.ipa_url, 'https://mega.nz/') }}
@@ -238,7 +238,7 @@ jobs:
     
       - name: Clone YTUHD
         if: ${{ inputs.ytuhd }}
-        run: git clone --quiet --depth=1 https://github.com/Tonwalter888/YTUHD.git
+        run: git clone --quiet --depth=1 --recurse-submodules https://github.com/PoomSmart/YTUHD.git
            
       - name: Clone Return-YouTube-Dislikes
         if: ${{ inputs.ryd }}
@@ -310,7 +310,7 @@ jobs:
         if: ${{ inputs.ytuhd }}
         run: |
           cd YTUHD
-          make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
+          make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless SIDELOAD=1
           mv packages/*.deb ${{ github.workspace }}/ytuhd.deb
 
       - name: Build Return-YouTube-Dislikes

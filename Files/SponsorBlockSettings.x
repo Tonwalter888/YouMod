@@ -346,7 +346,11 @@ static const void *kSBColorIndexPathKey = &kSBColorIndexPathKey;
     [slider addTarget:self action:@selector(sliderChanged:) forControlEvents:UIControlEventValueChanged];
 
     UILabel *valueLabel = [[UILabel alloc] init];
-    valueLabel.text = [NSString stringWithFormat:@"%d secs", (int)currentVal];
+    NSDateComponentsFormatter *formatter = [[NSDateComponentsFormatter alloc] init];
+    formatter.allowedUnits = NSCalendarUnitSecond;
+    formatter.unitsStyle = NSDateComponentsFormatterUnitsStyleAbbreviated;
+
+    valueLabel.text = [formatter stringFromTimeInterval:currentVal];
     valueLabel.textColor = [self sbSecondaryTextColor];
     valueLabel.font = [UIFont systemFontOfSize:13];
     valueLabel.textAlignment = NSTextAlignmentRight;
@@ -382,7 +386,11 @@ static const void *kSBColorIndexPathKey = &kSBColorIndexPathKey;
     [[NSUserDefaults standardUserDefaults] synchronize];
     
     UILabel *valueLabel = (UILabel *)[sender.superview viewWithTag:SBSliderValueLabelTagBase + sender.tag];
-    valueLabel.text = [NSString stringWithFormat:@"%d secs", rounded];
+    NSDateComponentsFormatter *formatter = [[NSDateComponentsFormatter alloc] init];
+    formatter.allowedUnits = NSCalendarUnitSecond;
+    formatter.unitsStyle = NSDateComponentsFormatterUnitsStyleAbbreviated;
+    
+    valueLabel.text = [formatter stringFromTimeInterval:currentVal];
 }
 
 #pragma mark - Segment Cells (Section 2)

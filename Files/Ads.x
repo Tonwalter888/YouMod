@@ -76,15 +76,6 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
             }];
             [itemsArray removeObjectsAtIndexes:removeItemsArrayIndexes];
         }
-
-        if ([sectionRenderer isKindOfClass:%c(YTISlimVideoMetadataSectionRenderer)]) {
-            NSMutableArray <YTIRenderer *> *itemsArray = ((YTISlimVideoMetadataSectionRenderer *)sectionRenderer).contentsArray;
-            NSIndexSet *removeItemsArrayIndexes = [itemsArray indexesOfObjectsPassingTest:^BOOL(YTIRenderer *renderer, NSUInteger idx2, BOOL *stop2) {
-                NSString *description = [renderer description];
-                return IS_ENABLED(HideActionBar) && [description containsString:@"video_action_bar.eml"];
-            }];
-            [itemsArray removeObjectsAtIndexes:removeItemsArrayIndexes];
-        }
         
         // Filter item section renderers
         if (![sectionRenderer isKindOfClass:%c(YTIItemSectionRenderer)]) return NO;
@@ -111,6 +102,10 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
             if (IS_ENABLED(HideHoriShelf) && ![description containsString:@"UCYfdidRxbB8Qhf0Nx7ioOYw"] && ![description containsString:@"FElibrary"] && ![description containsString:@"mini_game_card.eml"] && ![description containsString:@"FEplaylist_aggregation"]) {
                 return YES;
             }
+        }
+
+        if (IS_ENABLED(HideCommuGuide) && [description containsString:@"community_guidelines.eml"]) {
+            return YES;
         }
         
         // Filter feed posts
@@ -203,8 +198,6 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
     YTReelModel *model = %orig;
     if ([model respondsToSelector:@selector(videoType)] && model.videoType == 3)
         return nil;
-    if ([model respondsToSelector:@selector(videoType)] && model.videoType == 9)
-        return nil;
     if ([model isKindOfClass:%c(YTReelNonVideoContentModel)])
         return nil;
     if ([model respondsToSelector:@selector(videoType)] && model.videoType == 10 && IS_ENABLED(RemoveShortsPosts))
@@ -219,8 +212,6 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
 + (YTReelModel *)makeContentModelForEntry:(id)entry {
     YTReelModel *model = %orig;
     if ([model respondsToSelector:@selector(videoType)] && model.videoType == 3)
-        return nil;
-    if ([model respondsToSelector:@selector(videoType)] && model.videoType == 9)
         return nil;
     if ([model isKindOfClass:%c(YTReelNonVideoContentModel)])
         return nil;
@@ -237,7 +228,7 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
     YTReelModel *model = %orig;
     if ([model respondsToSelector:@selector(videoType)] && model.videoType == 3)
         return nil;
-    if ([model respondsToSelector:@selector(videoType)] && model.videoType == 9)
+    if ([model isKindOfClass:%c(YTReelNonVideoContentModel)])
         return nil;
     if ([model respondsToSelector:@selector(videoType)] && model.videoType == 10 && IS_ENABLED(RemoveShortsPosts))
         return nil;
@@ -248,7 +239,7 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
 - (void)setReels:(NSMutableOrderedSet <YTReelModel *> *)reels {
     [reels removeObjectsAtIndexes:[reels indexesOfObjectsPassingTest:^BOOL(YTReelModel *obj, NSUInteger idx, BOOL *stop) {
         if ([obj respondsToSelector:@selector(videoType)] && obj.videoType == 3) return YES;
-        if ([obj respondsToSelector:@selector(videoType)] && obj.videoType == 9) return YES;
+        if ([obj isKindOfClass:%c(YTReelNonVideoContentModel)]) return YES;
         if ([obj respondsToSelector:@selector(videoType)] && obj.videoType == 10 && IS_ENABLED(RemoveShortsPosts)) return YES;
         if ([obj respondsToSelector:@selector(videoType)] && (obj.videoType == 4 || obj.videoType == 7) && IS_ENABLED(RemoveShortsLive)) return YES;
         return NO;
@@ -277,6 +268,13 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
 - (void)playerOverlayProvider:(YTPlayerOverlayProvider *)provider didInsertPlayerOverlay:(YTPlayerOverlay *)overlay {
     if ([[overlay overlayIdentifier] isEqualToString:@"player_overlay_product_in_video"]) return;
     if ([[overlay overlayIdentifier] isEqualToString:@"player_overlay_paid_content"] && IS_ENABLED(HidePaidPromoOverlay)) return;
+    %orig;
+}
+%end
+
+%hook YTWatchFloatingMiniplayerBadgeView
+- (void)setOverlayBadge:(id)arg {
+    if (IS_ENABLED(HidePaidPromoOverlay)) return;
     %orig;
 }
 %end

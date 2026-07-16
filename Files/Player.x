@@ -175,9 +175,10 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
     CGFloat rate = playbackRate != 0 ? playbackRate : 1.0;
     NSTimeInterval remainingSeconds = (lround(video.totalMediaTime) - lround(time.time)) / rate;
 
-    NSString *remainingTimeText;
-    NSString *SBTimeRemaining = nil;
+    __block NSString *remainingTimeText = @"";
+    __block NSString *SBTimeRemaining = nil;
     NSTimeInterval SBTotalTimeRemaining = 0.0;
+
     if (IS_ENABLED(SBShowDuration)) {
         if (self.sbSegments && self.sbSegments.count > 0) {
             for (SBSegment *segment in self.sbSegments) {
@@ -200,6 +201,7 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
             }
         }
     }
+
     if (IS_ENABLED(ShowExtraTimeRemaining)) {
         NSDate *estimatedEndTime = [NSDate dateWithTimeIntervalSinceNow:remainingSeconds];
 
@@ -207,27 +209,44 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
         [dateFormatter setLocale:[[NSLocale alloc] initWithLocaleIdentifier:@"en_US_POSIX"]];
         [dateFormatter setDateFormat:IS_ENABLED(Uses24HoursTime) ? @"HH:mm" : @"h:mm a"];
 
-        remainingTimeText = [dateFormatter stringFromDate:estimatedEndTime];
+        remainingTimeText = [dateFormatter stringFromDate:estimatedEndTime] ?: @"";
     }
+
+    Class overlayClass = NSClassFromString(@"YTMainAppVideoPlayerOverlayView");
+    if (!overlayClass) return;
+
     YTPlayerView *playerView = (YTPlayerView *)self.playerView;
-    if (![playerView.overlayView isKindOfClass:%c(YTMainAppVideoPlayerOverlayView)]) return;
+    if (![playerView.overlayView isKindOfClass:overlayClass]) return;
 
-    YTMainAppVideoPlayerOverlayView *overlay = (YTMainAppVideoPlayerOverlayView*)playerView.overlayView;
-    YTLabel *durationLabel = overlay.playerBar.durationLabel;
+    dispatch_async(dispatch_get_main_queue(), ^{
+        YTMainAppVideoPlayerOverlayView *overlay = (YTMainAppVideoPlayerOverlayView *)playerView.overlayView;
+        YTLabel *durationLabel = overlay.playerBar.durationLabel;
+        if (!durationLabel) return;
 
-    if ((![durationLabel.text containsString:remainingTimeText] && IS_ENABLED(ShowExtraTimeRemaining)) || (SBTimeRemaining != nil && ![durationLabel.text containsString:SBTimeRemaining] && IS_ENABLED(SBShowDuration))) {
-        if (IS_ENABLED(SBShowDuration) && SBTimeRemaining != nil && IS_ENABLED(ShowExtraTimeRemaining)) {
-            durationLabel.text = [durationLabel.text stringByAppendingString:[NSString stringWithFormat:@" (%@) • %@", SBTimeRemaining, remainingTimeText]];
-        } else if (IS_ENABLED(ShowExtraTimeRemaining)) {
-            durationLabel.text = [durationLabel.text stringByAppendingString:[NSString stringWithFormat:@" • %@", remainingTimeText]];
-        } else if (IS_ENABLED(SBShowDuration) && SBTimeRemaining != nil) {
-            durationLabel.text = [durationLabel.text stringByAppendingString:[NSString stringWithFormat:@" (%@)", SBTimeRemaining]];
+        NSString *originalText = durationLabel.text ?: @"";
+
+        BOOL hasExtraTime = IS_ENABLED(ShowExtraTimeRemaining) && remainingTimeText.length > 0;
+        BOOL hasSBTime = IS_ENABLED(SBShowDuration) && SBTimeRemaining != nil;
+
+        BOOL alreadyHasExtra = [originalText containsString:remainingTimeText];
+        BOOL alreadyHasSB = SBTimeRemaining ? [originalText containsString:SBTimeRemaining] : YES;
+
+        if ((!alreadyHasExtra && hasExtraTime) || (!alreadyHasSB && hasSBTime)) {
+            if (hasSBTime && hasExtraTime) {
+                durationLabel.text = [originalText stringByAppendingFormat:@" (%@) • %@", SBTimeRemaining, remainingTimeText];
+            } else if (hasExtraTime) {
+                durationLabel.text = [originalText stringByAppendingFormat:@" • %@", remainingTimeText];
+            } else if (hasSBTime) {
+                durationLabel.text = [originalText stringByAppendingFormat:@" (%@)", SBTimeRemaining];
+            }
+            overlay.playerBar.endTimeString = durationLabel.text;
+            [durationLabel sizeToFit];
         }
-        [durationLabel sizeToFit];
-    }
+    });
 }
 
 %hook YTInlinePlayerBarContainerView
+%property (nonatomic, strong) NSString *endTimeString;
 - (void)layoutSubviews {
     %orig;
     if (!IS_ENABLED(TapToSeek)) return;
@@ -290,7 +309,7 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
         if (barWidth > 0) {
             CGFloat relativeX = touchPointInWindow.x - barStartX;
             CGFloat percentage = relativeX / barWidth;
-            CGFloat snapThreshold = 6.0;
+            CGFloat snapThreshold = 8.0;
             
             if (relativeX <= snapThreshold) {
                 percentage = 0.0;
@@ -338,6 +357,14 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
     BOOL temp = IS_ENABLED(DontSnapToChapter) ? NO : arg3;
     %orig(arg1, arg2, temp);
 }
+- (void)setPeekableViewVisible:(BOOL)visible {
+    %orig;
+    if (!IS_ENABLED(ShowExtraTimeRemaining) && !IS_ENABLED(SBShowDuration)) return;
+    if (self.endTimeString && ![self.durationLabel.text containsString:self.endTimeString]) {
+        self.durationLabel.text = self.endTimeString;
+        [self.durationLabel sizeToFit];
+    }
+}
 %end
 
 %hook YTMainAppControlsOverlayView
@@ -350,15 +377,10 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
 // Pause On Overlay
 - (void)setOverlayVisible:(BOOL)visible {
     %orig;
-    if (!IS_ENABLED(PauseOnOverlay) && !IS_ENABLED(ShowExtraTimeRemaining) && !IS_ENABLED(SBShowDuration)) return;
+    if (!IS_ENABLED(PauseOnOverlay)) return;
     YTMainAppVideoPlayerOverlayViewController *mainOverlayController = (YTMainAppVideoPlayerOverlayViewController *)self.eventsDelegate;
     YTPlayerViewController *playerViewController = mainOverlayController.parentViewController;
-    if (IS_ENABLED(PauseOnOverlay)) {
-        visible ? [playerViewController pause] : [playerViewController play];
-    }
-    if (IS_ENABLED(ShowExtraTimeRemaining) ||  IS_ENABLED(SBShowDuration)) {
-        YouModAddEndTime(playerViewController, playerViewController.activeVideo, playerViewController.activeVideo.currentVideoTime);
-    }
+    visible ? [playerViewController pause] : [playerViewController play];
 }
 %end
 
@@ -561,23 +583,6 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
 
 %end
 
-%hook YTVarispeedSwitchControllerImpl
-
-- (id)init {
-    self = %orig;
-    float speeds[] = {0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0, 5.0, 7.5, 10.0};
-    id options[itemCount];
-    Class YTVarispeedSwitchControllerOptionClass = %c(YTVarispeedSwitchControllerOption);
-    for (int i = 0; i < itemCount; ++i) {
-        NSString *title = [NSString stringWithFormat:@"%.2fx", speeds[i]];
-        options[i] = [[YTVarispeedSwitchControllerOptionClass alloc] initWithTitle:title rate:speeds[i]];
-    }
-    [self setValue:[NSArray arrayWithObjects:options count:itemCount] forKey:@"_options"];
-    return self;
-}
-
-%end
-
 %hook YTIPlayerHotConfig
 
 %new(f@:)
@@ -609,113 +614,9 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
 }
 
 %hook YTMainAppVideoPlayerOverlayView
-%property (nonatomic, strong) UIView *YouModSpeedToastView;
-%property (nonatomic, strong) UILabel *YouModSpeedToastLabel;
-%property (nonatomic, retain) UILongPressGestureRecognizer *YouModHoldGesture;
-%new
-- (void)YouModShowSpeedToast:(CGFloat)speed {
-    UIColor *themeTextColor = [UIColor labelColor];
-    UIColor *toastBgColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
-        if (traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark) {
-            return [UIColor colorWithWhite:0.1 alpha:0.95];
-        } else {
-            return [UIColor colorWithWhite:0.95 alpha:0.95];
-        }
-    }];
-
-    if (!self.YouModSpeedToastView) {
-        self.YouModSpeedToastView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 160, 44)];
-        self.YouModSpeedToastView.layer.cornerRadius = 22;
-        self.YouModSpeedToastView.clipsToBounds = YES;
-        self.YouModSpeedToastView.alpha = 0.0;
-        self.YouModSpeedToastView.backgroundColor = toastBgColor;
-
-        self.YouModSpeedToastLabel = [[UILabel alloc] initWithFrame:self.YouModSpeedToastView.bounds];
-        self.YouModSpeedToastLabel.textAlignment = NSTextAlignmentCenter;
-        self.YouModSpeedToastLabel.textColor = themeTextColor;
-        self.YouModSpeedToastLabel.font = [UIFont systemFontOfSize:13 weight:UIFontWeightMedium];
-        self.YouModSpeedToastLabel.numberOfLines = 2;
-        [self.YouModSpeedToastView addSubview:self.YouModSpeedToastLabel];
-        
-        [self addSubview:self.YouModSpeedToastView];
-    }
-    
-    self.YouModSpeedToastView.backgroundColor = toastBgColor;
-    self.YouModSpeedToastLabel.textColor = themeTextColor;
-    
-    CGRect toastFrame = self.YouModSpeedToastView.frame;
-    toastFrame.origin.y = 18;
-    toastFrame.origin.x = (self.bounds.size.width - toastFrame.size.width) / 2.0;
-    self.YouModSpeedToastView.frame = toastFrame;
-
-    self.YouModSpeedToastView.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin | UIViewAutoresizingFlexibleBottomMargin;
-    [self bringSubviewToFront:self.YouModSpeedToastView];
-    
-    NSTextAttachment *attachment = [[NSTextAttachment alloc] init];
-    attachment.image = [[UIImage systemImageNamed:@"hare.fill"] imageWithTintColor:themeTextColor];
-    attachment.bounds = CGRectMake(0, -2, 14, 14);
-    
-    NSString *localizedText = LOC(@"PLAYBACK_SPEED");
-    NSMutableAttributedString *attrString = [[NSMutableAttributedString alloc] initWithString:[NSString stringWithFormat:@" %@\n%gx", localizedText, speed]];
-    
-    if (attachment.image) {
-        NSAttributedString *iconString = [NSAttributedString attributedStringWithAttachment:attachment];
-        [attrString insertAttributedString:iconString atIndex:0];
-    }
-    
-    self.YouModSpeedToastLabel.attributedText = attrString;
-
-    [UIView animateWithDuration:0.2 animations:^{
-        self.YouModSpeedToastView.alpha = 1.0;
-    }];
-}
-%new
-- (void)YouModHideSpeedToast {
-    [UIView animateWithDuration:0.2 animations:^{
-        self.YouModSpeedToastView.alpha = 0.0;
-    }];
-}
 - (void)setLongPressGestureRecognizer:(id)arg {
-    [self.delegate setPlaybackRate:1.0];
-    [self YouModHideSpeedToast];
-
-    if (INTFORVAL(HoldToSpeedIndex) != 0) {
-        if (self.YouModHoldGesture) {
-            [self removeGestureRecognizer:self.YouModHoldGesture];
-            self.YouModHoldGesture = nil;
-        }
-
-        self.YouModHoldGesture = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(YouModHoldToSpeed:)];
-        self.YouModHoldGesture.minimumPressDuration = 0.4;
-        
-        [self addGestureRecognizer:self.YouModHoldGesture];
-    } else {
-        if (self.YouModHoldGesture) {
-            [self removeGestureRecognizer:self.YouModHoldGesture];
-            self.YouModHoldGesture = nil;
-        }
-        %orig;
-    }
-}
-%new
-- (void)YouModHoldToSpeed:(UILongPressGestureRecognizer *)gesture {
-    YTMainAppVideoPlayerOverlayViewController *ovcon = self.delegate;
-    YTPlayerViewController *pvcon = ovcon.parentViewController;
-    if (pvcon.playerState != 3) return;
-    NSInteger speedIndex = INTFORVAL(HoldToSpeedIndex);
-    CGFloat speed = YouModSpeedForHoldIndex(speedIndex);
-
-    if (gesture.state == UIGestureRecognizerStateBegan) {
-        YouModRateBeforeHoldToSpeed = [self.delegate currentPlaybackRate];
-        [self.delegate setPlaybackRate:speed];
-        [self YouModShowSpeedToast:speed];
-    } else if (gesture.state == UIGestureRecognizerStateEnded || 
-               gesture.state == UIGestureRecognizerStateCancelled || 
-               gesture.state == UIGestureRecognizerStateFailed) {
-               
-        [self.delegate setPlaybackRate:YouModRateBeforeHoldToSpeed];
-        [self YouModHideSpeedToast];
-    }
+    if (INTFORVAL(HoldToSpeedIndex) != 0) return;
+    %orig;
 }
 // Remove Dark Background in Overlay
 - (void)setBackgroundVisible:(BOOL)arg1 isGradientBackground:(BOOL)arg2 {
@@ -867,7 +768,12 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
             playerViewController.YouModTapGesture.numberOfTouchesRequired = 2;
             playerViewController.YouModTapGesture.delegate = playerViewController;
             [playerViewController.playerView addGestureRecognizer:playerViewController.YouModTapGesture];
-        }        
+        }
+        if (!playerViewController.YouModHoldGesture && INTFORVAL(HoldToSpeedIndex) != 0) {
+            playerViewController.YouModHoldGesture = [[UILongPressGestureRecognizer alloc] initWithTarget:playerViewController action:@selector(YouModHoldToSpeed:)];
+            playerViewController.YouModHoldGesture.minimumPressDuration = 0.4;
+            [playerViewController addGestureRecognizer:playerViewController.YouModHoldGesture];   
+        }
     }
     %orig;
 }
@@ -877,6 +783,9 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
 %property (nonatomic, retain) UIPanGestureRecognizer *YouModPanGesture;
 %property (nonatomic, retain) UITapGestureRecognizer *YouModTapGesture;
 %property (nonatomic, retain) UILabel *YouModGestureHUD;
+%property (nonatomic, strong) UIView *YouModSpeedToastView;
+%property (nonatomic, strong) UILabel *YouModSpeedToastLabel;
+%property (nonatomic, retain) UILongPressGestureRecognizer *YouModHoldGesture;
 %new
 - (BOOL)gestureRecognizerShouldBegin:(UIGestureRecognizer *)gestureRecognizer {
     if (gestureRecognizer == self.YouModPanGesture) {
@@ -1177,14 +1086,13 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
 
 %new
 - (void)YouModAutoCaptions {
-    YTMainAppVideoPlayerOverlayViewController *ovc = self.activeVideoPlayerOverlay;
-    YTCaptionTrackSwitchController *switchcon = ovc.captionTrackController;
+    YTSingleVideoController *sgvid = self.activeVideo;
+    NSArray *allTracks = sgvid.availableCaptionTracks;
+    if (!allTracks || allTracks.count == 0) return;
     NSInteger selectedIndex = INTFORVAL(CaptionTrackLangIndex);
     NSArray *langCodes = getAllSystemLanguageValues();
     NSString *userTargetLang = langCodes[selectedIndex];
-    NSDictionary *allTracks = [switchcon valueForKey:@"_availableCaptionTracks"];
-    if (!allTracks || allTracks.count == 0) return;
-    MLInnerTubeCaptionTrack *currentTrack = [switchcon valueForKey:@"_activeCaptionTrack"];
+    MLInnerTubeCaptionTrack *currentTrack = sgvid.activeCaptionTrack;
     MLInnerTubeCaptionTrack *matchedTrack;
 
     if (INTFORVAL(CaptionTrack) == 1) {
@@ -1194,8 +1102,7 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
         return;
     }
 
-    for (id key in allTracks) {
-        MLInnerTubeCaptionTrack *track = allTracks[key];
+    for (MLInnerTubeCaptionTrack *track in allTracks) {
         if ([track.languageCode isEqualToString:userTargetLang]) {
             matchedTrack = track;
             break;
@@ -1220,6 +1127,87 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
         [self setActiveCaptionTrack:track source:0];
     } else {
         [self setActiveCaptionTrack:track];
+    }
+}
+%new
+- (void)YouModShowSpeedToast:(CGFloat)speed {
+    UIColor *themeTextColor = [UIColor labelColor];
+    UIColor *toastBgColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
+        if (traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark) {
+            return [UIColor colorWithWhite:0.1 alpha:0.95];
+        } else {
+            return [UIColor colorWithWhite:0.95 alpha:0.95];
+        }
+    }];
+
+    if (!self.YouModSpeedToastView) {
+        self.YouModSpeedToastView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 160, 44)];
+        self.YouModSpeedToastView.layer.cornerRadius = 22;
+        self.YouModSpeedToastView.clipsToBounds = YES;
+        self.YouModSpeedToastView.alpha = 0.0;
+        self.YouModSpeedToastView.backgroundColor = toastBgColor;
+
+        self.YouModSpeedToastLabel = [[UILabel alloc] initWithFrame:self.YouModSpeedToastView.bounds];
+        self.YouModSpeedToastLabel.textAlignment = NSTextAlignmentCenter;
+        self.YouModSpeedToastLabel.textColor = themeTextColor;
+        self.YouModSpeedToastLabel.font = [UIFont systemFontOfSize:13 weight:UIFontWeightMedium];
+        self.YouModSpeedToastLabel.numberOfLines = 2;
+        [self.YouModSpeedToastView addSubview:self.YouModSpeedToastLabel];
+        
+        [self addSubview:self.YouModSpeedToastView];
+    }
+    
+    self.YouModSpeedToastView.backgroundColor = toastBgColor;
+    self.YouModSpeedToastLabel.textColor = themeTextColor;
+    
+    CGRect toastFrame = self.YouModSpeedToastView.frame;
+    toastFrame.origin.y = 18;
+    toastFrame.origin.x = (self.bounds.size.width - toastFrame.size.width) / 2.0;
+    self.YouModSpeedToastView.frame = toastFrame;
+
+    self.YouModSpeedToastView.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin | UIViewAutoresizingFlexibleBottomMargin;
+    [self bringSubviewToFront:self.YouModSpeedToastView];
+    
+    NSTextAttachment *attachment = [[NSTextAttachment alloc] init];
+    attachment.image = [[UIImage systemImageNamed:@"hare.fill"] imageWithTintColor:themeTextColor];
+    attachment.bounds = CGRectMake(0, -2, 14, 14);
+    
+    NSString *localizedText = LOC(@"PLAYBACK_SPEED");
+    NSMutableAttributedString *attrString = [[NSMutableAttributedString alloc] initWithString:[NSString stringWithFormat:@" %@\n%gx", localizedText, speed]];
+    
+    if (attachment.image) {
+        NSAttributedString *iconString = [NSAttributedString attributedStringWithAttachment:attachment];
+        [attrString insertAttributedString:iconString atIndex:0];
+    }
+    
+    self.YouModSpeedToastLabel.attributedText = attrString;
+
+    [UIView animateWithDuration:0.2 animations:^{
+        self.YouModSpeedToastView.alpha = 1.0;
+    }];
+}
+%new
+- (void)YouModHideSpeedToast {
+    [UIView animateWithDuration:0.2 animations:^{
+        self.YouModSpeedToastView.alpha = 0.0;
+    }];
+}
+%new
+- (void)YouModHoldToSpeed:(UILongPressGestureRecognizer *)gesture {
+    if (self.playerState != 3) return;
+    NSInteger speedIndex = INTFORVAL(HoldToSpeedIndex);
+    CGFloat speed = YouModSpeedForHoldIndex(speedIndex);
+
+    if (gesture.state == UIGestureRecognizerStateBegan) {
+        YouModRateBeforeHoldToSpeed = [self currentPlaybackRate];
+        [self setPlaybackRate:speed];
+        [self YouModShowSpeedToast:speed];
+    } else if (gesture.state == UIGestureRecognizerStateEnded || 
+               gesture.state == UIGestureRecognizerStateCancelled || 
+               gesture.state == UIGestureRecognizerStateFailed) {
+               
+        [self setPlaybackRate:YouModRateBeforeHoldToSpeed];
+        [self YouModHideSpeedToast];
     }
 }
 %end

@@ -328,7 +328,11 @@ static const void *kYMSliderLabelAssoc = &kYMSliderLabelAssoc;
     valueLabel.textColor = [self ymSecondaryColor];
     valueLabel.font = [UIFont systemFontOfSize:14 weight:UIFontWeightMedium];
     valueLabel.textAlignment = NSTextAlignmentRight;
-    valueLabel.text = [NSString stringWithFormat:@"%d secs", (int)stored];
+    NSDateComponentsFormatter *formatter = [[NSDateComponentsFormatter alloc] init];
+    formatter.allowedUnits = NSCalendarUnitSecond;
+    formatter.unitsStyle = NSDateComponentsFormatterUnitsStyleAbbreviated;
+    
+    valueLabel.text = [formatter stringFromTimeInterval:stored];
     [cell.contentView addSubview:valueLabel];
 
     UISlider *slider = [[UISlider alloc] init];
@@ -368,7 +372,11 @@ static const void *kYMSliderLabelAssoc = &kYMSliderLabelAssoc;
     sender.value = snapped;
     [[NSUserDefaults standardUserDefaults] setFloat:snapped forKey:key];
     UILabel *valueLabel = objc_getAssociatedObject(sender, kYMSliderLabelAssoc);
-    valueLabel.text = [NSString stringWithFormat:@"%d secs", (int)snapped];
+    NSDateComponentsFormatter *formatter = [[NSDateComponentsFormatter alloc] init];
+    formatter.allowedUnits = NSCalendarUnitSecond;
+    formatter.unitsStyle = NSDateComponentsFormatterUnitsStyleAbbreviated;
+    
+    valueLabel.text = [formatter stringFromTimeInterval:snapped];
 }
 
 #pragma mark - Action Cell

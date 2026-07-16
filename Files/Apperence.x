@@ -40,7 +40,7 @@ static BOOL isDarkMode(UIView *view) {
     if (isDarkMode(self)) {
         ((UIView *)[systemBackgroundView valueForKey:backgroundViewKey]).backgroundColor = [UIColor blackColor];
     } else {
-        ((UIView *)[systemBackgroundView valueForKey:backgroundViewKey]).backgroundColor = [UIColor whiteColor];
+        ((UIView *)[systemBackgroundView valueForKey:backgroundViewKey]).backgroundColor = [UIColor systemBackgroundColor];
     }
 }
 - (void)_layoutSystemBackgroundView:(BOOL)arg1 {
@@ -48,7 +48,7 @@ static BOOL isDarkMode(UIView *view) {
     if (isDarkMode(self)) {
         ((UIView *)[[self valueForKey:@"_systemBackgroundView"] valueForKey:@"_colorView"]).backgroundColor = [UIColor blackColor];
     } else {
-        ((UIView *)[[self valueForKey:@"_systemBackgroundView"] valueForKey:@"_colorView"]).backgroundColor = [UIColor whiteColor];
+        ((UIView *)[[self valueForKey:@"_systemBackgroundView"] valueForKey:@"_colorView"]).backgroundColor = [UIColor systemBackgroundColor];
     }
 }
 - (void)traitCollectionDidChange:(UITraitCollection *)previousTraitCollection {
@@ -95,27 +95,27 @@ static BOOL isDarkMode(UIView *view) {
         }
     } else {
         if ([blackViews containsObject:self.accessibilityIdentifier]) {
-            self.backgroundColor = [UIColor clearColor];
+            self.backgroundColor = [UIColor systemBackgroundColor];
             return;
         }      
-        // if ([self.accessibilityIdentifier isEqualToString:@"brand_promo.view"]) self.superview.backgroundColor = [UIColor clearColor];  
+        // if ([self.accessibilityIdentifier isEqualToString:@"brand_promo.view"]) self.superview.backgroundColor = [UIColor systemBackgroundColor];  
         // Action dialog
         UIResponder *responder = self.nextResponder;
         while (responder != nil) {
             if ([responder isKindOfClass:%c(YTActionSheetDialogViewController)] || [responder isKindOfClass:%c(YTBottomSheetController)]) {
-                self.backgroundColor = [UIColor clearColor];
+                self.backgroundColor = [UIColor systemBackgroundColor];
                 break;
             } else if ([self.accessibilityIdentifier isEqualToString:@"eml.live_chat_text_message"] && [responder isKindOfClass:%c(YCHAsyncLiveChatCollectionViewController)]) {
                 YCHAsyncLiveChatCollectionViewController *con = (YCHAsyncLiveChatCollectionViewController *)responder;
                 if ([con.view isKindOfClass:%c(YCHAsyncLiveChatImmersiveCollectionView)]) break;
-                self.backgroundColor = [UIColor whiteColor];
+                self.backgroundColor = [UIColor systemBackgroundColor];
                 break;
             }
             responder = responder.nextResponder;
         }
         if ([self.accessibilityIdentifier isEqualToString:@"id.elements.components.filter_chip_bar"]) {
-            self.backgroundColor = [UIColor clearColor];
-            self.superview.backgroundColor = [UIColor clearColor];
+            self.backgroundColor = [UIColor systemBackgroundColor];
+            self.superview.backgroundColor = [UIColor systemBackgroundColor];
             return;
         }
     }
@@ -155,27 +155,27 @@ static BOOL isDarkMode(UIView *view) {
         }
     } else {
         if ([blackViews containsObject:self.accessibilityIdentifier]) {
-            self.backgroundColor = [UIColor clearColor];
+            self.backgroundColor = [UIColor systemBackgroundColor];
             return;
         }     
-        // if ([self.accessibilityIdentifier isEqualToString:@"brand_promo.view"]) self.superview.backgroundColor = [UIColor clearColor];  
+        // if ([self.accessibilityIdentifier isEqualToString:@"brand_promo.view"]) self.superview.backgroundColor = [UIColor systemBackgroundColor];  
         // Action dialog
         UIResponder *responder = self.nextResponder;
         while (responder != nil) {
             if ([responder isKindOfClass:%c(YTActionSheetDialogViewController)] || [responder isKindOfClass:%c(YTBottomSheetController)]) {
-                self.backgroundColor = [UIColor clearColor];
+                self.backgroundColor = [UIColor systemBackgroundColor];
                 break;
             } else if ([self.accessibilityIdentifier isEqualToString:@"eml.live_chat_text_message"] && [responder isKindOfClass:%c(YCHAsyncLiveChatCollectionViewController)]) {
                 YCHAsyncLiveChatCollectionViewController *con = (YCHAsyncLiveChatCollectionViewController *)responder;
                 if ([con.view isKindOfClass:%c(YCHAsyncLiveChatImmersiveCollectionView)]) break;
-                self.backgroundColor = [UIColor whiteColor];
+                self.backgroundColor = [UIColor systemBackgroundColor];
                 break;
             }
             responder = responder.nextResponder;
         }
         if ([self.accessibilityIdentifier isEqualToString:@"id.elements.components.filter_chip_bar"]) {
-            self.backgroundColor = [UIColor clearColor];
-            self.superview.backgroundColor = [UIColor clearColor];
+            self.backgroundColor = [UIColor systemBackgroundColor];
+            self.superview.backgroundColor = [UIColor systemBackgroundColor];
             return;
         }
     }
@@ -200,9 +200,9 @@ static BOOL isDarkMode(UIView *view) {
         if ([self.accessibilityIdentifier isEqualToString:@"subs_channel_bar.collection"]) self.backgroundColor = [UIColor blackColor];
         if ([self.accessibilityIdentifier isEqualToString:@"id.elements.components.more_drawer_collection"]) self.superview.backgroundColor = [UIColor blackColor];
     } else {
-        if ([blackViews containsObject:self.accessibilityIdentifier]) self.backgroundColor = [UIColor clearColor];
-        if ([self.accessibilityIdentifier isEqualToString:@"subs_channel_bar.collection"]) self.backgroundColor = [UIColor clearColor];
-        if ([self.accessibilityIdentifier isEqualToString:@"id.elements.components.more_drawer_collection"]) self.superview.backgroundColor = [UIColor whiteColor];
+        if ([blackViews containsObject:self.accessibilityIdentifier]) self.backgroundColor = [UIColor systemBackgroundColor];
+        if ([self.accessibilityIdentifier isEqualToString:@"subs_channel_bar.collection"]) self.backgroundColor = [UIColor systemBackgroundColor];
+        if ([self.accessibilityIdentifier isEqualToString:@"id.elements.components.more_drawer_collection"]) self.superview.backgroundColor = [UIColor systemBackgroundColor];
     }
 }
 - (void)layoutSubviews {
@@ -216,9 +216,9 @@ static BOOL isDarkMode(UIView *view) {
         if ([self.accessibilityIdentifier isEqualToString:@"subs_channel_bar.collection"]) self.backgroundColor = [UIColor blackColor];
         if ([self.accessibilityIdentifier isEqualToString:@"id.elements.components.more_drawer_collection"]) self.superview.backgroundColor = [UIColor blackColor];
     } else {
-        if ([blackViews containsObject:self.accessibilityIdentifier]) self.backgroundColor = [UIColor clearColor];
-        if ([self.accessibilityIdentifier isEqualToString:@"subs_channel_bar.collection"]) self.backgroundColor = [UIColor clearColor];
-        if ([self.accessibilityIdentifier isEqualToString:@"id.elements.components.more_drawer_collection"]) self.superview.backgroundColor = [UIColor whiteColor];
+        if ([blackViews containsObject:self.accessibilityIdentifier]) self.backgroundColor = [UIColor systemBackgroundColor];
+        if ([self.accessibilityIdentifier isEqualToString:@"subs_channel_bar.collection"]) self.backgroundColor = [UIColor systemBackgroundColor];
+        if ([self.accessibilityIdentifier isEqualToString:@"id.elements.components.more_drawer_collection"]) self.superview.backgroundColor = [UIColor systemBackgroundColor];
     }
 }
 - (void)traitCollectionDidChange:(UITraitCollection *)previousTraitCollection {
@@ -237,9 +237,29 @@ static BOOL isDarkMode(UIView *view) {
             if (isDarkMode(self)) {
                 subview.backgroundColor = [UIColor blackColor];
             } else {
-                subview.backgroundColor = [UIColor whiteColor];
+                subview.backgroundColor = [UIColor systemBackgroundColor];
             }
             break;
+        }
+    }
+}
+- (void)traitCollectionDidChange:(UITraitCollection *)previousTraitCollection {
+    %orig;
+    if ([self.traitCollection hasDifferentColorAppearanceComparedToTraitCollection:previousTraitCollection]) {
+        [self setNeedsLayout];
+    }
+}
+%end
+
+%hook YTEngagementPanelView
+- (void)layoutSubviews {
+    %orig;
+    UIView *foot = self.footerView;
+    if (foot) {
+        if (isDarkMode(self)) {
+            foot.backgroundColor = [UIColor blackColor];
+        } else {
+            foot.backgroundColor = [UIColor systemBackgroundColor];
         }
     }
 }

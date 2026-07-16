@@ -107,6 +107,7 @@
 "DOWNLOAD_CANCELLED" = "Download cancelled";
 "CANCEL" = "Cancel";
 "TRIMMING_AUDIO" = "Trimming audio...";
+"COPIED_TO_CLIPBOARD" = "Copied to clipboard";
 
 "APPEARANCE" = "Appearance";
 "OLED_THEME" = "OLED dark mode";

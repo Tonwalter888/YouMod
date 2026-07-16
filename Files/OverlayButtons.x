@@ -2,6 +2,30 @@
 
 #define TweakName @"YouMod"
 
+static NSString *YouModUpdateSpeedLabel = @"YouModUpdateSpeedLabel";
+static NSString *currentSpeedLabel = @"1x";
+static float currentPlaybackRate = 1.0;
+
+static NSString *speedLabel(float rate) {
+    NSNumberFormatter *formatter = [[NSNumberFormatter alloc] init];
+    formatter.numberStyle = NSNumberFormatterDecimalStyle;
+    formatter.minimumFractionDigits = 0;
+    formatter.maximumFractionDigits = 2;
+    NSString *rateString = [formatter stringFromNumber:[NSNumber numberWithFloat:rate]];
+    return [NSString stringWithFormat:@"%@x", rateString];
+}
+
+static void didSelectRate(float rate) {
+    currentPlaybackRate = rate;
+    currentSpeedLabel = speedLabel(rate);
+    [[NSNotificationCenter defaultCenter] postNotificationName:YouModUpdateSpeedLabel object:nil];
+}
+
+@interface YTMainAppControlsOverlayView ()
+- (void)updateSpeedButton:(id)arg;
+// - (void)updateQualityButton;
+@end
+
 static NSBundle *YouModBundle() {
     static NSBundle *bundle = nil;
     static dispatch_once_t onceToken;
@@ -231,6 +255,34 @@ static YTQTMButton *YMCreateOverlayButton(YTMainAppControlsOverlayView *overlay,
     matched.onTap(player, sender);
 }
 
+- (id)initWithDelegate:(id)delegate {
+    self = %orig;
+    [self updateSpeedButton:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(updateSpeedButton:) name:YouModUpdateSpeedLabel object:nil];
+    return self;
+}
+
+- (id)initWithDelegate:(id)delegate autoplaySwitchEnabled:(BOOL)autoplaySwitchEnabled {
+    self = %orig;
+    [self updateSpeedButton:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(updateSpeedButton:) name:YouModUpdateSpeedLabel object:nil];
+    return self;
+}
+
+- (void)dealloc {
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:YouModUpdateSpeedLabel object:nil];
+    %orig;
+}
+
+%new
+- (void)updateSpeedButton:(id)arg {
+    for (YMOverlayButtonSpec *spec in YMRegisteredOverlayButtons()) {
+        if ([spec.identifier isEqualToString:@"speed.video"]) {
+            spec.title = currentSpeedLabel;
+            break;
+        }
+    }
+}
 %end
 
 static void YouModShowShareNotification(NSString *message, BOOL success) {
@@ -291,6 +343,10 @@ static UIImage *YouModIconImage(NSInteger iconType) {
     [autoplayController setLoopMode:isLoopEnabled ? 2 : 0];
     [[%c(GOOHUDManagerInternal) sharedInstance] showMessageMainThread:[%c(YTHUDMessage) messageWithText:LOC(isLoopEnabled ? @"LOOP_ENABLED" : @"LOOP_DISABLED")]];
 }
+- (void)setPlaybackRate:(float)rate {
+    didSelectRate(rate);
+    %orig;
+}
 %end
 
 %hook YTAutoplayAutonavController
@@ -328,8 +384,7 @@ static UIImage *YouModIconImage(NSInteger iconType) {
     YMRegisterOverlayButton(mute);
     YMOverlayButtonSpec *speed = [[YMOverlayButtonSpec alloc] init];
     speed.identifier = @"speed.video";
-    speed.symbolName = @"speedometer";
-    speed.tintColor = [UIColor whiteColor];
+    speed.text = currentSpeedLabel;
     speed.sortOrder = 400;
     speed.isVisible = ^BOOL(YTPlayerViewController *player) {
         return IS_ENABLED(SpeedButton);
@@ -337,6 +392,7 @@ static UIImage *YouModIconImage(NSInteger iconType) {
     speed.onTap = ^(YTPlayerViewController *player, YTQTMButton *button) {
         YTMainAppVideoPlayerOverlayViewController *ovcon = [player activeVideoPlayerOverlay];
         [ovcon didPressVarispeed:button];
+        [ovcon updateSpeedButton:nil];
     };
     YMRegisterOverlayButton(speed);
     YMOverlayButtonSpec *share = [[YMOverlayButtonSpec alloc] init];

@@ -27,7 +27,6 @@
 #import <YouTubeHeader/YTReelModel.h>
 #import <YouTubeHeader/YTAlertView.h>
 #import <YouTubeHeader/YTVarispeedSwitchController.h>
-#import <YouTubeHeader/YTVarispeedSwitchControllerImpl.h>
 #import <YouTubeHeader/YTVarispeedSwitchControllerOption.h>
 #import <YouTubeHeader/YTInlinePlayerBarContainerView.h>
 #import <YouTubeHeader/YTSingleVideoTime.h>
@@ -61,7 +60,6 @@
 #import <YouTubeHeader/YTIFormattedString.h>
 #import <YouTubeHeader/GOOHUDManagerInternal.h>
 #import <YouTubeHeader/MLInnerTubeCaptionTrack.h>
-#import <YouTubeHeader/YTIRenderer.h>
 
 // For Settings.x and SponsorBlockSettings.x
 #import <PSHeader/Misc.h>
@@ -166,7 +164,6 @@
 #define DisablesFreeZoom @"YouModDisablesFreeZoom"
 #define TapToSeek @"YouModTapToSeek"
 #define PauseTwoFingers @"YouModPauseTwoFingers"
-#define HideActionBar @"YouModHideActionBar"
 #define HideCommentsSection @"YouModHideCommentsSection"
 #define HideCommentsPreview @"YouModHideCommentsPreview"
 #define UseAnotherMiniplayer @"YouModUseAnotherMiniplayer"
@@ -196,6 +193,7 @@
 #define DisablesSnackBar @"YouModDisablesSnackBar"
 #define HideStartupAni @"YouModHideStartupAnimations"
 #define HideLikeDislikeVotes @"YouModHideLikeDislikeVotes"
+#define HideCommuGuide @"YouModHideCommuGuide"
 // #define CustomStartup @"YouModUseCustomVideoStartup"
 // Flyout menu
 #define RemovePlayInNextQueueOption @"YouModRemovePlayInNextQueueOption"
@@ -273,10 +271,6 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 @interface YTContextualSheetView : UIView
 @end
 
-@interface YTISlimVideoMetadataSectionRenderer : GPBMessage
-@property (nonatomic, strong, readwrite) NSMutableArray *contentsArray;
-@end
-
 @interface YTShortsAdsPlayerViewController : YTReelPlayerViewController
 @end
 
@@ -299,12 +293,6 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 @interface YTMainAppVideoPlayerOverlayView (YouMod)
 @property (nonatomic, weak, readwrite) YTMainAppVideoPlayerOverlayViewController *delegate;
 @property (nonatomic, strong) YTQTMButton *playbackRouteButton;
-@property (nonatomic, strong) UIView *YouModSpeedToastView;
-@property (nonatomic, strong) UILabel *YouModSpeedToastLabel;
-@property (nonatomic, retain) UILongPressGestureRecognizer *YouModHoldGesture;
-- (void)YouModHoldToSpeed:(UILongPressGestureRecognizer *)gesture;
-- (void)YouModShowSpeedToast:(CGFloat)speed;
-- (void)YouModHideSpeedToast;
 @end
 
 @interface YTNavigationBarTitleView : UIView
@@ -347,9 +335,14 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 - (void)YouModFullscrrenGestureHandler:(UIPinchGestureRecognizer *)gesture;
 @end
 
+@interface YTReelContainerViewController : UIViewController
+@end
+
+@interface YTAppReelWatchRootViewController : UIViewController
+@end
+
 @interface YTReelContainerView : UIView <UIGestureRecognizerDelegate>
 @property (nonatomic, retain) UIPinchGestureRecognizer *YouModFullscreenGesture;
-- (UIView *)overlayView;
 - (void)YouModFullscrrenGestureHandler:(UIPinchGestureRecognizer *)gesture;
 @end
 
@@ -371,6 +364,9 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 @property (nonatomic, weak, readwrite) UIViewController *parentViewController;
 @property (nonatomic, assign, readonly) BOOL isInlinePlaybackActive;
 @property (nonatomic, assign, readonly) BOOL isPlayingAd;
+@property (nonatomic, strong) UIView *YouModSpeedToastView;
+@property (nonatomic, strong) UILabel *YouModSpeedToastLabel;
+@property (nonatomic, retain) UILongPressGestureRecognizer *YouModHoldGesture;
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer;
 - (void)YouModAutoFullscreen;
 - (void)YouModSetAutoSpeed;
@@ -390,6 +386,9 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 - (YTPlayerResponse *)playerResponse;
 - (id)audioTrackController;
 - (void)setAudioTrack:(YTIAudioTrack *)arg1 source:(NSInteger)arg2;
+- (void)YouModHideSpeedToast;
+- (void)YouModShowSpeedToast:(CGFloat)speed;
+- (void)YouModHoldToSpeed:(UILongPressGestureRecognizer *)gesture;
 @end
 
 @interface YTAutoplayAutonavController : NSObject
@@ -406,7 +405,6 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 @end
 
 @interface YTWatchFloatingMiniplayerWithPersistentControlsView : UIView
-- (NSInteger)dockHandleStyle;
 @end
 
 @interface YTWatchFloatingMiniplayerProgressBarView : UIView
@@ -419,6 +417,10 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 @end
 
 @interface YTMySubsFilterHeaderViewController : UIViewController
+@end
+
+@interface YTEngagementPanelView : UIView
+- (UIView *)footerView;
 @end
 
 @interface YTMainAppControlsOverlayView (YouMod)
@@ -450,6 +452,10 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 
 @interface YTAppDelegate : UIResponder
 - (void)YouModAutoClearCache;
+@end
+
+@interface YTInlinePlayerBarContainerView (YouMod)
+@property (nonatomic, strong) NSString *endTimeString;
 @end
 
 // Custom perferences logics
@@ -487,11 +493,15 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 - (YTSingleVideoTime *)currentVideoTime;
 - (void)setVideoFormatConstraint:(id)arg;
 - (void)YouModAutoQuality;
+- (NSArray *)availableCaptionTracks;
+- (MLInnerTubeCaptionTrack *)activeCaptionTrack;
 @end
 
 @interface YTReelPlayerViewController (YouMod)
 - (void)reelContentViewRequestsAdvanceToNextVideo:(id)arg;
 - (void)reelContentViewRequestsPlayPauseToggle:(id)arg;
+- (id)audioTrackController;
+- (void)YouModAutoAudioTrack:(YTPlayerViewController *)pv;
 @end
 
 @interface YTIPlayerCaptionsTrackListRenderer : GPBMessage
@@ -647,4 +657,8 @@ extern NSArray<YMOverlayButtonSpec *> *YMRegisteredOverlayButtons(void);
 - (void)sbRenderSegments:(NSArray<SBSegment *> *)segments;
 - (void)sbClearSegments;
 - (void)sbRepositionMarkers;
+@end
+
+@interface YouModThumbnailViewController : UIViewController
+@property (nonatomic, strong) UIImage *thumbnailImage;
 @end
