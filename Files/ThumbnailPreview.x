@@ -79,7 +79,7 @@
 - (void)moreTapped:(UIButton *)sender {
     UIActivityViewController *activityVC = [[UIActivityViewController alloc] initWithActivityItems:@[self.thumbnailImage] applicationActivities:nil];
     
-    if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad) {
+    if ([UIDevice userInterfaceIdiom] == UIUserInterfaceIdiomPad) {
         activityVC.popoverPresentationController.sourceView = sender;
         activityVC.popoverPresentationController.sourceRect = sender.bounds;
     }
