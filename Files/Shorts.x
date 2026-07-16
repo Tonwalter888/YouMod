@@ -187,10 +187,16 @@ extern void YouModConfigureDownloadButton(_ASDisplayView *view);
         if (gesture.scale > 1.0) {
             if (!isTabBarHidden) {
                 [appcon hidePivotBar];
+                [UIView animateWithDuration:0.3 animations:^{
+                    self.alpha = 0;
+                }];
             }
         } else if (gesture.scale < 1.0) {
             if (isTabBarHidden) {
                 [appcon showPivotBar];
+                [UIView animateWithDuration:0.3 animations:^{
+                    self.alpha = 1;
+                }];
             }
         }
     } else {
@@ -199,63 +205,16 @@ extern void YouModConfigureDownloadButton(_ASDisplayView *view);
         if (gesture.scale > 1.0) {
             if (!isTabBarHidden) {
                 [appcon hidePivotBar];
+                [UIView animateWithDuration:0.3 animations:^{
+                    self.alpha = 0;
+                }];
             }
         } else if (gesture.scale < 1.0) {
             if (isTabBarHidden) {
                 [appcon showPivotBar];
-            }
-        }
-    }
-}
-%new
-- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
-    if (gestureRecognizer == self.YouModFullscreenGesture) {
-        return YES;
-    }
-    return NO;
-}
-%end
-
-%hook YTReelContainerView
-%property (nonatomic, retain) UIPinchGestureRecognizer *YouModFullscreenGesture;
-- (void)setOverlayView:(id)arg {
-    %orig;
-    if (!IS_ENABLED(FullScreenShorts)) return;
-    if (!self.YouModFullscreenGesture) {
-        self.YouModFullscreenGesture = [[UIPinchGestureRecognizer alloc] initWithTarget:self action:@selector(YouModFullscrrenGestureHandler:)];
-        self.YouModFullscreenGesture.delegate = (id<UIGestureRecognizerDelegate>)self;
-        
-        [self addGestureRecognizer:self.YouModFullscreenGesture];
-    }
-}
-%new
-- (void)YouModFullscrrenGestureHandler:(UIPinchGestureRecognizer *)gesture {
-    if (gesture.state != UIGestureRecognizerStateBegan) return;
-    YTReelContainerViewController *reelcon = [self valueForKey:@"_parentResponder"];
-    YTAppReelWatchRootViewController *watchroot = [reelcon valueForKey:@"_delegate"];
-    id appconmain = [watchroot valueForKey:@"_pivotBarProvider"];
-    if ([appconmain isKindOfClass:%c(YTAppViewControllerImpl)]) {
-        YTAppViewControllerImpl *appcon = (YTAppViewControllerImpl *)appconmain;
-        BOOL isTabBarHidden = [appcon isPivotBarHidden];
-        if (gesture.scale > 1.0) {
-            if (!isTabBarHidden) {
-                [appcon hidePivotBar];
-            }
-        } else if (gesture.scale < 1.0) {
-            if (isTabBarHidden) {
-                [appcon showPivotBar];
-            }
-        }
-    } else {
-        YTAppViewController *appcon = (YTAppViewController *)appconmain;
-        BOOL isTabBarHidden = [appcon isPivotBarHidden];
-        if (gesture.scale > 1.0) {
-            if (!isTabBarHidden) {
-                [appcon hidePivotBar];
-            }
-        } else if (gesture.scale < 1.0) {
-            if (isTabBarHidden) {
-                [appcon showPivotBar];
+                [UIView animateWithDuration:0.3 animations:^{
+                    self.alpha = 1;
+                }];
             }
         }
     }

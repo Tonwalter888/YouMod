@@ -595,11 +595,30 @@ static const CGFloat SBInlineMarkerHeight = 4.0;
 
 %end
 
-// YTWatchFloatingMiniplayerProgressBarView - miniplayer
-%hook YTWatchFloatingMiniplayerProgressBarView
+// YTWatchFloatingMiniplayerWithPersistentControlsView - miniplayer
+%hook YTWatchFloatingMiniplayerWithPersistentControlsView
 - (void)layoutSubviews {
     %orig;
-    CGFloat barWidth = self.bounds.size.width;
+    if (self.dockHandleStyle == 2) {
+        for (UIView *sub in [self.subviews copy]) {
+            if (sub.tag == SBSegmentMarkerTag) sub.hidden = YES;
+        }
+        return;
+    }
+    for (UIView *sub in [self.subviews copy]) {
+        if (sub.tag == SBSegmentMarkerTag) sub.hidden = NO;
+    }
+    UIView *playerBar;
+    for (UIView *sub in self.subviews) {
+        for (UIView *sub2 in sub.subviews) {
+            if ([sub2 isKindOfClass:%c(YTWatchFloatingMiniplayerProgressBarView)]) {
+                playerBar = sub2;
+                break;
+            }
+        }
+        if (playerBar) break;
+    }
+    CGFloat barWidth = playerBar.bounds.size.width;
 
     for (UIView *sub in self.subviews) {
         if (sub.tag != SBSegmentMarkerTag) continue;
@@ -615,31 +634,8 @@ static const CGFloat SBInlineMarkerHeight = 4.0;
         if (isPoi) { w = SBPoiMarkerWidth; x = MAX(0, x - SBPoiMarkerXOffset); }
         else if (w < SBMarkerMinWidth) w = SBMarkerMinWidth;
 
-        sub.frame = CGRectMake(x, self.frame.origin.y, w, self.bounds.size.height);
+        sub.frame = CGRectMake(x, playerBar.frame.origin.y, w, playerBar.bounds.size.height);
     }
-
-    // Keep the segment markers above YouTube's decoration views, and the scrubber
-    // dot above the markers, so the stack stays track < markers < dot. YouTube
-    // rebuilds its own decorations on top of ours on each layout (splitting the
-    // progress view per chapter), which would otherwise bury the markers.
-    NSArray<UIView *> *subs = self.subviews;
-    NSMutableArray<UIView *> *markers = [NSMutableArray array];
-    for (UIView *sub in subs) {
-        if (sub.tag == SBSegmentMarkerTag) [markers addObject:sub];
-    }
-    if (markers.count == 0) return;
-
-    // Desired top group, front-most last: the markers followed by the dot. Reorder
-    // only when the subview tail doesn't already match it, so a settled layout is a
-    // no-op and doesn't trigger a fresh layout pass on every runloop cycle.
-    NSMutableArray<UIView *> *desiredTail = [markers mutableCopy];
-    BOOL settled = subs.count >= desiredTail.count;
-    for (NSUInteger i = 0; settled && i < desiredTail.count; i++) {
-        if (subs[subs.count - desiredTail.count + i] != desiredTail[i]) settled = NO;
-    }
-    if (settled) return;
-
-    for (UIView *marker in markers) [self bringSubviewToFront:marker];
 }
 %end
 
@@ -690,19 +686,19 @@ static const CGFloat SBInlineMarkerHeight = 4.0;
     if ([self.parentViewController isKindOfClass:%c(YTWatchFloatingMiniplayerViewController)] && IS_ENABLED(SBSegmentsInMiniPlayer)) {
         YTWatchFloatingMiniplayerViewController *miniplayercontroller = (YTWatchFloatingMiniplayerViewController *)self.parentViewController;
         YTWatchFloatingMiniplayerWithPersistentControlsView *controlsview = (YTWatchFloatingMiniplayerWithPersistentControlsView *)miniplayercontroller.view;
+        mainView = controlsview;
 
         for (UIView *sub in controlsview.subviews) {
             for (UIView *sub2 in sub.subviews) {
                 if ([sub2 isKindOfClass:%c(YTWatchFloatingMiniplayerProgressBarView)]) {
                     referenceView = sub2;
-                    mainView = sub2;
                     break;
                 }
             }
             if (referenceView) break;
         }
         // Remove old markers
-        for (UIView *sub in [mainView.subviews copy]) {
+        for (UIView *sub in [controlsview.subviews copy]) {
             if (sub.tag == SBSegmentMarkerTag) [sub removeFromSuperview];
         }
         if (!segments || segments.count == 0) return;
@@ -736,10 +732,10 @@ static const CGFloat SBInlineMarkerHeight = 4.0;
         if (barWidth <= 0) return;
 
         @try {
-            scrubberDot = [mainView valueForKey:@"_scrubberCircle"];
+            scrubberDot = [playerBar valueForKey:@"_scrubberCircle"];
         } @catch (id ex) {}
         // Find reference track view for Y position and height
-        for (UIView *sub in mainView.subviews) {
+        for (UIView *sub in playerBar.subviews) {
             if ([sub isKindOfClass:%c(YTPlayerBarRectangleDecorationView)]) {
                 if (!referenceView) referenceView = sub;
             } else if ([sub isKindOfClass:%c(YTPlayerBarProgressDecorationView)]) {

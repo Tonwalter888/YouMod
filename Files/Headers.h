@@ -335,17 +335,6 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 - (void)YouModFullscrrenGestureHandler:(UIPinchGestureRecognizer *)gesture;
 @end
 
-@interface YTReelContainerViewController : UIViewController
-@end
-
-@interface YTAppReelWatchRootViewController : UIViewController
-@end
-
-@interface YTReelContainerView : UIView <UIGestureRecognizerDelegate>
-@property (nonatomic, retain) UIPinchGestureRecognizer *YouModFullscreenGesture;
-- (void)YouModFullscrrenGestureHandler:(UIPinchGestureRecognizer *)gesture;
-@end
-
 @interface YTLanguages : NSObject
 + (instancetype)languageList;
 @end
