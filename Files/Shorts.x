@@ -1,5 +1,47 @@
 #import "Headers.h"
 
+// Audio track list
+static NSArray *getAllSystemLanguageTitles() {
+    NSMutableArray *titles = [NSMutableArray array];
+    NSArray *allLocales = [%c(YTLanguages) languageList];
+    NSMutableSet *seenLanguages = [NSMutableSet set];
+    NSLocale *currentLocale = [NSLocale currentLocale];
+    
+    for (NSString *localeId in allLocales) {
+        NSDictionary *components = [NSLocale componentsFromLocaleIdentifier:localeId];
+        NSString *langCode = components[NSLocaleLanguageCode];
+        
+        if (langCode && ![seenLanguages containsObject:langCode]) {
+            [seenLanguages addObject:langCode];
+            NSString *displayName = [currentLocale localizedStringForLocaleIdentifier:langCode];
+            if (displayName) [titles addObject:displayName];
+        }
+    }
+    return [titles sortedArrayUsingSelector:@selector(localizedCaseInsensitiveCompare:)];
+}
+
+static NSArray *getAllSystemLanguageValues() {
+    NSArray *sortedTitles = getAllSystemLanguageTitles();
+    NSMutableArray *sortedCodes = [NSMutableArray array];
+    NSArray *allLocales = [%c(YTLanguages) languageList];
+    NSLocale *currentLocale = [NSLocale currentLocale];
+    
+    NSMutableDictionary *titleToCodeMap = [NSMutableDictionary dictionary];
+    for (NSString *localeId in allLocales) {
+        NSDictionary *components = [NSLocale componentsFromLocaleIdentifier:localeId];
+        NSString *langCode = components[NSLocaleLanguageCode];
+        if (langCode) {
+            NSString *displayName = [currentLocale localizedStringForLocaleIdentifier:langCode];
+            if (displayName) titleToCodeMap[displayName] = langCode;
+        }
+    }
+    
+    for (NSString *title in sortedTitles) {
+        [sortedCodes addObject:titleToCodeMap[title] ? titleToCodeMap[title] : @"en"];
+    }
+    return [sortedCodes copy];
+}
+
 // Enables shorts quality - works best with YTClassicVideoQuality
 %hook YTHotConfig
 - (BOOL)enableOmitAdvancedMenuInShortsVideoQualityPicker { return IS_ENABLED(EnablesShortsQuality) ? YES : %orig; }
