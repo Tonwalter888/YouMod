@@ -384,15 +384,17 @@ static UIImage *YouModIconImage(NSInteger iconType) {
     YMRegisterOverlayButton(mute);
     YMOverlayButtonSpec *speed = [[YMOverlayButtonSpec alloc] init];
     speed.identifier = @"speed.video";
-    speed.text = currentSpeedLabel;
+    speed.title = currentSpeedLabel;
     speed.sortOrder = 400;
     speed.isVisible = ^BOOL(YTPlayerViewController *player) {
         return IS_ENABLED(SpeedButton);
     };
     speed.onTap = ^(YTPlayerViewController *player, YTQTMButton *button) {
         YTMainAppVideoPlayerOverlayViewController *ovcon = [player activeVideoPlayerOverlay];
+        YTMainAppVideoPlayerOverlayView *ovview = [ovcon videoPlayerOverlayView];
+        YTMainAppControlsOverlayView *conview = [ovview controlsOverlayView];
         [ovcon didPressVarispeed:button];
-        [ovcon updateSpeedButton:nil];
+        [conview updateSpeedButton:nil];
     };
     YMRegisterOverlayButton(speed);
     YMOverlayButtonSpec *share = [[YMOverlayButtonSpec alloc] init];

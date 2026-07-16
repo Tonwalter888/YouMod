@@ -1649,8 +1649,8 @@ static void YouModShowThumbnailSheet(YTPlayerViewController *player, UIViewContr
     [items addObject:[YouModMenuItem itemWithTitle:LOC(@"SAVE_THUMBNAIL") subtitle:LOC(@"SAVE_THUMBNAIL_DESC") icon:YouModIconImage(57) handler:^{
         YouModDownloadThumbnail(videoID, presenter);
     }]];
-    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_ALL_VID_INFO") subtitle:LOC(@"COPY_ALL_VID_INFO_DESC") icon:YouModIconImage(208) handler:^{
-        YouModCopyTextToPasteboard(videoID, presenter);
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"SHOW_THUMBNAIL") subtitle:LOC(@"SHOW_THUMBNAIL_DESC") icon:YouModIconImage(208) handler:^{
+        YouModShowThumbnailViewer(videoID, presenter);
     }]];
     [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_THUMBNAIL") subtitle:LOC(@"COPY_THUMBNAIL_DESC") icon:YouModIconImage(250) handler:^{
         YouModCopyThumbnail(videoID, presenter);

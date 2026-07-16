@@ -1154,7 +1154,7 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
         self.YouModSpeedToastLabel.numberOfLines = 2;
         [self.YouModSpeedToastView addSubview:self.YouModSpeedToastLabel];
         
-        [self addSubview:self.YouModSpeedToastView];
+        [self.playerview addSubview:self.YouModSpeedToastView];
     }
     
     self.YouModSpeedToastView.backgroundColor = toastBgColor;
@@ -1162,11 +1162,11 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
     
     CGRect toastFrame = self.YouModSpeedToastView.frame;
     toastFrame.origin.y = 18;
-    toastFrame.origin.x = (self.bounds.size.width - toastFrame.size.width) / 2.0;
+    toastFrame.origin.x = (self.playerview.bounds.size.width - toastFrame.size.width) / 2.0;
     self.YouModSpeedToastView.frame = toastFrame;
 
     self.YouModSpeedToastView.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin | UIViewAutoresizingFlexibleBottomMargin;
-    [self bringSubviewToFront:self.YouModSpeedToastView];
+    [self.playerview bringSubviewToFront:self.YouModSpeedToastView];
     
     NSTextAttachment *attachment = [[NSTextAttachment alloc] init];
     attachment.image = [[UIImage systemImageNamed:@"hare.fill"] imageWithTintColor:themeTextColor];
@@ -1199,7 +1199,7 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
     CGFloat speed = YouModSpeedForHoldIndex(speedIndex);
 
     if (gesture.state == UIGestureRecognizerStateBegan) {
-        YouModRateBeforeHoldToSpeed = [self currentPlaybackRate];
+        YouModRateBeforeHoldToSpeed = [self.activeVideoPlayerOverlay currentPlaybackRate];
         [self setPlaybackRate:speed];
         [self YouModShowSpeedToast:speed];
     } else if (gesture.state == UIGestureRecognizerStateEnded || 
