@@ -390,7 +390,7 @@ static const void *kSBColorIndexPathKey = &kSBColorIndexPathKey;
     formatter.allowedUnits = NSCalendarUnitSecond;
     formatter.unitsStyle = NSDateComponentsFormatterUnitsStyleAbbreviated;
     
-    valueLabel.text = [formatter stringFromTimeInterval:currentVal];
+    valueLabel.text = [formatter stringFromTimeInterval:rounded];
 }
 
 #pragma mark - Segment Cells (Section 2)
