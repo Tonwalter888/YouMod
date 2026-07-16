@@ -772,7 +772,7 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
         if (!playerViewController.YouModHoldGesture && INTFORVAL(HoldToSpeedIndex) != 0) {
             playerViewController.YouModHoldGesture = [[UILongPressGestureRecognizer alloc] initWithTarget:playerViewController action:@selector(YouModHoldToSpeed:)];
             playerViewController.YouModHoldGesture.minimumPressDuration = 0.4;
-            [playerViewController addGestureRecognizer:playerViewController.YouModHoldGesture];   
+            [playerViewController.playerView addGestureRecognizer:playerViewController.YouModHoldGesture];   
         }
     }
     %orig;
@@ -1154,7 +1154,7 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
         self.YouModSpeedToastLabel.numberOfLines = 2;
         [self.YouModSpeedToastView addSubview:self.YouModSpeedToastLabel];
         
-        [self.playerview addSubview:self.YouModSpeedToastView];
+        [self.playerView addSubview:self.YouModSpeedToastView];
     }
     
     self.YouModSpeedToastView.backgroundColor = toastBgColor;
@@ -1162,11 +1162,11 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
     
     CGRect toastFrame = self.YouModSpeedToastView.frame;
     toastFrame.origin.y = 18;
-    toastFrame.origin.x = (self.playerview.bounds.size.width - toastFrame.size.width) / 2.0;
+    toastFrame.origin.x = (self.playerView.bounds.size.width - toastFrame.size.width) / 2.0;
     self.YouModSpeedToastView.frame = toastFrame;
 
     self.YouModSpeedToastView.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin | UIViewAutoresizingFlexibleBottomMargin;
-    [self.playerview bringSubviewToFront:self.YouModSpeedToastView];
+    [self.playerView bringSubviewToFront:self.YouModSpeedToastView];
     
     NSTextAttachment *attachment = [[NSTextAttachment alloc] init];
     attachment.image = [[UIImage systemImageNamed:@"hare.fill"] imageWithTintColor:themeTextColor];
@@ -1199,7 +1199,8 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
     CGFloat speed = YouModSpeedForHoldIndex(speedIndex);
 
     if (gesture.state == UIGestureRecognizerStateBegan) {
-        YouModRateBeforeHoldToSpeed = [self.activeVideoPlayerOverlay currentPlaybackRate];
+        YTMainAppVideoPlayerOverlayViewController *con = [self activeVideoPlayerOverlay];
+        YouModRateBeforeHoldToSpeed = [con currentPlaybackRate];
         [self setPlaybackRate:speed];
         [self YouModShowSpeedToast:speed];
     } else if (gesture.state == UIGestureRecognizerStateEnded || 
