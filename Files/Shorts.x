@@ -235,6 +235,16 @@ static BOOL isShortsOnlyOn = YES;
     %orig;
     if (!IS_ENABLED(ShortsOnly)) return;
     self.playbackOverlay.alpha = 0;
+    YTReelContainerViewController *reelcon = [self valueForKey:@"_parentResponder"];
+    YTAppReelWatchRootViewController *watchroot = [reelcon valueForKey:@"_delegate"];
+    id appconmain = [watchroot valueForKey:@"_pivotBarProvider"];
+    if ([appconmain isKindOfClass:%c(YTAppViewControllerImpl)]) {
+        YTAppViewControllerImpl *appcon = (YTAppViewControllerImpl *)appconmain;
+        [appcon hidePivotBar];
+    } else {
+        YTAppViewController *appcon = (YTAppViewController *)appconmain;
+        [appcon hidePivotBar];
+    }
     UILongPressGestureRecognizer *longPressGesture = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(YouModTurnOffShortsOnly:)];
     longPressGesture.numberOfTouchesRequired = 2;
     longPressGesture.minimumPressDuration = 0.5;
