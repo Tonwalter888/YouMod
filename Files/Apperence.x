@@ -289,6 +289,7 @@ static BOOL isDarkMode(UIView *view) {
     }
 }
 %end
+%end
 
 %group OLEDKeyboard
 %hook UIKeyboard
