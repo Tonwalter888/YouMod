@@ -13,6 +13,7 @@ NSString *getAdString(NSString *description) {
     for (NSString *str in @[
         @"brand_promo",
         @"brand_video_shelf",
+        @"brand_video_singleton",
         @"carousel_footered_layout",
         @"carousel_headered_layout",
         @"eml.expandable_metadata",
@@ -277,6 +278,7 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
     if (IS_ENABLED(HidePaidPromoOverlay)) return;
     %orig;
 }
+- (id)overlayBadge { return IS_ENABLED(HidePaidPromoOverlay) ? nil : %orig; }
 %end
 
 %hook YTInnerTubeCollectionViewController

@@ -5,47 +5,46 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    self.view.backgroundColor = [UIColor blackColor];
-
-    UIImageView *bgImageView = [[UIImageView alloc] initWithImage:self.thumbnailImage];
-    bgImageView.frame = self.view.bounds;
-    bgImageView.contentMode = UIViewContentModeScaleAspectFill;
-    bgImageView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-    [self.view addSubview:bgImageView];
-
-    UIBlurEffect *blurEffect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemMaterial];
-    UIVisualEffectView *blurView = [[UIVisualEffectView alloc] initWithEffect:blurEffect];
-    blurView.frame = self.view.bounds;
-    blurView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-    [self.view addSubview:blurView];
+    self.view.backgroundColor = [UIColor colorWithWhite:0.0 alpha:0.5];
 
     UIView *container = [[UIView alloc] init];
     container.translatesAutoresizingMaskIntoConstraints = NO;
+    container.layer.cornerRadius = 16;
+    container.clipsToBounds = YES;
     container.backgroundColor = [UIColor clearColor];
     [self.view addSubview:container];
+
+    UIImageView *bgImageView = [[UIImageView alloc] initWithImage:self.thumbnailImage];
+    bgImageView.contentMode = UIViewContentModeScaleAspectFill;
+    bgImageView.translatesAutoresizingMaskIntoConstraints = NO;
+    [container addSubview:bgImageView];
+
+    UIBlurEffect *blurEffect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemMaterial];
+    UIVisualEffectView *blurView = [[UIVisualEffectView alloc] initWithEffect:blurEffect];
+    blurView.translatesAutoresizingMaskIntoConstraints = NO;
+    [container addSubview:blurView];
 
     UIImageView *imageView = [[UIImageView alloc] initWithImage:self.thumbnailImage];
     imageView.contentMode = UIViewContentModeScaleAspectFit;
     imageView.translatesAutoresizingMaskIntoConstraints = NO;
-    imageView.layer.cornerRadius = 12;
-    imageView.clipsToBounds = YES;
     [container addSubview:imageView];
 
-    UIButton *closeBtn = [UIButton buttonWithType:UIButtonTypeSystem];
-    [closeBtn setImage:[UIImage systemImageNamed:@"xmark.circle.fill"] forState:UIControlStateNormal];
+    UIImageSymbolConfiguration *iconConfig = [UIImageSymbolConfiguration configurationWithPointSize:20 weight:UIImageSymbolWeightSemibold];
+    UIButton *closeBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+    [closeBtn setImage:[UIImage systemImageNamed:@"xmark" withConfiguration:iconConfig] forState:UIControlStateNormal];
     closeBtn.tintColor = [UIColor whiteColor];
+    closeBtn.backgroundColor = [UIColor colorWithWhite:0.0 alpha:0.4];
+    closeBtn.layer.cornerRadius = 25;
     closeBtn.translatesAutoresizingMaskIntoConstraints = NO;
-    closeBtn.contentVerticalAlignment = UIControlContentVerticalAlignmentFill;
-    closeBtn.contentHorizontalAlignment = UIControlContentHorizontalAlignmentFill;
     [closeBtn addTarget:self action:@selector(closeTapped) forControlEvents:UIControlEventTouchUpInside];
     [container addSubview:closeBtn];
 
-    UIButton *moreBtn = [UIButton buttonWithType:UIButtonTypeSystem];
-    [moreBtn setImage:[UIImage systemImageNamed:@"ellipsis.circle.fill"] forState:UIControlStateNormal];
+    UIButton *moreBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+    [moreBtn setImage:[UIImage systemImageNamed:@"ellipsis" withConfiguration:iconConfig] forState:UIControlStateNormal];
     moreBtn.tintColor = [UIColor whiteColor];
+    moreBtn.backgroundColor = [UIColor colorWithWhite:0.0 alpha:0.4];
+    moreBtn.layer.cornerRadius = 25;
     moreBtn.translatesAutoresizingMaskIntoConstraints = NO;
-    moreBtn.contentVerticalAlignment = UIControlContentVerticalAlignmentFill;
-    moreBtn.contentHorizontalAlignment = UIControlContentHorizontalAlignmentFill;
     [moreBtn addTarget:self action:@selector(moreTapped:) forControlEvents:UIControlEventTouchUpInside];
     [container addSubview:moreBtn];
 
@@ -53,22 +52,32 @@
         [container.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
         [container.centerYAnchor constraintEqualToAnchor:self.view.centerYAnchor],
         [container.widthAnchor constraintEqualToAnchor:self.view.widthAnchor multiplier:0.85],
-        [container.heightAnchor constraintEqualToAnchor:container.widthAnchor multiplier:9.0/16.0],
+        [container.heightAnchor constraintEqualToAnchor:container.widthAnchor multiplier:1.0],
 
-        [imageView.topAnchor constraintEqualToAnchor:container.topAnchor],
-        [imageView.bottomAnchor constraintEqualToAnchor:container.bottomAnchor],
+        [bgImageView.topAnchor constraintEqualToAnchor:container.topAnchor],
+        [bgImageView.bottomAnchor constraintEqualToAnchor:container.bottomAnchor],
+        [bgImageView.leadingAnchor constraintEqualToAnchor:container.leadingAnchor],
+        [bgImageView.trailingAnchor constraintEqualToAnchor:container.trailingAnchor],
+        
+        [blurView.topAnchor constraintEqualToAnchor:container.topAnchor],
+        [blurView.bottomAnchor constraintEqualToAnchor:container.bottomAnchor],
+        [blurView.leadingAnchor constraintEqualToAnchor:container.leadingAnchor],
+        [blurView.trailingAnchor constraintEqualToAnchor:container.trailingAnchor],
+
+        [imageView.centerYAnchor constraintEqualToAnchor:container.centerYAnchor],
         [imageView.leadingAnchor constraintEqualToAnchor:container.leadingAnchor],
         [imageView.trailingAnchor constraintEqualToAnchor:container.trailingAnchor],
+        [imageView.heightAnchor constraintEqualToAnchor:container.widthAnchor multiplier:9.0/16.0],
 
-        [closeBtn.widthAnchor constraintEqualToConstant:40],
-        [closeBtn.heightAnchor constraintEqualToConstant:40],
-        [closeBtn.topAnchor constraintEqualToAnchor:container.topAnchor constant:-15],
-        [closeBtn.leadingAnchor constraintEqualToAnchor:container.leadingAnchor constant:-15],
+        [closeBtn.widthAnchor constraintEqualToConstant:50],
+        [closeBtn.heightAnchor constraintEqualToConstant:50],
+        [closeBtn.topAnchor constraintEqualToAnchor:container.topAnchor constant:12],
+        [closeBtn.leadingAnchor constraintEqualToAnchor:container.leadingAnchor constant:12],
 
-        [moreBtn.widthAnchor constraintEqualToConstant:40],
-        [moreBtn.heightAnchor constraintEqualToConstant:40],
-        [moreBtn.topAnchor constraintEqualToAnchor:container.topAnchor constant:-15],
-        [moreBtn.trailingAnchor constraintEqualToAnchor:container.trailingAnchor constant:15],
+        [moreBtn.widthAnchor constraintEqualToConstant:50],
+        [moreBtn.heightAnchor constraintEqualToConstant:50],
+        [moreBtn.topAnchor constraintEqualToAnchor:container.topAnchor constant:12],
+        [moreBtn.trailingAnchor constraintEqualToAnchor:container.trailingAnchor constant:-12],
     ]];
 }
 
@@ -78,12 +87,10 @@
 
 - (void)moreTapped:(UIButton *)sender {
     UIActivityViewController *activityVC = [[UIActivityViewController alloc] initWithActivityItems:@[self.thumbnailImage] applicationActivities:nil];
-    
     if (UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad) {
         activityVC.popoverPresentationController.sourceView = sender;
         activityVC.popoverPresentationController.sourceRect = sender.bounds;
     }
-    
     [self presentViewController:activityVC animated:YES completion:nil];
 }
 

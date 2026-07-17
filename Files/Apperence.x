@@ -73,7 +73,6 @@ static BOOL isDarkMode(UIView *view) {
             self.backgroundColor = [UIColor blackColor];
             return;
         }
-        // if ([self.accessibilityIdentifier isEqualToString:@"brand_promo.view"]) self.superview.backgroundColor = [UIColor blackColor]; 
         // Action dialog
         UIResponder *responder = self.nextResponder;
         while (responder != nil) {
@@ -98,7 +97,6 @@ static BOOL isDarkMode(UIView *view) {
             self.backgroundColor = [UIColor systemBackgroundColor];
             return;
         }      
-        // if ([self.accessibilityIdentifier isEqualToString:@"brand_promo.view"]) self.superview.backgroundColor = [UIColor systemBackgroundColor];  
         // Action dialog
         UIResponder *responder = self.nextResponder;
         while (responder != nil) {
@@ -133,7 +131,6 @@ static BOOL isDarkMode(UIView *view) {
             self.backgroundColor = [UIColor blackColor];
             return;
         }
-        // if ([self.accessibilityIdentifier isEqualToString:@"brand_promo.view"]) self.superview.backgroundColor = [UIColor blackColor]; 
         // Action dialog
         UIResponder *responder = self.nextResponder;
         while (responder != nil) {
@@ -158,7 +155,6 @@ static BOOL isDarkMode(UIView *view) {
             self.backgroundColor = [UIColor systemBackgroundColor];
             return;
         }     
-        // if ([self.accessibilityIdentifier isEqualToString:@"brand_promo.view"]) self.superview.backgroundColor = [UIColor systemBackgroundColor];  
         // Action dialog
         UIResponder *responder = self.nextResponder;
         while (responder != nil) {
@@ -256,10 +252,11 @@ static BOOL isDarkMode(UIView *view) {
     %orig;
     UIView *foot = self.footerView;
     if (foot) {
+        UIView *sub = foot.subviews.firstObject;
         if (isDarkMode(self)) {
-            foot.backgroundColor = [UIColor blackColor];
+            sub.backgroundColor = [UIColor blackColor];
         } else {
-            foot.backgroundColor = [UIColor systemBackgroundColor];
+            sub.backgroundColor = [UIColor systemBackgroundColor];
         }
     }
 }

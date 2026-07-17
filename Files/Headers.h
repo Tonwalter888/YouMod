@@ -176,6 +176,7 @@
 #define EnablesShortsQuality @"YouModEnablesShortsQuality"
 #define ShowShortsSeekbar @"YouModShowShortsSeekbar"
 #define ShortsActionIndex @"YouModMakeAShortsAction"
+#define ShortsOnly @"YouModShortsOnly"
 // Tab bar
 #define DefaultTab @"YouModDefaultStartupTab"
 #define TabOrder @"YouModTabOrder"
@@ -194,6 +195,8 @@
 #define HideStartupAni @"YouModHideStartupAnimations"
 #define HideLikeDislikeVotes @"YouModHideLikeDislikeVotes"
 #define HideCommuGuide @"YouModHideCommuGuide"
+#define DisablesRTL @"YouModDisablesRTL"
+#define DeviceUIIndex @"YouModDeviceUIIndex"
 // #define CustomStartup @"YouModUseCustomVideoStartup"
 // Flyout menu
 #define RemovePlayInNextQueueOption @"YouModRemovePlayInNextQueueOption"
@@ -265,6 +268,12 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 @interface YTInlineScrubGestureView : UIView
 @end
 
+@interface YTReelContainerViewController : UIVIewController
+@end
+
+@interface YTAppReelWatchRootViewController : UIViewController
+@end
+
 @interface YTPivotBarView : UIView
 @end
 
@@ -333,6 +342,11 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 @interface YTReelWatchPlaybackOverlayView : UIView <UIGestureRecognizerDelegate>
 @property (nonatomic, retain) UIPinchGestureRecognizer *YouModFullscreenGesture;
 - (void)YouModFullscrrenGestureHandler:(UIPinchGestureRecognizer *)gesture;
+@end
+
+@interface YTReelContentView : UIView
+- (YTReelWatchPlaybackOverlayView *)playbackOverlay;
+- (void)YouModTurnOffShortsOnly:(UILongPressGestureRecognizer *)gesture;
 @end
 
 @interface YTLanguages : NSObject
@@ -428,6 +442,11 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 
 @interface UIKeyboard : UIView // Regular keyboard
 + (instancetype)activeKeyboard;
+@end
+
+@interface UIKeyboardPreferencesController : NSObject
++ (insthesize)sharedPreferencesController;
+- (id)valueForKey:(int)key;
 @end
 
 @interface UIPredictionViewController : UIViewController // Keyboard with enabled predictions panel

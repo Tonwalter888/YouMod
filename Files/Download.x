@@ -1442,7 +1442,7 @@ static void YouModShowThumbnailViewer(NSString *videoID, UIViewController *prese
             YouModThumbnailViewController *viewerVC = [[YouModThumbnailViewController alloc] init];
             viewerVC.thumbnailImage = image;
             viewerVC.modalPresentationStyle = UIModalPresentationOverFullScreen;
-            viewerVC.modalTransitionStyle = UIModalTransitionStyleCrossDissolve;
+            viewerVC.modalTransitionStyle = UIModalTransitionStyleCoverVertical; 
             
             [presenter presentViewController:viewerVC animated:YES completion:nil];
         });

@@ -183,3 +183,55 @@
     return %orig;
 }
 %end
+
+%hook NSParagraphStyle
++ (NSWritingDirection)defaultWritingDirectionForLanguage:(id)lang { return IS_ENABLED(DisablesRTL) ? NSWritingDirectionLeftToRight : %orig; }
++ (NSWritingDirection)_defaultWritingDirection { return IS_ENABLED(DisablesRTL) ? NSWritingDirectionLeftToRight : %orig; }
+%end
+
+%hook UIDevice
+- (UIUserInterfaceIdiom)userInterfaceIdiom {
+    if (INTFORVAL(DeviceUIIndex) == 1) {
+        return UIUserInterfaceIdiomPad;
+    }
+    if (INTFORVAL(DeviceUIIndex) == 2) {
+        return UIUserInterfaceIdiomPhone;
+    }
+    return %orig;
+}
+%end
+
+%hook UIKeyboardImpl
+- (BOOL)isFloating {
+    if (INTFORVAL(DeviceUIIndex) == 1 && IS_ENABLED(FloatingKeyboardEnabled)) {
+        return YES;
+    }
+    return %orig;
+}
+- (BOOL)_shouldShowCandidateBar {
+    if (INTFORVAL(DeviceUIIndex) == 1 && IS_ENABLED(FloatingKeyboardEnabled)) {
+        return NO;
+    }
+    return %orig;
+}
+%end
+
+%hook UIInputWindowController
+- (BOOL)isInputWindowFloating {
+    if (INTFORVAL(DeviceUIIndex) == 1 && IS_ENABLED(FloatingKeyboardEnabled)) {
+        return YES;
+    }
+    return %orig;
+}
+%end
+
+%hook UIKeyboardPreferencesController
+- (id)valueForKey:(int)key {
+    if (key == 9) {
+        if (INTFORVAL(DeviceUIIndex) == 1 && IS_ENABLED(FloatingKeyboardEnabled)) {
+            return @YES;
+        }
+    }
+    return %orig;
+}
+%end

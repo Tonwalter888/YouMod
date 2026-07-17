@@ -165,6 +165,8 @@ extern void YouModConfigureDownloadButton(_ASDisplayView *view);
 }
 %end
 
+static BOOL isShortsOnlyOn = YES;
+
 %hook YTReelWatchPlaybackOverlayView
 %property (nonatomic, retain) UIPinchGestureRecognizer *YouModFullscreenGesture;
 - (void)layoutSubviews {
@@ -179,7 +181,7 @@ extern void YouModConfigureDownloadButton(_ASDisplayView *view);
 }
 %new
 - (void)YouModFullscrrenGestureHandler:(UIPinchGestureRecognizer *)gesture {
-    if (gesture.state != UIGestureRecognizerStateBegan) return;
+    if (gesture.state != UIGestureRecognizerStateBegan || isShortsOnlyOn) return;
     id appconmain = [self valueForKey:@"_pivotBarProvider"];
     if ([appconmain isKindOfClass:%c(YTAppViewControllerImpl)]) {
         YTAppViewControllerImpl *appcon = (YTAppViewControllerImpl *)appconmain;
@@ -225,5 +227,43 @@ extern void YouModConfigureDownloadButton(_ASDisplayView *view);
         return YES;
     }
     return NO;
+}
+%end
+
+%hook YTReelContentView
+- (void)setPlaybackView:(id)arg1 {
+    %orig;
+    if (!IS_ENABLED(ShortsOnly)) return;
+    self.playbackOverlay.alpha = 0;
+    UILongPressGestureRecognizer *longPressGesture = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(YouModTurnOffShortsOnly:)];
+    longPressGesture.numberOfTouchesRequired = 2;
+    longPressGesture.minimumPressDuration = 0.5;
+
+    [self addGestureRecognizer:longPressGesture];
+}
+%new
+- (void)YouModTurnOffShortsOnly:(UILongPressGestureRecognizer *)gesture {
+    if (gesture.state != UIGestureRecognizerStateBegan) return;
+    isShortsOnlyOn = NO;
+    self.playbackOverlay.alpha = 0;
+    UIView *parent = sbGetNotificationParent();
+    [SBSkipNotificationView showInView:parent message:LOC(@"SHORTS_ONLY_DISABLED") buttonTitle:nil action:nil duration:3.0];
+
+    YTReelContainerViewController *reelcon = [self valueForKey:@"_parentResponder"];
+    YTAppReelWatchRootViewController *watchroot = [reelcon valueForKey:@"_delegate"];
+    id appconmain = [watchroot valueForKey:@"_pivotBarProvider"];
+    if ([appconmain isKindOfClass:%c(YTAppViewControllerImpl)]) {
+        YTAppViewControllerImpl *appcon = (YTAppViewControllerImpl *)appconmain;
+        [appcon showPivotBar];
+        [UIView animateWithDuration:0.3 animations:^{
+            self.playbackOverlay.alpha = 1;
+        }];
+    } else {
+        YTAppViewController *appcon = (YTAppViewController *)appconmain;
+        [appcon showPivotBar];
+        [UIView animateWithDuration:0.3 animations:^{
+            self.playbackOverlay.alpha = 1;
+        }];
+    }
 }
 %end
