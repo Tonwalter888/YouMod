@@ -217,7 +217,6 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
 
     YTMainAppVideoPlayerOverlayView *overlay = (YTMainAppVideoPlayerOverlayView*)playerView.overlayView;
     YTLabel *durationLabel = overlay.playerBar.durationLabel;
-    NSString *text2 = overlay.playerBar.endTimeString;
     
     NSString *labelText = durationLabel.text ?: @"";
 
@@ -232,7 +231,7 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
         } else if (IS_ENABLED(SBShowDuration) && SBTimeRemaining != nil) {
             durationLabel.text = [labelText stringByAppendingString:[NSString stringWithFormat:@" (%@)", safeSBTimeRemaining]];
         }
-        if (text2 != durationLabel.text) text2 = durationLabel.text;
+        overlay.playerBar.endTimeString = durationLabel.text;
         [durationLabel sizeToFit];
     }
 }

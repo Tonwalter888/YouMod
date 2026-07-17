@@ -104,6 +104,8 @@ static void YouModMakeAShortsAction(YTReelPlayerViewController *self, YTSingleVi
     }
 }
 
+static BOOL isShortsOnlyOn = YES;
+
 %hook YTReelPlayerViewController
 - (void)singleVideo:(YTSingleVideoController *)video currentVideoTimeDidChange:(YTSingleVideoTime *)time {
     %orig;
@@ -115,6 +117,18 @@ static void YouModMakeAShortsAction(YTReelPlayerViewController *self, YTSingleVi
     if (INTFORVAL(CaptionTrack) != 0) [main performSelector:@selector(YouModAutoCaptions) withObject:nil afterDelay:0.5];
     if (INTFORVAL(AutoSpeedIndex) != 0) [main performSelector:@selector(YouModSetAutoSpeed) withObject:nil afterDelay:0.5];
     if (INTFORVAL(AudioTrack) != 0) [self performSelector:@selector(YouModAutoAudioTrack:) withObject:main afterDelay:0.5];
+    if (isShortsOnlyOn) [self YouModOnlyShorts];
+}
+%new
+- (void)YouModOnlyShorts {
+    id appconmain = [self valueForKey:@"_pivotBarProvider"];
+    if ([appconmain isKindOfClass:%c(YTAppViewControllerImpl)]) {
+        YTAppViewControllerImpl *appcon = (YTAppViewControllerImpl *)appconmain;
+        [appcon hidePivotBar];
+    } else {
+        YTAppViewController *appcon = (YTAppViewController *)appconmain;
+        [appcon hidePivotBar];
+    }
 }
 %new
 - (void)YouModAutoAudioTrack:(YTPlayerViewController *)pv {
@@ -179,8 +193,6 @@ extern void YouModConfigureDownloadButton(_ASDisplayView *view);
     if ([elements[self.accessibilityIdentifier] boolValue]) [self removeFromSuperview]; 
 }
 %end
-
-static BOOL isShortsOnlyOn = YES;
 
 %hook YTReelWatchPlaybackOverlayView
 %property (nonatomic, retain) UIPinchGestureRecognizer *YouModFullscreenGesture;
@@ -249,18 +261,8 @@ static BOOL isShortsOnlyOn = YES;
 - (void)setPlaybackView:(id)arg1 {
     %orig;
     if (!IS_ENABLED(ShortsOnly)) return;
-    self.playbackOverlay.alpha = isShortsOnlyOn;
+    self.playbackOverlay.alpha = !isShortsOnlyOn;
     if (isShortsOnlyOn) {
-        YTReelContainerViewController *reelcon = [self valueForKey:@"_parentResponder"];
-        YTAppReelWatchRootViewController *watchroot = [reelcon valueForKey:@"_delegate"];
-        id appconmain = [watchroot valueForKey:@"_pivotBarProvider"];
-        if ([appconmain isKindOfClass:%c(YTAppViewControllerImpl)]) {
-            YTAppViewControllerImpl *appcon = (YTAppViewControllerImpl *)appconmain;
-            [appcon hidePivotBar];
-        } else {
-            YTAppViewController *appcon = (YTAppViewController *)appconmain;
-            [appcon hidePivotBar];
-        }
         UILongPressGestureRecognizer *longPressGesture = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(YouModTurnOffShortsOnly:)];
         longPressGesture.numberOfTouchesRequired = 2;
         longPressGesture.minimumPressDuration = 0.5;

@@ -510,6 +510,7 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 - (void)reelContentViewRequestsPlayPauseToggle:(id)arg;
 - (id)audioTrackController;
 - (void)YouModAutoAudioTrack:(YTPlayerViewController *)pv;
+- (void)YouModOnlyShorts;
 @end
 
 @interface YTIPlayerCaptionsTrackListRenderer : GPBMessage
