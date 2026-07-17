@@ -223,33 +223,38 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
         YTLabel *durationLabel = overlay.playerBar.durationLabel;
         if (!durationLabel) return;
 
-        NSString *currentRawText = durationLabel.text ?: @"";
-        NSRange range = [currentRawText rangeOfString:@" ("];
-        if (range.location == NSNotFound) {
-            range = [currentRawText rangeOfString:@" • "];
-        }
-        if (range.location != NSNotFound) {
-            currentRawText = [currentRawText substringToIndex:range.location];
-        }
-        currentRawText = [currentRawText stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
-        if (currentRawText.length == 0) return;
+        NSString *currentText = durationLabel.text ?: @"";
+        if (currentText.length == 0) return;
 
         BOOL hasExtraTime = IS_ENABLED(ShowExtraTimeRemaining) && remainingTimeText.length > 0;
         BOOL hasSBTime = IS_ENABLED(SBShowDuration) && SBTimeRemaining != nil;
+        BOOL alreadyHasExtra = hasExtraTime ? [currentText containsString:remainingTimeText] : YES;
+        BOOL alreadyHasSB = hasSBTime ? [currentText containsString:SBTimeRemaining] : YES;
+        if (alreadyHasExtra && alreadyHasSB) return;
 
-        NSString *newDisplayText = currentRawText;
+        NSString *suffixText = @"";
         if (hasSBTime && hasExtraTime) {
-            newDisplayText = [NSString stringWithFormat:@"%@ (%@) • %@", currentRawText, SBTimeRemaining, remainingTimeText];
+            suffixText = [NSString stringWithFormat:@" (%@) • %@", SBTimeRemaining, remainingTimeText];
         } else if (hasExtraTime) {
-            newDisplayText = [NSString stringWithFormat:@"%@ • %@", currentRawText, remainingTimeText];
+            suffixText = [NSString stringWithFormat:@" • %@", remainingTimeText];
         } else if (hasSBTime) {
-            newDisplayText = [NSString stringWithFormat:@"%@ (%@)", currentRawText, SBTimeRemaining];
+            suffixText = [NSString stringWithFormat:@" (%@)", SBTimeRemaining];
         }
+
+        NSRange range = [currentText rangeOfString:@" ("];
+        if (range.location == NSNotFound) {
+            range = [currentText rangeOfString:@" • "];
+        }
+        if (range.location != NSNotFound) {
+            currentText = [currentText substringToIndex:range.location];
+        }
+
+        NSString *newDisplayText = [currentText stringByAppendingString:suffixText];
+        NSString *text2 = overlay.playerBar.endTimeString;
+        if (text2 != newDisplayText) text2 = newDisplayText;
 
         if (![durationLabel.text isEqualToString:newDisplayText]) {
             durationLabel.text = newDisplayText;
-            NSString *text2 = overlay.playerBar.endTimeString;
-            if (text2 != newDisplayText) text2 = newDisplayText;
             [durationLabel sizeToFit];
         }
     });
