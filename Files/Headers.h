@@ -670,6 +670,8 @@ extern NSArray<YMOverlayButtonSpec *> *YMRegisteredOverlayButtons(void);
 - (void)sbRepositionMarkers;
 @end
 
-@interface YouModThumbnailViewController : UIViewController
+@interface YouModThumbnailViewController : UIViewController <UIScrollViewDelegate, UIGestureRecognizerDelegate>
 @property (nonatomic, strong) UIImage *thumbnailImage;
+@property (nonatomic, strong) UIScrollView *scrollView;
+@property (nonatomic, strong) UIImageView *imageView;
 @end

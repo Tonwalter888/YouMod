@@ -201,8 +201,9 @@ static BOOL isTabSelected = NO;
 - (void)viewDidAppear:(BOOL)animated {
     %orig;
     sbUpdateOverlayInsetForPivotBar();
-    if (IS_ENABLED(ShortsOnly)) {
+    if (IS_ENABLED(ShortsOnly) && !isTabSelected) {
         [self selectItemWithPivotIdentifier:@"FEshorts"];
+        isTabSelected = YES;
         if ([self.parentViewController isKindOfClass:%c(YTAppViewControllerImpl)]) {
             YTAppViewControllerImpl *appview = (YTAppViewControllerImpl *)self.parentViewController;
             [appview hidePivotBar];

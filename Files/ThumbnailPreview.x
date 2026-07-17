@@ -24,10 +24,23 @@
     blurView.translatesAutoresizingMaskIntoConstraints = NO;
     [container addSubview:blurView];
 
-    UIImageView *imageView = [[UIImageView alloc] initWithImage:self.thumbnailImage];
-    imageView.contentMode = UIViewContentModeScaleAspectFit;
-    imageView.translatesAutoresizingMaskIntoConstraints = NO;
-    [container addSubview:imageView];
+    self.scrollView = [[UIScrollView alloc] init];
+    self.scrollView.delegate = self;
+    self.scrollView.minimumZoomScale = 1.0;
+    self.scrollView.maximumZoomScale = 4.0;
+    self.scrollView.showsVerticalScrollIndicator = NO;
+    self.scrollView.showsHorizontalScrollIndicator = NO;
+    self.scrollView.translatesAutoresizingMaskIntoConstraints = NO;
+    [container addSubview:self.scrollView];
+
+    self.imageView = [[UIImageView alloc] initWithImage:self.thumbnailImage];
+    self.imageView.contentMode = UIViewContentModeScaleAspectFit;
+    self.imageView.translatesAutoresizingMaskIntoConstraints = NO;
+    [self.scrollView addSubview:self.imageView];
+
+    UITapGestureRecognizer *doubleTap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleDoubleTap:)];
+    doubleTap.numberOfTapsRequired = 2;
+    [self.scrollView addGestureRecognizer:doubleTap];
 
     UIImageSymbolConfiguration *iconConfig = [UIImageSymbolConfiguration configurationWithPointSize:22 weight:UIImageSymbolWeightSemibold];
     UIButton *closeBtn = [UIButton buttonWithType:UIButtonTypeCustom];
@@ -49,14 +62,16 @@
     [container addSubview:moreBtn];
 
     NSMutableArray *constraints = [NSMutableArray array];
+
     [constraints addObject:[container.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor]];
     [constraints addObject:[container.centerYAnchor constraintEqualToAnchor:self.view.centerYAnchor]];
     [constraints addObject:[container.widthAnchor constraintEqualToAnchor:container.heightAnchor]];
+    
     [constraints addObject:[container.widthAnchor constraintLessThanOrEqualToAnchor:self.view.safeAreaLayoutGuide.widthAnchor multiplier:0.9]];
     [constraints addObject:[container.heightAnchor constraintLessThanOrEqualToAnchor:self.view.safeAreaLayoutGuide.heightAnchor multiplier:0.9]];
 
     NSLayoutConstraint *expandConstraint = [container.widthAnchor constraintEqualToConstant:2000];
-    expandConstraint.priority = UILayoutPriorityDefaultHigh;
+    expandConstraint.priority = UILayoutPriorityDefaultHigh; 
     [constraints addObject:expandConstraint];
 
     [constraints addObjectsFromArray:@[
@@ -72,10 +87,19 @@
     ]];
 
     [constraints addObjectsFromArray:@[
-        [imageView.centerYAnchor constraintEqualToAnchor:container.centerYAnchor],
-        [imageView.leadingAnchor constraintEqualToAnchor:container.leadingAnchor],
-        [imageView.trailingAnchor constraintEqualToAnchor:container.trailingAnchor],
-        [imageView.heightAnchor constraintEqualToAnchor:container.widthAnchor multiplier:9.0/16.0]
+        [self.scrollView.centerYAnchor constraintEqualToAnchor:container.centerYAnchor],
+        [self.scrollView.leadingAnchor constraintEqualToAnchor:container.leadingAnchor],
+        [self.scrollView.trailingAnchor constraintEqualToAnchor:container.trailingAnchor],
+        [self.scrollView.heightAnchor constraintEqualToAnchor:container.widthAnchor multiplier:9.0/16.0]
+    ]];
+
+    [constraints addObjectsFromArray:@[
+        [self.imageView.topAnchor constraintEqualToAnchor:self.scrollView.contentLayoutGuide.topAnchor],
+        [self.imageView.bottomAnchor constraintEqualToAnchor:self.scrollView.contentLayoutGuide.bottomAnchor],
+        [self.imageView.leadingAnchor constraintEqualToAnchor:self.scrollView.contentLayoutGuide.leadingAnchor],
+        [self.imageView.trailingAnchor constraintEqualToAnchor:self.scrollView.contentLayoutGuide.trailingAnchor],
+        [self.imageView.widthAnchor constraintEqualToAnchor:self.scrollView.frameLayoutGuide.widthAnchor],
+        [self.imageView.heightAnchor constraintEqualToAnchor:self.scrollView.frameLayoutGuide.heightAnchor]
     ]];
 
     [constraints addObjectsFromArray:@[
@@ -93,7 +117,32 @@
     [NSLayoutConstraint activateConstraints:constraints];
 
     UIPanGestureRecognizer *panGesture = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(handlePanGesture:)];
+    panGesture.delegate = self;
     [self.view addGestureRecognizer:panGesture];
+}
+
+- (UIView *)viewForZoomingInScrollView:(UIScrollView *)scrollView {
+    return self.imageView;
+}
+
+- (void)handleDoubleTap:(UITapGestureRecognizer *)gesture {
+    if (self.scrollView.zoomScale > 1.0) {
+        [self.scrollView setZoomScale:1.0 animated:YES];
+    } else {
+        CGPoint point = [gesture locationInView:self.imageView];
+        CGFloat zoomSize = self.scrollView.bounds.size.width / self.scrollView.maximumZoomScale;
+        CGRect zoomRect = CGRectMake(point.x - zoomSize/2, point.y - zoomSize/2, zoomSize, zoomSize);
+        [self.scrollView zoomToRect:zoomRect animated:YES];
+    }
+}
+
+- (BOOL)gestureRecognizerShouldBegin:(UIGestureRecognizer *)gestureRecognizer {
+    if ([gestureRecognizer isKindOfClass:[UIPanGestureRecognizer class]]) {
+        if (self.scrollView.zoomScale > 1.0) {
+            return NO;
+        }
+    }
+    return YES;
 }
 
 - (void)handlePanGesture:(UIPanGestureRecognizer *)gesture {
