@@ -278,6 +278,7 @@ static BOOL isDarkMode(UIView *view) {
             } else {
                 sub.backgroundColor = [UIColor systemBackgroundColor];
             }
+            break;
         }
     }
 }
