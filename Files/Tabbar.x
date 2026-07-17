@@ -204,13 +204,6 @@ static BOOL isTabSelected = NO;
     if (IS_ENABLED(ShortsOnly) && !isTabSelected) {
         [self selectItemWithPivotIdentifier:@"FEshorts"];
         isTabSelected = YES;
-        if ([self.parentViewController isKindOfClass:%c(YTAppViewControllerImpl)]) {
-            YTAppViewControllerImpl *appview = (YTAppViewControllerImpl *)self.parentViewController;
-            [appview hidePivotBar];
-        } else {
-            YTAppViewController *appview = (YTAppViewController *)self.parentViewController;
-            [appview hidePivotBar];
-        }
         return;
     }
     if (!isTabSelected) {

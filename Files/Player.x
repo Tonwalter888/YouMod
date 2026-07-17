@@ -175,10 +175,9 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
     CGFloat rate = playbackRate != 0 ? playbackRate : 1.0;
     NSTimeInterval remainingSeconds = (lround(video.totalMediaTime) - lround(time.time)) / rate;
 
-    __block NSString *remainingTimeText = @"";
-    __block NSString *SBTimeRemaining = nil;
+    NSString *remainingTimeText;
+    NSString *SBTimeRemaining = nil;
     NSTimeInterval SBTotalTimeRemaining = 0.0;
-
     if (IS_ENABLED(SBShowDuration)) {
         if (self.sbSegments && self.sbSegments.count > 0) {
             for (SBSegment *segment in self.sbSegments) {
@@ -201,7 +200,6 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
             }
         }
     }
-
     if (IS_ENABLED(ShowExtraTimeRemaining)) {
         NSDate *estimatedEndTime = [NSDate dateWithTimeIntervalSinceNow:remainingSeconds];
 
@@ -209,55 +207,34 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
         [dateFormatter setLocale:[[NSLocale alloc] initWithLocaleIdentifier:@"en_US_POSIX"]];
         [dateFormatter setDateFormat:IS_ENABLED(Uses24HoursTime) ? @"HH:mm" : @"h:mm a"];
 
-        remainingTimeText = [dateFormatter stringFromDate:estimatedEndTime] ?: @"";
+        remainingTimeText = [dateFormatter stringFromDate:estimatedEndTime];
     }
-
-    Class overlayClass = NSClassFromString(@"YTMainAppVideoPlayerOverlayView");
-    if (!overlayClass) return;
+    NSString *safeRemainingTimeText = remainingTimeText ?: @"";
+    NSString *safeSBTimeRemaining = SBTimeRemaining ?: @"";
 
     YTPlayerView *playerView = (YTPlayerView *)self.playerView;
-    if (![playerView.overlayView isKindOfClass:overlayClass]) return;
+    if (![playerView.overlayView isKindOfClass:%c(YTMainAppVideoPlayerOverlayView)]) return;
 
-    dispatch_async(dispatch_get_main_queue(), ^{
-        YTMainAppVideoPlayerOverlayView *overlay = (YTMainAppVideoPlayerOverlayView *)playerView.overlayView;
-        YTLabel *durationLabel = overlay.playerBar.durationLabel;
-        if (!durationLabel) return;
+    YTMainAppVideoPlayerOverlayView *overlay = (YTMainAppVideoPlayerOverlayView*)playerView.overlayView;
+    YTLabel *durationLabel = overlay.playerBar.durationLabel;
+    NSString *text2 = overlay.playerBar.endTimeString;
+    
+    NSString *labelText = durationLabel.text ?: @"";
 
-        NSString *currentText = durationLabel.text ?: @"";
-        if (currentText.length == 0) return;
+    BOOL needsExtraUpdate = IS_ENABLED(ShowExtraTimeRemaining) && safeRemainingTimeText.length > 0 && ![labelText containsString:safeRemainingTimeText];
+    BOOL needsSBUpdate = IS_ENABLED(SBShowDuration) && SBTimeRemaining != nil && ![labelText containsString:safeSBTimeRemaining];
 
-        BOOL hasExtraTime = IS_ENABLED(ShowExtraTimeRemaining) && remainingTimeText.length > 0;
-        BOOL hasSBTime = IS_ENABLED(SBShowDuration) && SBTimeRemaining != nil;
-        BOOL alreadyHasExtra = hasExtraTime ? [currentText containsString:remainingTimeText] : YES;
-        BOOL alreadyHasSB = hasSBTime ? [currentText containsString:SBTimeRemaining] : YES;
-        if (alreadyHasExtra && alreadyHasSB) return;
-
-        NSString *suffixText = @"";
-        if (hasSBTime && hasExtraTime) {
-            suffixText = [NSString stringWithFormat:@" (%@) • %@", SBTimeRemaining, remainingTimeText];
-        } else if (hasExtraTime) {
-            suffixText = [NSString stringWithFormat:@" • %@", remainingTimeText];
-        } else if (hasSBTime) {
-            suffixText = [NSString stringWithFormat:@" (%@)", SBTimeRemaining];
+    if (needsExtraUpdate || needsSBUpdate) {
+        if (IS_ENABLED(SBShowDuration) && SBTimeRemaining != nil && IS_ENABLED(ShowExtraTimeRemaining)) {
+            durationLabel.text = [labelText stringByAppendingString:[NSString stringWithFormat:@" (%@) • %@", safeSBTimeRemaining, safeRemainingTimeText]];
+        } else if (IS_ENABLED(ShowExtraTimeRemaining)) {
+            durationLabel.text = [labelText stringByAppendingString:[NSString stringWithFormat:@" • %@", safeRemainingTimeText]];
+        } else if (IS_ENABLED(SBShowDuration) && SBTimeRemaining != nil) {
+            durationLabel.text = [labelText stringByAppendingString:[NSString stringWithFormat:@" (%@)", safeSBTimeRemaining]];
         }
-
-        NSRange range = [currentText rangeOfString:@" ("];
-        if (range.location == NSNotFound) {
-            range = [currentText rangeOfString:@" • "];
-        }
-        if (range.location != NSNotFound) {
-            currentText = [currentText substringToIndex:range.location];
-        }
-
-        NSString *newDisplayText = [currentText stringByAppendingString:suffixText];
-        NSString *text2 = overlay.playerBar.endTimeString;
-        if (text2 != newDisplayText) text2 = newDisplayText;
-
-        if (![durationLabel.text isEqualToString:newDisplayText]) {
-            durationLabel.text = newDisplayText;
-            [durationLabel sizeToFit];
-        }
-    });
+        if (text2 != durationLabel.text) text2 = durationLabel.text;
+        [durationLabel sizeToFit];
+    }
 }
 
 %hook YTInlinePlayerBarContainerView
