@@ -790,7 +790,7 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
         if (IS_ENABLED(ScrubOnOverlay) && !playerViewController.YouModPanGesture2) {
             playerViewController.YouModPanGesture2 = [[UIPanGestureRecognizer alloc] initWithTarget:playerViewController action:@selector(handleYouModPanGesture:)];
             playerViewController.YouModPanGesture2.delegate = playerViewController;
-            [playerViewController.playerview addGestureRecognizer:playerViewController.YouModPanGesture2];
+            [playerViewController.playerView addGestureRecognizer:playerViewController.YouModPanGesture2];
         } 
     }
     %orig;
@@ -1232,7 +1232,7 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
 }
 %new
 - (void)handleYouModPanGesture:(UIPanGestureRecognizer *)gesture {
-    CGPoint velocity = [gesture velocityInView:self];
+    CGPoint velocity = [gesture velocityInView:self.playerView];
     BOOL isHorizontal = fabs(velocity.x) > fabs(velocity.y);
 
     if (gesture.state == UIGestureRecognizerStateBegan && !isHorizontal) {
