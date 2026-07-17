@@ -232,30 +232,28 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
             currentRawText = [currentRawText substringToIndex:range.location];
         }
         currentRawText = [currentRawText stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+        if (currentRawText.length == 0) return;
 
         BOOL hasExtraTime = IS_ENABLED(ShowExtraTimeRemaining) && remainingTimeText.length > 0;
         BOOL hasSBTime = IS_ENABLED(SBShowDuration) && SBTimeRemaining != nil;
 
         NSString *newDisplayText = currentRawText;
         if (hasSBTime && hasExtraTime) {
-            newDisplayText = [NSString stringWithFormat:@"%@  (%@)  •  %@", currentRawText, SBTimeRemaining, remainingTimeText];
+            newDisplayText = [NSString stringWithFormat:@"%@ (%@) • %@", currentRawText, SBTimeRemaining, remainingTimeText];
         } else if (hasExtraTime) {
-            newDisplayText = [NSString stringWithFormat:@"%@  •  %@", currentRawText, remainingTimeText];
+            newDisplayText = [NSString stringWithFormat:@"%@ • %@", currentRawText, remainingTimeText];
         } else if (hasSBTime) {
-            newDisplayText = [NSString stringWithFormat:@"%@  (%@)", currentRawText, SBTimeRemaining];
+            newDisplayText = [NSString stringWithFormat:@"%@ (%@)", currentRawText, SBTimeRemaining];
         }
 
         if (![durationLabel.text isEqualToString:newDisplayText]) {
             durationLabel.text = newDisplayText;
             overlay.playerBar.endTimeString = newDisplayText;
             [durationLabel sizeToFit];
-            
             if (durationLabel.superview) {
                 [durationLabel.superview setNeedsLayout];
-                [durationLabel.superview layoutIfNeeded];
             }
             [overlay.playerBar setNeedsLayout];
-            [overlay.playerBar layoutIfNeeded];
         }
     });
 }
@@ -377,12 +375,14 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
     if (!IS_ENABLED(ShowExtraTimeRemaining) && !IS_ENABLED(SBShowDuration)) return;
     
     YTLabel *dLabel = self.durationLabel;
-    if (dLabel && self.endTimeString && ![dLabel.text isEqualToString:self.endTimeString]) {
-        dLabel.text = self.endTimeString;
-        [dLabel sizeToFit];
-        if (dLabel.superview) {
-            [dLabel.superview setNeedsLayout];
-            [dLabel.superview layoutIfNeeded];
+    if (dLabel && self.endTimeString) {
+        if (![dLabel.text isEqualToString:self.endTimeString]) {
+            dLabel.text = self.endTimeString;
+            [dLabel sizeToFit];
+            
+            if (dLabel.superview) {
+                [dLabel.superview setNeedsLayout];
+            }
         }
     }
 }
