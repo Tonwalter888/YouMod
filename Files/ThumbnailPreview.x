@@ -1,6 +1,3 @@
-#import <Photos/Photos.h>
-#import "Headers.h"
-
 @implementation YouModThumbnailViewController
 
 - (void)viewDidLoad {
@@ -29,12 +26,12 @@
     imageView.translatesAutoresizingMaskIntoConstraints = NO;
     [container addSubview:imageView];
 
-    UIImageSymbolConfiguration *iconConfig = [UIImageSymbolConfiguration configurationWithPointSize:20 weight:UIImageSymbolWeightSemibold];
+    UIImageSymbolConfiguration *iconConfig = [UIImageSymbolConfiguration configurationWithPointSize:22 weight:UIImageSymbolWeightSemibold];
     UIButton *closeBtn = [UIButton buttonWithType:UIButtonTypeCustom];
     [closeBtn setImage:[UIImage systemImageNamed:@"xmark" withConfiguration:iconConfig] forState:UIControlStateNormal];
     closeBtn.tintColor = [UIColor whiteColor];
     closeBtn.backgroundColor = [UIColor colorWithWhite:0.0 alpha:0.4];
-    closeBtn.layer.cornerRadius = 25;
+    closeBtn.layer.cornerRadius = 25; 
     closeBtn.translatesAutoresizingMaskIntoConstraints = NO;
     [closeBtn addTarget:self action:@selector(closeTapped) forControlEvents:UIControlEventTouchUpInside];
     [container addSubview:closeBtn];
@@ -48,12 +45,18 @@
     [moreBtn addTarget:self action:@selector(moreTapped:) forControlEvents:UIControlEventTouchUpInside];
     [container addSubview:moreBtn];
 
-    [NSLayoutConstraint activateConstraints:@[
-        [container.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
-        [container.centerYAnchor constraintEqualToAnchor:self.view.centerYAnchor],
-        [container.widthAnchor constraintEqualToAnchor:self.view.widthAnchor multiplier:0.85],
-        [container.heightAnchor constraintEqualToAnchor:container.widthAnchor multiplier:1.0],
+    NSMutableArray *constraints = [NSMutableArray array];
+    [constraints addObject:[container.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor]];
+    [constraints addObject:[container.centerYAnchor constraintEqualToAnchor:self.view.centerYAnchor]];
+    [constraints addObject:[container.widthAnchor constraintEqualToAnchor:container.heightAnchor]];
+    [constraints addObject:[container.widthAnchor constraintLessThanOrEqualToAnchor:self.view.safeAreaLayoutGuide.widthAnchor multiplier:0.9]];
+    [constraints addObject:[container.heightAnchor constraintLessThanOrEqualToAnchor:self.view.safeAreaLayoutGuide.heightAnchor multiplier:0.9]];
 
+    NSLayoutConstraint *expandConstraint = [container.widthAnchor constraintEqualToConstant:2000];
+    expandConstraint.priority = UILayoutPriorityDefaultHigh;
+    [constraints addObject:expandConstraint];
+
+    [constraints addObjectsFromArray:@[
         [bgImageView.topAnchor constraintEqualToAnchor:container.topAnchor],
         [bgImageView.bottomAnchor constraintEqualToAnchor:container.bottomAnchor],
         [bgImageView.leadingAnchor constraintEqualToAnchor:container.leadingAnchor],
@@ -62,13 +65,17 @@
         [blurView.topAnchor constraintEqualToAnchor:container.topAnchor],
         [blurView.bottomAnchor constraintEqualToAnchor:container.bottomAnchor],
         [blurView.leadingAnchor constraintEqualToAnchor:container.leadingAnchor],
-        [blurView.trailingAnchor constraintEqualToAnchor:container.trailingAnchor],
+        [blurView.trailingAnchor constraintEqualToAnchor:container.trailingAnchor]
+    ]];
 
+    [constraints addObjectsFromArray:@[
         [imageView.centerYAnchor constraintEqualToAnchor:container.centerYAnchor],
         [imageView.leadingAnchor constraintEqualToAnchor:container.leadingAnchor],
         [imageView.trailingAnchor constraintEqualToAnchor:container.trailingAnchor],
-        [imageView.heightAnchor constraintEqualToAnchor:container.widthAnchor multiplier:9.0/16.0],
+        [imageView.heightAnchor constraintEqualToAnchor:container.widthAnchor multiplier:9.0/16.0]
+    ]];
 
+    [constraints addObjectsFromArray:@[
         [closeBtn.widthAnchor constraintEqualToConstant:50],
         [closeBtn.heightAnchor constraintEqualToConstant:50],
         [closeBtn.topAnchor constraintEqualToAnchor:container.topAnchor constant:12],
@@ -79,6 +86,8 @@
         [moreBtn.topAnchor constraintEqualToAnchor:container.topAnchor constant:12],
         [moreBtn.trailingAnchor constraintEqualToAnchor:container.trailingAnchor constant:-12],
     ]];
+
+    [NSLayoutConstraint activateConstraints:constraints];
 }
 
 - (void)closeTapped {

@@ -662,6 +662,13 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
     } 
 }
 - (BOOL)isFullscreenActionsVisible { return IS_ENABLED(HideFullAction) ? NO : %orig; }
+%new
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
+    if (gestureRecognizer == self.YouModPanGesture) {
+        return YES;
+    }
+    return NO;
+}
 %end
 
 %hook YTSingleVideoController
