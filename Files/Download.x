@@ -809,7 +809,7 @@ static YTPlayerViewController *YouModPlayerFromViewController(UIViewController *
 
 static NSURL *YouModThumbnailURLForVideoID(NSString *videoID) {
     if (videoID.length == 0) return nil;
-    NSString *urlString = [NSString stringWithFormat:@"https://i.ytimg.com/vi/%@/maxresdefault.jpg", videoID];
+    NSString *urlString = [NSString stringWithFormat:@"https://i.ytimg.com/vi/%@/hqdefault.jpg", videoID];
     return [NSURL URLWithString:urlString];
 }
 

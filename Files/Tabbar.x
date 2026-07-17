@@ -203,6 +203,13 @@ static BOOL isTabSelected = NO;
     sbUpdateOverlayInsetForPivotBar();
     if (IS_ENABLED(ShortsOnly)) {
         [self selectItemWithPivotIdentifier:@"FEshorts"];
+        if ([self.parentViewController isKindOfClass:%c(YTAppViewControllerImpl)]) {
+            YTAppViewControllerImpl *appview = (YTAppViewControllerImpl *)self.parentViewController;
+            [appview hidePivotBar];
+        } else {
+            YTAppViewController *appview = (YTAppViewController *)self.parentViewController;
+            [appview hidePivotBar];
+        }
         return;
     }
     if (!isTabSelected) {

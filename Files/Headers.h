@@ -167,6 +167,7 @@
 #define HideCommentsSection @"YouModHideCommentsSection"
 #define HideCommentsPreview @"YouModHideCommentsPreview"
 #define UseAnotherMiniplayer @"YouModUseAnotherMiniplayer"
+#define ScrubOnOverlay @"YouModScrubOnOverlay"
 // Shorts
 #define FullScreenShorts @"YouModFullScreenShorts"
 #define RemoveShortsLive @"YouModRemoveShortsLive"
@@ -303,6 +304,7 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 @property (nonatomic, weak, readwrite) YTMainAppVideoPlayerOverlayViewController *delegate;
 @property (nonatomic, strong) YTQTMButton *playbackRouteButton;
 @property (nonatomic, retain) UIPanGestureRecognizer *YouModPanGesture;
+- (void)handleYouModPanGesture:(UIPanGestureRecognizer *)gesture;
 @end
 
 @interface YTNavigationBarTitleView : UIView

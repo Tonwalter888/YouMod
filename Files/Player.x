@@ -654,17 +654,34 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
 - (void)layoutSubviews {
     %orig;
     if (IS_ENABLED(HideCastButtonPlayer)) self.playbackRouteButton.hidden = YES;
-    if (!self.YouModPanGesture) {
-        YTInlinePlayerBarContainerView *wth = self.playerBar;
-        YTPlayerBarController *playerbarcon = [wth valueForKey:@"_delegate"];
-        self.YouModPanGesture = [[UIPanGestureRecognizer alloc] initWithTarget:playerbarcon action:@selector(didScrub:)];
+    if (IS_ENABLED(ScrubOnOverlay) && !self.YouModPanGesture) {
+        self.YouModPanGesture = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(handleYouModPanGesture:)];
+        self.YouModPanGesture.delegate = (id<UIGestureRecognizerDelegate>)self;
         [self addGestureRecognizer:self.YouModPanGesture];
     } 
 }
 - (BOOL)isFullscreenActionsVisible { return IS_ENABLED(HideFullAction) ? NO : %orig; }
 %new
+- (void)handleYouModPanGesture:(UIPanGestureRecognizer *)gesture {
+    CGPoint velocity = [gesture velocityInView:self];
+    BOOL isHorizontal = fabs(velocity.x) > fabs(velocity.y);
+
+    if (gesture.state == UIGestureRecognizerStateBegan && !isHorizontal) {
+        gesture.state = UIGestureRecognizerStateCancelled;
+        return;
+    }
+    
+    YTInlinePlayerBarContainerView *wth = self.playerBar;
+    YTPlayerBarController *playerbarcon = [wth valueForKey:@"_delegate"];
+    [playerbarcon didScrub:gesture];
+}
+%new
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
     if (gestureRecognizer == self.YouModPanGesture) {
+        CGPoint velocity = [self.YouModPanGesture velocityInView:self];
+        if (fabs(velocity.x) > fabs(velocity.y)) {
+            return NO; 
+        }
         return YES;
     }
     return NO;

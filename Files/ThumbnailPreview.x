@@ -91,6 +91,38 @@
     ]];
 
     [NSLayoutConstraint activateConstraints:constraints];
+
+    UIPanGestureRecognizer *panGesture = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(handlePanGesture:)];
+    [self.view addGestureRecognizer:panGesture];
+}
+
+- (void)handlePanGesture:(UIPanGestureRecognizer *)gesture {
+    CGPoint translation = [gesture translationInView:self.view];
+    CGPoint velocity = [gesture velocityInView:self.view];
+    
+    if (gesture.state == UIGestureRecognizerStateChanged) {
+        if (translation.y > 0) {
+            self.view.transform = CGAffineTransformMakeTranslation(0, translation.y);
+            CGFloat alpha = MAX(0.0, 0.5 - (translation.y / self.view.bounds.size.height));
+            self.view.backgroundColor = [UIColor colorWithWhite:0.0 alpha:alpha];
+        } else {
+            self.view.transform = CGAffineTransformMakeTranslation(0, translation.y * 0.1);
+        }
+    } else if (gesture.state == UIGestureRecognizerStateEnded || gesture.state == UIGestureRecognizerStateCancelled) {
+        if (translation.y > 150 || velocity.y > 1000) {
+            [self dismissViewControllerAnimated:YES completion:nil];
+        } else {
+            [UIView animateWithDuration:0.3 
+                                  delay:0 
+                 usingSpringWithDamping:0.8 
+                  initialSpringVelocity:velocity.y / 1000.0 
+                                options:UIViewAnimationOptionCurveEaseOut 
+                             animations:^{
+                self.view.transform = CGAffineTransformIdentity;
+                self.view.backgroundColor = [UIColor colorWithWhite:0.0 alpha:0.5];
+            } completion:nil];
+        }
+    }
 }
 
 - (void)closeTapped {
