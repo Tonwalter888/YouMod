@@ -268,7 +268,7 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 @interface YTInlineScrubGestureView : UIView
 @end
 
-@interface YTReelContainerViewController : UIVIewController
+@interface YTReelContainerViewController : UIViewController
 @end
 
 @interface YTAppReelWatchRootViewController : UIViewController
@@ -450,7 +450,7 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 @end
 
 @interface UIKeyboardPreferencesController : NSObject
-+ (insthesize)sharedPreferencesController;
++ (instancetype)sharedPreferencesController;
 - (id)valueForKey:(int)key;
 @end
 
