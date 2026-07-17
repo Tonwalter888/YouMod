@@ -1103,7 +1103,7 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
             break;
         }
     }
-    if (matchedTrack && [matchedTrack.VSSID hasPrefix:@"a."] && IS_ENABLED(DisablesCaptionTrack)) {
+    if (matchedTrack && ([matchedTrack.VSSID hasPrefix:@"a."] || [matchedTrack.VSSID hasPrefix:@"ta."]) && IS_ENABLED(DisablesCaptionTrack)) {
         matchedTrack = nil;
         [self YouModCaptionsHelper:nil];
         return;

@@ -57,6 +57,7 @@ static NSBundle *YouModBundle() {
         YTAlertView *alertView = [%c(YTAlertView) infoDialog];
         alertView.title = LOC(@"ERROR");
         alertView.subtitle = LOC(@"ERROR_INVALID_FILE");
+        alertView.shouldDismissOnBackgroundTap = YES;
         [alertView show];
         return;
     }
@@ -81,6 +82,7 @@ static NSBundle *YouModBundle() {
         YTAlertView *alertView = [%c(YTAlertView) infoDialog];
         alertView.title = LOC(@"ERROR");
         alertView.subtitle = LOC(@"ERROR_NO_KEYS_IMPORT");
+        alertView.shouldDismissOnBackgroundTap = YES;
         [alertView show];
         return;
     }
@@ -94,6 +96,7 @@ static NSBundle *YouModBundle() {
     } actionTitle:LOC(@"YES")];
     alertView.title = LOC(@"IMPORT_DONE");
     alertView.subtitle = LOC(@"APPLY_DESC"); // "Restart required"
+    alertView.shouldDismissOnBackgroundTap = YES;
     [alertView show];
 }
 
@@ -110,6 +113,7 @@ static NSBundle *YouModBundle() {
         YTAlertView *alertView = [%c(YTAlertView) infoDialog];
         alertView.title = LOC(@"ERROR");
         alertView.subtitle = LOC(@"ERROR_NO_KEYS_EXPORT");
+        alertView.shouldDismissOnBackgroundTap = YES;
         [alertView show];
         return;
     }
@@ -153,6 +157,7 @@ static NSBundle *YouModBundle() {
     } actionTitle:LOC(@"YES")];
     alertView.title = LOC(@"WARNING");
     alertView.subtitle = LOC(@"RESETDEFAULT");
+    alertView.shouldDismissOnBackgroundTap = YES;
     [alertView show];
 }
 

@@ -60,6 +60,9 @@
 #import <YouTubeHeader/YTIFormattedString.h>
 #import <YouTubeHeader/GOOHUDManagerInternal.h>
 #import <YouTubeHeader/MLInnerTubeCaptionTrack.h>
+#import <YouTubeHeader/MLCaption.h>
+#import <YouTubeHeader/MLFormat3Captions.h>
+#import <YouTubeHeader/YTFormat3CaptionViewController.h>
 
 // For Settings.x and SponsorBlockSettings.x
 #import <PSHeader/Misc.h>
@@ -76,6 +79,7 @@
 #define SpeedButton @"YouModSpeedButton"
 #define ShareButton @"YouModShareButton"
 #define LoopButton @"YouModLoopButton"
+#define CaptionButton @"YouModCaptionButton"
 #define KeepMutedKey @"YouModKeepMutedKey"
 #define KeepLoopKey @"YouModKeepLoopKey"
 // Downloading

@@ -280,6 +280,7 @@ static NSArray *getAllSystemLanguageTitles() {
             YMToggle(LOC(@"SPEED_BUTTON"), LOC(@"SPEED_BUTTON_DESC"), SpeedButton),
             YMToggle(LOC(@"SHARE_BUTTON"), LOC(@"SHARE_BUTTON_DESC"), ShareButton),
             YMToggle(LOC(@"LOOP_BUTTON"), LOC(@"LOOP_BUTTON_DESC"), LoopButton),
+            YMToggle(LOC(@"CAPTION_BUTTON"), LOC(@"CAPTION_BUTTON_DESC"), CaptionButton),
             YMToggle(LOC(@"HIDE_AUTOPLAY"), LOC(@"HIDE_AUTOPLAY_DESC"), HideAutoPlayToggle),
             YMToggle(LOC(@"HIDE_FULL_VID_TITLE"), LOC(@"HIDE_FULL_VID_TITLE_DESC"), HideFullvidTitle),
             YMToggle(LOC(@"HIDE_CAPTIONS_BUTTON"), LOC(@"HIDE_CAPTIONS_BUTTON_DESC"), HideCaptionsButton),

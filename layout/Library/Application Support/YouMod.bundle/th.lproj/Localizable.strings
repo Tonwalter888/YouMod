@@ -110,6 +110,14 @@
 "DOWNLOAD_CANCELLED" = "ยกเลิกการดาวน์โหลดแล้ว";
 "CANCEL" = "ยกเลิก";
 "TRIMMING_AUDIO" = "กำลังตัดต่อเสียง...";
+"SHOW_THUMBNAIL" = "ดูปกคลิป";
+"SHOW_THUMBNAIL_DESC" = "ดูปกคลิปวิดีโอ";
+"COPY_THUMBNAIL" = "คัดลอกปกคลิป";
+"COPY_THUMBNAIL_DESC" = "คัดลอกปกคลิปไปยังคลิปบอร์ด";
+"THUMBNAIL_OPTIONS" = "ดาวน์โหลดปกคลิป";
+"THUMBNAIL_OPTIONS_DESC" = "แสดงตัวเลือกเพิ่มเติม";
+"COPY" = "คัดลอก";
+"COPIED_TO_CLIPBOARD" = "คัดลอกไปยังคลิปบอร์ดแล้ว";
 
 "APPEARANCE" = "ลักษณะ";
 "OLED_THEME" = "ธีม OLED";
@@ -187,7 +195,9 @@
 "SHARE_BUTTON" = "ปุ่มแชร์";
 "SHARE_BUTTON_DESC" = "แสดงปุ่มแชร์ลิงก์วิดีโอบนโอเวอร์เลย์";
 "LOOP_BUTTON" = "ปุ่มวนซ้ำวิดีโอ";
-"LOOP_BUTTON_DESC" = "แสดงปุ่มสำหรับวนซ้ำวิดีโอบนโอเวอร์เลย์";
+"LOOP_BUTTON_DESC" = "แสดงปุ่มวนซ้ำวิดีโอบนโอเวอร์เลย์";
+"CAPTION_BUTTON" = "ปุ่มคำบรรยาย";
+"CAPTION_BUTTON_DESC" = "แสดงปุ่มคัดลอกคำบรรยายวิดีโอบนโอเวอร์เลย์";
 "HOLD_TO_SPEED" = "ความเร็วเมื่อกดค้าง";
 "HOLD_TO_SPEED_DESC" = "ใช้ความเร็วในการเล่นวิดีโอแบบกำหนดเองเมื่อกดค้างที่หน้าจอ";
 "HIDE_AUTOPLAY" = "ซ่อนสวิตซ์เล่นอัตโนมัติ";
@@ -300,6 +310,8 @@
 "USE_ANOTHER_MINIPLAYER_DESC" = "ใช้เครื่องเล่นขนาดเล็กรูปแบบที่ได้รับการออกแบบใหม่จาก YouTube เวอร์ชันเก่า";
 
 "SHORTS" = "Shorts";
+"SHORTS_ONLY" = "โหมด Shorts เท่านั้น";
+"SHORTS_ONLY_DESC" = "จำกัดหน้าฟีดให้แสดงเฉพาะ Shorts เท่านั้น";
 "SHORTS_ACTION" = "การกระทำของ Shorts เมื่อจบวิดีโอ";
 "LOOP" = "ลูปวิดีโอ";
 "SKIP_TO_NEXT_SHORTS" = "ข้ามไปยังวิดีโอถัดไป";
@@ -417,6 +429,11 @@
 "REMOVE_NOTIFY_OPTION_DESC" = "ลบตัวเลือก 'แจ้งเตือนให้ฉันทราบ' ออกจากเมนูป๊อปอัป";
 "REMOVE_CLEARSCREEN_OPTION" = "ลบตัวเลือก 'ล้างหน้าจอ'";
 "REMOVE_CLEARSCREEN_OPTION_DESC" = "ลบตัวเลือก 'ล้างหน้าจอ' ออกจากเมนูป๊อปอัป";
+"HIDE_COMMU_GUIDE" = "นำหลักเกณฑ์ชุมชนออก";
+"HIDE_COMMU_GUIDE_DESC" = "นำหลักเกณฑ์ชุมชนที่ปักหมุดไว้ออกจากคอมเมนต์";
+"DISABLES_RTL" = "ปิดใช้งานเลย์เอาต์ RTL";
+"DISABLES_RTL_DESC" = "บังคับให้แสดงผลจากซ้ายไปขวา (LTR) และปิดการจัดหน้าแบบขวาไปซ้าย (RTL)";
+"DEVICE_UI" = "รูปแบบอุปกรณ์";
 
 "SB_DESCRIPTION" = "ข้ามช่วงสปอนเซอร์โดยอัตโนมัติด้วยข้อมูลจากชุมชน";
 "SB_ENABLE" = "เปิดใช้งาน SponsorBlock";

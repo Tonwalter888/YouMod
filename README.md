@@ -1,26 +1,14 @@
 # YouMod
 
-TODO: Cleanup download things and update Flyout menu localizations
+TODO: Cleanup download things
 
-<p align="center">
-<a href="https://www.star-history.com/?repos=Tonwalter888%2FYouMod&type=date&legend=bottom-right">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=Tonwalter888/YouMod&type=date&theme=dark&legend=top-left" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=Tonwalter888/YouMod&type=date&legend=top-left" />
-   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=Tonwalter888/YouMod&type=date&legend=top-left" />
- </picture>
-</a>
-</p>
-
-<p align="center">
 <img src="https://img.shields.io/badge/Platform-iOS%20%7C%20iPadOS%2014.0%2B-blue" alt="Badge"/>
 <a href="https://github.com/Tonwalter888/YouMod/releases/latest"><img src="https://custom-icon-badges.demolab.com/github/v/release/Tonwalter888/YouMod?color=brightgreen&label=Latest%20release" alt="Badge"></img></a>
 <a href="https://github.com/Tonwalter888/YouMod/releases/latest"><img src="https://img.shields.io/github/downloads/Tonwalter888/YouMod/total?label=Download" alt="Badge"></img></a>
-</p>
 
 A tweak that's try to recreate features like in YTLite as much as possible. Contributors are welcome! ^^
 
-Thanks for 300 stars and 400 forks! This might be the best project I've done.
+Thanks for 300 stars and 500 forks! This might be the best project I've done.
 
 If you want to contribute this project, scroll down below for how to do it.
 

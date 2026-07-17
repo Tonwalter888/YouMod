@@ -15,6 +15,34 @@ static NSBundle *YouModBundle() {
     return bundle;
 }
 
+// YouGetCaption (https://github.com/PoomSmart/YouGetCaption)
+static void showTranscript(YTFormat3CaptionViewController *cvc) {
+    UIView *parent = sbGetNotificationParent();
+    MLFormat3Captions *currentCaptions = [cvc valueForKey:@"_currentCaptions"];
+    YTIntervalTree *tree = currentCaptions.captions;
+    NSMutableString *transcript = [NSMutableString string];
+    [tree enumerateAllIntervalsWithBlock:^(YTInterval *interval) {
+        MLCaption *caption = (MLCaption *)interval;
+        NSArray <MLCaptionSegment *> *segments = caption.segments;
+        for (MLCaptionSegment *segment in segments) {
+            [transcript appendString:segment.text];
+        }
+    }];
+    if (transcript.length == 0) {
+        [SBSkipNotificationView showErrorInView:parent message:LOC(@"NO_CAPTIONS") duration:4.0];
+        return;
+    }
+    YTAlertView *alertView = [%c(YTAlertView) confirmationDialogWithAction:^{
+        UIPasteboard *pasteboard = [UIPasteboard generalPasteboard];
+        pasteboard.string = transcript;
+        [SBSkipNotificationView showSuccessInView:parent message:LOC(@"COPIED_TO_CLIPBOARD") duration:3.0];
+    } actionTitle:LOC(@"COPY_TO_CLIPBOARD")];
+    alertView.title = nil;
+    alertView.subtitle = transcript;
+    alertView.shouldDismissOnBackgroundTap = YES;
+    [alertView show];
+}
+
 #define LOC(x) [YouModBundle() localizedStringForKey:x value:nil table:nil]
 
 #pragma mark - YMOverlayButtonSpec
@@ -366,5 +394,19 @@ static UIImage *YouModIconImage(NSInteger iconType) {
         [button setImage:newIcon forState:UIControlStateNormal];
     };
     YMRegisterOverlayButton(loop);
+    YMOverlayButtonSpec *caption = [[YMOverlayButtonSpec alloc] init];
+    caption.identifier = @"caption.video";
+    caption.symbolName = @"captions.bubble";
+    caption.tintColor = [UIColor whiteColor];
+    caption.sortOrder = 700;
+    caption.isVisible = ^BOOL(YTPlayerViewController *player) {
+        return IS_ENABLED(CaptionButton);
+    };
+    caption.onTap = ^(YTPlayerViewController *player, YTQTMButton *button) {
+        YTMainAppVideoPlayerOverlayViewController *c = [self activeVideoPlayerOverlay];
+        YTFormat3CaptionViewController *cvc = [c valueForKey:@"_captionOverlayViewController"];
+        showTranscript(cvc);
+    };
+    YMRegisterOverlayButton(caption);
     %init;
 }

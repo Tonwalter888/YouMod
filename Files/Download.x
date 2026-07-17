@@ -1628,6 +1628,7 @@ static void YouModShowCaptionsSheet(YTPlayerViewController *player, UIViewContro
                     NSString *filename = [NSString stringWithFormat:@"%@_%@.vtt", videoID, languageCode];
                     NSURL *tempURL = [NSURL fileURLWithPath:[NSTemporaryDirectory() stringByAppendingPathComponent:filename]];
                     [data writeToURL:tempURL atomically:YES];
+                    YouModSendSuccess(LOC(@"DOWNLOAD_COMPLETED"));
                     YouModShareFile(tempURL, presenter);
                 });
             }] resume];
