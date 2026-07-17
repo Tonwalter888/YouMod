@@ -635,6 +635,7 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
 }
 
 %hook YTMainAppVideoPlayerOverlayView
+%property (nonatomic, retain) UIPanGestureRecognizer *YouModPanGesture;
 - (void)setLongPressGestureRecognizer:(id)arg {
     if (INTFORVAL(HoldToSpeedIndex) != 0) return;
     %orig;
@@ -652,7 +653,13 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
 }
 - (void)layoutSubviews {
     %orig;
-    if (IS_ENABLED(HideCastButtonPlayer)) self.playbackRouteButton.hidden = YES;    
+    if (IS_ENABLED(HideCastButtonPlayer)) self.playbackRouteButton.hidden = YES;
+    if (!self.YouModPanGesture) {
+        YTInlinePlayerBarContainerView *inline = self.playerBar;
+        YTPlayerBarController *playerbarcon = [inline valueForKey:@"_delegate"];
+        self.YouModPanGesture = [[UIPanGestureRecognizer alloc] initWithTarget:playerbarcon action:@selector(didScrub:)];
+        [self addGestureRecognizer:self.YouModPanGesture];
+    } 
 }
 - (BOOL)isFullscreenActionsVisible { return IS_ENABLED(HideFullAction) ? NO : %orig; }
 %end
