@@ -403,7 +403,7 @@ static UIImage *YouModIconImage(NSInteger iconType) {
         return IS_ENABLED(CaptionButton);
     };
     caption.onTap = ^(YTPlayerViewController *player, YTQTMButton *button) {
-        YTMainAppVideoPlayerOverlayViewController *c = [self activeVideoPlayerOverlay];
+        YTMainAppVideoPlayerOverlayViewController *c = [player activeVideoPlayerOverlay];
         YTFormat3CaptionViewController *cvc = [c valueForKey:@"_captionOverlayViewController"];
         showTranscript(cvc);
     };
