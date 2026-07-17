@@ -250,10 +250,6 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
             durationLabel.text = newDisplayText;
             overlay.playerBar.endTimeString = newDisplayText;
             [durationLabel sizeToFit];
-            if (durationLabel.superview) {
-                [durationLabel.superview setNeedsLayout];
-            }
-            [overlay.playerBar setNeedsLayout];
         }
     });
 }
@@ -373,16 +369,12 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
 - (void)setPeekableViewVisible:(BOOL)visible {
     %orig;
     if (!IS_ENABLED(ShowExtraTimeRemaining) && !IS_ENABLED(SBShowDuration)) return;
-    
+
     YTLabel *dLabel = self.durationLabel;
     if (dLabel && self.endTimeString) {
         if (![dLabel.text isEqualToString:self.endTimeString]) {
             dLabel.text = self.endTimeString;
             [dLabel sizeToFit];
-            
-            if (dLabel.superview) {
-                [dLabel.superview setNeedsLayout];
-            }
         }
     }
 }
@@ -635,7 +627,6 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
 }
 
 %hook YTMainAppVideoPlayerOverlayView
-%property (nonatomic, retain) UIPanGestureRecognizer *YouModPanGesture;
 - (void)setLongPressGestureRecognizer:(id)arg {
     if (INTFORVAL(HoldToSpeedIndex) != 0) return;
     %orig;
@@ -654,38 +645,8 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
 - (void)layoutSubviews {
     %orig;
     if (IS_ENABLED(HideCastButtonPlayer)) self.playbackRouteButton.hidden = YES;
-    if (IS_ENABLED(ScrubOnOverlay) && !self.YouModPanGesture) {
-        self.YouModPanGesture = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(handleYouModPanGesture:)];
-        self.YouModPanGesture.delegate = (id<UIGestureRecognizerDelegate>)self;
-        [self addGestureRecognizer:self.YouModPanGesture];
-    } 
 }
 - (BOOL)isFullscreenActionsVisible { return IS_ENABLED(HideFullAction) ? NO : %orig; }
-%new
-- (void)handleYouModPanGesture:(UIPanGestureRecognizer *)gesture {
-    CGPoint velocity = [gesture velocityInView:self];
-    BOOL isHorizontal = fabs(velocity.x) > fabs(velocity.y);
-
-    if (gesture.state == UIGestureRecognizerStateBegan && !isHorizontal) {
-        gesture.state = UIGestureRecognizerStateCancelled;
-        return;
-    }
-    
-    YTInlinePlayerBarContainerView *wth = self.playerBar;
-    YTPlayerBarController *playerbarcon = [wth valueForKey:@"_delegate"];
-    [playerbarcon didScrub:gesture];
-}
-%new
-- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
-    if (gestureRecognizer == self.YouModPanGesture) {
-        CGPoint velocity = [self.YouModPanGesture velocityInView:self];
-        if (fabs(velocity.x) > fabs(velocity.y)) {
-            return NO; 
-        }
-        return YES;
-    }
-    return NO;
-}
 %end
 
 %hook YTSingleVideoController
@@ -826,6 +787,11 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
             playerViewController.YouModHoldGesture.minimumPressDuration = 0.4;
             [playerViewController.playerView addGestureRecognizer:playerViewController.YouModHoldGesture];   
         }
+        if (IS_ENABLED(ScrubOnOverlay) && !playerViewController.YouModPanGesture2) {
+            playerViewController.YouModPanGesture2 = [[UIPanGestureRecognizer alloc] initWithTarget:playerViewController action:@selector(handleYouModPanGesture:)];
+            playerViewController.YouModPanGesture2.delegate = playerViewController;
+            [playerViewController.playerview addGestureRecognizer:playerViewController.YouModPanGesture2];
+        } 
     }
     %orig;
 }
@@ -833,6 +799,7 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
 
 %hook YTPlayerViewController
 %property (nonatomic, retain) UIPanGestureRecognizer *YouModPanGesture;
+%property (nonatomic, retain) UIPanGestureRecognizer *YouModPanGesture2;
 %property (nonatomic, retain) UITapGestureRecognizer *YouModTapGesture;
 %property (nonatomic, retain) UILabel *YouModGestureHUD;
 %property (nonatomic, strong) UIView *YouModSpeedToastView;
@@ -1031,14 +998,14 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
 %new
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldBeRequiredToFailByGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
     // Require other gestures (like YouTube's related videos swipe) to fail when our gesture is active to prevent conflicts.
-    if (gestureRecognizer == self.YouModPanGesture && [otherGestureRecognizer isKindOfClass:[UIPanGestureRecognizer class]]) {
+    if ((gestureRecognizer == self.YouModPanGesture || gestureRecognizer == self.YouModPanGesture2) && [otherGestureRecognizer isKindOfClass:[UIPanGestureRecognizer class]]) {
         return YES;
     }
     return NO;
 }
 %new
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
-    if (gestureRecognizer == self.YouModPanGesture) {
+    if (gestureRecognizer == self.YouModPanGesture || gestureRecognizer == self.YouModPanGesture2) {
         return NO; // Prevents simultaneous recognition with YouTube's default swipe when gestures overlap.
     }
     return YES;
@@ -1262,6 +1229,22 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
         [self setPlaybackRate:YouModRateBeforeHoldToSpeed];
         [self YouModHideSpeedToast];
     }
+}
+%new
+- (void)handleYouModPanGesture:(UIPanGestureRecognizer *)gesture {
+    CGPoint velocity = [gesture velocityInView:self];
+    BOOL isHorizontal = fabs(velocity.x) > fabs(velocity.y);
+
+    if (gesture.state == UIGestureRecognizerStateBegan && !isHorizontal) {
+        gesture.state = UIGestureRecognizerStateCancelled;
+        return;
+    }
+    
+    YTMainAppVideoPlayerOverlayViewController *ovcon = [self activeVideoPlayerOverlay];
+    YTMainAppVideoPlayerOverlayView *ovview = [ovcon videoPlayerOverlayView];
+    YTInlinePlayerBarContainerView *wth = ovview.playerBar;
+    YTPlayerBarController *playerbarcon = [wth valueForKey:@"_delegate"];
+    [playerbarcon didScrub:gesture];
 }
 %end
 

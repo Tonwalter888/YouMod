@@ -303,8 +303,6 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 @interface YTMainAppVideoPlayerOverlayView (YouMod)
 @property (nonatomic, weak, readwrite) YTMainAppVideoPlayerOverlayViewController *delegate;
 @property (nonatomic, strong) YTQTMButton *playbackRouteButton;
-@property (nonatomic, retain) UIPanGestureRecognizer *YouModPanGesture;
-- (void)handleYouModPanGesture:(UIPanGestureRecognizer *)gesture;
 @end
 
 @interface YTNavigationBarTitleView : UIView
@@ -373,6 +371,7 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 @property (nonatomic, strong) UIView *YouModSpeedToastView;
 @property (nonatomic, strong) UILabel *YouModSpeedToastLabel;
 @property (nonatomic, retain) UILongPressGestureRecognizer *YouModHoldGesture;
+@property (nonatomic, retain) UIPanGestureRecognizer *YouModPanGesture2;
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer;
 - (void)YouModAutoFullscreen;
 - (void)YouModSetAutoSpeed;
@@ -395,6 +394,7 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 - (void)YouModHideSpeedToast;
 - (void)YouModShowSpeedToast:(CGFloat)speed;
 - (void)YouModHoldToSpeed:(UILongPressGestureRecognizer *)gesture;
+- (void)handleYouModPanGesture:(UIPanGestureRecognizer *)gesture;
 @end
 
 @interface YTPlayerBarController (YouMod)
