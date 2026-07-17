@@ -255,7 +255,6 @@ static BOOL isShortsOnlyOn = YES;
 - (void)YouModTurnOffShortsOnly:(UILongPressGestureRecognizer *)gesture {
     if (gesture.state != UIGestureRecognizerStateBegan) return;
     isShortsOnlyOn = NO;
-    self.playbackOverlay.alpha = 0;
     UIView *parent = sbGetNotificationParent();
     [SBSkipNotificationView showInView:parent message:LOC(@"SHORTS_ONLY_DISABLED") buttonTitle:nil action:nil duration:3.0];
 
