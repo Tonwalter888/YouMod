@@ -267,6 +267,26 @@ static BOOL isDarkMode(UIView *view) {
     }
 }
 %end
+
+%hook YTMenuItemMDCButton
+- (void)layoutSubviews {
+    %orig;
+    for (UIView *sub in self.subviews) {
+        if ([sub isKindOfClass:%c(MDCInkView)]) {
+            if (isDarkMode(self)) {
+                sub.backgroundColor = [UIColor blackColor];
+            } else {
+                sub.backgroundColor = [UIColor systemBackgroundColor];
+            }
+        }
+    }
+}
+- (void)traitCollectionDidChange:(UITraitCollection *)previousTraitCollection {
+    %orig;
+    if ([self.traitCollection hasDifferentColorAppearanceComparedToTraitCollection:previousTraitCollection]) {
+        [self setNeedsLayout];
+    }
+}
 %end
 
 %group OLEDKeyboard
