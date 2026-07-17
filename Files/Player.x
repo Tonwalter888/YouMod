@@ -655,8 +655,8 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
     %orig;
     if (IS_ENABLED(HideCastButtonPlayer)) self.playbackRouteButton.hidden = YES;
     if (!self.YouModPanGesture) {
-        YTInlinePlayerBarContainerView *inline = self.playerBar;
-        YTPlayerBarController *playerbarcon = [inline valueForKey:@"_delegate"];
+        YTInlinePlayerBarContainerView *wth = self.playerBar;
+        YTPlayerBarController *playerbarcon = [wth valueForKey:@"_delegate"];
         self.YouModPanGesture = [[UIPanGestureRecognizer alloc] initWithTarget:playerbarcon action:@selector(didScrub:)];
         [self addGestureRecognizer:self.YouModPanGesture];
     } 
