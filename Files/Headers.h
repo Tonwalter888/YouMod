@@ -345,7 +345,7 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 - (void)YouModFullscrrenGestureHandler:(UIPinchGestureRecognizer *)gesture;
 @end
 
-@interface YTReelContentView : UIView
+@interface YTReelContentView (YouMod)
 - (YTReelWatchPlaybackOverlayView *)playbackOverlay;
 - (void)YouModTurnOffShortsOnly:(UILongPressGestureRecognizer *)gesture;
 @end
