@@ -1,3 +1,6 @@
+#import <Photos/Photos.h>
+#import "Headers.h"
+
 @implementation YouModThumbnailViewController
 
 - (void)viewDidLoad {
