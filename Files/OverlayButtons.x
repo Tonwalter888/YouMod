@@ -15,6 +15,8 @@ static NSBundle *YouModBundle() {
     return bundle;
 }
 
+#define LOC(x) [YouModBundle() localizedStringForKey:x value:nil table:nil]
+
 // YouGetCaption (https://github.com/PoomSmart/YouGetCaption)
 static void showTranscript(YTFormat3CaptionViewController *cvc) {
     UIView *parent = sbGetNotificationParent();
@@ -42,8 +44,6 @@ static void showTranscript(YTFormat3CaptionViewController *cvc) {
     alertView.shouldDismissOnBackgroundTap = YES;
     [alertView show];
 }
-
-#define LOC(x) [YouModBundle() localizedStringForKey:x value:nil table:nil]
 
 #pragma mark - YMOverlayButtonSpec
 
