@@ -449,11 +449,6 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 + (instancetype)activeKeyboard;
 @end
 
-@interface UIKeyboardPreferencesController : NSObject
-+ (instancetype)sharedPreferencesController;
-- (id)valueForKey:(int)key;
-@end
-
 @interface UIPredictionViewController : UIViewController // Keyboard with enabled predictions panel
 @end
 

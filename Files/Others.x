@@ -200,38 +200,3 @@
     return %orig;
 }
 %end
-
-%hook UIKeyboardImpl
-- (BOOL)isFloating {
-    if (INTFORVAL(DeviceUIIndex) == 1 && IS_ENABLED(FloatingKeyboardEnabled)) {
-        return YES;
-    }
-    return %orig;
-}
-- (BOOL)_shouldShowCandidateBar {
-    if (INTFORVAL(DeviceUIIndex) == 1 && IS_ENABLED(FloatingKeyboardEnabled)) {
-        return NO;
-    }
-    return %orig;
-}
-%end
-
-%hook UIInputWindowController
-- (BOOL)isInputWindowFloating {
-    if (INTFORVAL(DeviceUIIndex) == 1 && IS_ENABLED(FloatingKeyboardEnabled)) {
-        return YES;
-    }
-    return %orig;
-}
-%end
-
-%hook UIKeyboardPreferencesController
-- (id)valueForKey:(int)key {
-    if (key == 9) {
-        if (INTFORVAL(DeviceUIIndex) == 1 && IS_ENABLED(FloatingKeyboardEnabled)) {
-            return @YES;
-        }
-    }
-    return %orig;
-}
-%end
