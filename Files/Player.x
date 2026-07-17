@@ -248,7 +248,8 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
 
         if (![durationLabel.text isEqualToString:newDisplayText]) {
             durationLabel.text = newDisplayText;
-            overlay.playerBar.endTimeString = newDisplayText;
+            NSString *text2 = overlay.playerBar.endTimeString;
+            if (text2 != newDisplayText) text2 = newDisplayText;
             [durationLabel sizeToFit];
         }
     });
@@ -787,11 +788,6 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
             playerViewController.YouModHoldGesture.minimumPressDuration = 0.4;
             [playerViewController.playerView addGestureRecognizer:playerViewController.YouModHoldGesture];   
         }
-        if (IS_ENABLED(ScrubOnOverlay) && !playerViewController.YouModPanGesture2) {
-            playerViewController.YouModPanGesture2 = [[UIPanGestureRecognizer alloc] initWithTarget:playerViewController action:@selector(handleYouModPanGesture:)];
-            playerViewController.YouModPanGesture2.delegate = playerViewController;
-            [playerViewController.playerView addGestureRecognizer:playerViewController.YouModPanGesture2];
-        } 
     }
     %orig;
 }
@@ -799,7 +795,6 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
 
 %hook YTPlayerViewController
 %property (nonatomic, retain) UIPanGestureRecognizer *YouModPanGesture;
-%property (nonatomic, retain) UIPanGestureRecognizer *YouModPanGesture2;
 %property (nonatomic, retain) UITapGestureRecognizer *YouModTapGesture;
 %property (nonatomic, retain) UILabel *YouModGestureHUD;
 %property (nonatomic, strong) UIView *YouModSpeedToastView;
@@ -998,14 +993,14 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
 %new
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldBeRequiredToFailByGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
     // Require other gestures (like YouTube's related videos swipe) to fail when our gesture is active to prevent conflicts.
-    if ((gestureRecognizer == self.YouModPanGesture || gestureRecognizer == self.YouModPanGesture2) && [otherGestureRecognizer isKindOfClass:[UIPanGestureRecognizer class]]) {
+    if (gestureRecognizer == self.YouModPanGesture && [otherGestureRecognizer isKindOfClass:[UIPanGestureRecognizer class]]) {
         return YES;
     }
     return NO;
 }
 %new
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
-    if (gestureRecognizer == self.YouModPanGesture || gestureRecognizer == self.YouModPanGesture2) {
+    if (gestureRecognizer == self.YouModPanGesture) {
         return NO; // Prevents simultaneous recognition with YouTube's default swipe when gestures overlap.
     }
     return YES;
@@ -1229,22 +1224,6 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
         [self setPlaybackRate:YouModRateBeforeHoldToSpeed];
         [self YouModHideSpeedToast];
     }
-}
-%new
-- (void)handleYouModPanGesture:(UIPanGestureRecognizer *)gesture {
-    CGPoint velocity = [gesture velocityInView:self.playerView];
-    BOOL isHorizontal = fabs(velocity.x) > fabs(velocity.y);
-
-    if (gesture.state == UIGestureRecognizerStateBegan && !isHorizontal) {
-        gesture.state = UIGestureRecognizerStateCancelled;
-        return;
-    }
-    
-    YTMainAppVideoPlayerOverlayViewController *ovcon = [self activeVideoPlayerOverlay];
-    YTMainAppVideoPlayerOverlayView *ovview = [ovcon videoPlayerOverlayView];
-    YTInlinePlayerBarContainerView *wth = ovview.playerBar;
-    YTPlayerBarController *playerbarcon = [wth valueForKey:@"_delegate"];
-    [playerbarcon didScrub:gesture];
 }
 %end
 

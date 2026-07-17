@@ -167,7 +167,6 @@
 #define HideCommentsSection @"YouModHideCommentsSection"
 #define HideCommentsPreview @"YouModHideCommentsPreview"
 #define UseAnotherMiniplayer @"YouModUseAnotherMiniplayer"
-#define ScrubOnOverlay @"YouModScrubOnOverlay"
 // Shorts
 #define FullScreenShorts @"YouModFullScreenShorts"
 #define RemoveShortsLive @"YouModRemoveShortsLive"
@@ -371,7 +370,6 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 @property (nonatomic, strong) UIView *YouModSpeedToastView;
 @property (nonatomic, strong) UILabel *YouModSpeedToastLabel;
 @property (nonatomic, retain) UILongPressGestureRecognizer *YouModHoldGesture;
-@property (nonatomic, retain) UIPanGestureRecognizer *YouModPanGesture2;
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer;
 - (void)YouModAutoFullscreen;
 - (void)YouModSetAutoSpeed;
@@ -394,7 +392,6 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 - (void)YouModHideSpeedToast;
 - (void)YouModShowSpeedToast:(CGFloat)speed;
 - (void)YouModHoldToSpeed:(UILongPressGestureRecognizer *)gesture;
-- (void)handleYouModPanGesture:(UIPanGestureRecognizer *)gesture;
 @end
 
 @interface YTPlayerBarController (YouMod)
