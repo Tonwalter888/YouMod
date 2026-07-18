@@ -1560,17 +1560,6 @@ static void YouModPresentMenu(NSString *title, NSArray <YouModMenuItem *> *items
     }
 }
 
-- (void)URLSession:(NSURLSession *)session downloadTask:(NSURLSessionDownloadTask *)downloadTask didWriteData:(int64_t)bytesWritten totalBytesWritten:(int64_t)totalBytesWritten totalBytesExpectedToWrite:(int64_t)totalBytesExpectedToWrite {
-    if (totalBytesExpectedToWrite > 0) {
-        float progress = (float)totalBytesWritten / (float)totalBytesExpectedToWrite;
-        
-        dispatch_async(dispatch_get_main_queue(), ^{
-            [self updateProgressTitle:[NSString stringWithFormat:@"Downloading... %.0f%%", progress * 100] progress:progress];
-            [self updateDownloadProgressWithCurrentBytes:totalBytesWritten expectedBytes:totalBytesExpectedToWrite];
-        });
-    }
-}
-
 @end
 
 static void YouModShowThumbnailViewer(NSString *videoID, UIViewController *presenter) {
