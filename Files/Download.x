@@ -1468,7 +1468,7 @@ static void YouModPresentMenu(NSString *title, NSArray <YouModMenuItem *> *items
     request.HTTPBody = [NSJSONSerialization dataWithJSONObject:payload options:0 error:nil];
     
     [[[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
-        if (error || !data) { completionBlock(nil, @"Server unreachable."); return; }
+        if (error || !data) { [self failWithError:error] return; }
         NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
         if (json[@"job_id"]) [self pollJobStatus:json[@"job_id"] presenter:presenter completion:completionBlock];
         else completionBlock(nil, json[@"error"] ?: @"Job init failed.");
