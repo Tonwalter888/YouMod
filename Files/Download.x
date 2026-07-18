@@ -1520,7 +1520,7 @@ static void YouModPresentMenu(NSString *title, NSArray <YouModMenuItem *> *items
     __block NSString *errStr = nil;
     
     dispatch_async(dispatch_get_main_queue(), ^{
-        [self showProgressWithTitle:@"Downloading..." presenter:presenter];
+        [self updateProgressTitle:@"Downloading..." progress:0.0f];
     });
 
     for (NSString *filename in filenames) {
