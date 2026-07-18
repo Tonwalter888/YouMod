@@ -72,6 +72,9 @@
 #import <YouTubeHeader/YTSettingsViewController.h>
 #import <YouTubeHeader/YTUIUtils.h>
 
+#define DownloadFix @"YouModDownloadFix"
+#define DownloadServerIndex @"YouModDownloadServerIndex"
+
 #define IS_ENABLED(k) [[NSUserDefaults standardUserDefaults] boolForKey:k]
 #define INTFORVAL(v) [[NSUserDefaults standardUserDefaults] integerForKey:v]
 #define FixPlaybackIssues @"YouModFixPlaybackIssues"

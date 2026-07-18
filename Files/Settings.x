@@ -199,6 +199,8 @@ static NSArray *getAllSystemLanguageTitles() {
             YMToggle(LOC(@"DOWNLOAD_SAVE_PHOTOS"), LOC(@"DOWNLOAD_SAVE_PHOTOS_DESC"), DownloadSaveToPhotos),
             YMToggle(LOC(@"USE_ORIG_AUDIO"), LOC(@"USE_ORIG_AUDIO_DESC"), UseOrigAudio),
             YMToggle(LOC(@"ADD_SHORTS_DOWNLOAD"), LOC(@"ADD_SHORTS_DOWNLOAD_DESC"), AddDownloadToShorts),
+            YMToggle(@"Fix download errors", @"Testing", DownloadFix),
+            YMPicker(@"Download server", @"Choose server", DownloadServerIndex, (@[@"Romania - Europe", @"Thailand - Asia"]), 0),
         ], settingsViewController, [self parentResponder]);
         return YES;
     }];
