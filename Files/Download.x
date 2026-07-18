@@ -1464,7 +1464,8 @@ static void YouModPresentMenu(NSString *title, NSArray <YouModMenuItem *> *items
     [request setHTTPMethod:@"POST"];
     [request setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
     
-    NSMutableDictionary *payload = [@{@"url": watchURL, @"format": format, @"format_id": formatId} mutableCopy];
+    NSMutableDictionary *payload = [@{@"url": watchURL, @"format": format} mutableCopy];
+    if (formatId) payload[@"format_id"] = formatId;
     request.HTTPBody = [NSJSONSerialization dataWithJSONObject:payload options:0 error:nil];
     
     [[[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
@@ -1518,8 +1519,7 @@ static void YouModPresentMenu(NSString *title, NSArray <YouModMenuItem *> *items
     NSMutableArray<NSURL *> *localURLs = [NSMutableArray array];
     __block NSInteger remaining = filenames.count;
     __block NSString *errStr = nil;
-    NSInteger totalCount = filenames.count;
-    // LOC(@"DOWNLOADING")
+    
     dispatch_async(dispatch_get_main_queue(), ^{
         [self showProgressWithTitle:@"Downloading..." presenter:presenter];
     });
@@ -1527,6 +1527,12 @@ static void YouModPresentMenu(NSString *title, NSArray <YouModMenuItem *> *items
     for (NSString *filename in filenames) {
         NSString *encodedName = [filename stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
         NSString *urlString = [NSString stringWithFormat:@"%@/api/file/%@?filename=%@", [self serverEndpoint], jobId, encodedName];
+        
+        NSURLSessionConfiguration *config = [NSURLSessionConfiguration defaultSessionConfiguration];
+        NSURLSession *session = [NSURLSession sessionWithConfiguration:config delegate:(id<NSURLSessionDownloadDelegate>)self delegateQueue:[NSOperationQueue mainQueue]];
+        NSURLSessionDownloadTask *task = [session downloadTaskWithURL:[NSURL URLWithString:urlString]];
+        
+        [task setTaskDescription:filename]; 
         
         [[[NSURLSession sharedSession] downloadTaskWithURL:[NSURL URLWithString:urlString] completionHandler:^(NSURL *location, NSURLResponse *response, NSError *error) {
             if (error || !location) {
@@ -1543,12 +1549,6 @@ static void YouModPresentMenu(NSString *title, NSArray <YouModMenuItem *> *items
             
             @synchronized(self) {
                 remaining--;
-                float progress = (float)(totalCount - remaining) / (float)totalCount;
-                dispatch_async(dispatch_get_main_queue(), ^{
-                    [self updateProgressTitle:@"Downloading..." progress:progress];
-                    [self updateDownloadProgressWithCurrentBytes:(totalCount - remaining) expectedBytes:totalCount];
-                });
-                
                 if (remaining == 0) {
                     dispatch_async(dispatch_get_main_queue(), ^{
                         if (localURLs.count > 0) completionBlock(localURLs, nil);
@@ -1557,6 +1557,17 @@ static void YouModPresentMenu(NSString *title, NSArray <YouModMenuItem *> *items
                 }
             }
         }] resume];
+    }
+}
+
+- (void)URLSession:(NSURLSession *)session downloadTask:(NSURLSessionDownloadTask *)downloadTask didWriteData:(int64_t)bytesWritten totalBytesWritten:(int64_t)totalBytesWritten totalBytesExpectedToWrite:(int64_t)totalBytesExpectedToWrite {
+    if (totalBytesExpectedToWrite > 0) {
+        float progress = (float)totalBytesWritten / (float)totalBytesExpectedToWrite;
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self updateProgressTitle:[NSString stringWithFormat:@"Downloading... %.0f%%", progress * 100] progress:progress];
+            [self updateDownloadProgressWithCurrentBytes:totalBytesWritten expectedBytes:totalBytesExpectedToWrite];
+        });
     }
 }
 
