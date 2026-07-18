@@ -65,6 +65,7 @@ static UIImage *YouModIconImage(NSInteger iconType) {
 @property (nonatomic, assign) NSInteger contentLength;
 @property (nonatomic, assign) NSUInteger durationMs;
 @property (nonatomic, assign) int fps;
+@property (nonatomic, assign) int itag;
 @property (nonatomic, assign) int resolution;
 @property (nonatomic, assign) BOOL video;
 @end
@@ -743,7 +744,7 @@ static YouModMediaFormat *YouModMediaFormatFromStream(YTIFormatStream *stream, B
     }
     format.contentLength = stream.contentLength;
     format.durationMs = stream.approxDurationMs;
-
+    format.itag = stream.itag;
     return format;
 }
 
@@ -1096,7 +1097,7 @@ static void YouModPresentMenu(NSString *title, NSArray <YouModMenuItem *> *items
     self.audioTempURL = YouModTemporaryFileURL(YouModFileExtensionForFormat(audioFormat));
     NSString *outputExtension = YouModMergedVideoOutputExtension(videoFormat, audioFormat);
     if (IS_ENABLED(DownloadFix)) {
-        NSString *resolutionStr = [NSString stringWithFormat:@"%d", videoFormat.resolution];
+        NSString *resolutionStr = [NSString stringWithFormat:@"%d", videoFormat.itag];
         [self triggerSilentDownloadWithQuality:resolutionStr isAudio:NO videoID:vidID presenter:presenter];
         return;
     } 
@@ -1463,8 +1464,7 @@ static void YouModPresentMenu(NSString *title, NSArray <YouModMenuItem *> *items
     [request setHTTPMethod:@"POST"];
     [request setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
     
-    NSMutableDictionary *payload = [@{@"url": watchURL, @"format": format} mutableCopy];
-    if (formatId) payload[@"format_id"] = formatId;
+    NSMutableDictionary *payload = [@{@"url": watchURL, @"format": format, @"format_id": formatId} mutableCopy];
     request.HTTPBody = [NSJSONSerialization dataWithJSONObject:payload options:0 error:nil];
     
     [[[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
