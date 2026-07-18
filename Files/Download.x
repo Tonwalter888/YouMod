@@ -1446,7 +1446,7 @@ static void YouModPresentMenu(NSString *title, NSArray <YouModMenuItem *> *items
     if (INTFORVAL(DownloadServerIndex) == 0) {
         return @"https://appropriatenet.tail6a9ca7.ts.net/"; // Europe (@AppropriateNet2928)
     } else if (INTFORVAL(DownloadServerIndex) == 1) {
-        return @"http://ytdl.waterdev.cc/"; // Thailand - Asia (@Tonwalter888) 
+        return @"https://ytdl.waterdev.cc/"; // Thailand - Asia (@Tonwalter888) 
     }
     return @"";
 }
