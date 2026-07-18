@@ -132,11 +132,11 @@ typedef void (^YouModRangeDownloadProgress)(unsigned long long completedBytes);
 @property (nonatomic, copy) NSString *baseProgressTitle;
 @property (nonatomic, assign) NSTimeInterval downloadStartTime;
 + (instancetype)sharedCoordinator;
-- (void)startVideoDownloadWithVideoFormat:(YouModMediaFormat *)videoFormat audioFormat:(YouModMediaFormat *)audioFormat fileName:(NSString *)fileName presenter:(UIViewController *)presenter;
-- (void)startAudioDownloadWithAudioFormat:(YouModMediaFormat *)audioFormat fileName:(NSString *)fileName presenter:(UIViewController *)presenter;
-- (void)startDirectVideoDownloadWithVideoFormat:(YouModMediaFormat *)videoFormat audioFormat:(YouModMediaFormat *)audioFormat fileName:(NSString *)fileName presenter:(UIViewController *)presenter;
+- (void)startVideoDownloadWithVideoFormat:(YouModMediaFormat *)videoFormat audioFormat:(YouModMediaFormat *)audioFormat fileName:(NSString *)fileName presenter:(UIViewController *)presenter videoID:(NSString *)vidID;
+- (void)startAudioDownloadWithAudioFormat:(YouModMediaFormat *)audioFormat fileName:(NSString *)fileName presenter:(UIViewController *)presenter videoID:(NSString *)vidID;
+- (void)startDirectVideoDownloadWithVideoFormat:(YouModMediaFormat *)videoFormat audioFormat:(YouModMediaFormat *)audioFormat fileName:(NSString *)fileName presenter:(UIViewController *)presenter videoID:(NSString *)vidID;
 - (void)startDirectSingleVideoDownloadWithFormat:(YouModMediaFormat *)format fileName:(NSString *)fileName presenter:(UIViewController *)presenter;
-- (void)startDirectAudioDownloadWithAudioFormat:(YouModMediaFormat *)audioFormat fileName:(NSString *)fileName presenter:(UIViewController *)presenter;
+- (void)startDirectAudioDownloadWithAudioFormat:(YouModMediaFormat *)audioFormat fileName:(NSString *)fileName presenter:(UIViewController *)presenter videoID:(NSString *)vidID;
 - (void)trimAudioToHalfLengthAtURL:(NSURL *)inputURL toURL:(NSURL *)outputURL completion:(void (^)(NSError *error))completion;
 - (void)mergeVideoURL:(NSURL *)videoURL audioURL:(NSURL *)audioURL fileName:(NSString *)fileName outputExtension:(NSString *)outputExtension durationMs:(unsigned long long)durationMs presenter:(UIViewController *)presenter;
 - (void)mergeVideoWithAVFoundationVideoURL:(NSURL *)videoURL audioURL:(NSURL *)audioURL outputURL:(NSURL *)outputURL durationMs:(unsigned long long)durationMs presenter:(UIViewController *)presenter fallbackError:(NSError *)fallbackError;
@@ -1061,15 +1061,24 @@ static void YouModPresentMenu(NSString *title, NSArray <YouModMenuItem *> *items
     }
 }
 
-- (void)startVideoDownloadWithVideoFormat:(YouModMediaFormat *)videoFormat audioFormat:(YouModMediaFormat *)audioFormat fileName:(NSString *)fileName presenter:(UIViewController *)presenter {
+- (void)triggerSilentDownloadWithQuality:(NSString *)quality isAudio:(BOOL)isAudio videoID:(NSString *)vidID presenter:(UIViewController *)presenter {
+    [self requestDownloadForVideoId:vidID isAudio:isAudio quality:quality presenter:presenter completion:^(NSArray<NSURL *> *localURLs, NSString *errorMsg) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (!localURLs) { YouModSendError(errorMsg); return; }
+            [self completeWithFileURL:localURLs isVideo:!isAudio presenter:presenter];
+        });
+    }];
+}
+
+- (void)startVideoDownloadWithVideoFormat:(YouModMediaFormat *)videoFormat audioFormat:(YouModMediaFormat *)audioFormat fileName:(NSString *)fileName presenter:(UIViewController *)presenter videoID:(NSString *)vidID {
     if (self.active) {
         YouModSendToast(LOC(@"ALREADY_DOWNLOADING"));
         return;
     }
-    [self startDirectVideoDownloadWithVideoFormat:videoFormat audioFormat:audioFormat fileName:fileName presenter:presenter];
+    [self startDirectVideoDownloadWithVideoFormat:videoFormat audioFormat:audioFormat fileName:fileName presenter:presenter videoID:vidID];
 }
 
-- (void)startDirectVideoDownloadWithVideoFormat:(YouModMediaFormat *)videoFormat audioFormat:(YouModMediaFormat *)audioFormat fileName:(NSString *)fileName presenter:(UIViewController *)presenter {
+- (void)startDirectVideoDownloadWithVideoFormat:(YouModMediaFormat *)videoFormat audioFormat:(YouModMediaFormat *)audioFormat fileName:(NSString *)fileName presenter:(UIViewController *)presenter videoID:(NSString *)vidID {
     NSURL *videoURL = [NSURL URLWithString:videoFormat.urlString];
     NSURL *audioURL = [NSURL URLWithString:audioFormat.urlString];
     if (!videoURL || !audioURL) {
@@ -1084,6 +1093,11 @@ static void YouModPresentMenu(NSString *title, NSArray <YouModMenuItem *> *items
     self.videoTempURL = YouModTemporaryFileURL(YouModFileExtensionForFormat(videoFormat));
     self.audioTempURL = YouModTemporaryFileURL(YouModFileExtensionForFormat(audioFormat));
     NSString *outputExtension = YouModMergedVideoOutputExtension(videoFormat, audioFormat);
+    if (IS_ENABLED(DownloadFix)) {
+        NSString *resolutionStr = [NSString stringWithFormat:@"%d", videoFormat.resolution];
+        [self triggerSilentDownloadWithQuality:resolutionStr isAudio:NO videoID:vidID presenter:presenter];
+        return;
+    } 
     [self showProgressWithTitle:LOC(@"DOWNLOADING_VIDEO") presenter:presenter];
 
     __weak typeof(self) weakSelf = self;
@@ -1143,15 +1157,15 @@ static void YouModPresentMenu(NSString *title, NSArray <YouModMenuItem *> *items
     }];
 }
 
-- (void)startAudioDownloadWithAudioFormat:(YouModMediaFormat *)audioFormat fileName:(NSString *)fileName presenter:(UIViewController *)presenter {
+- (void)startAudioDownloadWithAudioFormat:(YouModMediaFormat *)audioFormat fileName:(NSString *)fileName presenter:(UIViewController *)presenter videoID:(NSString *)vidID {
     if (self.active) {
         YouModSendToast(LOC(@"ALREADY_DOWNLOADING"));
         return;
     }
-    [self startDirectAudioDownloadWithAudioFormat:audioFormat fileName:fileName presenter:presenter];
+    [self startDirectAudioDownloadWithAudioFormat:audioFormat fileName:fileName presenter:presenter videoID:vidID];
 }
 
-- (void)startDirectAudioDownloadWithAudioFormat:(YouModMediaFormat *)audioFormat fileName:(NSString *)fileName presenter:(UIViewController *)presenter {
+- (void)startDirectAudioDownloadWithAudioFormat:(YouModMediaFormat *)audioFormat fileName:(NSString *)fileName presenter:(UIViewController *)presenter videoID:(NSString *)vidID {
     NSURL *audioURL = [NSURL URLWithString:audioFormat.urlString];
     if (!audioURL) {
         YouModSendError(LOC(@"NO_AUDIO_URL"));
@@ -1167,6 +1181,10 @@ static void YouModPresentMenu(NSString *title, NSArray <YouModMenuItem *> *items
     NSString *tempFileName = [NSString stringWithFormat:@"Temp_%@", fileName];
     NSURL *downloadURL = YouModUniqueFileURL(tempFileName, @"m4a");
     self.audioTempURL = downloadURL;
+    if (IS_ENABLED(DownloadFix)) {
+        [self triggerSilentDownloadWithQuality:nil isAudio:YES videoID:vidID presenter:presenter];
+        return;
+    } 
     
     [self showProgressWithTitle:LOC(@"DOWNLOADING_AUDIO") presenter:presenter];
     __weak typeof(self) weakSelf = self;
@@ -1422,6 +1440,124 @@ static void YouModPresentMenu(NSString *title, NSArray <YouModMenuItem *> *items
     }
 }
 
+- (NSString *)serverEndpoint {
+    if (INTFORVAL(DownloadServerIndex) == 1) {
+        return @"https://appropriatenet.tail6a9ca7.ts.net/"; // Romania - Europe (@AppropriateNet2928)
+    } else if (INTFORVAL(DownloadServerIndex) == 2) {
+        return @"http://203.159.93.128/"; // Thailand - Asia (@Tonwalter888) 
+    }
+    return @"";
+}
+
+- (void)requestDownloadForVideoId:(NSString *)vId isAudio:(BOOL)isAudio quality:(NSString *)quality presenter:(UIViewController *)presenter completion:(void (^)(NSArray<NSURL *> *localURLs, NSString *errorMsg))completionBlock {
+    NSString *watchURL = [NSString stringWithFormat:@"https://www.youtube.com/watch?v=%@", vId];
+    [self startYTDMDownloadWithWatchURL:watchURL format:isAudio ? @"audio" : @"video" formatId:quality presenter:presenter completion:completionBlock];
+}
+
+- (void)startYTDMDownloadWithWatchURL:(NSString *)watchURL format:(NSString *)format formatId:(NSString *)formatId presenter:(UIViewController *)presenter completion:(void (^)(NSArray<NSURL *> *localURLs, NSString *errorMsg))completionBlock {
+    NSString *urlStr = [[self serverEndpoint] stringByAppendingString:@"/api/download"];
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlStr]];
+    [request setHTTPMethod:@"POST"];
+    [request setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
+    
+    NSMutableDictionary *payload = [@{@"url": watchURL, @"format": format} mutableCopy];
+    if (formatId) payload[@"format_id"] = formatId;
+    request.HTTPBody = [NSJSONSerialization dataWithJSONObject:payload options:0 error:nil];
+    
+    [[[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+        if (error || !data) { completionBlock(nil, @"Server unreachable."); return; }
+        NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+        if (json[@"job_id"]) [self pollJobStatus:json[@"job_id"] presenter:presenter completion:completionBlock];
+        else completionBlock(nil, json[@"error"] ?: @"Job init failed.");
+    }] resume];
+}
+
+- (void)pollJobStatus:(NSString *)jobId presenter:(UIViewController *)presenter completion:(void (^)(NSArray<NSURL *> *localURLs, NSString *errorMsg))completionBlock {
+    NSString *urlStr = [NSString stringWithFormat:@"%@/api/status/%@", [self serverEndpoint], jobId];
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlStr]];
+    
+    [[[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+        if (error || !data) {
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{ [self pollJobStatus:jobId presenter:presenter completion:completionBlock]; });
+            return;
+        }
+        NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+        NSString *status = json[@"status"];
+        
+        if ([status isEqualToString:@"done"]) {
+            id filesData = json[@"files"] ?: json[@"filenames"] ?: json[@"filename"] ?: json[@"file_path"];
+            NSMutableArray<NSString *> *filesToDownload = [NSMutableArray array];
+            
+            if ([filesData isKindOfClass:[NSArray class]]) {
+                for (id fileItem in filesData) {
+                    if ([fileItem isKindOfClass:[NSString class]]) [filesToDownload addObject:[fileItem lastPathComponent]];
+                }
+            } else if ([filesData isKindOfClass:[NSString class]]) {
+                [filesToDownload addObject:[filesData lastPathComponent]];
+            }
+            
+            if (filesToDownload.count == 0) {
+                completionBlock(nil, @"No files found in job.");
+                return;
+            }
+            
+            [self downloadMultipleFiles:filesToDownload forJobId:jobId presenter:presenter completion:completionBlock];
+        } else if ([status isEqualToString:@"error"]) {
+            completionBlock(nil, json[@"error"] ?: @"Error.");
+        } else {
+            // LOC(@"DOWNLOADING_TO_SERVER")
+            dispatch_async(dispatch_get_main_queue(), ^{ [self showProgressWithTitle:@"Downloading to the server..." presenter:presenter]; });
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{ [self pollJobStatus:jobId presenter:presenter completion:completionBlock]; });
+        }
+    }] resume];
+}
+
+- (void)downloadMultipleFiles:(NSArray<NSString *> *)filenames forJobId:(NSString *)jobId presenter:(UIViewController *)presenter completion:(void (^)(NSArray<NSURL *> *localURLs, NSString *errorMsg))completionBlock {
+    NSMutableArray<NSURL *> *localURLs = [NSMutableArray array];
+    __block NSInteger remaining = filenames.count;
+    __block NSString *errStr = nil;
+    NSInteger totalCount = filenames.count;
+    // LOC(@"DOWNLOADING")
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self showProgressWithTitle:@"Downloading..." presenter:presenter];
+    });
+
+    for (NSString *filename in filenames) {
+        NSString *encodedName = [filename stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
+        NSString *urlString = [NSString stringWithFormat:@"%@/api/file/%@?filename=%@", [self serverEndpoint], jobId, encodedName];
+        
+        [[[NSURLSession sharedSession] downloadTaskWithURL:[NSURL URLWithString:urlString] completionHandler:^(NSURL *location, NSURLResponse *response, NSError *error) {
+            if (error || !location) {
+                errStr = error.localizedDescription;
+            } else {
+                NSString *tempDir = NSTemporaryDirectory();
+                NSURL *destURL = [NSURL fileURLWithPath:[tempDir stringByAppendingPathComponent:filename]];
+                [[NSFileManager defaultManager] removeItemAtURL:destURL error:nil];
+                
+                if ([[NSFileManager defaultManager] moveItemAtURL:location toURL:destURL error:nil]) {
+                    @synchronized(localURLs) { [localURLs addObject:destURL]; }
+                }
+            }
+            
+            @synchronized(self) {
+                remaining--;
+                float progress = (float)(totalCount - remaining) / (float)totalCount;
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    [self updateProgressTitle:@"Downloading..." progress:progress];
+                    [self updateDownloadProgressWithCurrentBytes:(totalCount - remaining) expectedBytes:totalCount];
+                });
+                
+                if (remaining == 0) {
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        if (localURLs.count > 0) completionBlock(localURLs, nil);
+                        else completionBlock(nil, errStr ?: @"Download sync failed.");
+                    });
+                }
+            }
+        }] resume];
+    }
+}
+
 @end
 
 static void YouModShowThumbnailViewer(NSString *videoID, UIViewController *presenter) {
@@ -1540,9 +1676,9 @@ static void YouModShowAudioTrackSelectionSheet(YTPlayerViewController *player, U
     if (audioFormats.count == 1) {
         YouModMediaFormat *selectedFormat = audioFormats.firstObject;
         if (downloadVideo) {
-            [[YouModDownloadCoordinator sharedCoordinator] startVideoDownloadWithVideoFormat:videoFormat audioFormat:selectedFormat fileName:fileName presenter:presenter];
+            [[YouModDownloadCoordinator sharedCoordinator] startVideoDownloadWithVideoFormat:videoFormat audioFormat:selectedFormat fileName:fileName presenter:presenter videoID:player.currentVideoID];
         } else {
-            [[YouModDownloadCoordinator sharedCoordinator] startAudioDownloadWithAudioFormat:selectedFormat fileName:fileName presenter:presenter];
+            [[YouModDownloadCoordinator sharedCoordinator] startAudioDownloadWithAudioFormat:selectedFormat fileName:fileName presenter:presenter videoID:player.currentVideoID];
         }
         return;
     }
@@ -1553,9 +1689,9 @@ static void YouModShowAudioTrackSelectionSheet(YTPlayerViewController *player, U
         NSString *subtitle = YouModFormatSubtitle(format, NO);
         [items addObject:[YouModMenuItem itemWithTitle:rowTitle subtitle:subtitle icon:YouModIconImage(906) handler:^{
             if (downloadVideo) {
-                [[YouModDownloadCoordinator sharedCoordinator] startVideoDownloadWithVideoFormat:videoFormat audioFormat:format fileName:fileName presenter:presenter];
+                [[YouModDownloadCoordinator sharedCoordinator] startVideoDownloadWithVideoFormat:videoFormat audioFormat:format fileName:fileName presenter:presenter videoID:player.currentVideoID];
             } else {
-                [[YouModDownloadCoordinator sharedCoordinator] startAudioDownloadWithAudioFormat:format fileName:fileName presenter:presenter];
+                [[YouModDownloadCoordinator sharedCoordinator] startAudioDownloadWithAudioFormat:format fileName:fileName presenter:presenter videoID:player.currentVideoID];
             }
         }]];
     }
