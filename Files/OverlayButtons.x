@@ -61,7 +61,8 @@ static const NSInteger YMOverlayButtonBaseTag = 9910;
 // CC/gear row in the top-right corner of the player overlay.
 static const CGFloat YMOverlayButtonSize = 40.0;
 static const CGFloat YMOverlayButtonGap = 8.0;
-static const CGFloat YMOverlayButtonTopInset = 52.0;
+static const CGFloat YMOverlayButtonTopInset = 52.0; // fallback row top when the gear can't be located
+static const CGFloat YMOverlayButtonGearGap = 4.0;   // vertical gap between YouTube's gear row and our row
 static const CGFloat YMOverlayButtonEdgePadding = 12.0; // fallback right padding when the gear isn't found
 
 // Point size of a text button's label. Tweak this to change how large the text renders.
@@ -109,34 +110,34 @@ static YTPlayerViewController *YMPlayerVCFromOverlay(YTMainAppControlsOverlayVie
 // Recursively find the right-most YTQTMButton in the overlay's top region. YouTube
 // nests the gear/CC/cast buttons inside a container, so a one-level scan would miss
 // them; recursion reaches the nested buttons wherever they sit.
-static void YMScanForGearMidX(UIView *view, YTMainAppControlsOverlayView *overlay, CGFloat topRegionMaxY, CGFloat *bestMidX) {
+static void YMScanForGearFrame(UIView *view, YTMainAppControlsOverlayView *overlay, CGFloat topRegionMaxY, CGRect *bestFrame) {
     for (UIView *sub in view.subviews) {
         if ([sub isKindOfClass:%c(YTQTMButton)]) {
             CGRect f = [sub convertRect:sub.bounds toView:overlay];
             if (CGRectGetMidY(f) <= topRegionMaxY) { // in the top button row
-                CGFloat midX = CGRectGetMidX(f);
-                if (midX > *bestMidX) *bestMidX = midX;
+                // The CGRectIsNull check must stay first: CGRectGetMidX(CGRectNull) is
+                // infinite, so the > comparison alone would never accept the first match.
+                if (CGRectIsNull(*bestFrame) || CGRectGetMidX(f) > CGRectGetMidX(*bestFrame)) *bestFrame = f;
             }
         }
-        YMScanForGearMidX(sub, overlay, topRegionMaxY, bestMidX);
+        YMScanForGearFrame(sub, overlay, topRegionMaxY, bestFrame);
     }
 }
 
 // Find YouTube's settings/overflow button so we can anchor our row directly beneath it.
 // Prefer the overlay's own overflowButton; otherwise take the right-most YTQTMButton in
-// the overlay's top region. Returns its center-x in the overlay's coordinate space, or a
-// negative value if not found (the caller then falls back to the screen edge).
-static CGFloat YMGearCenterXInOverlay(YTMainAppControlsOverlayView *overlay) {
+// the overlay's top region. Returns its frame in the overlay's coordinate space, or
+// CGRectNull if not found (the caller then falls back to the screen edge / top inset).
+static CGRect YMGearFrameInOverlay(YTMainAppControlsOverlayView *overlay) {
     YTQTMButton *overflow = [overlay valueForKey:@"_overflowButton"];
     if (overflow.window) {
-        CGRect f = [overflow convertRect:overflow.bounds toView:overlay];
-        return CGRectGetMidX(f);
+        return [overflow convertRect:overflow.bounds toView:overlay];
     }
 
     CGFloat topRegionMaxY = overlay.bounds.size.height * 0.25;
-    CGFloat bestMidX = -1.0;
-    YMScanForGearMidX(overlay, overlay, topRegionMaxY, &bestMidX);
-    return bestMidX;
+    CGRect bestFrame = CGRectNull;
+    YMScanForGearFrame(overlay, overlay, topRegionMaxY, &bestFrame);
+    return bestFrame;
 }
 
 // The font for a text button's label, in YouTube Sans to match native controls,
@@ -197,13 +198,18 @@ static YTQTMButton *YMCreateOverlayButton(YTMainAppControlsOverlayView *overlay,
     // faded-out overlay until the next setOverlayVisible: call.
     BOOL overlayVisible = self.isOverlayVisible;
 
-    // Anchor the row's right-most button under the gear; grow leftward. Fall back to
-    // the screen edge when the gear can't be located, so buttons never collapse to x=0.
-    // trailingCenterX is the center of the button placed in the previous iteration;
-    // each button steps left by half of both widths plus the gap, so text buttons
-    // (which may be wider than icon buttons) still pack without overlap.
-    CGFloat gearMidX = YMGearCenterXInOverlay(self);
-    CGFloat trailingCenterX = (gearMidX > 0) ? gearMidX : self.bounds.size.width - YMOverlayButtonEdgePadding - YMOverlayButtonSize / 2.0;
+    // Anchor the row to the gear: right-most button under the gear's centre-x, row top
+    // just below the gear's bottom edge; grow leftward. Deriving Y from the gear (rather
+    // than a fixed inset) keeps the row the same distance below the gear on every device —
+    // YouTube's gear sits at a different Y on iPhone vs iPad. Fall back to the screen edge
+    // and the fixed top inset when the gear can't be located, so buttons never collapse to
+    // x=0 or y=0. trailingCenterX is the center of the button placed in the previous
+    // iteration; each button steps left by half of both widths plus the gap, so text
+    // buttons (which may be wider than icon buttons) still pack without overlap.
+    CGRect gearFrame = YMGearFrameInOverlay(self);
+    BOOL hasGear = !CGRectIsNull(gearFrame);
+    CGFloat trailingCenterX = hasGear ? CGRectGetMidX(gearFrame) : self.bounds.size.width - YMOverlayButtonEdgePadding - YMOverlayButtonSize / 2.0;
+    CGFloat rowTop = hasGear ? CGRectGetMaxY(gearFrame) + YMOverlayButtonGearGap : YMOverlayButtonTopInset;
     CGFloat prevHalfWidth = 0;
 
     for (YMOverlayButtonSpec *spec in specs) {
@@ -231,7 +237,7 @@ static YTQTMButton *YMCreateOverlayButton(YTMainAppControlsOverlayView *overlay,
             : trailingCenterX - prevHalfWidth - YMOverlayButtonGap - width / 2.0;
 
         btn.frame = CGRectMake(centerX - width / 2.0,
-                                YMOverlayButtonTopInset,
+                                rowTop,
                                 width,
                                 YMOverlayButtonSize);
         trailingCenterX = centerX;

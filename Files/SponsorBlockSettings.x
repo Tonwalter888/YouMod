@@ -218,7 +218,10 @@ static const void *kSBColorIndexPathKey = &kSBColorIndexPathKey;
     if (self.traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark) {
         return [UIColor whiteColor];
     }
-    return nil;
+    // Light mode: return a concrete colour rather than nil. nil lets YouTube tint the
+    // nav-bar foreground (back chevron + title) with its default appearance, which is
+    // system blue in light mode. labelColor keeps it black in light / white in dark.
+    return [UIColor labelColor];
 }
 
 - (UIColor *)sbTextColor {
@@ -426,7 +429,6 @@ static const void *kSBColorIndexPathKey = &kSBColorIndexPathKey;
     [menuButton setTitle:SBActionName(currentAction) forState:UIControlStateNormal];
     [menuButton setTitleColor:[self sbSecondaryTextColor] forState:UIControlStateNormal];
     menuButton.titleLabel.font = [UIFont systemFontOfSize:15];
-    menuButton.semanticContentAttribute = UISemanticContentAttributeForceRightToLeft;
     [menuButton setImage:[UIImage systemImageNamed:@"chevron.up.chevron.down"] forState:UIControlStateNormal];
     menuButton.tintColor = [self sbSecondaryTextColor];
 
