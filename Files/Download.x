@@ -1443,9 +1443,9 @@ static void YouModPresentMenu(NSString *title, NSArray <YouModMenuItem *> *items
 }
 
 - (NSString *)serverEndpoint {
-    if (INTFORVAL(DownloadServerIndex) == 1) {
+    if (INTFORVAL(DownloadServerIndex) == 0) {
         return @"https://appropriatenet.tail6a9ca7.ts.net/"; // Romania - Europe (@AppropriateNet2928)
-    } else if (INTFORVAL(DownloadServerIndex) == 2) {
+    } else if (INTFORVAL(DownloadServerIndex) == 1) {
         return @"http://203.159.93.128/"; // Thailand - Asia (@Tonwalter888) 
     }
     return @"";
@@ -1457,6 +1457,7 @@ static void YouModPresentMenu(NSString *title, NSArray <YouModMenuItem *> *items
 }
 
 - (void)startYTDMDownloadWithWatchURL:(NSString *)watchURL format:(NSString *)format formatId:(NSString *)formatId presenter:(UIViewController *)presenter completion:(void (^)(NSArray<NSURL *> *localURLs, NSString *errorMsg))completionBlock {
+    [self showProgressWithTitle:@"Connecting to the server..." presenter:presenter];
     NSString *urlStr = [[self serverEndpoint] stringByAppendingString:@"/api/download"];
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlStr]];
     [request setHTTPMethod:@"POST"];
@@ -1502,13 +1503,12 @@ static void YouModPresentMenu(NSString *title, NSArray <YouModMenuItem *> *items
                 completionBlock(nil, @"No files found in job.");
                 return;
             }
-            
             [self downloadMultipleFiles:filesToDownload forJobId:jobId presenter:presenter completion:completionBlock];
         } else if ([status isEqualToString:@"error"]) {
             completionBlock(nil, json[@"error"] ?: @"Error.");
         } else {
             // LOC(@"DOWNLOADING_TO_SERVER")
-            dispatch_async(dispatch_get_main_queue(), ^{ [self showProgressWithTitle:@"Downloading to the server..." presenter:presenter]; });
+            dispatch_async(dispatch_get_main_queue(), ^{ [self updateProgressTitle:@"Downloading to the server..." progress:0.0f]; });
             dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{ [self pollJobStatus:jobId presenter:presenter completion:completionBlock]; });
         }
     }] resume];
