@@ -1446,7 +1446,7 @@ static void YouModPresentMenu(NSString *title, NSArray <YouModMenuItem *> *items
     if (INTFORVAL(DownloadServerIndex) == 0) {
         return @"https://appropriatenet.tail6a9ca7.ts.net/"; // Romania - Europe (@AppropriateNet2928)
     } else if (INTFORVAL(DownloadServerIndex) == 1) {
-        return @"http://203.159.93.128/"; // Thailand - Asia (@Tonwalter888) 
+        return @"203.159.93.128/"; // Thailand - Asia (@Tonwalter888) 
     }
     return @"";
 }
@@ -1468,7 +1468,7 @@ static void YouModPresentMenu(NSString *title, NSArray <YouModMenuItem *> *items
     request.HTTPBody = [NSJSONSerialization dataWithJSONObject:payload options:0 error:nil];
     
     [[[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
-        if (error || !data) { [self failWithError:error]; return; }
+        if (error || !data) { completionBlock(nil, @"Server unreachable."); return; }
         NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
         if (json[@"job_id"]) [self pollJobStatus:json[@"job_id"] presenter:presenter completion:completionBlock];
         else completionBlock(nil, json[@"error"] ?: @"Job init failed.");
