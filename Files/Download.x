@@ -1482,7 +1482,7 @@ static void YouModPresentMenu(NSString *title, NSArray <YouModMenuItem *> *items
     
     [[[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
         if (error || !data) {
-            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{ [self pollJobStatus:jobId presenter:presenter completion:completionBlock]; });
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{ [self pollJobStatus:jobId presenter:presenter completion:completionBlock]; });
             return;
         }
         NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
@@ -1508,9 +1508,8 @@ static void YouModPresentMenu(NSString *title, NSArray <YouModMenuItem *> *items
         } else if ([status isEqualToString:@"error"]) {
             completionBlock(nil, json[@"error"] ?: @"Error.");
         } else {
-            // LOC(@"DOWNLOADING_TO_SERVER")
             dispatch_async(dispatch_get_main_queue(), ^{ [self updateProgressTitle:@"Downloading to the server..." progress:0.0f]; });
-            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{ [self pollJobStatus:jobId presenter:presenter completion:completionBlock]; });
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{ [self pollJobStatus:jobId presenter:presenter completion:completionBlock]; });
         }
     }] resume];
 }
