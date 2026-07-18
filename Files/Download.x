@@ -1065,7 +1065,9 @@ static void YouModPresentMenu(NSString *title, NSArray <YouModMenuItem *> *items
     [self requestDownloadForVideoId:vidID isAudio:isAudio quality:quality presenter:presenter completion:^(NSArray<NSURL *> *localURLs, NSString *errorMsg) {
         dispatch_async(dispatch_get_main_queue(), ^{
             if (!localURLs) { YouModSendError(errorMsg); return; }
-            [self completeWithFileURL:localURLs isVideo:!isAudio presenter:presenter];
+            for (NSURL *url in localURLs) {
+                [self completeWithFileURL:url isVideo:!isAudio presenter:presenter];
+            }
         });
     }];
 }
