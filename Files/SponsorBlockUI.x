@@ -572,7 +572,7 @@ static const CGFloat SBInlineMarkerHeight = 4.0;
     for (UIView *sub in subs) {
         if (sub.tag == SBSegmentMarkerTag) {
             [markers addObject:sub];
-        } else if ([sub isKindOfClass:%c(YTPlayerBarScrubberDotDecorationView)] || [sub isKindOfClass:%c(YTPlayerBarScrubberDotDecorationViewV2)]) {
+        } else if ([sub isKindOfClass:%c(YTPlayerBarScrubberDotDecorationView)]) {
             if (!scrubberDot) scrubberDot = sub;
         }
     }
@@ -740,7 +740,7 @@ static const CGFloat SBInlineMarkerHeight = 4.0;
                 if (!referenceView) referenceView = sub;
             } else if ([sub isKindOfClass:%c(YTPlayerBarProgressDecorationView)]) {
                 if (!referenceView) referenceView = sub;
-            } else if ([sub isKindOfClass:%c(YTPlayerBarScrubberDotDecorationView)] || [sub isKindOfClass:%c(YTPlayerBarScrubberDotDecorationViewV2)]) {
+            } else if ([sub isKindOfClass:%c(YTPlayerBarScrubberDotDecorationView)]) {
                 if (!scrubberDot) scrubberDot = sub;
             }
             if (referenceView && scrubberDot) break;
@@ -793,7 +793,7 @@ static const CGFloat SBInlineMarkerHeight = 4.0;
                     if (!referenceView) referenceView = sub;
                 } else if ([sub isKindOfClass:%c(YTPlayerBarProgressDecorationView)]) {
                     if (!referenceView) referenceView = sub;
-                } else if ([sub isKindOfClass:%c(YTPlayerBarScrubberDotDecorationView)] || [sub isKindOfClass:%c(YTPlayerBarScrubberDotDecorationViewV2)]) {
+                } else if ([sub isKindOfClass:%c(YTPlayerBarScrubberDotDecorationView)]) {
                     if (!scrubberDot) scrubberDot = sub;
                 }
                 if (referenceView && scrubberDot) break;
