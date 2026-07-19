@@ -38,14 +38,10 @@ static UIImage *YouModIconImage(NSInteger iconType) {
 @property (nonatomic, copy) NSString *subtitle;
 @property (nonatomic, strong) UIImage *iconImage;
 @property (nonatomic, copy) void (^handler)(void);
-+ (instancetype)itemWithTitle:(NSString *)title subtitle:(NSString *)subtitle handler:(void (^)(void))handler;
 + (instancetype)itemWithTitle:(NSString *)title subtitle:(NSString *)subtitle icon:(UIImage *)icon handler:(void (^)(void))handler;
 @end
 
 @implementation YouModMenuItem
-+ (instancetype)itemWithTitle:(NSString *)title subtitle:(NSString *)subtitle handler:(void (^)(void))handler {
-    return [self itemWithTitle:title subtitle:subtitle icon:nil handler:handler];
-}
 + (instancetype)itemWithTitle:(NSString *)title subtitle:(NSString *)subtitle icon:(UIImage *)icon handler:(void (^)(void))handler {
     YouModMenuItem *item = [YouModMenuItem new];
     item.title = title;
@@ -115,7 +111,6 @@ typedef void (^YouModRangeDownloadProgress)(unsigned long long completedBytes);
 @property (nonatomic, strong) NSURLSessionDataTask *metadataTask;
 @property (nonatomic, strong) YouModRangeDownloader *rangeDownloader;
 @property (nonatomic, strong) AVAssetExportSession *exporter;
-@property (nonatomic, strong) UIProgressView *progressView;
 @property (nonatomic, strong) YMDownloadProgressView *progressPill;
 @property (nonatomic, weak) UIViewController *presenter;
 @property (nonatomic, copy) YouModFileDownloadCompletion fileCompletion;
@@ -139,12 +134,10 @@ typedef void (^YouModRangeDownloadProgress)(unsigned long long completedBytes);
 - (void)startVideoDownloadWithVideoFormat:(YouModMediaFormat *)videoFormat audioFormat:(YouModMediaFormat *)audioFormat fileName:(NSString *)fileName presenter:(UIViewController *)presenter videoID:(NSString *)vidID;
 - (void)startAudioDownloadWithAudioFormat:(YouModMediaFormat *)audioFormat fileName:(NSString *)fileName presenter:(UIViewController *)presenter videoID:(NSString *)vidID;
 - (void)startDirectVideoDownloadWithVideoFormat:(YouModMediaFormat *)videoFormat audioFormat:(YouModMediaFormat *)audioFormat fileName:(NSString *)fileName presenter:(UIViewController *)presenter videoID:(NSString *)vidID;
-- (void)startDirectSingleVideoDownloadWithFormat:(YouModMediaFormat *)format fileName:(NSString *)fileName presenter:(UIViewController *)presenter;
 - (void)startDirectAudioDownloadWithAudioFormat:(YouModMediaFormat *)audioFormat fileName:(NSString *)fileName presenter:(UIViewController *)presenter videoID:(NSString *)vidID;
 - (void)trimAudioToHalfLengthAtURL:(NSURL *)inputURL toURL:(NSURL *)outputURL completion:(void (^)(NSError *error))completion;
 - (void)mergeVideoURL:(NSURL *)videoURL audioURL:(NSURL *)audioURL fileName:(NSString *)fileName outputExtension:(NSString *)outputExtension durationMs:(unsigned long long)durationMs presenter:(UIViewController *)presenter;
 - (void)mergeVideoWithAVFoundationVideoURL:(NSURL *)videoURL audioURL:(NSURL *)audioURL outputURL:(NSURL *)outputURL durationMs:(unsigned long long)durationMs presenter:(UIViewController *)presenter fallbackError:(NSError *)fallbackError;
-- (void)trimSingleVideoURL:(NSURL *)inputURL outputURL:(NSURL *)outputURL durationMs:(unsigned long long)durationMs presenter:(UIViewController *)presenter;
 @end
 
 static const unsigned long long YouModFastDownloadMinimumBytes = 256ULL * 1024ULL;
@@ -858,11 +851,18 @@ static void YouModShareFile(NSURL *fileURL, UIViewController *presenter) {
 
 static void YouModPresentMenu(NSString *title, NSArray <YouModMenuItem *> *items, UIViewController *presenter, UIView *sender) {
     presenter = YouModTopViewController(presenter);
-    YTDefaultSheetController *sheet = [%c(YTDefaultSheetController) sheetControllerWithParentResponder:presenter];;
+    YTDefaultSheetController *sheet = [%c(YTDefaultSheetController) sheetControllerWithParentResponder:presenter];
     for (YouModMenuItem *item in items) {
-        YTActionSheetAction *action = [%c(YTActionSheetAction) actionWithTitle:item.title subtitle:item.subtitle iconImage:item.iconImage handler:^(__unused YTActionSheetAction *action) {
-            if (item.handler) item.handler();
-        }];
+        YTActionSheetAction *action;
+        if (item.subtitle == nil) {
+            action = [%c(YTActionSheetAction) actionWithTitle:item.title iconImage:item.iconImage style:0 handler:^(__unused YTActionSheetAction *action) {
+                item.handler();
+            }];
+        } else {
+            action = [%c(YTActionSheetAction) actionWithTitle:item.title subtitle:item.subtitle iconImage:item.iconImage handler:^(__unused YTActionSheetAction *action) {
+                item.handler();
+            }];
+        }
         [sheet addAction:action];
     }
     if (sender) {
@@ -1119,39 +1119,6 @@ static void YouModPresentMenu(NSString *title, NSArray <YouModMenuItem *> *items
     }];
 }
 
-- (void)startDirectSingleVideoDownloadWithFormat:(YouModMediaFormat *)format fileName:(NSString *)fileName presenter:(UIViewController *)presenter {
-    NSURL *videoURL = [NSURL URLWithString:format.urlString];
-    if (!videoURL) {
-        YouModSendError(LOC(@"NO_STREAM_URL"));
-        return;
-    }
-
-    self.active = YES;
-    self.cancelled = NO;
-    self.completedBytes = 0;
-    self.totalBytes = format.contentLength;
-    NSString *extension = YouModFileExtensionForFormat(format);
-    BOOL canFinalizeWithAVFoundation = format.durationMs > 0 && YouModPathExtensionIsPhotosVideo(extension);
-    NSURL *finalURL = YouModUniqueFileURL(fileName, extension);
-    NSURL *downloadURL = canFinalizeWithAVFoundation ? YouModTemporaryFileURL(extension) : finalURL;
-    self.videoTempURL = canFinalizeWithAVFoundation ? downloadURL : nil;
-    [self showProgressWithTitle:LOC(@"DOWNLOADING_VIDEO") presenter:presenter];
-
-    __weak typeof(self) weakSelf = self;
-    [self downloadURL:videoURL toURL:downloadURL expectedBytes:format.contentLength headers:nil completion:^(NSURL *fileURL, NSError *error) {
-        __strong typeof(weakSelf) self = weakSelf;
-        if (!self || error) {
-            [self failWithError:error ?: [NSError errorWithDomain:@"YouMod" code:8 userInfo:@{NSLocalizedDescriptionKey: @"Video download failed"}]];
-            return;
-        }
-        if (canFinalizeWithAVFoundation) {
-            [self trimSingleVideoURL:fileURL outputURL:finalURL durationMs:format.durationMs presenter:presenter];
-            return;
-        }
-        [self completeWithFileURL:fileURL isVideo:YES presenter:presenter];
-    }];
-}
-
 - (void)startAudioDownloadWithAudioFormat:(YouModMediaFormat *)audioFormat fileName:(NSString *)fileName presenter:(UIViewController *)presenter videoID:(NSString *)vidID {
     if (self.active) {
         YouModSendToast(LOC(@"ALREADY_DOWNLOADING"));
@@ -1319,72 +1286,11 @@ static void YouModPresentMenu(NSString *title, NSArray <YouModMenuItem *> *items
     }];
 }
 
-- (void)trimSingleVideoURL:(NSURL *)inputURL outputURL:(NSURL *)outputURL durationMs:(unsigned long long)durationMs presenter:(UIViewController *)presenter {
-    [self updateProgressTitle:LOC(@"FINA_VIDEO") progress:0.99f];
-    [NSFileManager.defaultManager removeItemAtURL:outputURL error:nil];
-
-    AVURLAsset *asset = [AVURLAsset URLAssetWithURL:inputURL options:nil];
-    AVAssetTrack *videoTrack = [[asset tracksWithMediaType:AVMediaTypeVideo] firstObject];
-    if (!videoTrack) {
-        [self failWithError:[NSError errorWithDomain:@"YouMod" code:10 userInfo:@{NSLocalizedDescriptionKey: @"Cannot finalize video"}]];
-        return;
-    }
-
-    CMTime duration = YouModExportDuration(asset, nil, durationMs);
-    if (!YouModCMTimeIsUsable(duration)) {
-        [self failWithError:[NSError errorWithDomain:@"YouMod" code:11 userInfo:@{NSLocalizedDescriptionKey: @"Cannot determine duration"}]];
-        return;
-    }
-
-    AVMutableComposition *composition = [AVMutableComposition composition];
-    NSError *insertError = nil;
-    AVMutableCompositionTrack *compositionVideo = [composition addMutableTrackWithMediaType:AVMediaTypeVideo preferredTrackID:kCMPersistentTrackID_Invalid];
-    [compositionVideo insertTimeRange:CMTimeRangeMake(kCMTimeZero, duration) ofTrack:videoTrack atTime:kCMTimeZero error:&insertError];
-    compositionVideo.preferredTransform = videoTrack.preferredTransform;
-    if (insertError) {
-        [self failWithError:insertError];
-        return;
-    }
-
-    AVAssetTrack *audioTrack = [[asset tracksWithMediaType:AVMediaTypeAudio] firstObject];
-    if (audioTrack) {
-        CMTime audioDuration = YouModMinUsableDuration(duration, audioTrack.timeRange.duration);
-        AVMutableCompositionTrack *compositionAudio = [composition addMutableTrackWithMediaType:AVMediaTypeAudio preferredTrackID:kCMPersistentTrackID_Invalid];
-        [compositionAudio insertTimeRange:CMTimeRangeMake(kCMTimeZero, audioDuration) ofTrack:audioTrack atTime:kCMTimeZero error:&insertError];
-        if (insertError) {
-            [self failWithError:insertError];
-            return;
-        }
-    }
-
-    AVAssetExportSession *exporter = [[AVAssetExportSession alloc] initWithAsset:composition presetName:AVAssetExportPresetPassthrough];
-    exporter.outputURL = outputURL;
-    exporter.outputFileType = AVFileTypeMPEG4;
-    exporter.shouldOptimizeForNetworkUse = YES;
-    self.exporter = exporter;
-
-    __weak typeof(self) weakSelf = self;
-    [exporter exportAsynchronouslyWithCompletionHandler:^{
-        dispatch_async(dispatch_get_main_queue(), ^{
-            __strong typeof(weakSelf) self = weakSelf;
-            if (!self) return;
-            self.exporter = nil;
-            if (self.cancelled || exporter.status == AVAssetExportSessionStatusCancelled) return;
-            if (exporter.status == AVAssetExportSessionStatusCompleted) {
-                [self completeWithFileURL:outputURL isVideo:YES presenter:presenter];
-            } else {
-                [self failWithError:exporter.error ?: [NSError errorWithDomain:@"YouMod" code:12 userInfo:@{NSLocalizedDescriptionKey: @"Finalize failed"}]];
-            }
-        });
-    }];
-}
-
 - (void)completeWithFileURL:(NSURL *)fileURL isVideo:(BOOL)isVideo presenter:(UIViewController *)presenter {
     if (self.cancelled) return;
     self.active = NO;
     [self updateProgressTitle:LOC(@"DOWNLOAD_COMPLETED") progress:1.0f];
     if (self.progressPill) { [self.progressPill dismiss]; self.progressPill = nil; }
-    self.progressView = nil;
     [self cleanupTemporaryFiles];
 
     if (isVideo && IS_ENABLED(DownloadSaveToPhotos) && YouModVideoFileCanSaveToPhotos(fileURL)) {
@@ -1406,7 +1312,6 @@ static void YouModPresentMenu(NSString *title, NSArray <YouModMenuItem *> *items
     if (self.cancelled) return;
     self.active = NO;
     if (self.progressPill) { [self.progressPill dismiss]; self.progressPill = nil; }
-    self.progressView = nil;
     [self cleanupTemporaryFiles];
     YouModSendError(error.localizedDescription ?: LOC(@"DOWNLOAD_FAILED"));
 }
@@ -1679,16 +1584,16 @@ static void YouModShowCopyVideoInfoSheet(YTPlayerViewController *player, UIViewC
     NSString *all = [NSString stringWithFormat:@"%@ - %@\n%@", author, title, description];
 
     NSMutableArray *items = [NSMutableArray array];
-    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_ALL_VID_INFO") subtitle:LOC(@"COPY_ALL_VID_INFO_DESC") icon:YouModIconImage(250) handler:^{
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_ALL_VID_INFO") subtitle:nil icon:YouModIconImage(250) handler:^{
         YouModCopyTextToPasteboard(all, @"COPIED_VID_INFO");
     }]];
-    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_AUTHOR") subtitle:LOC(@"COPY_AUTHOR_DESC") icon:YouModIconImage(250) handler:^{
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_AUTHOR") subtitle:nil icon:YouModIconImage(250) handler:^{
         YouModCopyTextToPasteboard(author, @"COPIED_AUTHOR");
     }]];
-    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_TITLE") subtitle:LOC(@"COPY_TITLE_DESC") icon:YouModIconImage(250) handler:^{
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_TITLE") subtitle:nil icon:YouModIconImage(250) handler:^{
         YouModCopyTextToPasteboard(title, @"COPIED_TITLE");
     }]];
-    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_DESCRIPTION") subtitle:LOC(@"COPY_DESCRIPTION_DESC") icon:YouModIconImage(250) handler:^{
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_DESCRIPTION") subtitle:nil icon:YouModIconImage(250) handler:^{
         YouModCopyTextToPasteboard(description, @"COPIED_DESCRIPTION");
     }]];
 
@@ -1702,7 +1607,7 @@ static void YouModShowAudioTrackSelectionSheet(YTPlayerViewController *player, U
         return;
     }
 
-    if (audioFormats.count == 1) {
+    if (audioFormats.count == 1 || IS_ENABLED(DownloadFix)) {
         YouModMediaFormat *selectedFormat = audioFormats.firstObject;
         if (downloadVideo) {
             [[YouModDownloadCoordinator sharedCoordinator] startVideoDownloadWithVideoFormat:videoFormat audioFormat:selectedFormat fileName:fileName presenter:presenter videoID:player.currentVideoID];
@@ -1812,13 +1717,13 @@ static void YouModShowThumbnailSheet(YTPlayerViewController *player, UIViewContr
     NSString *videoID = player.currentVideoID;
 
     NSMutableArray *items = [NSMutableArray array];
-    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"SAVE_THUMBNAIL") subtitle:LOC(@"SAVE_THUMBNAIL_DESC") icon:YouModIconImage(57) handler:^{
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"SAVE_THUMBNAIL") subtitle:nil icon:YouModIconImage(57) handler:^{
         YouModDownloadThumbnail(videoID, presenter);
     }]];
-    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"SHOW_THUMBNAIL") subtitle:LOC(@"SHOW_THUMBNAIL_DESC") icon:YouModIconImage(208) handler:^{
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"SHOW_THUMBNAIL") subtitle:nil icon:YouModIconImage(208) handler:^{
         YouModShowThumbnailViewer(videoID, presenter);
     }]];
-    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_THUMBNAIL") subtitle:LOC(@"COPY_THUMBNAIL_DESC") icon:YouModIconImage(250) handler:^{
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_THUMBNAIL") subtitle:nil icon:YouModIconImage(250) handler:^{
         YouModCopyThumbnail(videoID, presenter);
     }]];
 
@@ -1833,24 +1738,24 @@ static void YouModShowDownloadManager(YTPlayerViewController *player, UIViewCont
     NSMutableArray *items = [NSMutableArray array];
 
     if (isShorts) {
-        [items addObject:[YouModMenuItem itemWithTitle:LOC(@"DOWNLOAD_SHORTS") subtitle:LOC(@"DOWNLOAD_SHORTS_DESC") icon:YouModIconImage(769) handler:^{
+        [items addObject:[YouModMenuItem itemWithTitle:LOC(@"DOWNLOAD_SHORTS") subtitle:nil icon:YouModIconImage(769) handler:^{
             YouModShowVideoQualitySheet(player, presenter, sender, YES);
         }]];
     } else {
-        [items addObject:[YouModMenuItem itemWithTitle:LOC(@"DOWNLOAD_VIDEO") subtitle:LOC(@"DOWNLOAD_VIDEO_DESC") icon:YouModIconImage(658) handler:^{
+        [items addObject:[YouModMenuItem itemWithTitle:LOC(@"DOWNLOAD_VIDEO") subtitle:nil icon:YouModIconImage(658) handler:^{
             YouModShowVideoQualitySheet(player, presenter, sender, NO);
         }]];
     }
-    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"DOWNLOAD_AUDIO") subtitle:LOC(@"DOWNLOAD_AUDIO_DESC") icon:YouModIconImage(21) handler:^{
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"DOWNLOAD_AUDIO") subtitle:nil icon:YouModIconImage(21) handler:^{
         YouModStartDownloadAudio(player, presenter, sender);
     }]];
-    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"DOWNLOAD_CAPTIONS") subtitle:LOC(@"DOWNLOAD_CAPTIONS_DESC") icon:YouModIconImage(50) handler:^{
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"DOWNLOAD_CAPTIONS") subtitle:nil icon:YouModIconImage(50) handler:^{
         YouModShowCaptionsSheet(player, presenter, sender);
     }]];
-    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"THUMBNAIL_OPTIONS") subtitle:LOC(@"THUMBNAIL_OPTIONS_DESC") icon:YouModIconImage(367) handler:^{
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"THUMBNAIL_OPTIONS") subtitle:nil icon:YouModIconImage(367) handler:^{
         YouModShowThumbnailSheet(player, presenter, sender);
     }]];
-    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_VID_INFO") subtitle:LOC(@"COPY_VID_INFO_DESC") icon:YouModIconImage(250) handler:^{
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_VID_INFO") subtitle:nil icon:YouModIconImage(250) handler:^{
         YouModShowCopyVideoInfoSheet(player, presenter, sender);
     }]];
     YouModPresentMenu(LOC(@"DOWNLOAD_MANAGER"), items, presenter, sender);
@@ -1966,13 +1871,7 @@ void YouModConfigureDownloadButton(_ASDisplayView *view) {
     CGFloat btnHeight = 60.0;
     
     CGFloat pX = likeButtonView.frame.origin.x;
-    CGFloat pY;
-    // In older YT versions, the button frame is 0, 0. So we will manually set the button frame.
-    if (likeButtonView.frame.origin.y == 0) {
-        pY = likeButtonView.frame.origin.y + 80.0;
-    } else {
-        pY = likeButtonView.frame.origin.y + 85.0;
-    }
+    CGFloat pY = likeButtonView.frame.origin.y + 85.0;
     
     downloadBtn.frame = CGRectMake(pX, pY, btnWidth, btnHeight);
     

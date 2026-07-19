@@ -117,7 +117,7 @@ static BOOL isShortsOnlyOn = YES;
     if (INTFORVAL(CaptionTrack) != 0) [main performSelector:@selector(YouModAutoCaptions) withObject:nil afterDelay:0.5];
     if (INTFORVAL(AutoSpeedIndex) != 0) [main performSelector:@selector(YouModSetAutoSpeed) withObject:nil afterDelay:0.5];
     if (INTFORVAL(AudioTrack) != 0) [self performSelector:@selector(YouModAutoAudioTrack:) withObject:main afterDelay:0.5];
-    if (isShortsOnlyOn) [self YouModOnlyShorts];
+    if (isShortsOnlyOn && IS_ENABLED(ShortsOnly)) [self YouModOnlyShorts];
 }
 %new
 - (void)YouModOnlyShorts {
@@ -208,7 +208,7 @@ extern void YouModConfigureDownloadButton(_ASDisplayView *view);
 }
 %new
 - (void)YouModFullscrrenGestureHandler:(UIPinchGestureRecognizer *)gesture {
-    if (gesture.state != UIGestureRecognizerStateBegan || isShortsOnlyOn) return;
+    if (gesture.state != UIGestureRecognizerStateBegan || (isShortsOnlyOn && IS_ENABLED(ShortsOnly))) return;
     id appconmain = [self valueForKey:@"_pivotBarProvider"];
     if ([appconmain isKindOfClass:%c(YTAppViewControllerImpl)]) {
         YTAppViewControllerImpl *appcon = (YTAppViewControllerImpl *)appconmain;
@@ -261,7 +261,6 @@ extern void YouModConfigureDownloadButton(_ASDisplayView *view);
 - (void)setPlaybackView:(id)arg1 {
     %orig;
     if (!IS_ENABLED(ShortsOnly)) return;
-    self.playbackOverlay.alpha = !isShortsOnlyOn;
     if (isShortsOnlyOn) {
         UILongPressGestureRecognizer *longPressGesture = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(YouModTurnOffShortsOnly:)];
         longPressGesture.numberOfTouchesRequired = 2;
