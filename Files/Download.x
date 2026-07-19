@@ -1567,6 +1567,7 @@ static void YouModPresentMenu(NSString *title, NSArray <YouModMenuItem *> *items
     self.finishedCurrentFile = NO;
     self.currentBytes = 0;
     self.currentExpectedBytes = 0;
+    self.baseProgressTitle = isAudio ? LOC(@"DOWNLOADING_AUDIO") : LOC(@"DOWNLOADING_VIDEO");
     
     dispatch_async(dispatch_get_main_queue(), ^{
         [self updateProgressTitle:isAudio ? LOC(@"DOWNLOADING_AUDIO") : LOC(@"DOWNLOADING_VIDEO") progress:0.0f];
