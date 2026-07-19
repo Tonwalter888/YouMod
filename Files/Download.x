@@ -1062,17 +1062,6 @@ static void YouModPresentMenu(NSString *title, NSArray <YouModMenuItem *> *items
     }
 }
 
-- (void)triggerSilentDownloadWithQuality:(NSString *)quality isAudio:(BOOL)isAudio videoID:(NSString *)vidID presenter:(UIViewController *)presenter {
-    [self requestDownloadForVideoId:vidID isAudio:isAudio quality:quality presenter:presenter completion:^(NSArray<NSURL *> *localURLs, NSString *errorMsg) {
-        dispatch_async(dispatch_get_main_queue(), ^{
-            if (!localURLs) { YouModSendError(errorMsg); return; }
-            for (NSURL *url in localURLs) {
-                [self completeWithFileURL:url isVideo:!isAudio presenter:presenter];
-            }
-        });
-    }];
-}
-
 - (void)startVideoDownloadWithVideoFormat:(YouModMediaFormat *)videoFormat audioFormat:(YouModMediaFormat *)audioFormat fileName:(NSString *)fileName presenter:(UIViewController *)presenter videoID:(NSString *)vidID {
     if (self.active) {
         YouModSendToast(LOC(@"ALREADY_DOWNLOADING"));
@@ -1447,18 +1436,32 @@ static void YouModPresentMenu(NSString *title, NSArray <YouModMenuItem *> *items
     if (INTFORVAL(DownloadServerIndex) == 0) {
         return @"https://appropriatenet.tail6a9ca7.ts.net/"; // Europe (@AppropriateNet2928)
     } else if (INTFORVAL(DownloadServerIndex) == 1) {
-        return @"https://ytdl.waterdev.cc/"; // Thailand - Asia (@Tonwalter888) 
+        return @"https://waterdl.freeddns.org/"; // Thailand - Asia (@Tonwalter888) 
     }
     return @"";
 }
 
-- (void)requestDownloadForVideoId:(NSString *)vId isAudio:(BOOL)isAudio quality:(NSString *)quality presenter:(UIViewController *)presenter completion:(void (^)(NSArray<NSURL *> *localURLs, NSString *errorMsg))completionBlock {
+- (void)triggerSilentDownloadWithQuality:(NSString *)quality isAudio:(BOOL)isAudio videoID:(NSString *)vidID presenter:(UIViewController *)presenter {
+    [self requestDownloadForVideoId:vidID isAudio:isAudio quality:quality presenter:presenter completion:^(NSURL *localURL, NSString *errorMsg) {
+        if (!self || self.cancelled) return;
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (!localURL) { 
+                YouModSendError(errorMsg); 
+                return; 
+            }
+            [self completeWithFileURL:localURL isVideo:!isAudio presenter:presenter];
+        });
+    }];
+}
+
+- (void)requestDownloadForVideoId:(NSString *)vId isAudio:(BOOL)isAudio quality:(NSString *)quality presenter:(UIViewController *)presenter completion:(void (^)(NSURL *localURL, NSString *errorMsg))completionBlock {
+    [self showProgressWithTitle:@"Connecting to the server..." presenter:presenter];
     NSString *watchURL = [NSString stringWithFormat:@"https://www.youtube.com/watch?v=%@", vId];
     [self startYTDMDownloadWithWatchURL:watchURL format:isAudio ? @"audio" : @"video" formatId:quality presenter:presenter completion:completionBlock];
 }
 
-- (void)startYTDMDownloadWithWatchURL:(NSString *)watchURL format:(NSString *)format formatId:(NSString *)formatId presenter:(UIViewController *)presenter completion:(void (^)(NSArray<NSURL *> *localURLs, NSString *errorMsg))completionBlock {
-    [self showProgressWithTitle:@"Connecting to the server..." presenter:presenter];
+- (void)startYTDMDownloadWithWatchURL:(NSString *)watchURL format:(NSString *)format formatId:(NSString *)formatId presenter:(UIViewController *)presenter completion:(void (^)(NSURL *localURL, NSString *errorMsg))completionBlock {
+    if (!self || self.cancelled) return;
     NSString *urlStr = [[self serverEndpoint] stringByAppendingString:@"/api/download"];
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlStr]];
     [request setHTTPMethod:@"POST"];
@@ -1469,6 +1472,7 @@ static void YouModPresentMenu(NSString *title, NSArray <YouModMenuItem *> *items
     request.HTTPBody = [NSJSONSerialization dataWithJSONObject:payload options:0 error:nil];
     
     [[[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+        if (!self || self.cancelled) return;
         if (error || !data) { completionBlock(nil, @"Server unreachable."); return; }
         NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
         if (json[@"job_id"]) [self pollJobStatus:json[@"job_id"] presenter:presenter completion:completionBlock];
@@ -1476,11 +1480,13 @@ static void YouModPresentMenu(NSString *title, NSArray <YouModMenuItem *> *items
     }] resume];
 }
 
-- (void)pollJobStatus:(NSString *)jobId presenter:(UIViewController *)presenter completion:(void (^)(NSArray<NSURL *> *localURLs, NSString *errorMsg))completionBlock {
+- (void)pollJobStatus:(NSString *)jobId presenter:(UIViewController *)presenter completion:(void (^)(NSURL *localURL, NSString *errorMsg))completionBlock {
+    if (!self || self.cancelled) return;
     NSString *urlStr = [NSString stringWithFormat:@"%@/api/status/%@", [self serverEndpoint], jobId];
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlStr]];
     
     [[[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+        if (!self || self.cancelled) return;
         if (error || !data) {
             dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{ [self pollJobStatus:jobId presenter:presenter completion:completionBlock]; });
             return;
@@ -1490,21 +1496,24 @@ static void YouModPresentMenu(NSString *title, NSArray <YouModMenuItem *> *items
         
         if ([status isEqualToString:@"done"]) {
             id filesData = json[@"files"] ?: json[@"filenames"] ?: json[@"filename"] ?: json[@"file_path"];
-            NSMutableArray<NSString *> *filesToDownload = [NSMutableArray array];
+            NSString *singleFileName = nil;
             
-            if ([filesData isKindOfClass:[NSArray class]]) {
-                for (id fileItem in filesData) {
-                    if ([fileItem isKindOfClass:[NSString class]]) [filesToDownload addObject:[fileItem lastPathComponent]];
+            if ([filesData isKindOfClass:[NSArray class]] && [filesData count] > 0) {
+                id firstItem = [filesData firstObject];
+                if ([firstItem isKindOfClass:[NSString class]]) {
+                    singleFileName = [firstItem lastPathComponent];
                 }
             } else if ([filesData isKindOfClass:[NSString class]]) {
-                [filesToDownload addObject:[filesData lastPathComponent]];
+                singleFileName = [filesData lastPathComponent];
             }
             
-            if (filesToDownload.count == 0) {
+            if (!singleFileName || singleFileName.length == 0) {
                 completionBlock(nil, @"No files found in job.");
                 return;
             }
-            [self downloadMultipleFiles:filesToDownload forJobId:jobId presenter:presenter completion:completionBlock];
+            
+            [self downloadSingleFile:singleFileName forJobId:jobId presenter:presenter completion:completionBlock];
+            
         } else if ([status isEqualToString:@"error"]) {
             completionBlock(nil, json[@"error"] ?: @"Error.");
         } else {
@@ -1514,49 +1523,27 @@ static void YouModPresentMenu(NSString *title, NSArray <YouModMenuItem *> *items
     }] resume];
 }
 
-- (void)downloadMultipleFiles:(NSArray<NSString *> *)filenames forJobId:(NSString *)jobId presenter:(UIViewController *)presenter completion:(void (^)(NSArray<NSURL *> *localURLs, NSString *errorMsg))completionBlock {
-    NSMutableArray<NSURL *> *localURLs = [NSMutableArray array];
-    __block NSInteger remaining = filenames.count;
-    __block NSString *errStr = nil;
+- (void)downloadSingleFile:(NSString *)filename forJobId:(NSString *)jobId presenter:(UIViewController *)presenter completion:(void (^)(NSURL *localURL, NSString *errorMsg))completionBlock {
+    if (!self || self.cancelled) return;
+    
+    self.downloadCompletionBlock = completionBlock;
+    self.downloadedFileURL = nil;
+    self.downloadErrorStr = nil;
     
     dispatch_async(dispatch_get_main_queue(), ^{
         [self updateProgressTitle:@"Downloading..." progress:0.0f];
     });
 
-    for (NSString *filename in filenames) {
-        NSString *encodedName = [filename stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
-        NSString *urlString = [NSString stringWithFormat:@"%@/api/file/%@?filename=%@", [self serverEndpoint], jobId, encodedName];
-        
-        NSURLSessionConfiguration *config = [NSURLSessionConfiguration defaultSessionConfiguration];
-        NSURLSession *session = [NSURLSession sessionWithConfiguration:config delegate:(id<NSURLSessionDownloadDelegate>)self delegateQueue:[NSOperationQueue mainQueue]];
-        NSURLSessionDownloadTask *task = [session downloadTaskWithURL:[NSURL URLWithString:urlString]];
-        
-        [task setTaskDescription:filename]; 
-        
-        [[[NSURLSession sharedSession] downloadTaskWithURL:[NSURL URLWithString:urlString] completionHandler:^(NSURL *location, NSURLResponse *response, NSError *error) {
-            if (error || !location) {
-                errStr = error.localizedDescription;
-            } else {
-                NSString *tempDir = NSTemporaryDirectory();
-                NSURL *destURL = [NSURL fileURLWithPath:[tempDir stringByAppendingPathComponent:filename]];
-                [[NSFileManager defaultManager] removeItemAtURL:destURL error:nil];
-                
-                if ([[NSFileManager defaultManager] moveItemAtURL:location toURL:destURL error:nil]) {
-                    @synchronized(localURLs) { [localURLs addObject:destURL]; }
-                }
-            }
-            
-            @synchronized(self) {
-                remaining--;
-                if (remaining == 0) {
-                    dispatch_async(dispatch_get_main_queue(), ^{
-                        if (localURLs.count > 0) completionBlock(localURLs, nil);
-                        else completionBlock(nil, errStr ?: @"Download sync failed.");
-                    });
-                }
-            }
-        }] resume];
-    }
+    NSString *encodedName = [filename stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
+    NSString *urlString = [NSString stringWithFormat:@"%@/api/file/%@?filename=%@", [self serverEndpoint], jobId, encodedName];
+    
+    NSURLSessionConfiguration *config = [NSURLSessionConfiguration defaultSessionConfiguration];
+    NSURLSession *session = [NSURLSession sessionWithConfiguration:config delegate:(id<NSURLSessionDownloadDelegate>)self delegateQueue:[NSOperationQueue mainQueue]];
+    
+    NSURLSessionDownloadTask *task = [session downloadTaskWithURL:[NSURL URLWithString:urlString]];
+    task.taskDescription = filename;
+    
+    [task resume];
 }
 
 @end
