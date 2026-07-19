@@ -1424,34 +1424,31 @@ static void YouModPresentMenu(NSString *title, NSArray <YouModMenuItem *> *items
     if (self.cancelled) return;
     self.finishedCurrentFile = YES;
     
-    NSURL *safeDestURL = self.destinationURL;
-    if (!safeDestURL) {
-        NSString *filename = downloadTask.taskDescription;
-        NSString *tempPath = [NSTemporaryDirectory() stringByAppendingPathComponent:filename];
-        safeDestURL = [NSURL fileURLWithPath:tempPath];
-        self.destinationURL = safeDestURL;
-    }
+    NSURL *destURL = self.destinationURL;
     
-    if (!safeDestURL) {
-        NSError *nilError = [NSError errorWithDomain:@"DownloadManager" code:999 userInfo:@{NSLocalizedDescriptionKey: @"Destination URL is nil."}];
-        if (self.fileCompletion) self.fileCompletion(nil, nilError);
-        return;
-    }
-
     NSError *error = nil;
-    [NSFileManager.defaultManager removeItemAtURL:safeDestURL error:nil];
-    [NSFileManager.defaultManager moveItemAtURL:location toURL:safeDestURL error:&error];
+    [[NSFileManager defaultManager] removeItemAtURL:destURL error:nil];
+    [[NSFileManager defaultManager] moveItemAtURL:location toURL:destURL error:&error];
     
-    if (self.fileCompletion) {
-        self.fileCompletion(error ? nil : safeDestURL, error);
+    if (self.downloadCompletionBlock) {
+        self.downloadCompletionBlock(error ? nil : destURL, error ? error.localizedDescription : nil);
+        self.downloadCompletionBlock = nil;
+    } 
+    else if (self.fileCompletion) {
+        self.fileCompletion(error ? nil : destURL, error);
     }
 }
 
-
 - (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task didCompleteWithError:(NSError *)error {
-    if (error && !self.finishedCurrentFile && self.fileCompletion) {
-        self.fileCompletion(nil, error);
-    }
+    if (error && !self.finishedCurrentFile) {
+        if (self.downloadCompletionBlock) {
+            self.downloadCompletionBlock(nil, error.localizedDescription);
+            self.downloadCompletionBlock = nil;
+        } else if (self.fileCompletion) {
+            self.fileCompletion(nil, error);
+        }
+    }    
+    [session finishTasksAndInvalidate];
 }
 
 - (NSString *)serverEndpoint {
@@ -1497,12 +1494,18 @@ static void YouModPresentMenu(NSString *title, NSArray <YouModMenuItem *> *items
         if (!self || self.cancelled) return;
         if (error || !data) { completionBlock(nil, @"Server unreachable."); return; }
         NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
-        if (json[@"job_id"]) [self pollJobStatus:json[@"job_id"] presenter:presenter completion:completionBlock];
-        else completionBlock(nil, json[@"error"] ?: @"Job init failed.");
+        
+        if (json[@"job_id"]) {
+            BOOL isAudioDl = [format isEqualToString:@"audio"];
+            [self pollJobStatus:json[@"job_id"] isAudio:isAudioDl presenter:presenter completion:completionBlock];
+        }
+        else {
+            completionBlock(nil, json[@"error"] ?: @"Job init failed.");
+        }
     }] resume];
 }
 
-- (void)pollJobStatus:(NSString *)jobId presenter:(UIViewController *)presenter completion:(void (^)(NSURL *localURL, NSString *errorMsg))completionBlock {
+- (void)pollJobStatus:(NSString *)jobId isAudio:(BOOL)isAudio presenter:(UIViewController *)presenter completion:(void (^)(NSURL *localURL, NSString *errorMsg))completionBlock {
     if (!self || self.cancelled) return;
     NSString *urlStr = [NSString stringWithFormat:@"%@/api/status/%@", [self serverEndpoint], jobId];
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlStr]];
@@ -1510,7 +1513,9 @@ static void YouModPresentMenu(NSString *title, NSArray <YouModMenuItem *> *items
     [[[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
         if (!self || self.cancelled) return;
         if (error || !data) {
-            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{ [self pollJobStatus:jobId presenter:presenter completion:completionBlock]; });
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{ 
+                [self pollJobStatus:jobId isAudio:isAudio presenter:presenter completion:completionBlock]; 
+            });
             return;
         }
         NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
@@ -1534,26 +1539,37 @@ static void YouModPresentMenu(NSString *title, NSArray <YouModMenuItem *> *items
                 return;
             }
             
-            [self downloadSingleFile:singleFileName forJobId:jobId presenter:presenter completion:completionBlock];
+            [self downloadSingleFile:singleFileName isAudio:isAudio forJobId:jobId presenter:presenter completion:completionBlock];
             
         } else if ([status isEqualToString:@"error"]) {
             completionBlock(nil, json[@"error"] ?: @"Error.");
         } else {
             dispatch_async(dispatch_get_main_queue(), ^{ [self updateProgressTitle:@"Downloading to the server..." progress:0.0f]; });
-            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{ [self pollJobStatus:jobId presenter:presenter completion:completionBlock]; });
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{ 
+                [self pollJobStatus:jobId isAudio:isAudio presenter:presenter completion:completionBlock]; 
+            });
         }
     }] resume];
 }
 
-- (void)downloadSingleFile:(NSString *)filename forJobId:(NSString *)jobId presenter:(UIViewController *)presenter completion:(void (^)(NSURL *localURL, NSString *errorMsg))completionBlock {
+- (void)downloadSingleFile:(NSString *)filename isAudio:(BOOL)isAudio forJobId:(NSString *)jobId presenter:(UIViewController *)presenter completion:(void (^)(NSURL *localURL, NSString *errorMsg))completionBlock {
     if (!self || self.cancelled) return;
     
     self.downloadCompletionBlock = completionBlock;
-    self.downloadedFileURL = nil;
-    self.downloadErrorStr = nil;
+    
+    if (!filename || filename.length == 0) {
+        filename = isAudio ? @"downloaded_file.mp3" : @"downloaded_file.mp4";
+    }
+    
+    NSString *tempPath = [NSTemporaryDirectory() stringByAppendingPathComponent:filename];
+    self.destinationURL = [NSURL fileURLWithPath:tempPath];
+    
+    self.finishedCurrentFile = NO;
+    self.currentBytes = 0;
+    self.currentExpectedBytes = 0;
     
     dispatch_async(dispatch_get_main_queue(), ^{
-        [self updateProgressTitle:@"Downloading..." progress:0.0f];
+        [self updateProgressTitle:isAudio ? LOC(@"DOWNLOADING_AUDIO") : LOC(@"DOWNLOADING_VIDEO") progress:0.0f];
     });
 
     NSString *encodedName = [filename stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
@@ -1569,7 +1585,6 @@ static void YouModPresentMenu(NSString *title, NSArray <YouModMenuItem *> *items
     
     [task resume];
 }
-
 
 @end
 
