@@ -132,6 +132,9 @@ typedef void (^YouModRangeDownloadProgress)(unsigned long long completedBytes);
 @property (nonatomic, assign) BOOL cancelled;
 @property (nonatomic, copy) NSString *baseProgressTitle;
 @property (nonatomic, assign) NSTimeInterval downloadStartTime;
+@property (nonatomic, copy) void (^downloadCompletionBlock)(NSURL *localURL, NSString *errorMsg);
+@property (nonatomic, strong) NSURL *downloadedFileURL;
+@property (nonatomic, strong) NSString *downloadErrorStr;
 + (instancetype)sharedCoordinator;
 - (void)startVideoDownloadWithVideoFormat:(YouModMediaFormat *)videoFormat audioFormat:(YouModMediaFormat *)audioFormat fileName:(NSString *)fileName presenter:(UIViewController *)presenter videoID:(NSString *)vidID;
 - (void)startAudioDownloadWithAudioFormat:(YouModMediaFormat *)audioFormat fileName:(NSString *)fileName presenter:(UIViewController *)presenter videoID:(NSString *)vidID;
@@ -1526,6 +1529,10 @@ static void YouModPresentMenu(NSString *title, NSArray <YouModMenuItem *> *items
 - (void)downloadSingleFile:(NSString *)filename forJobId:(NSString *)jobId presenter:(UIViewController *)presenter completion:(void (^)(NSURL *localURL, NSString *errorMsg))completionBlock {
     if (!self || self.cancelled) return;
     
+    self.downloadCompletionBlock = completionBlock;
+    self.downloadedFileURL = nil;
+    self.downloadErrorStr = nil;
+    
     dispatch_async(dispatch_get_main_queue(), ^{
         [self updateProgressTitle:@"Downloading..." progress:0.0f];
     });
@@ -1534,13 +1541,16 @@ static void YouModPresentMenu(NSString *title, NSArray <YouModMenuItem *> *items
     NSString *urlString = [NSString stringWithFormat:@"%@/api/file/%@?filename=%@", [self serverEndpoint], jobId, encodedName];
     
     NSURLSessionConfiguration *config = [NSURLSessionConfiguration defaultSessionConfiguration];
-    NSURLSession *session = [NSURLSession sessionWithConfiguration:config delegate:(id<NSURLSessionDownloadDelegate>)self delegateQueue:[NSOperationQueue mainQueue]];
+    NSURLSession *session = [NSURLSession sessionWithConfiguration:config 
+                                                          delegate:(id<NSURLSessionDownloadDelegate>)self 
+                                                     delegateQueue:[NSOperationQueue mainQueue]];
     
     NSURLSessionDownloadTask *task = [session downloadTaskWithURL:[NSURL URLWithString:urlString]];
     task.taskDescription = filename;
     
     [task resume];
 }
+
 
 @end
 
