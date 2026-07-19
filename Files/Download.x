@@ -1423,11 +1423,30 @@ static void YouModPresentMenu(NSString *title, NSArray <YouModMenuItem *> *items
 - (void)URLSession:(NSURLSession *)session downloadTask:(NSURLSessionDownloadTask *)downloadTask didFinishDownloadingToURL:(NSURL *)location {
     if (self.cancelled) return;
     self.finishedCurrentFile = YES;
+    
+    NSURL *safeDestURL = self.destinationURL;
+    if (!safeDestURL) {
+        NSString *filename = downloadTask.taskDescription;
+        NSString *tempPath = [NSTemporaryDirectory() stringByAppendingPathComponent:filename];
+        safeDestURL = [NSURL fileURLWithPath:tempPath];
+        self.destinationURL = safeDestURL;
+    }
+    
+    if (!safeDestURL) {
+        NSError *nilError = [NSError errorWithDomain:@"DownloadManager" code:999 userInfo:@{NSLocalizedDescriptionKey: @"Destination URL is nil."}];
+        if (self.fileCompletion) self.fileCompletion(nil, nilError);
+        return;
+    }
+
     NSError *error = nil;
-    [NSFileManager.defaultManager removeItemAtURL:self.destinationURL error:nil];
-    [NSFileManager.defaultManager moveItemAtURL:location toURL:self.destinationURL error:&error];
-    if (self.fileCompletion) self.fileCompletion(error ? nil : self.destinationURL, error);
+    [NSFileManager.defaultManager removeItemAtURL:safeDestURL error:nil];
+    [NSFileManager.defaultManager moveItemAtURL:location toURL:safeDestURL error:&error];
+    
+    if (self.fileCompletion) {
+        self.fileCompletion(error ? nil : safeDestURL, error);
+    }
 }
+
 
 - (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task didCompleteWithError:(NSError *)error {
     if (error && !self.finishedCurrentFile && self.fileCompletion) {
