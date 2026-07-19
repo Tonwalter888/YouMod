@@ -573,7 +573,7 @@ static const CGFloat SBInlineMarkerHeight = 4.0;
         if (sub.tag == SBSegmentMarkerTag) {
             [markers addObject:sub];
         } else if ([sub isKindOfClass:%c(YTPlayerBarScrubberDotDecorationView)]) {
-            if (!scrubberDot) scrubberDot = sub;
+            if (!scrubberDot) scrubberDot = sub.subviews.firstObject;
         }
     }
     if (markers.count == 0) return;
@@ -741,7 +741,7 @@ static const CGFloat SBInlineMarkerHeight = 4.0;
             } else if ([sub isKindOfClass:%c(YTPlayerBarProgressDecorationView)]) {
                 if (!referenceView) referenceView = sub;
             } else if ([sub isKindOfClass:%c(YTPlayerBarScrubberDotDecorationView)]) {
-                if (!scrubberDot) scrubberDot = sub;
+                if (!scrubberDot) scrubberDot = sub.subviews.firstObject;
             }
             if (referenceView && scrubberDot) break;
         }
@@ -794,7 +794,7 @@ static const CGFloat SBInlineMarkerHeight = 4.0;
                 } else if ([sub isKindOfClass:%c(YTPlayerBarProgressDecorationView)]) {
                     if (!referenceView) referenceView = sub;
                 } else if ([sub isKindOfClass:%c(YTPlayerBarScrubberDotDecorationView)]) {
-                    if (!scrubberDot) scrubberDot = sub;
+                    if (!scrubberDot) scrubberDot = sub.subviews.firstObject;
                 }
                 if (referenceView && scrubberDot) break;
             }
