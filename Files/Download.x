@@ -1526,10 +1526,6 @@ static void YouModPresentMenu(NSString *title, NSArray <YouModMenuItem *> *items
 - (void)downloadSingleFile:(NSString *)filename forJobId:(NSString *)jobId presenter:(UIViewController *)presenter completion:(void (^)(NSURL *localURL, NSString *errorMsg))completionBlock {
     if (!self || self.cancelled) return;
     
-    self.downloadCompletionBlock = completionBlock;
-    self.downloadedFileURL = nil;
-    self.downloadErrorStr = nil;
-    
     dispatch_async(dispatch_get_main_queue(), ^{
         [self updateProgressTitle:@"Downloading..." progress:0.0f];
     });
