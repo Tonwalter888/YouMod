@@ -45,7 +45,6 @@ static BOOL isPad() {
     [self.scrollView addGestureRecognizer:doubleTap];
 
     UIImageSymbolConfiguration *iconConfig = [UIImageSymbolConfiguration configurationWithPointSize:22 weight:UIImageSymbolWeightSemibold];
-
     UIButton *closeBtn = [UIButton buttonWithType:UIButtonTypeCustom];
     [closeBtn setImage:[UIImage systemImageNamed:@"xmark" withConfiguration:iconConfig] forState:UIControlStateNormal];
     closeBtn.tintColor = [UIColor whiteColor];
@@ -72,7 +71,7 @@ static BOOL isPad() {
         
         [constraints addObject:[container.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor]];
         [constraints addObject:[container.centerYAnchor constraintEqualToAnchor:self.view.centerYAnchor]];
-        [constraints addObject:[container.widthAnchor constraintEqualToAnchor:container.heightAnchor]]; // สี่เหลี่ยมจัตุรัส
+        [constraints addObject:[container.widthAnchor constraintEqualToAnchor:container.heightAnchor]];
         [constraints addObject:[container.widthAnchor constraintLessThanOrEqualToAnchor:self.view.safeAreaLayoutGuide.widthAnchor multiplier:0.9]];
         [constraints addObject:[container.heightAnchor constraintLessThanOrEqualToAnchor:self.view.safeAreaLayoutGuide.heightAnchor multiplier:0.9]];
         
