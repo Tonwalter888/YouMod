@@ -849,7 +849,7 @@ static void YouModShareFile(NSURL *fileURL, UIViewController *presenter) {
     [presenter presentViewController:activity animated:YES completion:nil];
 }
 
-static void YouModPresentMenu(NSString *title, NSArray <YouModMenuItem *> *items, UIViewController *presenter, UIView *sender) {
+static void YouModPresentMenu(YTPlayerViewController *player, NSArray <YouModMenuItem *> *items, UIViewController *presenter, UIView *sender) {
     presenter = YouModTopViewController(presenter);
     YTDefaultSheetController *sheet = [%c(YTDefaultSheetController) sheetControllerWithParentResponder:presenter];
     for (YouModMenuItem *item in items) {
@@ -864,6 +864,9 @@ static void YouModPresentMenu(NSString *title, NSArray <YouModMenuItem *> *items
             }];
         }
         [sheet addAction:action];
+    }
+    if (player && player != nil) {
+        [sheet addHeaderWithTitle:YouModAuthorForPlayer(player) subtitle:YouModTitleForPlayer(player)];
     }
     if (sender) {
         [sheet presentFromView:sender animated:YES completion:nil];
@@ -1597,7 +1600,7 @@ static void YouModShowCopyVideoInfoSheet(YTPlayerViewController *player, UIViewC
         YouModCopyTextToPasteboard(description, @"COPIED_DESCRIPTION");
     }]];
 
-    YouModPresentMenu(LOC(@"COPY_VID_INFO"), items, presenter, sender);
+    YouModPresentMenu(nil, items, presenter, sender);
 }
 
 static void YouModShowAudioTrackSelectionSheet(YTPlayerViewController *player, UIViewController *presenter, UIView *sender, NSString *fileName, BOOL downloadVideo, YouModMediaFormat *videoFormat) {
@@ -1630,7 +1633,7 @@ static void YouModShowAudioTrackSelectionSheet(YTPlayerViewController *player, U
         }]];
     }
 
-    YouModPresentMenu(LOC(@"DOWNLOAD_AUDIO"), items, presenter, sender);
+    YouModPresentMenu(nil, items, presenter, sender);
 }
 
 static void YouModShowVideoQualitySheet(YTPlayerViewController *player, UIViewController *presenter, UIView *sender, BOOL isShorts) {
@@ -1656,7 +1659,7 @@ static void YouModShowVideoQualitySheet(YTPlayerViewController *player, UIViewCo
             }]];
         }
     }
-    YouModPresentMenu(LOC(@"DOWNLOAD_VIDEO"), items, presenter, sender);
+    YouModPresentMenu(nil, items, presenter, sender);
 }
 
 static void YouModStartDownloadAudio(YTPlayerViewController *player, UIViewController *presenter, UIView *sender) {
@@ -1710,7 +1713,7 @@ static void YouModShowCaptionsSheet(YTPlayerViewController *player, UIViewContro
         return;
     }
     
-    YouModPresentMenu(LOC(@"DOWNLOAD_CAPTIONS"), items, presenter, sender);
+    YouModPresentMenu(nil, items, presenter, sender);
 }
 
 static void YouModShowThumbnailSheet(YTPlayerViewController *player, UIViewController *presenter, UIView *sender) {
@@ -1727,7 +1730,7 @@ static void YouModShowThumbnailSheet(YTPlayerViewController *player, UIViewContr
         YouModCopyThumbnail(videoID, presenter);
     }]];
 
-    YouModPresentMenu(LOC(@"COPY_VID_INFO"), items, presenter, sender);
+    YouModPresentMenu(nil, items, presenter, sender);
 }
 
 static void YouModShowDownloadManager(YTPlayerViewController *player, UIViewController *presenter, UIView *sender, BOOL isShorts) {
@@ -1758,7 +1761,7 @@ static void YouModShowDownloadManager(YTPlayerViewController *player, UIViewCont
     [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_VID_INFO") subtitle:nil icon:YouModIconImage(250) handler:^{
         YouModShowCopyVideoInfoSheet(player, presenter, sender);
     }]];
-    YouModPresentMenu(LOC(@"DOWNLOAD_MANAGER"), items, presenter, sender);
+    YouModPresentMenu(player, items, presenter, sender);
 }
 
 %hook YTPlayerViewController
@@ -1879,7 +1882,7 @@ void YouModConfigureDownloadButton(_ASDisplayView *view) {
 }
 
 %new
-- (void)didTapYouModShortsDownload:(UIButton *)button {
+- (void)didTapYouModShortsDownload:(YTQTMButton *)button {
     // Loop to find playerview
     UIResponder *responder = self.nextResponder;
     while (responder && ![responder isKindOfClass:%c(YTShortsPlayerViewController)]) {
