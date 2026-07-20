@@ -255,6 +255,7 @@
 - (void)addAction:(YTActionSheetAction *)action;
 - (void)presentFromView:(UIView *)view animated:(BOOL)animated completion:(void (^)(void))completion;
 - (void)presentFromViewController:(UIViewController *)vc animated:(BOOL)animated completion:(void (^)(void))completion;
+- (void)addHeaderWithTitle:(NSString *)arg1 subtitle:(NSString *)arg2;
 @end
 
 // Gesture Section Enum
