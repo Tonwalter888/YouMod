@@ -194,6 +194,8 @@ extern void YouModConfigureDownloadButton(_ASDisplayView *view);
 }
 %end
 
+static BOOL isFullscreenEnabled = NO;
+
 %hook YTReelWatchPlaybackOverlayView
 %property (nonatomic, retain) UIPinchGestureRecognizer *YouModFullscreenGesture;
 - (void)layoutSubviews {
@@ -219,6 +221,7 @@ extern void YouModConfigureDownloadButton(_ASDisplayView *view);
                 [UIView animateWithDuration:0.3 animations:^{
                     self.alpha = 0;
                 }];
+                isFullscreenEnabled = YES;
             }
         } else if (gesture.scale < 1.0) {
             if (isTabBarHidden) {
@@ -226,6 +229,7 @@ extern void YouModConfigureDownloadButton(_ASDisplayView *view);
                 [UIView animateWithDuration:0.3 animations:^{
                     self.alpha = 1;
                 }];
+                isFullscreenEnabled = NO;
             }
         }
     } else {
@@ -237,6 +241,7 @@ extern void YouModConfigureDownloadButton(_ASDisplayView *view);
                 [UIView animateWithDuration:0.3 animations:^{
                     self.alpha = 0;
                 }];
+                isFullscreenEnabled = YES;
             }
         } else if (gesture.scale < 1.0) {
             if (isTabBarHidden) {
@@ -244,6 +249,7 @@ extern void YouModConfigureDownloadButton(_ASDisplayView *view);
                 [UIView animateWithDuration:0.3 animations:^{
                     self.alpha = 1;
                 }];
+                isFullscreenEnabled = NO;
             }
         }
     }
@@ -260,6 +266,7 @@ extern void YouModConfigureDownloadButton(_ASDisplayView *view);
 %hook YTReelContentView
 - (void)setPlaybackView:(id)arg1 {
     %orig;
+    self.playbackOverlay.alpha = !isFullscreenEnabled;
     if (!IS_ENABLED(ShortsOnly)) return;
     if (isShortsOnlyOn) {
         UILongPressGestureRecognizer *longPressGesture = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(YouModTurnOffShortsOnly:)];
