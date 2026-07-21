@@ -1827,14 +1827,100 @@ void YouModConfigureDownloadButton(_ASDisplayView *view) {
     }
 }
 
+static NSString *YouModExtractCommentText(UIView *cellView) {
+    for (UIView *sub in cellView.subviews) {
+        for (UIView *sub2 in sub.subviews) {
+            if ([sub2 isKindOfClass:NSClassFromString(@"ELMTextNode-View")] && 
+                [sub2.accessibilityIdentifier isEqualToString:@"id.comment.content.label"]) {
+                return sub2.accessibilityLabel ?: @"";
+            }
+        }
+    }
+    return @"";
+}
+
+static UIImage *YouModRenderViewToImage(UIView *view) {
+    if (!view || view.bounds.size.width <= 0 || view.bounds.size.height <= 0) return nil;
+    
+    UIGraphicsBeginImageContextWithOptions(view.bounds.size, NO, [UIScreen mainScreen].scale);
+    [view drawViewHierarchyInRect:view.bounds afterScreenUpdates:YES];
+    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    return image;
+}
+
 %hook _ASDisplayView
 
+- (void)layoutSubviews {
+    %orig;
+    if ([self.accessibilityIdentifier isEqualToString:@"id.ui.comment_cell"]) {
+        BOOL hasGesture = NO;
+        for (UIGestureRecognizer *g in self.gestureRecognizers) {
+            if ([g.name isEqualToString:@"YouModCommentLongPress"]) {
+                hasGesture = YES;
+                break;
+            }
+        }
+        
+        if (!hasGesture) {
+            UILongPressGestureRecognizer *longPress = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(YouModHandleCommentLongPress:)];
+            longPress.name = @"YouModCommentLongPress";
+            longPress.minimumPressDuration = 0.3;
+            [self addGestureRecognizer:longPress];
+        }
+    }
+}
+
 %new
-- (void)YouModDownloadButtonTapped:(UITapGestureRecognizer *)sender {
-    if (sender.state != UIGestureRecognizerStateEnded) return;
-    UIViewController *presenter = YouModPresenterForSender(self, YouModCurrentPlayerViewController);
-    YTPlayerViewController *player = YouModPlayerFromViewController(presenter);
-    YouModShowDownloadManager(player, presenter, self, NO);
+- (void)YouModHandleCommentLongPress:(UILongPressGestureRecognizer *)sender {
+    if (sender.state != UIGestureRecognizerStateBegan) return;
+
+    NSString *commentText = YouModExtractCommentText(self);
+    NSMutableArray *items = [NSMutableArray array];
+
+    /*
+    // --- เมนูที่ 1: แปลข้อความ (Translate Comment) ---
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"TRANSLATE_COMMENT") ?: @"Translate comment" subtitle:nil icon:YouModIconImage(102) handler:^{
+        if (commentText.length > 0) {
+            NSString *escapedText = [commentText stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
+            NSString *translateURLString = [NSString stringWithFormat:@"https://translate.google.com/?sl=auto&tl=th&text=%@", escapedText];
+            NSURL *translateURL = [NSURL URLWithString:translateURLString];
+            if ([[UIApplication sharedApplication] canOpenURL:translateURL]) {
+                [[UIApplication sharedApplication] openURL:translateURL options:@{} completionHandler:nil];
+            }
+        }
+    }]];
+    */
+
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_COMMENT_TEXT") ?: @"Copy comment text" subtitle:nil icon:YouModIconImage(250) handler:^{
+        if (commentText.length > 0) {
+            [UIPasteboard generalPasteboard].string = commentText;
+        }
+    }]];
+
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"SAVE_COMMENT_IMAGE") ?: @"Save comment as image" subtitle:nil icon:YouModIconImage(540) handler:^{
+        UIImage *image = YouModRenderViewToImage(self);
+        if (image) {
+            UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil);
+        }
+    }]];
+
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_COMMENT_IMAGE") ?: @"Copy comment as image" subtitle:nil icon:YouModIconImage(57) handler:^{
+        UIImage *image = YouModRenderViewToImage(self);
+        if (image) {
+            [UIPasteboard generalPasteboard].image = image;
+        }
+    }]];
+
+    UIViewController *presenter = YouModPresenterForSender(self, nil);
+    if (!presenter) {
+        presenter = [UIApplication sharedApplication].keyWindow.rootViewController;
+        while (presenter.presentedViewController) {
+            presenter = presenter.presentedViewController;
+        }
+    }
+
+    YouModPresentMenu(nil, items, presenter, self);
 }
 
 %end
