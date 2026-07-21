@@ -1904,6 +1904,7 @@ static UIImage *YouModRenderViewToImage(UIView *view) {
     [items addObject:[YouModMenuItem itemWithTitle:@"Copy comment text" subtitle:nil icon:YouModIconImage(250) handler:^{
         if (commentText.length > 0) {
             [UIPasteboard generalPasteboard].string = commentText;
+            YouModSendSuccess(LOC(@"COPIED_TO_CLIPBOARD"));
         }
     }]];
 
@@ -1911,6 +1912,7 @@ static UIImage *YouModRenderViewToImage(UIView *view) {
         UIImage *image = YouModRenderViewToImage(self);
         if (image) {
             UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil);
+            YouModSendSuccess(LOC(@"SAVED_TO_PHOTOS"));
         }
     }]];
 
@@ -1918,6 +1920,7 @@ static UIImage *YouModRenderViewToImage(UIView *view) {
         UIImage *image = YouModRenderViewToImage(self);
         if (image) {
             [UIPasteboard generalPasteboard].image = image;
+            YouModSendSuccess(LOC(@"COPIED_TO_CLIPBOARD"));
         }
     }]];
 
