@@ -1841,20 +1841,8 @@ static NSString *YouModExtractCommentText(UIView *cellView) {
 static UIImage *YouModRenderViewToImage(UIView *view) {
     if (!view || view.bounds.size.width <= 0 || view.bounds.size.height <= 0) return nil;
     
-    UIColor *realBgColor = nil;
-    UIView *currentView = view;
-    while (currentView) {
-        if (currentView.backgroundColor && CGColorGetAlpha(currentView.backgroundColor.CGColor) > 0.0) {
-            realBgColor = currentView.backgroundColor;
-            break;
-        }
-        currentView = currentView.superview;
-    }
-    
-    if (!realBgColor || [realBgColor isEqual:[UIColor clearColor]]) {
-        BOOL isDark = (view.traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark);
-        realBgColor = isDark ? [%c(YTColor) black3] : [%c(YTColor) white1];
-    }
+    BOOL isDark = (view.traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark);
+    UIColor *realBgColor = isDark ? [%c(YTColor) black3] : [%c(YTColor) white1];
     
     UIGraphicsBeginImageContextWithOptions(view.bounds.size, YES, [UIScreen mainScreen].scale);
     CGContextRef context = UIGraphicsGetCurrentContext();
