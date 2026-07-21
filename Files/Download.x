@@ -1907,14 +1907,14 @@ static UIImage *YouModRenderViewToImage(UIView *view) {
         }
     }]];
 
-    [items addObject:[YouModMenuItem itemWithTitle:@"Save comment as image" subtitle:nil icon:YouModIconImage(208) handler:^{
+    [items addObject:[YouModMenuItem itemWithTitle:@"Save comment as image" subtitle:nil icon:YouModIconImage(367) handler:^{
         UIImage *image = YouModRenderViewToImage(self);
         if (image) {
             UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil);
         }
     }]];
 
-    [items addObject:[YouModMenuItem itemWithTitle:@"Copy comment as image" subtitle:nil icon:YouModIconImage(57) handler:^{
+    [items addObject:[YouModMenuItem itemWithTitle:@"Copy comment as image" subtitle:nil icon:YouModIconImage(208) handler:^{
         UIImage *image = YouModRenderViewToImage(self);
         if (image) {
             [UIPasteboard generalPasteboard].image = image;
