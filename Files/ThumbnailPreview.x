@@ -28,13 +28,13 @@ static BOOL isPad() {
 
     self.scrollView = [[UIScrollView alloc] init];
     self.scrollView.delegate = self;
-    self.scrollView.clipsToBounds = NO;
+    self.scrollView.clipsToBounds = YES;
     self.scrollView.minimumZoomScale = 1.0;
     self.scrollView.maximumZoomScale = 4.0;
     self.scrollView.showsVerticalScrollIndicator = NO;
     self.scrollView.showsHorizontalScrollIndicator = NO;
     self.scrollView.translatesAutoresizingMaskIntoConstraints = NO;
-    [self.view addSubview:self.scrollView];
+    [bgContainer addSubview:self.scrollView];
 
     self.imageView = [[UIImageView alloc] initWithImage:self.thumbnailImage];
     self.imageView.contentMode = UIViewContentModeScaleAspectFit;
@@ -53,7 +53,7 @@ static BOOL isPad() {
     closeBtn.layer.cornerRadius = 25; 
     closeBtn.translatesAutoresizingMaskIntoConstraints = NO;
     [closeBtn addTarget:self action:@selector(closeTapped) forControlEvents:UIControlEventTouchUpInside];
-    [self.view addSubview:closeBtn];
+    [bgContainer addSubview:closeBtn];
 
     UIButton *moreBtn = [UIButton buttonWithType:UIButtonTypeCustom];
     [moreBtn setImage:[UIImage systemImageNamed:@"ellipsis" withConfiguration:iconConfig] forState:UIControlStateNormal];
@@ -62,7 +62,7 @@ static BOOL isPad() {
     moreBtn.layer.cornerRadius = 25;
     moreBtn.translatesAutoresizingMaskIntoConstraints = NO;
     [moreBtn addTarget:self action:@selector(moreTapped:) forControlEvents:UIControlEventTouchUpInside];
-    [self.view addSubview:moreBtn];
+    [bgContainer addSubview:moreBtn];
 
     NSMutableArray *constraints = [NSMutableArray array];
 
@@ -98,10 +98,10 @@ static BOOL isPad() {
         ]];
 
         [constraints addObjectsFromArray:@[
-            [closeBtn.topAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.topAnchor constant:12],
-            [closeBtn.leadingAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.leadingAnchor constant:12],
-            [moreBtn.topAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.topAnchor constant:12],
-            [moreBtn.trailingAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.trailingAnchor constant:-12],
+            [closeBtn.topAnchor constraintEqualToAnchor:bgContainer.safeAreaLayoutGuide.topAnchor constant:12],
+            [closeBtn.leadingAnchor constraintEqualToAnchor:bgContainer.safeAreaLayoutGuide.leadingAnchor constant:12],
+            [moreBtn.topAnchor constraintEqualToAnchor:bgContainer.safeAreaLayoutGuide.topAnchor constant:12],
+            [moreBtn.trailingAnchor constraintEqualToAnchor:bgContainer.safeAreaLayoutGuide.trailingAnchor constant:-12],
         ]];
     }
 

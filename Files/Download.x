@@ -1841,10 +1841,32 @@ static NSString *YouModExtractCommentText(UIView *cellView) {
 static UIImage *YouModRenderViewToImage(UIView *view) {
     if (!view || view.bounds.size.width <= 0 || view.bounds.size.height <= 0) return nil;
     
-    UIGraphicsBeginImageContextWithOptions(view.bounds.size, NO, [UIScreen mainScreen].scale);
+    UIColor *realBgColor = nil;
+    UIView *currentView = view;
+    while (currentView) {
+        if (currentView.backgroundColor && CGColorGetAlpha(currentView.backgroundColor.CGColor) > 0.0) {
+            realBgColor = currentView.backgroundColor;
+            break;
+        }
+        currentView = currentView.superview;
+    }
+    
+    if (!realBgColor || [realBgColor isEqual:[UIColor clearColor]]) {
+        BOOL isDark = (view.traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark);
+        realBgColor = isDark ? [%c(YTColor) black3] : [%c(YTColor) white1];
+    }
+    
+    UIGraphicsBeginImageContextWithOptions(view.bounds.size, YES, [UIScreen mainScreen].scale);
+    CGContextRef context = UIGraphicsGetCurrentContext();
+    
+    [realBgColor setFill];
+    CGContextFillRect(context, view.bounds);
+    
     [view drawViewHierarchyInRect:view.bounds afterScreenUpdates:YES];
+    
     UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
     UIGraphicsEndImageContext();
+    
     return image;
 }
 
@@ -1891,20 +1913,20 @@ static UIImage *YouModRenderViewToImage(UIView *view) {
     }]];
     */
 
-    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_COMMENT_TEXT") ?: @"Copy comment text" subtitle:nil icon:YouModIconImage(250) handler:^{
+    [items addObject:[YouModMenuItem itemWithTitle:@"Copy comment text" subtitle:nil icon:YouModIconImage(250) handler:^{
         if (commentText.length > 0) {
             [UIPasteboard generalPasteboard].string = commentText;
         }
     }]];
 
-    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"SAVE_COMMENT_IMAGE") ?: @"Save comment as image" subtitle:nil icon:YouModIconImage(540) handler:^{
+    [items addObject:[YouModMenuItem itemWithTitle:@"Save comment as image" subtitle:nil icon:YouModIconImage(208) handler:^{
         UIImage *image = YouModRenderViewToImage(self);
         if (image) {
             UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil);
         }
     }]];
 
-    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_COMMENT_IMAGE") ?: @"Copy comment as image" subtitle:nil icon:YouModIconImage(57) handler:^{
+    [items addObject:[YouModMenuItem itemWithTitle:@"Copy comment as image" subtitle:nil icon:YouModIconImage(57) handler:^{
         UIImage *image = YouModRenderViewToImage(self);
         if (image) {
             [UIPasteboard generalPasteboard].image = image;
