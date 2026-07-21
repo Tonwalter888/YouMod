@@ -1926,12 +1926,7 @@ static UIWindow *YouModGetKeyWindow() {
     }]];
 
     UIViewController *presenter = YouModPresenterForSender(self, nil);
-    if (!presenter) {
-        presenter = YouModGetKeyWindow();
-        while (presenter.presentedViewController) {
-            presenter = presenter.presentedViewController;
-        }
-    }
+    if (!presenter) return;
 
     YouModPresentMenu(nil, items, presenter, self);
 }
