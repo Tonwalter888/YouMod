@@ -1849,19 +1849,6 @@ static UIImage *YouModRenderViewToImage(UIView *view) {
     return image;
 }
 
-static UIWindow *YouModGetKeyWindow() {
-    for (UIWindowScene *scene in [UIApplication sharedApplication].connectedScenes) {
-        if (scene.activationState == UISceneActivationStateForegroundActive) {
-            for (UIWindow *window in scene.windows) {
-                if (window.isKeyWindow) {
-                    return window;
-                }
-            }
-        }
-    }
-    return nil;
-}
-
 %hook _ASDisplayView
 
 - (void)layoutSubviews {
