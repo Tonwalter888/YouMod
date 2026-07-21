@@ -1830,8 +1830,7 @@ void YouModConfigureDownloadButton(_ASDisplayView *view) {
 static NSString *YouModExtractCommentText(UIView *cellView) {
     for (UIView *sub in cellView.subviews) {
         for (UIView *sub2 in sub.subviews) {
-            if ([sub2 isKindOfClass:NSClassFromString(@"ELMTextNode-View")] && 
-                [sub2.accessibilityIdentifier isEqualToString:@"id.comment.content.label"]) {
+            if ([sub2.accessibilityIdentifier isEqualToString:@"id.comment.content.label"]) {
                 return sub2.accessibilityLabel ?: @"";
             }
         }
