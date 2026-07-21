@@ -196,6 +196,22 @@ extern void YouModConfigureDownloadButton(_ASDisplayView *view);
 
 static BOOL isFullscreenEnabled = NO;
 
+%hook YTAppDelegate
+- (void)appWillResignActive {
+    %orig;
+    if ((isFullscreenEnabled && IS_ENABLED(FullScreenShorts)) || (isShortsOnlyOn && IS_ENABLED(ShortsOnly))) {
+        id appviewcon = [self valueForKey:@"_appViewController"];
+        if ([appviewcon isKindOfClass:%c(YTAppViewControllerImpl)]) {
+            YTAppViewControllerImpl *con = (YTAppViewControllerImpl *)appviewcon;
+            [con hidePivotBar];
+        } else {
+            YTAppViewController *con = (YTAppViewController *)appviewcon;
+            [con hidePivotBar];
+        }
+    }
+}
+%end
+
 %hook YTReelWatchPlaybackOverlayView
 %property (nonatomic, retain) UIPinchGestureRecognizer *YouModFullscreenGesture;
 - (void)layoutSubviews {

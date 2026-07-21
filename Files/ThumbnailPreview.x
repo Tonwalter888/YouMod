@@ -10,30 +10,31 @@ static BOOL isPad() {
 - (void)viewDidLoad {
     [super viewDidLoad];
 
-    UIView *container = [[UIView alloc] init];
-    container.translatesAutoresizingMaskIntoConstraints = NO;
-    container.clipsToBounds = YES;
-    container.backgroundColor = [UIColor clearColor];
-    [self.view addSubview:container];
+    UIView *bgContainer = [[UIView alloc] init];
+    bgContainer.translatesAutoresizingMaskIntoConstraints = NO;
+    bgContainer.clipsToBounds = YES;
+    bgContainer.backgroundColor = [UIColor clearColor];
+    [self.view addSubview:bgContainer];
 
     UIImageView *bgImageView = [[UIImageView alloc] initWithImage:self.thumbnailImage];
     bgImageView.contentMode = UIViewContentModeScaleAspectFill;
     bgImageView.translatesAutoresizingMaskIntoConstraints = NO;
-    [container addSubview:bgImageView];
+    [bgContainer addSubview:bgImageView];
 
     UIBlurEffect *blurEffect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemMaterial];
     UIVisualEffectView *blurView = [[UIVisualEffectView alloc] initWithEffect:blurEffect];
     blurView.translatesAutoresizingMaskIntoConstraints = NO;
-    [container addSubview:blurView];
+    [bgContainer addSubview:blurView];
 
     self.scrollView = [[UIScrollView alloc] init];
     self.scrollView.delegate = self;
+    self.scrollView.clipsToBounds = NO;
     self.scrollView.minimumZoomScale = 1.0;
     self.scrollView.maximumZoomScale = 4.0;
     self.scrollView.showsVerticalScrollIndicator = NO;
     self.scrollView.showsHorizontalScrollIndicator = NO;
     self.scrollView.translatesAutoresizingMaskIntoConstraints = NO;
-    [container addSubview:self.scrollView];
+    [self.view addSubview:self.scrollView];
 
     self.imageView = [[UIImageView alloc] initWithImage:self.thumbnailImage];
     self.imageView.contentMode = UIViewContentModeScaleAspectFit;
@@ -52,7 +53,7 @@ static BOOL isPad() {
     closeBtn.layer.cornerRadius = 25; 
     closeBtn.translatesAutoresizingMaskIntoConstraints = NO;
     [closeBtn addTarget:self action:@selector(closeTapped) forControlEvents:UIControlEventTouchUpInside];
-    [container addSubview:closeBtn];
+    [self.view addSubview:closeBtn];
 
     UIButton *moreBtn = [UIButton buttonWithType:UIButtonTypeCustom];
     [moreBtn setImage:[UIImage systemImageNamed:@"ellipsis" withConfiguration:iconConfig] forState:UIControlStateNormal];
@@ -61,39 +62,39 @@ static BOOL isPad() {
     moreBtn.layer.cornerRadius = 25;
     moreBtn.translatesAutoresizingMaskIntoConstraints = NO;
     [moreBtn addTarget:self action:@selector(moreTapped:) forControlEvents:UIControlEventTouchUpInside];
-    [container addSubview:moreBtn];
+    [self.view addSubview:moreBtn];
 
     NSMutableArray *constraints = [NSMutableArray array];
 
     if (isPad()) {
         self.view.backgroundColor = [UIColor colorWithWhite:0.0 alpha:0.5];
-        container.layer.cornerRadius = 16;
+        bgContainer.layer.cornerRadius = 16;
         
-        [constraints addObject:[container.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor]];
-        [constraints addObject:[container.centerYAnchor constraintEqualToAnchor:self.view.centerYAnchor]];
-        [constraints addObject:[container.widthAnchor constraintEqualToAnchor:container.heightAnchor]];
-        [constraints addObject:[container.widthAnchor constraintLessThanOrEqualToAnchor:self.view.safeAreaLayoutGuide.widthAnchor multiplier:0.9]];
-        [constraints addObject:[container.heightAnchor constraintLessThanOrEqualToAnchor:self.view.safeAreaLayoutGuide.heightAnchor multiplier:0.9]];
+        [constraints addObject:[bgContainer.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor]];
+        [constraints addObject:[bgContainer.centerYAnchor constraintEqualToAnchor:self.view.centerYAnchor]];
+        [constraints addObject:[bgContainer.widthAnchor constraintEqualToAnchor:bgContainer.heightAnchor]];
+        [constraints addObject:[bgContainer.widthAnchor constraintLessThanOrEqualToAnchor:self.view.safeAreaLayoutGuide.widthAnchor multiplier:0.9]];
+        [constraints addObject:[bgContainer.heightAnchor constraintLessThanOrEqualToAnchor:self.view.safeAreaLayoutGuide.heightAnchor multiplier:0.9]];
         
-        NSLayoutConstraint *expandBox = [container.widthAnchor constraintEqualToConstant:2000];
+        NSLayoutConstraint *expandBox = [bgContainer.widthAnchor constraintEqualToConstant:2000];
         expandBox.priority = UILayoutPriorityDefaultHigh; 
         [constraints addObject:expandBox];
 
         [constraints addObjectsFromArray:@[
-            [closeBtn.topAnchor constraintEqualToAnchor:container.topAnchor constant:12],
-            [closeBtn.leadingAnchor constraintEqualToAnchor:container.leadingAnchor constant:12],
-            [moreBtn.topAnchor constraintEqualToAnchor:container.topAnchor constant:12],
-            [moreBtn.trailingAnchor constraintEqualToAnchor:container.trailingAnchor constant:-12],
+            [closeBtn.topAnchor constraintEqualToAnchor:bgContainer.topAnchor constant:12],
+            [closeBtn.leadingAnchor constraintEqualToAnchor:bgContainer.leadingAnchor constant:12],
+            [moreBtn.topAnchor constraintEqualToAnchor:bgContainer.topAnchor constant:12],
+            [moreBtn.trailingAnchor constraintEqualToAnchor:bgContainer.trailingAnchor constant:-12],
         ]];
     } else {
         self.view.backgroundColor = [UIColor clearColor];
-        container.layer.cornerRadius = 0;
+        bgContainer.layer.cornerRadius = 0;
         
         [constraints addObjectsFromArray:@[
-            [container.topAnchor constraintEqualToAnchor:self.view.topAnchor],
-            [container.bottomAnchor constraintEqualToAnchor:self.view.bottomAnchor],
-            [container.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor],
-            [container.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor]
+            [bgContainer.topAnchor constraintEqualToAnchor:self.view.topAnchor],
+            [bgContainer.bottomAnchor constraintEqualToAnchor:self.view.bottomAnchor],
+            [bgContainer.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor],
+            [bgContainer.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor]
         ]];
 
         [constraints addObjectsFromArray:@[
@@ -105,27 +106,22 @@ static BOOL isPad() {
     }
 
     [constraints addObjectsFromArray:@[
-        [bgImageView.topAnchor constraintEqualToAnchor:container.topAnchor],
-        [bgImageView.bottomAnchor constraintEqualToAnchor:container.bottomAnchor],
-        [bgImageView.leadingAnchor constraintEqualToAnchor:container.leadingAnchor],
-        [bgImageView.trailingAnchor constraintEqualToAnchor:container.trailingAnchor],
-        [blurView.topAnchor constraintEqualToAnchor:container.topAnchor],
-        [blurView.bottomAnchor constraintEqualToAnchor:container.bottomAnchor],
-        [blurView.leadingAnchor constraintEqualToAnchor:container.leadingAnchor],
-        [blurView.trailingAnchor constraintEqualToAnchor:container.trailingAnchor]
+        [bgImageView.topAnchor constraintEqualToAnchor:bgContainer.topAnchor],
+        [bgImageView.bottomAnchor constraintEqualToAnchor:bgContainer.bottomAnchor],
+        [bgImageView.leadingAnchor constraintEqualToAnchor:bgContainer.leadingAnchor],
+        [bgImageView.trailingAnchor constraintEqualToAnchor:bgContainer.trailingAnchor],
+        [blurView.topAnchor constraintEqualToAnchor:bgContainer.topAnchor],
+        [blurView.bottomAnchor constraintEqualToAnchor:bgContainer.bottomAnchor],
+        [blurView.leadingAnchor constraintEqualToAnchor:bgContainer.leadingAnchor],
+        [blurView.trailingAnchor constraintEqualToAnchor:bgContainer.trailingAnchor]
     ]];
 
     [constraints addObjectsFromArray:@[
-        [self.scrollView.centerXAnchor constraintEqualToAnchor:container.centerXAnchor],
-        [self.scrollView.centerYAnchor constraintEqualToAnchor:container.centerYAnchor],
-        [self.scrollView.widthAnchor constraintEqualToAnchor:self.scrollView.heightAnchor multiplier:16.0/9.0],
-        [self.scrollView.widthAnchor constraintLessThanOrEqualToAnchor:container.widthAnchor],
-        [self.scrollView.heightAnchor constraintLessThanOrEqualToAnchor:container.heightAnchor]
+        [self.scrollView.topAnchor constraintEqualToAnchor:bgContainer.topAnchor],
+        [self.scrollView.bottomAnchor constraintEqualToAnchor:bgContainer.bottomAnchor],
+        [self.scrollView.leadingAnchor constraintEqualToAnchor:bgContainer.leadingAnchor],
+        [self.scrollView.trailingAnchor constraintEqualToAnchor:bgContainer.trailingAnchor]
     ]];
-    
-    NSLayoutConstraint *expandSV = [self.scrollView.widthAnchor constraintEqualToConstant:2000];
-    expandSV.priority = UILayoutPriorityDefaultHigh;
-    [constraints addObject:expandSV];
 
     [constraints addObjectsFromArray:@[
         [self.imageView.topAnchor constraintEqualToAnchor:self.scrollView.contentLayoutGuide.topAnchor],
