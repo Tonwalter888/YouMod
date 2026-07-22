@@ -1930,6 +1930,14 @@ static UIImage *YouModRenderViewToImage(UIView *view) {
     YouModPresentMenu(nil, items, presenter, self);
 }
 
+%new
+- (void)YouModDownloadButtonTapped:(UITapGestureRecognizer *)sender {
+    if (sender.state != UIGestureRecognizerStateEnded) return;
+    UIViewController *presenter = YouModPresenterForSender(self, YouModCurrentPlayerViewController);
+    YTPlayerViewController *player = YouModPlayerFromViewController(presenter);
+    YouModShowDownloadManager(player, presenter, self, NO);
+}
+
 %end
 
 // Download button in Shorts
