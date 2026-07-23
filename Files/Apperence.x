@@ -294,6 +294,9 @@ BOOL isDarkMode(UIView *view) {
 }
 %end
 
+@interface YTStartupAnimationViewController : UIViewController
+@end
+
 %hook YTStartupAnimationViewController
 - (void)viewDidLoad {
     %orig;
