@@ -62,7 +62,6 @@ static const NSInteger YMOverlayButtonBaseTag = 9910;
 static const CGFloat YMOverlayButtonSize = 40.0;
 static const CGFloat YMOverlayButtonGap = 8.0;
 static const CGFloat YMOverlayButtonTopInset = 52.0; // fallback row top when the gear can't be located
-static const CGFloat YMOverlayButtonGearGap = 4.0;   // vertical gap between YouTube's gear row and our row
 static const CGFloat YMOverlayButtonEdgePadding = 12.0; // fallback right padding when the gear isn't found
 
 // Point size of a text button's label. Tweak this to change how large the text renders.
@@ -209,7 +208,7 @@ static YTQTMButton *YMCreateOverlayButton(YTMainAppControlsOverlayView *overlay,
     CGRect gearFrame = YMGearFrameInOverlay(self);
     BOOL hasGear = !CGRectIsNull(gearFrame);
     CGFloat trailingCenterX = hasGear ? CGRectGetMidX(gearFrame) : self.bounds.size.width - YMOverlayButtonEdgePadding - YMOverlayButtonSize / 2.0;
-    CGFloat rowTop = hasGear ? CGRectGetMaxY(gearFrame) + YMOverlayButtonGearGap : YMOverlayButtonTopInset;
+    CGFloat rowTop = hasGear ? CGRectGetMaxY(gearFrame) : YMOverlayButtonTopInset;
     CGFloat prevHalfWidth = 0;
 
     for (YMOverlayButtonSpec *spec in specs) {
