@@ -1,4 +1,3 @@
-// HUGE thanks to @daisuke1227 for implementing all of this
 #import "Headers.h"
 #import <AVFoundation/AVFoundation.h>
 #import <Photos/Photos.h>
@@ -128,8 +127,6 @@ typedef void (^YouModRangeDownloadProgress)(unsigned long long completedBytes);
 @property (nonatomic, copy) NSString *baseProgressTitle;
 @property (nonatomic, assign) NSTimeInterval downloadStartTime;
 @property (nonatomic, copy) void (^downloadCompletionBlock)(NSURL *localURL, NSString *errorMsg);
-@property (nonatomic, strong) NSURL *downloadedFileURL;
-@property (nonatomic, strong) NSString *downloadErrorStr;
 + (instancetype)sharedCoordinator;
 - (void)startVideoDownloadWithVideoFormat:(YouModMediaFormat *)videoFormat audioFormat:(YouModMediaFormat *)audioFormat fileName:(NSString *)fileName presenter:(UIViewController *)presenter videoID:(NSString *)vidID;
 - (void)startAudioDownloadWithAudioFormat:(YouModMediaFormat *)audioFormat fileName:(NSString *)fileName presenter:(UIViewController *)presenter videoID:(NSString *)vidID;
@@ -277,7 +274,6 @@ static void YouModApplyDownloadHeaders(NSMutableURLRequest *request, NSDictionar
             return;
         }
 
-        // Aim for ~100 chunks (≈1% per chunk) but respect min/max bounds.
         unsigned long long chunkSize = self.expectedBytes / 100ULL;
         if (chunkSize < 256ULL * 1024ULL) chunkSize = 256ULL * 1024ULL;
         if (chunkSize > YouModFastDownloadChunkBytes) chunkSize = YouModFastDownloadChunkBytes;
@@ -836,14 +832,11 @@ static void YouModSaveVideoToPhotos(NSURL *fileURL, UIViewController *presenter,
 static void YouModShareFile(NSURL *fileURL, UIViewController *presenter) {
     if (!fileURL || !presenter) return;
     UIActivityViewController *activity = [[UIActivityViewController alloc] initWithActivityItems:@[fileURL] applicationActivities:nil];
-    // Fix for iPad and specific presentation alignment
     if (UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad) {
         activity.popoverPresentationController.sourceView = presenter.view;
-        // Position at the bottom center of the screen
         activity.popoverPresentationController.sourceRect = CGRectMake(presenter.view.bounds.size.width / 2, presenter.view.bounds.size.height, 0, 0);
-        activity.popoverPresentationController.permittedArrowDirections = 0; // No arrow pointing to a button
+        activity.popoverPresentationController.permittedArrowDirections = 0;
     } else {
-        // On iPhone, UIActivityViewController naturally comes from the bottom center
         activity.popoverPresentationController.sourceView = presenter.view;
     }
     [presenter presentViewController:activity animated:YES completion:nil];
@@ -927,11 +920,14 @@ static void YouModPresentMenu(YTPlayerViewController *player, NSArray <YouModMen
     [self.metadataTask cancel];
     [self.rangeDownloader cancel];
     [self.exporter cancelExport];
+    
     self.task = nil;
     self.metadataTask = nil;
     self.rangeDownloader = nil;
     self.exporter = nil;
     self.fileCompletion = nil;
+    self.downloadCompletionBlock = nil;
+    
     self.active = NO;
     self.cancelled = YES;
     if (self.progressPill) { [self.progressPill dismiss]; self.progressPill = nil; }
@@ -942,8 +938,10 @@ static void YouModPresentMenu(YTPlayerViewController *player, NSArray <YouModMen
 - (void)cleanupTemporaryFiles {
     if (self.videoTempURL) [NSFileManager.defaultManager removeItemAtURL:self.videoTempURL error:nil];
     if (self.audioTempURL) [NSFileManager.defaultManager removeItemAtURL:self.audioTempURL error:nil];
+    if (self.destinationURL) [NSFileManager.defaultManager removeItemAtURL:self.destinationURL error:nil];
     self.videoTempURL = nil;
     self.audioTempURL = nil;
+    self.destinationURL = nil;
 }
 
 - (void)downloadURL:(NSURL *)url toURL:(NSURL *)destinationURL expectedBytes:(unsigned long long)expectedBytes headers:(NSDictionary *)headers completion:(YouModFileDownloadCompletion)completion {
@@ -1356,14 +1354,14 @@ static void YouModPresentMenu(YTPlayerViewController *player, NSArray <YouModMen
             self.fileCompletion(nil, error);
         }
     }    
-    [session finishTasksAndInvalidate];
+    // We intentionally don't invalidate the shared session here if it's reused.
 }
 
 - (NSString *)serverEndpoint {
     if (INTFORVAL(DownloadServerIndex) == 0) {
-        return @"https://appropriatenet.tail6a9ca7.ts.net/"; // Europe (@AppropriateNet2928)
+        return @"https://appropriatenet.tail6a9ca7.ts.net/"; 
     } else if (INTFORVAL(DownloadServerIndex) == 1) {
-        return @"https://waterdl.freeddns.org/"; // Thailand - Asia (@Tonwalter888) 
+        return @"https://waterdl.freeddns.org/"; 
     }
     return @"";
 }
@@ -1478,21 +1476,16 @@ static void YouModPresentMenu(YTPlayerViewController *player, NSArray <YouModMen
     self.baseProgressTitle = isAudio ? LOC(@"DOWNLOADING_AUDIO") : LOC(@"DOWNLOADING_VIDEO");
     
     dispatch_async(dispatch_get_main_queue(), ^{
-        [self updateProgressTitle:isAudio ? LOC(@"DOWNLOADING_AUDIO") : LOC(@"DOWNLOADING_VIDEO") progress:0.0f];
+        [self updateProgressTitle:self.baseProgressTitle progress:0.0f];
     });
 
     NSString *encodedName = [filename stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
     NSString *urlString = [NSString stringWithFormat:@"%@/api/file/%@?filename=%@", [self serverEndpoint], jobId, encodedName];
     
-    NSURLSessionConfiguration *config = [NSURLSessionConfiguration defaultSessionConfiguration];
-    NSURLSession *session = [NSURLSession sessionWithConfiguration:config 
-                                                          delegate:(id<NSURLSessionDownloadDelegate>)self 
-                                                     delegateQueue:[NSOperationQueue mainQueue]];
+    self.task = [self.session downloadTaskWithURL:[NSURL URLWithString:urlString]];
+    self.task.taskDescription = filename;
     
-    NSURLSessionDownloadTask *task = [session downloadTaskWithURL:[NSURL URLWithString:urlString]];
-    task.taskDescription = filename;
-    
-    [task resume];
+    [self.task resume];
 }
 
 @end
@@ -1815,7 +1808,6 @@ void YouModConfigureDownloadButton(_ASDisplayView *view) {
     if (!IS_ENABLED(DownloadManager)) return;
     if (objc_getAssociatedObject(view, @selector(YouModDownloadButtonTapped:))) return;
 
-    // For iPad (Old ID)
     if ([view.accessibilityIdentifier isEqualToString:@"id.ui.add_to.offline.button"]) {
         view.userInteractionEnabled = YES;
         UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:view action:@selector(YouModDownloadButtonTapped:)];
@@ -1887,20 +1879,6 @@ static UIImage *YouModRenderViewToImage(UIView *view) {
     NSString *commentText = YouModExtractCommentText(self);
     NSMutableArray *items = [NSMutableArray array];
 
-    /*
-    // --- เมนูที่ 1: แปลข้อความ (Translate Comment) ---
-    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"TRANSLATE_COMMENT") ?: @"Translate comment" subtitle:nil icon:YouModIconImage(102) handler:^{
-        if (commentText.length > 0) {
-            NSString *escapedText = [commentText stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
-            NSString *translateURLString = [NSString stringWithFormat:@"https://translate.google.com/?sl=auto&tl=th&text=%@", escapedText];
-            NSURL *translateURL = [NSURL URLWithString:translateURLString];
-            if ([[UIApplication sharedApplication] canOpenURL:translateURL]) {
-                [[UIApplication sharedApplication] openURL:translateURL options:@{} completionHandler:nil];
-            }
-        }
-    }]];
-    */
-
     [items addObject:[YouModMenuItem itemWithTitle:@"Copy comment text" subtitle:nil icon:YouModIconImage(250) handler:^{
         if (commentText.length > 0) {
             [UIPasteboard generalPasteboard].string = commentText;
@@ -1940,7 +1918,6 @@ static UIImage *YouModRenderViewToImage(UIView *view) {
 
 %end
 
-// Download button in Shorts
 %hook YTReelWatchPlaybackOverlayView
 
 - (void)layoutSubviews {
@@ -1959,7 +1936,6 @@ static UIImage *YouModRenderViewToImage(UIView *view) {
     YTQTMButton *downloadBtn = (YTQTMButton *)[self viewWithTag:1501];
     if (!downloadBtn) {
         UIImageSymbolConfiguration *config = [UIImageSymbolConfiguration configurationWithPointSize:20 weight:UIImageSymbolWeightMedium];
-        // Template rendering so YTQTMButton's tint colours the glyph reliably.
         UIImage *icon = [[UIImage systemImageNamed:@"arrow.down.circle" withConfiguration:config] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
         downloadBtn = [%c(YTQTMButton) iconButton];
         [downloadBtn setImage:icon forState:UIControlStateNormal];
@@ -1984,7 +1960,6 @@ static UIImage *YouModRenderViewToImage(UIView *view) {
 
 %new
 - (void)didTapYouModShortsDownload:(YTQTMButton *)button {
-    // Loop to find playerview
     UIResponder *responder = self.nextResponder;
     while (responder && ![responder isKindOfClass:%c(YTShortsPlayerViewController)]) {
         responder = responder.nextResponder;
@@ -2000,11 +1975,7 @@ static UIImage *YouModRenderViewToImage(UIView *view) {
 %end
 
 %ctor {
-    // An explicit constructor must call %init itself; without it Logos does not
-    // initialize the hooks in this file.
     %init;
-    // Register the download button in the player overlay's custom button row.
-    // sortOrder 200 places it to the left of the SponsorBlock toggle (sortOrder 100).
     YMOverlayButtonSpec *download = [[YMOverlayButtonSpec alloc] init];
     download.identifier = @"download.video";
     download.symbolName = @"arrow.down.circle";
