@@ -293,39 +293,13 @@ BOOL isDarkMode(UIView *view) {
     }
 }
 %end
-/*
 
 %hook YTStartupAnimationViewController
-
 - (void)viewDidLoad {
     %orig;
-    // เปลี่ยนสีพื้นหลังของ View หลักให้เป็นดำสนิท (#000000)
-    self.view.backgroundColor = [UIColor blackColor];
-}
-
-- (void)setUpAnimationView {
-    %orig;
-    // บังคับเปลี่ยนสีพื้นหลัง animation view (พวกลโก้ YouTube)
-    if ([self respondsToSelector:@selector(view)]) {
+    if (isDarkMode(self.view)) {
         self.view.backgroundColor = [UIColor blackColor];
     }
-}
-
-- (void)copyLaunchStoryboardBackgroundColor {
-    // ปิดการก็อปปี้สีเดิมจาก Storyboard ให้ใช้สีดำที่เรากำหนดแทน
-    self.view.backgroundColor = [UIColor blackColor];
-}
-
-%end
-*/
-
-%hook UIWindow
-- (void)setBackgroundColor:(UIColor *)color {
-    if ([self.rootViewController isKindOfClass:%c(YTStartupAnimationViewController)] && isDarkMode(self)) {
-        %orig([UIColor blackColor]);
-        return;
-    }
-    %orig;
 }
 %end
 %end
