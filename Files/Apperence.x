@@ -1,7 +1,7 @@
 #import "Headers.h"
 
 // OLEDKeyboard (https://github.com/dayanch96/OledKeyboard)
-static BOOL isDarkMode(UIView *view) {
+BOOL isDarkMode(UIView *view) {
     if ([view respondsToSelector:@selector(_mapkit_isDarkModeEnabled)]) {
         return view._mapkit_isDarkModeEnabled;
     }
@@ -77,6 +77,7 @@ static BOOL isDarkMode(UIView *view) {
         UIResponder *responder = self.nextResponder;
         while (responder != nil) {
             if ([responder isKindOfClass:%c(YTActionSheetDialogViewController)] || [responder isKindOfClass:%c(YTBottomSheetController)]) {
+                if ([self.superview.accessibilityIdentifier isEqualToString:@"eml.animated_subscribe_button"]) break;
                 self.backgroundColor = [UIColor blackColor];
                 break;
             } else if ([self.accessibilityIdentifier isEqualToString:@"eml.live_chat_text_message"] && [responder isKindOfClass:%c(YCHAsyncLiveChatCollectionViewController)]) {
@@ -101,6 +102,7 @@ static BOOL isDarkMode(UIView *view) {
         UIResponder *responder = self.nextResponder;
         while (responder != nil) {
             if ([responder isKindOfClass:%c(YTActionSheetDialogViewController)] || [responder isKindOfClass:%c(YTBottomSheetController)]) {
+                if ([self.superview.accessibilityIdentifier isEqualToString:@"eml.animated_subscribe_button"]) break;
                 self.backgroundColor = [UIColor clearColor];
                 break;
             } else if ([self.accessibilityIdentifier isEqualToString:@"eml.live_chat_text_message"] && [responder isKindOfClass:%c(YCHAsyncLiveChatCollectionViewController)]) {
@@ -135,6 +137,7 @@ static BOOL isDarkMode(UIView *view) {
         UIResponder *responder = self.nextResponder;
         while (responder != nil) {
             if ([responder isKindOfClass:%c(YTActionSheetDialogViewController)] || [responder isKindOfClass:%c(YTBottomSheetController)]) {
+                if ([self.superview.accessibilityIdentifier isEqualToString:@"eml.animated_subscribe_button"]) break;
                 self.backgroundColor = [UIColor blackColor];
                 break;
             } else if ([self.accessibilityIdentifier isEqualToString:@"eml.live_chat_text_message"] && [responder isKindOfClass:%c(YCHAsyncLiveChatCollectionViewController)]) {
@@ -159,6 +162,7 @@ static BOOL isDarkMode(UIView *view) {
         UIResponder *responder = self.nextResponder;
         while (responder != nil) {
             if ([responder isKindOfClass:%c(YTActionSheetDialogViewController)] || [responder isKindOfClass:%c(YTBottomSheetController)]) {
+                if ([self.superview.accessibilityIdentifier isEqualToString:@"eml.animated_subscribe_button"]) break;
                 self.backgroundColor = [UIColor clearColor];
                 break;
             } else if ([self.accessibilityIdentifier isEqualToString:@"eml.live_chat_text_message"] && [responder isKindOfClass:%c(YCHAsyncLiveChatCollectionViewController)]) {
@@ -287,6 +291,41 @@ static BOOL isDarkMode(UIView *view) {
     if ([self.traitCollection hasDifferentColorAppearanceComparedToTraitCollection:previousTraitCollection]) {
         [self setNeedsLayout];
     }
+}
+%end
+/*
+
+%hook YTStartupAnimationViewController
+
+- (void)viewDidLoad {
+    %orig;
+    // เปลี่ยนสีพื้นหลังของ View หลักให้เป็นดำสนิท (#000000)
+    self.view.backgroundColor = [UIColor blackColor];
+}
+
+- (void)setUpAnimationView {
+    %orig;
+    // บังคับเปลี่ยนสีพื้นหลัง animation view (พวกลโก้ YouTube)
+    if ([self respondsToSelector:@selector(view)]) {
+        self.view.backgroundColor = [UIColor blackColor];
+    }
+}
+
+- (void)copyLaunchStoryboardBackgroundColor {
+    // ปิดการก็อปปี้สีเดิมจาก Storyboard ให้ใช้สีดำที่เรากำหนดแทน
+    self.view.backgroundColor = [UIColor blackColor];
+}
+
+%end
+*/
+
+%hook UIWindow
+- (void)setBackgroundColor:(UIColor *)color {
+    if ([self.rootViewController isKindOfClass:%c(YTStartupAnimationViewController)] && isDarkMode(self)) {
+        %orig([UIColor blackColor]);
+        return;
+    }
+    %orig;
 }
 %end
 %end
