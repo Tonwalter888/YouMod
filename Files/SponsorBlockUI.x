@@ -720,11 +720,11 @@ static const CGFloat SBInlineMarkerHeight = 4.0;
                     break;
                 }
             }
-            if (referenceView) {
-                mainView = sub;
-                break;
-            }
+            if (referenceView) break;
         }
+
+        mainView = referenceView.superview;
+
         // Remove old markers
         for (UIView *sub in [mainView.subviews copy]) {
             if (sub.tag == SBSegmentMarkerTag) [sub removeFromSuperview];
