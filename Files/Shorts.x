@@ -220,7 +220,7 @@ static BOOL isFullscreenEnabled = NO;
     if (!self.YouModFullscreenGesture) {
         self.YouModFullscreenGesture = [[UIPinchGestureRecognizer alloc] initWithTarget:self action:@selector(YouModFullscrrenGestureHandler:)];
         self.YouModFullscreenGesture.delegate = (id<UIGestureRecognizerDelegate>)self;
-        
+
         [self.superview addGestureRecognizer:self.YouModFullscreenGesture];
     }
 }
@@ -271,18 +271,11 @@ static BOOL isFullscreenEnabled = NO;
     }
 }
 %new
-- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldBeRequiredToFailByGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
-    if (gestureRecognizer == self.YouModFullscreenGesture && [otherGestureRecognizer isKindOfClass:[UIPanGestureRecognizer class]]) {
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
+    if (gestureRecognizer == self.YouModFullscreenGesture) {
         return YES;
     }
     return NO;
-}
-%new
-- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
-    if (gestureRecognizer == self.YouModFullscreenGesture) {
-        return NO;
-    }
-    return YES;
 }
 %end
 
