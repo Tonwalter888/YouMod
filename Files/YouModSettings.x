@@ -172,6 +172,16 @@ static const void *kYMSliderLabelAssoc = &kYMSliderLabelAssoc;
 
     self.title = self.navTitle;
 
+    UINavigationBarAppearance *appearance = [[UINavigationBarAppearance alloc] init];
+    [appearance configureWithDefaultBackground];
+    if (self.traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark) {
+        appearance.backgroundColor = [%c(YTColor) black3];
+    } else {
+        appearance.backgroundColor = [UIColor systemBackgroundColor];
+    }
+    self.navigationController.navigationBar.standardAppearance = appearance;
+    self.navigationController.navigationBar.scrollEdgeAppearance = appearance;
+
     self.tableView = [[UITableView alloc] initWithFrame:self.view.bounds style:UITableViewStyleGrouped];
     self.tableView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     self.tableView.delegate = self;
@@ -195,6 +205,15 @@ static const void *kYMSliderLabelAssoc = &kYMSliderLabelAssoc;
         self.tableView.backgroundColor = (self.traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark)
             ? [%c(YTColor) black3]
             : [UIColor systemBackgroundColor];
+        UINavigationBarAppearance *appearance = [[UINavigationBarAppearance alloc] init];
+        [appearance configureWithDefaultBackground];
+        if (self.traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark) {
+            appearance.backgroundColor = [%c(YTColor) black3];
+        } else {
+            appearance.backgroundColor = [UIColor systemBackgroundColor];
+        }
+        self.navigationController.navigationBar.standardAppearance = appearance;
+        self.navigationController.navigationBar.scrollEdgeAppearance = appearance;
         [self.tableView reloadData];
     }
 }
@@ -702,7 +721,7 @@ static NSString * const kYMTabIDs[] = {
 };
 static const NSInteger kYMTabCount = 20;
 static const NSInteger kYMTabMaxEnabled = 6;
-static const NSInteger kYMTabMinEnabled = 0;
+static const NSInteger kYMTabMinEnabled = 1;
 
 @interface YMTabOrderViewController : UIViewController <UITableViewDelegate, UITableViewDataSource>
 - (UITableView *)tableView;
