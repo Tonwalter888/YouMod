@@ -401,7 +401,7 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 - (id)audioTrackController;
 - (void)setAudioTrack:(YTIAudioTrack *)arg1 source:(NSInteger)arg2;
 - (void)YouModHideSpeedToast;
-- (void)YouModShowSpeedToast:(CGFloat)speed;
+- (void)YouModShowSpeedToast:(CGFloat)speed isLocked:(BOOL)isLocked;
 @end
 
 @interface YTPlayerBarController (YouMod)
