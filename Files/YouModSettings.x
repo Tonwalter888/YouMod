@@ -1128,6 +1128,18 @@ void YMPresentTabOrderModally(id parentResponder) {
     UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:vc];
     nav.modalPresentationStyle = UIModalPresentationFormSheet;
 
+    UINavigationBarAppearance *appearance = [[UINavigationBarAppearance alloc] init];
+    [appearance configureWithDefaultBackground];
+    if (self.traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark) {
+        appearance.backgroundColor = [%c(YTColor) black3];
+    } else {
+        appearance.backgroundColor = [UIColor systemBackgroundColor];
+    }
+        
+    nav.navigationBar.standardAppearance = appearance;
+    nav.navigationBar.scrollEdgeAppearance = appearance;
+    nav.navigationBar.compactAppearance = appearance;
+
     __weak UINavigationController *weakNav = nav;
     UIAction *doneAction = [UIAction actionWithTitle:@"" image:nil identifier:nil handler:^(__unused UIAction *action) {
         [weakNav dismissViewControllerAnimated:YES completion:nil];

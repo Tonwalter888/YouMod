@@ -1426,7 +1426,7 @@ static void YouModPresentMenu(YTPlayerViewController *player, NSArray <YouModMen
     [[[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
         if (!self || self.cancelled) return;
         if (error || !data) {
-            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.75 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{ 
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{ 
                 [self pollJobStatus:jobId isAudio:isAudio presenter:presenter completion:completionBlock]; 
             });
             return;
@@ -1450,7 +1450,7 @@ static void YouModPresentMenu(YTPlayerViewController *player, NSArray <YouModMen
             dispatch_async(dispatch_get_main_queue(), ^{ 
                 [self updateProgressTitle:LOC(@"DOWNLOADING_TO_SERVER") progress:0.0f]; 
             });
-            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.75 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{ 
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{ 
                 [self pollJobStatus:jobId isAudio:isAudio presenter:presenter completion:completionBlock]; 
             });
         }

@@ -191,6 +191,9 @@ static YTQTMButton *YMCreateOverlayButton(YTMainAppControlsOverlayView *overlay,
         button.titleLabel.textAlignment = NSTextAlignmentCenter;
         button.sizeWithPaddingAndInsets = NO;
         button.titleLabel.adjustsFontSizeToFitWidth = YES;
+        button.titleLabel.numberOfLines = 2;
+        button.titleLabel.minimumScaleFactor = 0.7;
+        button.titleLabel.lineBreakMode = NSLineBreakByWordWrapping;
     } else {
         UIImageSymbolConfiguration *config = [UIImageSymbolConfiguration configurationWithPointSize:20 weight:UIImageSymbolWeightMedium];
         // Template rendering so YTQTMButton's tint colours the glyph reliably.
@@ -391,7 +394,7 @@ static UIImage *YouModIconImage(NSInteger iconType) {
     BOOL isLoopEnabled = !IS_ENABLED(KeepLoopKey);
     [[NSUserDefaults standardUserDefaults] setBool:isLoopEnabled forKey:KeepLoopKey];
     [autoplayController setLoopMode:isLoopEnabled ? 2 : 0];
-    [[%c(GOOHUDManagerInternal) sharedInstance] showMessageMainThread:[%c(YTHUDMessage) messageWithText:LOC(isLoopEnabled ? @"LOOP_ENABLED" : @"LOOP_DISABLED")]];
+    YouModShowShareNotification(LOC(isLoopEnabled ? @"LOOP_ENABLED" : @"LOOP_DISABLED"), YES);
 }
 - (void)setPlaybackRate:(float)rate {
     didSelectRate(rate);
@@ -399,12 +402,12 @@ static UIImage *YouModIconImage(NSInteger iconType) {
 }
 %end
 
-static int LoopState;
+int LoopState = 0;
 
 %hook YTAutoplayAutonavController
 - (id)initWithParentResponder:(id)arg {
     self = %orig;
-    if (self && (IS_ENABLED(KeepLoopKey) || (IS_ENABLED(RememberLoop) && LoopState == 2))) {
+    if (self && IS_ENABLED(KeepLoopKey)) {
         [self setLoopMode:2];
     }
     return self;

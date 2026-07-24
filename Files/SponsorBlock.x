@@ -117,9 +117,7 @@ void sbUpdateOverlayInsetForPivotBar() {
         // screen height — clamping to pivotHeight keeps the pill just above the safe
         // area instead of letting it drift to the middle of the screen.
 
-        // tabH = MAX(0.0, MIN(pivotHeight, overlayHeight - deviceSafeBottom - pivotTop));
-        CGFloat maxTabH = MAX(0.0, pivotHeight - deviceSafeBottom);
-        tabH = MAX(0.0, MIN(maxTabH, overlayHeight - deviceSafeBottom - pivotTop));
+        tabH = MAX(0.0, MIN(pivotHeight, overlayHeight - deviceSafeBottom - pivotTop));
     }
     UIEdgeInsets current = rootVC.additionalSafeAreaInsets;
     if (current.bottom != tabH) {
@@ -387,8 +385,8 @@ UIColor *SBColorFromHex(NSString *hexString) {
 
     [self.sbNotificationView dismiss];
 
-    NSString *videoID = [self contentVideoID];
-    if ([self.sbLastVideoID isEqualToString:videoID] && self.sbSegments.count > 0) return;
+    NSString *videoID = [self currentVideoID];
+    if ([self.sbLastVideoID isEqualToString:videoID]) return;
     self.sbLastVideoID = videoID;
 
     __weak typeof(self) weakSelf = self;

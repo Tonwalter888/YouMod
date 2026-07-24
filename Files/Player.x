@@ -1,5 +1,7 @@
 #import "Headers.h"
 
+extern int LoopState;
+
 #define TweakName @"YouMod"
 
 static NSBundle *YouModBundle() {
@@ -485,6 +487,7 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
     YouModDownloadSetCurrentPlayer(playerviewController);
     YouModConfigureRemoteSkipCommands();
     if (IS_ENABLED(MuteButton)) [playerviewController YouModAutoMute];
+    if (LoopState != 0) [playerviewController YouModAutoLoop];
     if (IS_ENABLED(AutoFullScreen)) [playerviewController performSelector:@selector(YouModAutoFullscreen) withObject:nil afterDelay:0.5];
     if (INTFORVAL(CaptionTrack) != 0) [playerviewController performSelector:@selector(YouModAutoCaptions) withObject:nil afterDelay:0.5];
     if (INTFORVAL(AutoSpeedIndex) != 0) [playerviewController performSelector:@selector(YouModSetAutoSpeed) withObject:nil afterDelay:0.5];
@@ -792,6 +795,8 @@ static CGFloat savedRate = 1.0;
 %property (nonatomic, strong) UIView *YouModSpeedToastView;
 %property (nonatomic, strong) UILabel *YouModSpeedToastLabel;
 %property (nonatomic, retain) UILongPressGestureRecognizer *YouModHoldGesture;
+%property (nonatomic, assign) BOOL YouModIsSpeedLocked;
+%property (nonatomic, assign) CGFloat YouModSavedNormalRate;
 %new
 - (BOOL)gestureRecognizerShouldBegin:(UIGestureRecognizer *)gestureRecognizer {
     if (gestureRecognizer == self.YouModPanGesture) {
@@ -860,7 +865,7 @@ static CGFloat savedRate = 1.0;
     if (IS_ENABLED(GestureHUD)) {
         if (!self.YouModGestureHUD) {
             self.YouModGestureHUD = [[UILabel alloc] initWithFrame:CGRectZero];
-            self.YouModGestureHUD.backgroundColor = [UIColor colorWithWhite:0.0 alpha:0.5];
+            self.YouModGestureHUD.backgroundColor = [UIColor colorWithWhite:0.0 alpha:0.95];
             self.YouModGestureHUD.textColor = [UIColor colorWithWhite:1.0 alpha:0.75];
             self.YouModGestureHUD.tintColor = [UIColor colorWithWhite:1.0 alpha:0.75];
             self.YouModGestureHUD.textAlignment = NSTextAlignmentCenter;
@@ -1261,28 +1266,45 @@ static CGFloat savedRate = 1.0;
     CGFloat speed = YouModSpeedForHoldIndex(speedIndex);
     
     static CGPoint startLocation;
+    static BOOL hasToggledLockInCurrentGesture = NO;
 
     if (gesture.state == UIGestureRecognizerStateBegan) {
-        isSpeedLocked = NO;
+        hasToggledLockInCurrentGesture = NO;
         startLocation = [gesture locationInView:self.playerView];
         
-        YTMainAppVideoPlayerOverlayViewController *con = [self activeVideoPlayerOverlay];
-        savedRate = [con currentPlaybackRate];
-        
-        [self setPlaybackRate:speed];
-        [self YouModShowSpeedToast:speed isLocked:NO];
+        if (!self.YouModIsSpeedLocked) {
+            YTMainAppVideoPlayerOverlayViewController *con = [self activeVideoPlayerOverlay];
+            self.YouModSavedNormalRate = [con currentPlaybackRate]; 
+            
+            [self setPlaybackRate:speed];
+            [self YouModShowSpeedToast:speed isLocked:NO];
+        } else {
+            [self YouModShowSpeedToast:speed isLocked:YES];
+        }
         
     } else if (gesture.state == UIGestureRecognizerStateChanged) {
-        if (IS_ENABLED(LockSpeed) && !isSpeedLocked) {
+        if (IS_ENABLED(LockSpeed) && !hasToggledLockInCurrentGesture) {
             CGPoint currentLocation = [gesture locationInView:self.playerView];
             CGFloat dragDistanceY = currentLocation.y - startLocation.y;
-            
+        
             if (dragDistanceY > 50.0) {
-                isSpeedLocked = YES;
-                [self YouModShowSpeedToast:speed isLocked:YES];
+                hasToggledLockInCurrentGesture = YES; 
                 
-                UIImpactFeedbackGenerator *feedback = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleMedium];
-                [feedback impactOccurred];
+                if (!self.YouModIsSpeedLocked) {
+                    self.YouModIsSpeedLocked = YES;
+                    [self YouModShowSpeedToast:speed isLocked:YES];
+                    
+                    UIImpactFeedbackGenerator *feedback = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleMedium];
+                    [feedback impactOccurred];
+                } else {
+                    self.YouModIsSpeedLocked = NO;
+                    
+                    [self setPlaybackRate:self.YouModSavedNormalRate];
+                    [self YouModShowSpeedToast:self.YouModSavedNormalRate isLocked:NO];
+                    
+                    UIImpactFeedbackGenerator *feedback = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleLight];
+                    [feedback impactOccurred];
+                }
             }
         }
         
@@ -1290,15 +1312,22 @@ static CGFloat savedRate = 1.0;
                gesture.state == UIGestureRecognizerStateCancelled || 
                gesture.state == UIGestureRecognizerStateFailed) {
                
-        if (isSpeedLocked && IS_ENABLED(LockSpeed)) {
+        if (hasToggledLockInCurrentGesture) {
             [self YouModHideSpeedToast];
         } else {
-            [self setPlaybackRate:savedRate];
+            if (!self.YouModIsSpeedLocked) {
+                [self setPlaybackRate:self.YouModSavedNormalRate];
+            }
+            
             [self YouModHideSpeedToast];
         }
-        
-        isSpeedLocked = NO;
     }
+}
+%new
+- (void)YouModAutoLoop {
+    YTMainAppVideoPlayerOverlayViewController *playerOverlay = self.activeVideoPlayerOverlay;
+    YTAutoplayAutonavController *autoplayController = [playerOverlay valueForKey:@"_autonavController"];
+    [autoplayController setLoopMode:LoopState];
 }
 %end
 

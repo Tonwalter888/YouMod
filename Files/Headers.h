@@ -393,6 +393,7 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 - (void)YouModAutoAudioTrack;
 - (void)YouModAutoCaptions;
 - (void)YouModLoopButton;
+- (void)YouModAutoLoop;
 - (void)YouModCaptionsHelper:(MLInnerTubeCaptionTrack *)arg;
 - (void)YouModShareButton:(UIView *)sourceView;
 - (NSInteger)playerState;
