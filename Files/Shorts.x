@@ -197,7 +197,7 @@ extern void YouModConfigureDownloadButton(_ASDisplayView *view);
 static BOOL isFullscreenEnabled = NO;
 
 %hook YTAppDelegate
-- (void)appWillResignActive {
+- (void)appDidBecomeActive {
     %orig;
     if ((isFullscreenEnabled && IS_ENABLED(FullScreenShorts)) || (isShortsOnlyOn && IS_ENABLED(ShortsOnly))) {
         id appviewcon = [self valueForKey:@"_appViewController"];
@@ -271,25 +271,33 @@ static BOOL isFullscreenEnabled = NO;
     }
 }
 %new
-- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
-    if (gestureRecognizer == self.YouModFullscreenGesture) {
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldBeRequiredToFailByGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
+    if (gestureRecognizer == self.YouModFullscreenGesture && [otherGestureRecognizer isKindOfClass:[UIPanGestureRecognizer class]]) {
         return YES;
     }
     return NO;
 }
+%new
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
+    if (gestureRecognizer == self.YouModFullscreenGesture) {
+        return NO;
+    }
+    return YES;
+}
 %end
 
 %hook YTReelContentView
+%property (nonatomic, retain) UILongPressGestureRecognizer *YouModExitShortsOnlyGesture;
 - (void)setPlaybackView:(id)arg1 {
     %orig;
     self.playbackOverlay.alpha = !isFullscreenEnabled;
     if (!IS_ENABLED(ShortsOnly)) return;
     if (isShortsOnlyOn) {
-        UILongPressGestureRecognizer *longPressGesture = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(YouModTurnOffShortsOnly:)];
-        longPressGesture.numberOfTouchesRequired = 2;
-        longPressGesture.minimumPressDuration = 0.5;
+        self.YouModExitShortsOnlyGesture = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(YouModTurnOffShortsOnly:)];
+        self.YouModExitShortsOnlyGesture.numberOfTouchesRequired = 2;
+        self.YouModExitShortsOnlyGesture.minimumPressDuration = 0.5;
 
-        [self addGestureRecognizer:longPressGesture];
+        [self addGestureRecognizer:self.YouModExitShortsOnlyGesture];
     }
 }
 %new
@@ -315,5 +323,19 @@ static BOOL isFullscreenEnabled = NO;
             self.playbackOverlay.alpha = 1;
         }];
     }
+}
+%new
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldBeRequiredToFailByGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
+    if (gestureRecognizer == self.YouModExitShortsOnlyGesture && [otherGestureRecognizer isKindOfClass:[UILongPressGestureRecognizer class]]) {
+        return YES;
+    }
+    return NO;
+}
+%new
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
+    if (gestureRecognizer == self.YouModExitShortsOnlyGesture) {
+        return NO;
+    }
+    return YES;
 }
 %end
