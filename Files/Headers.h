@@ -558,6 +558,9 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 @interface YCHAsyncLiveChatCollectionViewController : UIViewController
 @end
 
+@interface YTStartupAnimationViewController : UIViewController
+@end
+
 // SponsorBlock action modes
 typedef NS_ENUM(NSInteger, SBSegmentAction) {
     SBSegmentActionDisable = 0,
