@@ -772,7 +772,7 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
             playerViewController.YouModTapGesture.delegate = playerViewController;
             [playerViewController.playerView addGestureRecognizer:playerViewController.YouModTapGesture];
         }
-        if (!playerViewController.YouModHoldGesture) {
+        if (!playerViewController.YouModHoldGesture && INTFORVAL(HoldToSpeedIndex) != 0) {
             playerViewController.YouModHoldGesture = [[UILongPressGestureRecognizer alloc] initWithTarget:playerViewController action:@selector(YouModHoldToSpeed:)];
             playerViewController.YouModHoldGesture.minimumPressDuration = 0.4;
             [playerViewController.playerView addGestureRecognizer:playerViewController.YouModHoldGesture];   
@@ -1055,7 +1055,7 @@ static CGFloat savedRate = 1.0;
         [self setPlaybackRate:savedRate];
         return;
     }
-    if (INTFORVAL(HoldToSpeedIndex) == 0) return;
+    if (INTFORVAL(AutoSpeedIndex) == 0) return;
     NSArray *speedLabels = @[@0.01, @0.25, @0.5, @0.75, @1.0, @1.25, @1.5, @1.75, @2.0, @3.0, @4.0, @5.0];
     [self setPlaybackRate:[speedLabels[INTFORVAL(AutoSpeedIndex)] floatValue]];
 }

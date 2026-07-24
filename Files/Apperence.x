@@ -247,7 +247,7 @@ static BOOL isDarkMode(UIView *view) {
     if (isDarkMode(mainView)) {
         mainView.backgroundColor = [UIColor blackColor];
     } else {
-        mainView.backgroundColor = [UIColor clearColor];
+        mainView.backgroundColor = [UIColor whiteColor];
     }
 }
 - (void)traitCollectionDidChange:(UITraitCollection *)previousTraitCollection {
@@ -257,7 +257,7 @@ static BOOL isDarkMode(UIView *view) {
         if (isDarkMode(mainView)) {
             mainView.backgroundColor = [UIColor blackColor];
         } else {
-            mainView.backgroundColor = [UIColor clearColor];
+            mainView.backgroundColor = [UIColor whiteColor];
         }
     }
 }

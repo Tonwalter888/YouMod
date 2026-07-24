@@ -422,7 +422,6 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 @end
 
 @interface YTWatchFloatingMiniplayerWithPersistentControlsView : UIView
-- (NSInteger)dockHandleStyle;
 @end
 
 @interface YTWatchFloatingMiniplayerProgressBarView : UIView

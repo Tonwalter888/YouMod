@@ -201,6 +201,11 @@ static BOOL isTabSelected = NO;
 - (void)viewDidAppear:(BOOL)animated {
     %orig;
     sbUpdateOverlayInsetForPivotBar();
+    if (IS_ENABLED(ShortsOnly) && !isTabSelected) {
+        [self selectItemWithPivotIdentifier:@"FEshorts"];
+        isTabSelected = YES;
+        return;
+    }
     if (!isTabSelected) {
         // Build pivot identifiers from enabled tabs (skip Create — matches Settings.x segment logic)
         NSMutableArray *pivotIdentifiers = [NSMutableArray array];
@@ -222,13 +227,6 @@ static BOOL isTabSelected = NO;
         if (tabIndex < 0) tabIndex = 0;
         if (tabIndex >= (NSInteger)pivotIdentifiers.count) tabIndex = MAX(0, (NSInteger)pivotIdentifiers.count - 1);
         [self selectItemWithPivotIdentifier:pivotIdentifiers[tabIndex]];
-        isTabSelected = YES;
-    }
-}
-- (void)viewDidLoad {
-    %orig;
-    if (IS_ENABLED(ShortsOnly) && !isTabSelected) {
-        [self selectItemWithPivotIdentifier:@"FEshorts"];
         isTabSelected = YES;
     }
 }

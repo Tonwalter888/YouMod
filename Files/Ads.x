@@ -101,11 +101,28 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
         NSString *description = [sectionRenderer description];
         if ([description containsString:@"UNLIMITED"] && [description containsString:@"SPunlimited"]) {
             NSMutableArray <YTIItemSectionSupportedRenderers *> *contentsArray = sectionRenderer.contentsArray;
-            NSIndexSet *removeItemsArrayIndexes = [contentsArray indexesOfObjectsPassingTest:^BOOL(YTIItemSectionSupportedRenderers *itemSupportedRenderers, NSUInteger idx2, BOOL *stop2) {
-                NSString *desc = [itemSupportedRenderers description];
-                return [desc containsString:@"UNLIMITED"] && [desc containsString:@"SPunlimited"];
+            
+            NSMutableIndexSet *indexesToRemove = [NSMutableIndexSet indexSet];
+            __block NSUInteger lastCellDividerIndex = NSNotFound;
+            
+            [contentsArray enumerateObjectsUsingBlock:^(YTIItemSectionSupportedRenderers *item, NSUInteger idx, BOOL *stop) {
+                NSString *desc = [item description];
+                
+                if ([desc containsString:@"cell_divider.eml"]) {
+                    lastCellDividerIndex = idx;
+                }
+                
+                if ([desc containsString:@"UNLIMITED"] && [desc containsString:@"SPunlimited"]) {
+                    [indexesToRemove addIndex:idx];
+                    
+                    if (lastCellDividerIndex != NSNotFound) {
+                        [indexesToRemove addIndex:lastCellDividerIndex];
+                        lastCellDividerIndex = NSNotFound;
+                    }
+                }
             }];
-            [contentsArray removeObjectsAtIndexes:removeItemsArrayIndexes];
+            
+            [contentsArray removeObjectsAtIndexes:indexesToRemove];
         }
         if ([description containsString:@"community-tab-chip-posts-section"]) return NO;
         

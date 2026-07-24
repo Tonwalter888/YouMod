@@ -658,15 +658,6 @@ static const CGFloat SBInlineMarkerHeight = 4.0;
             break;
         }
     }
-    if (self.dockHandleStyle == 2) {
-        for (UIView *sub in [mainView.subviews copy]) {
-            if (sub.tag == SBSegmentMarkerTag) sub.hidden = YES;
-        }
-        return;
-    }
-    for (UIView *sub in [mainView.subviews copy]) {
-        if (sub.tag == SBSegmentMarkerTag) sub.hidden = NO;
-    }
     CGFloat barWidth = playerBar.bounds.size.width;
 
     for (UIView *sub in mainView.subviews) {
