@@ -38,7 +38,7 @@ static void showTranscript(YTFormat3CaptionViewController *cvc) {
         UIPasteboard *pasteboard = [UIPasteboard generalPasteboard];
         pasteboard.string = transcript;
         [SBSkipNotificationView showSuccessInView:parent message:LOC(@"COPIED_TO_CLIPBOARD") duration:3.0];
-    } actionTitle:LOC(@"COPY_TO_CLIPBOARD")];
+    } actionTitle:LOC(@"COPY")];
     alertView.title = nil;
     alertView.subtitle = transcript;
     alertView.shouldDismissOnBackgroundTap = YES;
