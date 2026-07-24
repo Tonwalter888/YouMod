@@ -85,6 +85,7 @@
 #define CaptionButton @"YouModCaptionButton"
 #define KeepMutedKey @"YouModKeepMutedKey"
 #define KeepLoopKey @"YouModKeepLoopKey"
+#define QualityButton @"YouModQualityButton"
 // Downloading
 #define DownloadManager @"YouModDownloadManager"
 #define DownloadSaveToPhotos @"YouModDownloadSaveToPhotos"
@@ -174,6 +175,9 @@
 #define HideCommentsSection @"YouModHideCommentsSection"
 #define HideCommentsPreview @"YouModHideCommentsPreview"
 #define UseAnotherMiniplayer @"YouModUseAnotherMiniplayer"
+#define SeekOnOverlay @"YouModSeekOnOverlay"
+#define LockSpeed @"YouModLockSpeed"
+#define RememberLoop @"YouModRememberLoop"
 // Shorts
 #define FullScreenShorts @"YouModFullScreenShorts"
 #define RemoveShortsLive @"YouModRemoveShortsLive"
@@ -204,6 +208,7 @@
 #define HideCommuGuide @"YouModHideCommuGuide"
 #define DisablesRTL @"YouModDisablesRTL"
 #define DeviceUIIndex @"YouModDeviceUIIndex"
+#define FloatingKeyboard @"YouModFloatingKeyboard"
 // #define CustomStartup @"YouModUseCustomVideoStartup"
 // Flyout menu
 #define RemovePlayInNextQueueOption @"YouModRemovePlayInNextQueueOption"
@@ -594,6 +599,7 @@ typedef NS_ENUM(NSInteger, SBSegmentAction) {
 @property (nonatomic, assign) NSTimeInterval remainingDuration;
 @property (nonatomic, assign) BOOL isPaused;
 @property (nonatomic, assign) BOOL isHighlightPill;
+@property (nonatomic, strong) NSDate *backgroundDate;
 + (instancetype)showInView:(UIView *)parentView message:(NSString *)message buttonTitle:(NSString *)buttonTitle action:(void (^)(void))action duration:(NSTimeInterval)duration;
 + (instancetype)showSuccessInView:(UIView *)parentView message:(NSString *)message duration:(NSTimeInterval)duration;
 + (instancetype)showErrorInView:(UIView *)parentView message:(NSString *)message duration:(NSTimeInterval)duration;

@@ -18,6 +18,51 @@ static const CGFloat SBInlineMarkerHeight = 4.0;
 
 @implementation SBSkipNotificationView
 
+- (instancetype)initWithFrame:(CGRect)frame {
+    self = [super initWithFrame:frame];
+    if (self) {
+        [[NSNotificationCenter defaultCenter] addObserver:self
+                                                 selector:@selector(appDidEnterBackground)
+                                                     name:UIApplicationDidEnterBackgroundNotification
+                                                   object:nil];
+        [[NSNotificationCenter defaultCenter] addObserver:self
+                                                 selector:@selector(appWillEnterForeground)
+                                                     name:UIApplicationWillEnterForegroundNotification
+                                                   object:nil];
+    }
+    return self;
+}
+
+- (void)dealloc {
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
+}
+
+- (void)appDidEnterBackground {
+    if (!self.isPaused) {
+        [self pauseProgress];
+        self.backgroundDate = [NSDate date];
+    }
+}
+
+- (void)appWillEnterForeground {
+    if (self.backgroundDate) {
+        NSTimeInterval timeInBackground = [[NSDate date] timeIntervalSinceDate:self.backgroundDate];
+        self.remainingDuration -= timeInBackground;
+        self.backgroundDate = nil;
+        
+        if (self.remainingDuration <= 0) {
+            [self removeFromSuperview];
+            return;
+        } else {
+            CGFloat newScaleX = self.remainingDuration / self.totalDuration;
+            newScaleX = MAX(0.001, MIN(newScaleX, 1.0));
+            self.progressOverlay.transform = CGAffineTransformMakeScale(newScaleX, 1.0);
+            self.progressOverlay.alpha = newScaleX;
+        }
+    }
+    [self resumeProgress];
+}
+
 + (instancetype)showInView:(UIView *)parentView message:(NSString *)message buttonTitle:(NSString *)buttonTitle action:(void (^)(void))action duration:(NSTimeInterval)duration {
     if (!parentView) return nil;
 
@@ -599,16 +644,8 @@ static const CGFloat SBInlineMarkerHeight = 4.0;
 %hook YTWatchFloatingMiniplayerWithPersistentControlsView
 - (void)layoutSubviews {
     %orig;
-    if (self.dockHandleStyle == 2) {
-        for (UIView *sub in [self.subviews copy]) {
-            if (sub.tag == SBSegmentMarkerTag) sub.hidden = YES;
-        }
-        return;
-    }
-    for (UIView *sub in [self.subviews copy]) {
-        if (sub.tag == SBSegmentMarkerTag) sub.hidden = NO;
-    }
     UIView *playerBar;
+    UIView *mainView;
     for (UIView *sub in self.subviews) {
         for (UIView *sub2 in sub.subviews) {
             if ([sub2 isKindOfClass:%c(YTWatchFloatingMiniplayerProgressBarView)]) {
@@ -616,11 +653,23 @@ static const CGFloat SBInlineMarkerHeight = 4.0;
                 break;
             }
         }
-        if (playerBar) break;
+        if (playerBar) {
+            mainView = sub;
+            break;
+        }
+    }
+    if (self.dockHandleStyle == 2) {
+        for (UIView *sub in [mainView.subviews copy]) {
+            if (sub.tag == SBSegmentMarkerTag) sub.hidden = YES;
+        }
+        return;
+    }
+    for (UIView *sub in [mainView.subviews copy]) {
+        if (sub.tag == SBSegmentMarkerTag) sub.hidden = NO;
     }
     CGFloat barWidth = playerBar.bounds.size.width;
 
-    for (UIView *sub in self.subviews) {
+    for (UIView *sub in mainView.subviews) {
         if (sub.tag != SBSegmentMarkerTag) continue;
         NSArray *data = objc_getAssociatedObject(sub, @selector(sbSegmentData));
         if (!data || data.count < 3) continue;
@@ -686,7 +735,6 @@ static const CGFloat SBInlineMarkerHeight = 4.0;
     if ([self.parentViewController isKindOfClass:%c(YTWatchFloatingMiniplayerViewController)] && IS_ENABLED(SBSegmentsInMiniPlayer)) {
         YTWatchFloatingMiniplayerViewController *miniplayercontroller = (YTWatchFloatingMiniplayerViewController *)self.parentViewController;
         YTWatchFloatingMiniplayerWithPersistentControlsView *controlsview = (YTWatchFloatingMiniplayerWithPersistentControlsView *)miniplayercontroller.view;
-        mainView = controlsview;
 
         for (UIView *sub in controlsview.subviews) {
             for (UIView *sub2 in sub.subviews) {
@@ -695,10 +743,13 @@ static const CGFloat SBInlineMarkerHeight = 4.0;
                     break;
                 }
             }
-            if (referenceView) break;
+            if (referenceView) {
+                mainView = sub;
+                break;
+            }
         }
         // Remove old markers
-        for (UIView *sub in [controlsview.subviews copy]) {
+        for (UIView *sub in [mainView.subviews copy]) {
             if (sub.tag == SBSegmentMarkerTag) [sub removeFromSuperview];
         }
         if (!segments || segments.count == 0) return;

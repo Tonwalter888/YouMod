@@ -1292,6 +1292,11 @@ static void YouModPresentMenu(YTPlayerViewController *player, NSArray <YouModMen
     self.active = NO;
     [self updateProgressTitle:LOC(@"DOWNLOAD_COMPLETED") progress:1.0f];
     if (self.progressPill) { [self.progressPill dismiss]; self.progressPill = nil; }
+
+    if ([self.destinationURL isEqual:fileURL]) self.destinationURL = nil;
+    if ([self.videoTempURL isEqual:fileURL]) self.videoTempURL = nil;
+    if ([self.audioTempURL isEqual:fileURL]) self.audioTempURL = nil;
+
     [self cleanupTemporaryFiles];
 
     if (isVideo && IS_ENABLED(DownloadSaveToPhotos) && YouModVideoFileCanSaveToPhotos(fileURL)) {
@@ -1381,7 +1386,7 @@ static void YouModPresentMenu(YTPlayerViewController *player, NSArray <YouModMen
 }
 
 - (void)requestDownloadForVideoId:(NSString *)vId isAudio:(BOOL)isAudio quality:(NSString *)quality presenter:(UIViewController *)presenter completion:(void (^)(NSURL *localURL, NSString *errorMsg))completionBlock {
-    [self showProgressWithTitle:@"Connecting to the server..." presenter:presenter];
+    [self showProgressWithTitle:LOC(@"CONNECTING_TO_SERVER") presenter:presenter];
     NSString *watchURL = [NSString stringWithFormat:@"https://www.youtube.com/watch?v=%@", vId];
     [self startYTDMDownloadWithWatchURL:watchURL format:isAudio ? @"audio" : @"video" formatId:quality presenter:presenter completion:completionBlock];
 }
@@ -1414,36 +1419,27 @@ static void YouModPresentMenu(YTPlayerViewController *player, NSArray <YouModMen
 
 - (void)pollJobStatus:(NSString *)jobId isAudio:(BOOL)isAudio presenter:(UIViewController *)presenter completion:(void (^)(NSURL *localURL, NSString *errorMsg))completionBlock {
     if (!self || self.cancelled) return;
+    
     NSString *urlStr = [NSString stringWithFormat:@"%@/api/status/%@", [self serverEndpoint], jobId];
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlStr]];
     
     [[[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
         if (!self || self.cancelled) return;
         if (error || !data) {
-            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{ 
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.75 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{ 
                 [self pollJobStatus:jobId isAudio:isAudio presenter:presenter completion:completionBlock]; 
             });
             return;
         }
+        
         NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
         NSString *status = json[@"status"];
         
         if ([status isEqualToString:@"done"]) {
-            id filesData = json[@"files"] ?: json[@"filenames"] ?: json[@"filename"] ?: json[@"file_path"];
-            NSString *singleFileName = nil;
-            
-            if ([filesData isKindOfClass:[NSArray class]] && [filesData count] > 0) {
-                id firstItem = [filesData firstObject];
-                if ([firstItem isKindOfClass:[NSString class]]) {
-                    singleFileName = [firstItem lastPathComponent];
-                }
-            } else if ([filesData isKindOfClass:[NSString class]]) {
-                singleFileName = [filesData lastPathComponent];
-            }
+            NSString *singleFileName = json[@"filename"];
             
             if (!singleFileName || singleFileName.length == 0) {
-                completionBlock(nil, @"No files found in job.");
-                return;
+                singleFileName = isAudio ? @"downloaded_file.mp3" : @"downloaded_file.mp4";
             }
             
             [self downloadSingleFile:singleFileName isAudio:isAudio forJobId:jobId presenter:presenter completion:completionBlock];
@@ -1451,8 +1447,10 @@ static void YouModPresentMenu(YTPlayerViewController *player, NSArray <YouModMen
         } else if ([status isEqualToString:@"error"]) {
             completionBlock(nil, json[@"error"] ?: @"Error.");
         } else {
-            dispatch_async(dispatch_get_main_queue(), ^{ [self updateProgressTitle:@"Downloading to the server..." progress:0.0f]; });
-            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{ 
+            dispatch_async(dispatch_get_main_queue(), ^{ 
+                [self updateProgressTitle:LOC(@"DOWNLOADING_TO_SERVER") progress:0.0f]; 
+            });
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.75 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{ 
                 [self pollJobStatus:jobId isAudio:isAudio presenter:presenter completion:completionBlock]; 
             });
         }
@@ -1463,10 +1461,6 @@ static void YouModPresentMenu(YTPlayerViewController *player, NSArray <YouModMen
     if (!self || self.cancelled) return;
     
     self.downloadCompletionBlock = completionBlock;
-    
-    if (!filename || filename.length == 0) {
-        filename = isAudio ? @"downloaded_file.mp3" : @"downloaded_file.mp4";
-    }
     
     NSString *tempPath = [NSTemporaryDirectory() stringByAppendingPathComponent:filename];
     self.destinationURL = [NSURL fileURLWithPath:tempPath];
@@ -1480,8 +1474,7 @@ static void YouModPresentMenu(YTPlayerViewController *player, NSArray <YouModMen
         [self updateProgressTitle:self.baseProgressTitle progress:0.0f];
     });
 
-    NSString *encodedName = [filename stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
-    NSString *urlString = [NSString stringWithFormat:@"%@/api/file/%@?filename=%@", [self serverEndpoint], jobId, encodedName];
+    NSString *urlString = [NSString stringWithFormat:@"%@/api/file/%@", [self serverEndpoint], jobId];
     
     self.task = [self.session downloadTaskWithURL:[NSURL URLWithString:urlString]];
     self.task.taskDescription = filename;
@@ -1841,12 +1834,12 @@ static NSString *YouModExtractCommentText(UIView *cellView) {
     return @"";
 }
 
-extern BOOL isDarkMode(UIView *view);
+extern int localPageStyle;
 
 static UIImage *YouModRenderViewToImage(UIView *view) {
     if (!view || view.bounds.size.width <= 0 || view.bounds.size.height <= 0) return nil;
     
-    UIColor *realBgColor = isDarkMode(view) ? [%c(YTColor) black3] : [%c(YTColor) white1];
+    UIColor *realBgColor = localPageStyle == 1 ? [%c(YTColor) black3] : [%c(YTColor) white1];
     UIGraphicsBeginImageContextWithOptions(view.bounds.size, YES, [UIScreen mainScreen].scale);
     CGContextRef context = UIGraphicsGetCurrentContext();    
     [realBgColor setFill];

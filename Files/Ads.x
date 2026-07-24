@@ -9,7 +9,23 @@ static BOOL isProductList(YTICommand *command) {
     return NO;
 }
 
-NSString *getAdString(NSString *description) {
+static NSString *getPostString(NSString *description) {
+    for (NSString *str in @[
+        @"poll_post_root.eml",
+        @"options_post_root.eml",
+        @"images_post_root_slim.eml",
+        @"images_post_responsive_root.eml",
+        @"options_post_responsive_root.eml",
+        @"post_base_wrapper_slim.eml",
+        @"text_post_root_slim.eml",
+        @"text_post_responsive_root.eml",
+        @"videos_post_root.eml",
+    ])
+        if ([description containsString:str]) return str;
+    return nil;
+}
+
+static NSString *getAdString(NSString *description) {
     for (NSString *str in @[
         @"brand_promo",
         @"brand_video_shelf",
@@ -65,7 +81,8 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
                 if ([description containsString:@"shelf_header.eml"] && [description containsString:@"youtube_shorts_24_cairo"]) return YES;
             }
             // Filter feed posts
-            if (IS_ENABLED(HideFeedPost) && ([description containsString:@"poll_post_root.eml"] || [description containsString:@"options_post_root.eml"] || [description containsString:@"images_post_root_slim.eml"] || [description containsString:@"images_post_responsive_root.eml"] || [description containsString:@"options_post_responsive_root.eml"] || [description containsString:@"post_base_wrapper_slim.eml"] || [description containsString:@"text_post_root_slim.eml"])) {
+            NSString *filtered = getPostString(description);
+            if (IS_ENABLED(HideFeedPost) && filtered) {
                 return YES;
             }
             YTIShelfSupportedRenderers *content = ((YTIShelfRenderer *)sectionRenderer).content;
@@ -82,6 +99,14 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
         if (![sectionRenderer isKindOfClass:%c(YTIItemSectionRenderer)]) return NO;
             
         NSString *description = [sectionRenderer description];
+        if ([description containsString:@"UNLIMITED"] && [description containsString:@"SPunlimited"]) {
+            NSMutableArray <YTIItemSectionSupportedRenderers *> *contentsArray = sectionRenderer.contentsArray;
+            NSIndexSet *removeItemsArrayIndexes = [contentsArray indexesOfObjectsPassingTest:^BOOL(YTIItemSectionSupportedRenderers *itemSupportedRenderers, NSUInteger idx2, BOOL *stop2) {
+                NSString *desc = [itemSupportedRenderers description];
+                return [desc containsString:@"UNLIMITED"] && [desc containsString:@"SPunlimited"];
+            }];
+            [contentsArray removeObjectsAtIndexes:removeItemsArrayIndexes];
+        }
         if ([description containsString:@"community-tab-chip-posts-section"]) return NO;
         
         // Filter shorts shelf
@@ -110,7 +135,8 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
         }
         
         // Filter feed posts
-        if (IS_ENABLED(HideFeedPost) && ([description containsString:@"poll_post_root.eml"] || [description containsString:@"options_post_root.eml"] || [description containsString:@"images_post_root_slim.eml"] || [description containsString:@"images_post_responsive_root.eml"] || [description containsString:@"options_post_responsive_root.eml"] || [description containsString:@"post_base_wrapper_slim.eml"] || [description containsString:@"text_post_root_slim.eml"])) {
+        NSString *filtered = getPostString(description);
+        if (IS_ENABLED(HideFeedPost) && filtered) {
             return YES;
         }
 

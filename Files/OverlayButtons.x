@@ -2,6 +2,33 @@
 
 #define TweakName @"YouMod"
 
+static NSString *YouModUpdateSpeedLabel = @"YouModUpdateSpeedLabel";
+static NSString *currentSpeedLabel = @"1x";
+static float currentPlaybackRate = 1.0;
+
+static NSString *YouModUpdateNotification = @"YouModUpdateNotification";
+static NSString *currentQualityLabel = @"Auto";
+
+static NSString *speedLabel(float rate) {
+    NSNumberFormatter *formatter = [[NSNumberFormatter alloc] init];
+    formatter.numberStyle = NSNumberFormatterDecimalStyle;
+    formatter.minimumFractionDigits = 0;
+    formatter.maximumFractionDigits = 2;
+    NSString *rateString = [formatter stringFromNumber:[NSNumber numberWithFloat:rate]];
+    return [NSString stringWithFormat:@"%@x", rateString];
+}
+
+static void didSelectRate(float rate) {
+    currentPlaybackRate = rate;
+    currentSpeedLabel = speedLabel(rate);
+    [[NSNotificationCenter defaultCenter] postNotificationName:YouModUpdateSpeedLabel object:nil];
+}
+
+@interface YTMainAppControlsOverlayView ()
+- (void)updateQualityButton:(id)arg;
+- (void)updateSpeedButton:(id)arg;
+@end
+
 static NSBundle *YouModBundle() {
     static NSBundle *bundle = nil;
     static dispatch_once_t onceToken;
@@ -265,6 +292,47 @@ static YTQTMButton *YMCreateOverlayButton(YTMainAppControlsOverlayView *overlay,
     matched.onTap(player, sender);
 }
 
+- (id)initWithDelegate:(id)delegate {
+    self = %orig;
+    [self updateSpeedButton:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(updateSpeedButton:) name:YouModUpdateSpeedLabel object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(updateQualityButton:) name:YouModUpdateNotification object:nil];
+    return self;
+}
+
+- (id)initWithDelegate:(id)delegate autoplaySwitchEnabled:(BOOL)autoplaySwitchEnabled {
+    self = %orig;
+    [self updateSpeedButton:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(updateSpeedButton:) name:YouModUpdateSpeedLabel object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(updateQualityButton:) name:YouModUpdateNotification object:nil];
+    return self;
+}
+
+- (void)dealloc {
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:YouModUpdateSpeedLabel object:nil];
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:YouModUpdateNotification object:nil];
+    %orig;
+}
+
+%new
+- (void)updateSpeedButton:(id)arg {
+    for (YMOverlayButtonSpec *spec in YMRegisteredOverlayButtons()) {
+        if ([spec.identifier isEqualToString:@"speed.video"]) {
+            spec.title = currentSpeedLabel;
+            break;
+        }
+    }
+}
+
+%new
+- (void)updateQualityButton:(id)arg {
+    for (YMOverlayButtonSpec *spec in YMRegisteredOverlayButtons()) {
+        if ([spec.identifier isEqualToString:@"quality.video"]) {
+            spec.title = currentQualityLabel;
+            break;
+        }
+    }
+}
 %end
 
 static void YouModShowShareNotification(NSString *message, BOOL success) {
@@ -325,20 +393,65 @@ static UIImage *YouModIconImage(NSInteger iconType) {
     [autoplayController setLoopMode:isLoopEnabled ? 2 : 0];
     [[%c(GOOHUDManagerInternal) sharedInstance] showMessageMainThread:[%c(YTHUDMessage) messageWithText:LOC(isLoopEnabled ? @"LOOP_ENABLED" : @"LOOP_DISABLED")]];
 }
+- (void)setPlaybackRate:(float)rate {
+    didSelectRate(rate);
+    %orig;
+}
 %end
+
+static int LoopState;
 
 %hook YTAutoplayAutonavController
 - (id)initWithParentResponder:(id)arg {
     self = %orig;
-    if (self && IS_ENABLED(KeepLoopKey)) {
+    if (self && (IS_ENABLED(KeepLoopKey) || (IS_ENABLED(RememberLoop) && LoopState == 2))) {
         [self setLoopMode:2];
     }
     return self;
 }
 - (void)setLoopMode:(NSInteger)arg {
     NSInteger set = IS_ENABLED(KeepLoopKey) ? 2 : arg;
+    LoopState = set;
     %orig(set);
 }
+%end
+
+static NSString *getCompactQualityLabel(MLFormat *format) {
+    NSString *qualityLabel = [format qualityLabel];
+    BOOL shouldShowFPS = [format FPS] > 30;
+    if ([qualityLabel hasPrefix:@"2160p"])
+        qualityLabel = [qualityLabel stringByReplacingOccurrencesOfString:@"2160p" withString:shouldShowFPS ? @"4K\n" : @"4K"];
+    else if ([qualityLabel hasPrefix:@"1440p"])
+        qualityLabel = [qualityLabel stringByReplacingOccurrencesOfString:@"1440p" withString:shouldShowFPS ? @"2K\n" : @"2K"];
+    else if ([qualityLabel hasPrefix:@"1080p"])
+        qualityLabel = [qualityLabel stringByReplacingOccurrencesOfString:@"1080p" withString:shouldShowFPS ? @"FHD\n" : @"FHD"];
+    else if ([qualityLabel hasPrefix:@"720p"])
+        qualityLabel = [qualityLabel stringByReplacingOccurrencesOfString:@"720p" withString:shouldShowFPS ? @"HD\n" : @"HD"];
+    else if (shouldShowFPS)
+        qualityLabel = [qualityLabel stringByReplacingOccurrencesOfString:@"p" withString:@"p\n"];
+    if ([qualityLabel hasSuffix:@" HDR"])
+        qualityLabel = [qualityLabel stringByReplacingOccurrencesOfString:@" HDR" withString:@"\nHDR"];
+    return qualityLabel;
+}
+
+%hook YTVideoQualitySwitchOriginalController
+
+- (void)singleVideo:(id)singleVideo didSelectVideoFormat:(MLFormat *)format {
+    currentQualityLabel = getCompactQualityLabel(format);
+    [[NSNotificationCenter defaultCenter] postNotificationName:YouModUpdateNotification object:nil];
+    %orig;
+}
+
+%end
+
+%hook YTVideoQualitySwitchRedesignedController
+
+- (void)singleVideo:(id)singleVideo didSelectVideoFormat:(MLFormat *)format {
+    currentQualityLabel = getCompactQualityLabel(format);
+    [[NSNotificationCenter defaultCenter] postNotificationName:YouModUpdateNotification object:nil];
+    %orig;
+}
+
 %end
 
 %ctor {
@@ -362,22 +475,39 @@ static UIImage *YouModIconImage(NSInteger iconType) {
     YMRegisterOverlayButton(mute);
     YMOverlayButtonSpec *speed = [[YMOverlayButtonSpec alloc] init];
     speed.identifier = @"speed.video";
-    speed.symbolName = @"speedometer";
-    speed.tintColor = [UIColor whiteColor];
+    speed.title = currentSpeedLabel;
     speed.sortOrder = 400;
     speed.isVisible = ^BOOL(YTPlayerViewController *player) {
         return IS_ENABLED(SpeedButton);
     };
     speed.onTap = ^(YTPlayerViewController *player, YTQTMButton *button) {
         YTMainAppVideoPlayerOverlayViewController *ovcon = [player activeVideoPlayerOverlay];
+        YTMainAppVideoPlayerOverlayView *ovview = [ovcon videoPlayerOverlayView];
+        YTMainAppControlsOverlayView *conview = [ovview controlsOverlayView];
         [ovcon didPressVarispeed:button];
+        [conview updateSpeedButton:nil];
     };
     YMRegisterOverlayButton(speed);
+    YMOverlayButtonSpec *quality = [[YMOverlayButtonSpec alloc] init];
+    quality.identifier = @"quality.video";
+    quality.title = currentQualityLabel;
+    quality.sortOrder = 500;
+    quality.isVisible = ^BOOL(YTPlayerViewController *player) {
+        return IS_ENABLED(QualityButton);
+    };
+    quality.onTap = ^(YTPlayerViewController *player, YTQTMButton *button) {
+        YTMainAppVideoPlayerOverlayViewController *ovcon = [player activeVideoPlayerOverlay];
+        YTMainAppVideoPlayerOverlayView *ovview = [ovcon videoPlayerOverlayView];
+        YTMainAppControlsOverlayView *conview = [ovview controlsOverlayView];
+        [ovcon didPressVideoQuality:button];
+        [conview updateQualityButton:nil];
+    };
+    YMRegisterOverlayButton(quality);
     YMOverlayButtonSpec *share = [[YMOverlayButtonSpec alloc] init];
     share.identifier = @"share.video";
     share.symbolName = @"arrowshape.turn.up.right";
     share.tintColor = [UIColor whiteColor];
-    share.sortOrder = 500;
+    share.sortOrder = 600;
     share.isVisible = ^BOOL(YTPlayerViewController *player) {
         return IS_ENABLED(ShareButton);
     };
@@ -389,7 +519,7 @@ static UIImage *YouModIconImage(NSInteger iconType) {
     loop.identifier = @"loop.video";
     loop.symbolName = IS_ENABLED(KeepLoopKey) ? @"repeat.1" : @"repeat";
     loop.tintColor = [UIColor whiteColor];
-    loop.sortOrder = 600;
+    loop.sortOrder = 700;
     loop.isVisible = ^BOOL(YTPlayerViewController *player) {
         return IS_ENABLED(LoopButton);
     };
@@ -404,7 +534,7 @@ static UIImage *YouModIconImage(NSInteger iconType) {
     caption.identifier = @"caption.video";
     caption.symbolName = @"captions.bubble";
     caption.tintColor = [UIColor whiteColor];
-    caption.sortOrder = 700;
+    caption.sortOrder = 800;
     caption.isVisible = ^BOOL(YTPlayerViewController *player) {
         return IS_ENABLED(CaptionButton);
     };
