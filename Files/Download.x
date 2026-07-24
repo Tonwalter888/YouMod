@@ -1690,9 +1690,9 @@ static void YouModShowCaptionsSheet(YTPlayerViewController *player, UIViewContro
                         YouModSendError(LOC(@"CAPTIONS_FAILED"));
                         return;
                     }
-                    NSString *videoID = player.currentVideoID;
-                    NSString *filename = [NSString stringWithFormat:@"%@_%@.vtt", videoID, languageCode];
-                    NSURL *tempURL = [NSURL fileURLWithPath:[NSTemporaryDirectory() stringByAppendingPathComponent:filename]];
+                    NSString *title = YouModTitleForPlayer(player);
++                   NSString *filename = [NSString stringWithFormat:@"%@.%@", title, languageCode];
++                   NSURL *tempURL = YouModUniqueFileURL(filename, @"vtt");
                     [data writeToURL:tempURL atomically:YES];
                     YouModSendSuccess(LOC(@"DOWNLOAD_COMPLETED"));
                     YouModShareFile(tempURL, presenter);
