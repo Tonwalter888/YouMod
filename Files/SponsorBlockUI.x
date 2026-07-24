@@ -640,27 +640,13 @@ static const CGFloat SBInlineMarkerHeight = 4.0;
 
 %end
 
-// YTWatchFloatingMiniplayerWithPersistentControlsView - miniplayer
-%hook YTWatchFloatingMiniplayerWithPersistentControlsView
+// YTWatchFloatingMiniplayerProgressBarView - miniplayer
+%hook YTWatchFloatingMiniplayerProgressBarView
 - (void)layoutSubviews {
     %orig;
-    UIView *playerBar;
-    UIView *mainView;
-    for (UIView *sub in self.subviews) {
-        for (UIView *sub2 in sub.subviews) {
-            if ([sub2 isKindOfClass:%c(YTWatchFloatingMiniplayerProgressBarView)]) {
-                playerBar = sub2;
-                break;
-            }
-        }
-        if (playerBar) {
-            mainView = sub;
-            break;
-        }
-    }
-    CGFloat barWidth = playerBar.bounds.size.width;
+    CGFloat barWidth = self.bounds.size.width;
 
-    for (UIView *sub in mainView.subviews) {
+    for (UIView *sub in self.superview.subviews) {
         if (sub.tag != SBSegmentMarkerTag) continue;
         NSArray *data = objc_getAssociatedObject(sub, @selector(sbSegmentData));
         if (!data || data.count < 3) continue;
@@ -674,7 +660,7 @@ static const CGFloat SBInlineMarkerHeight = 4.0;
         if (isPoi) { w = SBPoiMarkerWidth; x = MAX(0, x - SBPoiMarkerXOffset); }
         else if (w < SBMarkerMinWidth) w = SBMarkerMinWidth;
 
-        sub.frame = CGRectMake(x, playerBar.frame.origin.y, w, playerBar.bounds.size.height);
+        sub.frame = CGRectMake(x, self.frame.origin.y, w, self.bounds.size.height);
     }
 }
 %end
