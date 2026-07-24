@@ -163,6 +163,7 @@ static YTQTMButton *YMCreateOverlayButton(YTMainAppControlsOverlayView *overlay,
         button.titleLabel.font = YMOverlayTextButtonFont();
         button.titleLabel.textAlignment = NSTextAlignmentCenter;
         button.sizeWithPaddingAndInsets = NO;
+        button.titleLabel.adjustsFontSizeToFitWidth = YES;
     } else {
         UIImageSymbolConfiguration *config = [UIImageSymbolConfiguration configurationWithPointSize:20 weight:UIImageSymbolWeightMedium];
         // Template rendering so YTQTMButton's tint colours the glyph reliably.
