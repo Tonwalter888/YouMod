@@ -1339,9 +1339,9 @@ static void YouModPresentMenu(YTPlayerViewController *player, NSArray <YouModMen
     if (self.downloadCompletionBlock) {
         self.downloadCompletionBlock(error ? nil : destURL, error ? error.localizedDescription : nil);
         self.downloadCompletionBlock = nil;
-    } 
-    else if (self.fileCompletion) {
+    } else if (self.fileCompletion) {
         self.fileCompletion(error ? nil : destURL, error);
+        self.fileCompletion = nil;
     }
 }
 
@@ -1352,6 +1352,7 @@ static void YouModPresentMenu(YTPlayerViewController *player, NSArray <YouModMen
             self.downloadCompletionBlock = nil;
         } else if (self.fileCompletion) {
             self.fileCompletion(nil, error);
+            self.fileCompletion = nil;
         }
     }    
     // We intentionally don't invalidate the shared session here if it's reused.
@@ -1685,17 +1686,27 @@ static void YouModShowCaptionsSheet(YTPlayerViewController *player, UIViewContro
             }
             YouModSendToast(LOC(@"DOWNLOADING_CAPTIONS"));
             [[NSURLSession.sharedSession dataTaskWithURL:url completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
-                dispatch_async(dispatch_get_main_queue(), ^{
-                    if (error || data.length == 0) {
+                if (error || data.length == 0) {
+                    dispatch_async(dispatch_get_main_queue(), ^{
                         YouModSendError(LOC(@"CAPTIONS_FAILED"));
-                        return;
+                    });
+                    return;
+                }
+                
+                NSString *title = YouModTitleForPlayer(player);
+                NSString *filename = [NSString stringWithFormat:@"%@.%@", title, languageCode];
+                NSURL *tempURL = YouModUniqueFileURL(filename, @"vtt");
+                
+                NSError *writeError = nil;
+                BOOL writeSuccess = [data writeToURL:tempURL options:NSDataWritingAtomic error:&writeError];
+                
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    if (writeSuccess) {
+                        YouModSendSuccess(LOC(@"DOWNLOAD_COMPLETED"));
+                        YouModShareFile(tempURL, presenter);
+                    } else {
+                        YouModSendError(writeError.localizedDescription ?: LOC(@"CAPTIONS_FAILED"));
                     }
-                    NSString *title = YouModTitleForPlayer(player);
-+                   NSString *filename = [NSString stringWithFormat:@"%@.%@", title, languageCode];
-+                   NSURL *tempURL = YouModUniqueFileURL(filename, @"vtt");
-                    [data writeToURL:tempURL atomically:YES];
-                    YouModSendSuccess(LOC(@"DOWNLOAD_COMPLETED"));
-                    YouModShareFile(tempURL, presenter);
                 });
             }] resume];
         }]];
