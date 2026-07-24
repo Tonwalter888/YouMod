@@ -71,7 +71,7 @@ static BOOL isDarkMode(UIView *view) {
     NSSet *blackViews = [NSSet setWithObjects:
         @"id.elements.components.comment_composer",
         @"eml.cvr",
-        @"id.subs.subscriptions_channel_bar", nil
+        @"id.subs.subscriptions_channel_bar"
         @"eml.vwc", nil
     ];  
     if (isDarkMode(self)) {

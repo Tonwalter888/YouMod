@@ -19,7 +19,7 @@ static NSString *getPostString(NSString *description) {
         @"post_base_wrapper_slim.eml",
         @"text_post_root_slim.eml",
         @"text_post_responsive_root.eml",
-        @"videos_post_root.eml",
+        @"videos_post_root.eml"
     ])
         if ([description containsString:str]) return str;
     return nil;
