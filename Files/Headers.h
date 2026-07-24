@@ -270,7 +270,6 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 @end
 
 @interface YTELMViewController : UIViewController
-- (YTIElementRenderer *)renderer;
 @end
 
 @interface YTInlineScrubGestureView : UIView
@@ -449,7 +448,6 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 
 @interface UIView (Private)
 @property (nonatomic, assign, readonly) BOOL _mapkit_isDarkModeEnabled;
-- (UIViewController *)_viewControllerForAncestor;
 @end
 
 @interface UIKeyboard : UIView // Regular keyboard
