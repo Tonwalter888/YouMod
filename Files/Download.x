@@ -1823,30 +1823,27 @@ static NSString *YouModExtractCommentText(UIView *cellView) {
     for (UIView *sub in cellView.subviews) {
         for (UIView *sub2 in sub.subviews) {
             if ([sub2.accessibilityIdentifier isEqualToString:@"id.comment.content.label"]) {
-                return sub2.accessibilityLabel ?: @"";
+                return sub2.accessibilityLabel;
             }
         }
     }
     return @"";
 }
 
+extern BOOL isDarkMode(UIView *view);
+
 static UIImage *YouModRenderViewToImage(UIView *view) {
     if (!view || view.bounds.size.width <= 0 || view.bounds.size.height <= 0) return nil;
     
-    BOOL isDark = (view.traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark);
-    UIColor *realBgColor = isDark ? [%c(YTColor) black3] : [%c(YTColor) white1];
-    
+    UIColor *realBgColor = isDarkMode(view) ? [%c(YTColor) black3] : [%c(YTColor) white1];
     UIGraphicsBeginImageContextWithOptions(view.bounds.size, YES, [UIScreen mainScreen].scale);
-    CGContextRef context = UIGraphicsGetCurrentContext();
-    
+    CGContextRef context = UIGraphicsGetCurrentContext();    
     [realBgColor setFill];
     CGContextFillRect(context, view.bounds);
-    
     [view drawViewHierarchyInRect:view.bounds afterScreenUpdates:YES];
-    
+
     UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
-    UIGraphicsEndImageContext();
-    
+    UIGraphicsEndImageContext();    
     return image;
 }
 
