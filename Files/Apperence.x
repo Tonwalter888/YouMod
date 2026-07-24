@@ -5,7 +5,7 @@ BOOL isDarkMode(UIView *view) {
     if ([view respondsToSelector:@selector(_mapkit_isDarkModeEnabled)]) {
         return view._mapkit_isDarkModeEnabled;
     }
-    return view._viewControllerForAncestor.traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark;
+    return view.traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark;
 }
 
 // OLED theme (uYouEnhanced)
@@ -85,6 +85,14 @@ BOOL isDarkMode(UIView *view) {
                 if ([con.view isKindOfClass:%c(YCHAsyncLiveChatImmersiveCollectionView)]) break;
                 self.backgroundColor = [UIColor blackColor];
                 break;
+            } else if ([responder isKindOfClass:%c(YTELMViewController)]) {
+                YTELMViewController *con = (YTELMViewController *)responder;
+                YTIElementRenderer *renderer = [con valueForKey:@"_renderer"];
+                NSString *desc = [renderer description];
+                if ([desc containsString:@"timeline_search_input_form_id"] && [desc containsString:@"search_input.eml"]) {
+                    self.backgroundColor = [UIColor blackColor];
+                }
+                break;
             }
             responder = responder.nextResponder;
         }
@@ -109,6 +117,14 @@ BOOL isDarkMode(UIView *view) {
                 YCHAsyncLiveChatCollectionViewController *con = (YCHAsyncLiveChatCollectionViewController *)responder;
                 if ([con.view isKindOfClass:%c(YCHAsyncLiveChatImmersiveCollectionView)]) break;
                 self.backgroundColor = [UIColor whiteColor];
+                break;
+            } else if ([responder isKindOfClass:%c(YTELMViewController)]) {
+                YTELMViewController *con = (YTELMViewController *)responder;
+                YTIElementRenderer *renderer = [con valueForKey:@"_renderer"];
+                NSString *desc = [renderer description];
+                if ([desc containsString:@"timeline_search_input_form_id"] && [desc containsString:@"search_input.eml"]) {
+                    self.backgroundColor = [UIColor clearColor];
+                }
                 break;
             }
             responder = responder.nextResponder;
@@ -145,6 +161,14 @@ BOOL isDarkMode(UIView *view) {
                 if ([con.view isKindOfClass:%c(YCHAsyncLiveChatImmersiveCollectionView)]) break;
                 self.backgroundColor = [UIColor blackColor];
                 break;
+            } else if ([responder isKindOfClass:%c(YTELMViewController)]) {
+                YTELMViewController *con = (YTELMViewController *)responder;
+                YTIElementRenderer *renderer = [con valueForKey:@"_renderer"];
+                NSString *desc = [renderer description];
+                if ([desc containsString:@"timeline_search_input_form_id"] && [desc containsString:@"search_input.eml"]) {
+                    self.backgroundColor = [UIColor blackColor];
+                }
+                break;
             }
             responder = responder.nextResponder;
         }
@@ -169,6 +193,14 @@ BOOL isDarkMode(UIView *view) {
                 YCHAsyncLiveChatCollectionViewController *con = (YCHAsyncLiveChatCollectionViewController *)responder;
                 if ([con.view isKindOfClass:%c(YCHAsyncLiveChatImmersiveCollectionView)]) break;
                 self.backgroundColor = [UIColor whiteColor];
+                break;
+            } else if ([responder isKindOfClass:%c(YTELMViewController)]) {
+                YTELMViewController *con = (YTELMViewController *)responder;
+                YTIElementRenderer *renderer = [con valueForKey:@"_renderer"];
+                NSString *desc = [renderer description];
+                if ([desc containsString:@"timeline_search_input_form_id"] && [desc containsString:@"search_input.eml"]) {
+                    self.backgroundColor = [UIColor clearColor];
+                }
                 break;
             }
             responder = responder.nextResponder;
