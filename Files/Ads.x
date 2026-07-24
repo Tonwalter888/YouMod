@@ -105,7 +105,7 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
             }
         }
 
-        if (IS_ENABLED(HideCommuGuide) && [description containsString:@"community_guidelines.eml"]) {
+        if (IS_ENABLED(HideCommuGuide) && ([description containsString:@"community_guidelines.eml"] || [description containsString:@"channel_guidelines_entry_banner.eml"]) {
             return YES;
         }
         
