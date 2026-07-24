@@ -178,6 +178,7 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
     NSString *remainingTimeText;
     NSString *SBTimeRemaining = nil;
     NSTimeInterval SBTotalTimeRemaining = 0.0;
+    
     if (IS_ENABLED(SBShowDuration)) {
         if (self.sbSegments && self.sbSegments.count > 0) {
             for (SBSegment *segment in self.sbSegments) {
@@ -200,15 +201,15 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
             }
         }
     }
+    
     if (IS_ENABLED(ShowExtraTimeRemaining)) {
         NSDate *estimatedEndTime = [NSDate dateWithTimeIntervalSinceNow:remainingSeconds];
-
         NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
         [dateFormatter setLocale:[[NSLocale alloc] initWithLocaleIdentifier:@"en_US_POSIX"]];
         [dateFormatter setDateFormat:IS_ENABLED(Uses24HoursTime) ? @"HH:mm" : @"h:mm a"];
-
         remainingTimeText = [dateFormatter stringFromDate:estimatedEndTime];
     }
+    
     NSString *safeRemainingTimeText = remainingTimeText ?: @"";
     NSString *safeSBTimeRemaining = SBTimeRemaining ?: @"";
 
@@ -220,18 +221,27 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
     
     NSString *labelText = durationLabel.text ?: @"";
 
-    BOOL needsExtraUpdate = IS_ENABLED(ShowExtraTimeRemaining) && safeRemainingTimeText.length > 0 && ![labelText containsString:safeRemainingTimeText];
-    BOOL needsSBUpdate = IS_ENABLED(SBShowDuration) && SBTimeRemaining != nil && ![labelText containsString:safeSBTimeRemaining];
+    NSString *baseText = labelText;
+    NSRange extraTimeRange = [baseText rangeOfString:@" • "];
+    if (extraTimeRange.location != NSNotFound) {
+        baseText = [baseText substringToIndex:extraTimeRange.location];
+    }
+    NSRange sbRange = [baseText rangeOfString:@" ("];
+    if (sbRange.location != NSNotFound) {
+        baseText = [baseText substringToIndex:sbRange.location];
+    }
 
-    if (needsExtraUpdate || needsSBUpdate) {
-        if (IS_ENABLED(SBShowDuration) && SBTimeRemaining != nil && IS_ENABLED(ShowExtraTimeRemaining)) {
-            durationLabel.text = [labelText stringByAppendingString:[NSString stringWithFormat:@" (%@) • %@", safeSBTimeRemaining, safeRemainingTimeText]];
-        } else if (IS_ENABLED(ShowExtraTimeRemaining)) {
-            durationLabel.text = [labelText stringByAppendingString:[NSString stringWithFormat:@" • %@", safeRemainingTimeText]];
-        } else if (IS_ENABLED(SBShowDuration) && SBTimeRemaining != nil) {
-            durationLabel.text = [labelText stringByAppendingString:[NSString stringWithFormat:@" (%@)", safeSBTimeRemaining]];
-        }
-        overlay.playerBar.endTimeString = durationLabel.text;
+    NSMutableString *newLabelText = [NSMutableString stringWithString:baseText];
+    if (IS_ENABLED(SBShowDuration) && safeSBTimeRemaining.length > 0) {
+        [newLabelText appendFormat:@" (%@)", safeSBTimeRemaining];
+    }
+    if (IS_ENABLED(ShowExtraTimeRemaining) && safeRemainingTimeText.length > 0) {
+        [newLabelText appendFormat:@" • %@", safeRemainingTimeText];
+    }
+
+    if (![labelText isEqualToString:newLabelText]) {
+        durationLabel.text = newLabelText;
+        overlay.playerBar.endTimeString = newLabelText;
         [durationLabel sizeToFit];
     }
 }
