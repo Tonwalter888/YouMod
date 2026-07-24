@@ -263,13 +263,14 @@
 - (void)addHeaderWithTitle:(NSString *)arg1 subtitle:(NSString *)arg2;
 @end
 
+%
+
 // Gesture Section Enum
 typedef NS_ENUM(NSUInteger, GestureSection) {
     GestureSectionTop,
     GestureSectionBottom,
     GestureSectionInvalid
 };
-
 @interface YTWatchController (YouMod)
 - (void)reload;
 @end
@@ -381,7 +382,9 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 @property (nonatomic, strong) UIView *YouModSpeedToastView;
 @property (nonatomic, strong) UILabel *YouModSpeedToastLabel;
 @property (nonatomic, retain) UILongPressGestureRecognizer *YouModHoldGesture;
-- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer;
+@property (nonatomic, assign) BOOL YouModIsSpeedLocked;
+@property (nonatomic, assign) CGFloat YouModSavedNormalRate;
+฿ (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer;
 - (void)YouModAutoFullscreen;
 - (void)YouModSetAutoSpeed;
 - (void)setPlaybackRate:(float)rate;
