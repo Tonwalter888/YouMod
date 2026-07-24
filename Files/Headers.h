@@ -348,12 +348,11 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 
 @interface YTReelWatchPlaybackOverlayView : UIView <UIGestureRecognizerDelegate>
 @property (nonatomic, retain) UIPinchGestureRecognizer *YouModFullscreenGesture;
-- (void)YouModFullscrrenGestureHandler:(UIPinchGestureRecognizer *)gesture;
 @end
 
-@interface YTReelContentView (YouMod)
+@interface YTReelContentView (YouMod) <UIGestureRecognizerDelegate>
+@property (nonatomic, retain) UILongPressGestureRecognizer *YouModExitShortsOnlyGesture;
 - (YTReelWatchPlaybackOverlayView *)playbackOverlay;
-- (void)YouModTurnOffShortsOnly:(UILongPressGestureRecognizer *)gesture;
 @end
 
 @interface YTLanguages : NSObject
@@ -398,7 +397,6 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 - (void)setAudioTrack:(YTIAudioTrack *)arg1 source:(NSInteger)arg2;
 - (void)YouModHideSpeedToast;
 - (void)YouModShowSpeedToast:(CGFloat)speed;
-- (void)YouModHoldToSpeed:(UILongPressGestureRecognizer *)gesture;
 @end
 
 @interface YTPlayerBarController (YouMod)
