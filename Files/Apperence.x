@@ -90,7 +90,7 @@ BOOL isDarkMode(UIView *view) {
                 YTIElementRenderer *renderer = [con valueForKey:@"_renderer"];
                 NSString *desc = [renderer description];
                 if ([desc containsString:@"timeline_search_input_form_id"] && [desc containsString:@"search_input.eml"]) {
-                    self.backgroundColor = [UIColor blackColor];
+                    self.superview.backgroundColor = [UIColor blackColor];
                 }
                 break;
             }
@@ -123,7 +123,7 @@ BOOL isDarkMode(UIView *view) {
                 YTIElementRenderer *renderer = [con valueForKey:@"_renderer"];
                 NSString *desc = [renderer description];
                 if ([desc containsString:@"timeline_search_input_form_id"] && [desc containsString:@"search_input.eml"]) {
-                    self.backgroundColor = [UIColor clearColor];
+                    self.superview.backgroundColor = [UIColor clearColor];
                 }
                 break;
             }
@@ -166,7 +166,7 @@ BOOL isDarkMode(UIView *view) {
                 YTIElementRenderer *renderer = [con valueForKey:@"_renderer"];
                 NSString *desc = [renderer description];
                 if ([desc containsString:@"timeline_search_input_form_id"] && [desc containsString:@"search_input.eml"]) {
-                    self.backgroundColor = [UIColor blackColor];
+                    self.superview.backgroundColor = [UIColor blackColor];
                 }
                 break;
             }
@@ -199,7 +199,7 @@ BOOL isDarkMode(UIView *view) {
                 YTIElementRenderer *renderer = [con valueForKey:@"_renderer"];
                 NSString *desc = [renderer description];
                 if ([desc containsString:@"timeline_search_input_form_id"] && [desc containsString:@"search_input.eml"]) {
-                    self.backgroundColor = [UIColor clearColor];
+                    self.superview.backgroundColor = [UIColor clearColor];
                 }
                 break;
             }
@@ -326,14 +326,18 @@ BOOL isDarkMode(UIView *view) {
 }
 %end
 
-@interface YTStartupAnimationViewController : UIViewController
-@end
-
 %hook YTStartupAnimationViewController
 - (void)viewDidLoad {
     %orig;
-    if (isDarkMode(self.view)) {
-        self.view.backgroundColor = [UIColor blackColor];
+    UIView *mainView = self.view;
+    if (isDarkMode(mainView)) {
+        mainView.backgroundColor = [UIColor blackColor];
+    }
+}
+- (void)traitCollectionDidChange:(UITraitCollection *)previousTraitCollection {
+    %orig;
+    if ([self.traitCollection hasDifferentColorAppearanceComparedToTraitCollection:previousTraitCollection]) {
+        [self.view setNeedsLayout];
     }
 }
 %end
