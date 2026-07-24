@@ -116,7 +116,10 @@ void sbUpdateOverlayInsetForPivotBar() {
         // transition (e.g. fullscreen exit), the raw result balloons toward the full
         // screen height — clamping to pivotHeight keeps the pill just above the safe
         // area instead of letting it drift to the middle of the screen.
-        tabH = MAX(0.0, MIN(pivotHeight, overlayHeight - deviceSafeBottom - pivotTop));
+
+        // tabH = MAX(0.0, MIN(pivotHeight, overlayHeight - deviceSafeBottom - pivotTop));
+        CGFloat maxTabH = MAX(0.0, pivotHeight - deviceSafeBottom);
+        tabH = MAX(0.0, MIN(maxTabH, overlayHeight - deviceSafeBottom - pivotTop));
     }
     UIEdgeInsets current = rootVC.additionalSafeAreaInsets;
     if (current.bottom != tabH) {
