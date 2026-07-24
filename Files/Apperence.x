@@ -40,7 +40,7 @@ BOOL isDarkMode(UIView *view) {
     if (isDarkMode(self)) {
         ((UIView *)[systemBackgroundView valueForKey:backgroundViewKey]).backgroundColor = [UIColor blackColor];
     } else {
-        ((UIView *)[systemBackgroundView valueForKey:backgroundViewKey]).backgroundColor = [UIColor clearColor];
+        ((UIView *)[systemBackgroundView valueForKey:backgroundViewKey]).backgroundColor = [UIColor whiteColor];
     }
 }
 - (void)_layoutSystemBackgroundView:(BOOL)arg1 {
@@ -48,7 +48,7 @@ BOOL isDarkMode(UIView *view) {
     if (isDarkMode(self)) {
         ((UIView *)[[self valueForKey:@"_systemBackgroundView"] valueForKey:@"_colorView"]).backgroundColor = [UIColor blackColor];
     } else {
-        ((UIView *)[[self valueForKey:@"_systemBackgroundView"] valueForKey:@"_colorView"]).backgroundColor = [UIColor clearColor];
+        ((UIView *)[[self valueForKey:@"_systemBackgroundView"] valueForKey:@"_colorView"]).backgroundColor = [UIColor whiteColor];
     }
 }
 - (void)traitCollectionDidChange:(UITraitCollection *)previousTraitCollection {
@@ -312,7 +312,7 @@ BOOL isDarkMode(UIView *view) {
             if (isDarkMode(self)) {
                 sub.backgroundColor = [UIColor blackColor];
             } else {
-                sub.backgroundColor = [UIColor whiteColor];
+                sub.backgroundColor = [UIColor clearColor];
             }
             break;
         }
@@ -332,12 +332,19 @@ BOOL isDarkMode(UIView *view) {
     UIView *mainView = self.view;
     if (isDarkMode(mainView)) {
         mainView.backgroundColor = [UIColor blackColor];
+    } else {
+        mainView.backgroundColor = [UIColor clearColor];
     }
 }
 - (void)traitCollectionDidChange:(UITraitCollection *)previousTraitCollection {
     %orig;
     if ([self.traitCollection hasDifferentColorAppearanceComparedToTraitCollection:previousTraitCollection]) {
-        [self.view setNeedsLayout];
+        UIView *mainView = self.view;
+        if (isDarkMode(mainView)) {
+            mainView.backgroundColor = [UIColor blackColor];
+        } else {
+            mainView.backgroundColor = [UIColor clearColor];
+        }
     }
 }
 %end
