@@ -607,8 +607,6 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
 %end
 %end
 
-static CGFloat YouModRateBeforeHoldToSpeed = 1.0;
-
 static NSArray *YouModHoldSpeedValues(void) {
     return @[@0.0, @0.25, @0.5, @0.75, @1.0, @1.25, @1.5, @1.75, @2.0, @3.0, @4.0, @5.0];
 }
