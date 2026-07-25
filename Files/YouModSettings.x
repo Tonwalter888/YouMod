@@ -1130,7 +1130,7 @@ void YMPresentTabOrderModally(id parentResponder) {
 
     UINavigationBarAppearance *appearance = [[UINavigationBarAppearance alloc] init];
     [appearance configureWithDefaultBackground];
-    if (self.traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark) {
+    if ([UITraitCollection currentTraitCollection].userInterfaceStyle == UIUserInterfaceStyleDark) {
         appearance.backgroundColor = [%c(YTColor) black3];
     } else {
         appearance.backgroundColor = [UIColor systemBackgroundColor];
