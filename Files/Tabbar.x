@@ -218,7 +218,7 @@ static NSString *YMExtractYouTubeVideoID(NSString *urlString) {
     return (extractedID && extractedID.length == 11) ? extractedID : nil;
 }
 
-static NSString *gLastOpenedVideoID = nil;
+// static NSString *gLastOpenedVideoID = nil;
 
 void YMOpenLinkFromClipboard(UIViewController *presentingVC) {
     UIPasteboard *pasteboard = [UIPasteboard generalPasteboard];
@@ -230,7 +230,7 @@ void YMOpenLinkFromClipboard(UIViewController *presentingVC) {
 
     if (!videoID || videoID.length == 0) return;
 
-    if (gLastOpenedVideoID && [gLastOpenedVideoID isEqualToString:videoID]) return;
+    // if (gLastOpenedVideoID && [gLastOpenedVideoID isEqualToString:videoID]) return;
 
     NSString *schemeURLString = [NSString stringWithFormat:@"youtube://%@", videoID];
     NSURL *targetURL = [NSURL URLWithString:schemeURLString];
