@@ -763,22 +763,24 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
 // invoked when the player view controller is either created or destroyed
 - (void)watchController:(YTWatchController *)watchController didSetPlayerViewController:(YTPlayerViewController *)playerViewController {
     if (playerViewController) {
+        YTMainAppVideoPlayerOverlayViewController *mainovc = [playerViewController activeVideoPlayerOverlay];
+        YTMainAppVideoPlayerOverlayView *mainov = [mainovc videoPlayerOverlayView];
         // ใช้ Pan Gesture เพียงตัวเดียวเพื่อรวมทั้ง Vertical (เสียง/แสง/สปีด) และ Horizontal (Scrub)
         if (!playerViewController.YouModPanGesture && (IS_ENABLED(GestureControls) || IS_ENABLED(SeekOnOverlay))) {
             playerViewController.YouModPanGesture = [[UIPanGestureRecognizer alloc] initWithTarget:playerViewController action:@selector(YouModHandlePanGesture:)];
             playerViewController.YouModPanGesture.delegate = playerViewController;
-            [playerViewController.playerView addGestureRecognizer:playerViewController.YouModPanGesture];
+            [mainov addGestureRecognizer:playerViewController.YouModPanGesture];
         }
         if (!playerViewController.YouModTapGesture && IS_ENABLED(PauseTwoFingers)) {
             playerViewController.YouModTapGesture = [[UITapGestureRecognizer alloc] initWithTarget:playerViewController action:@selector(YouModHandleTapGesture:)];
             playerViewController.YouModTapGesture.numberOfTouchesRequired = 2;
             playerViewController.YouModTapGesture.delegate = playerViewController;
-            [playerViewController.playerView addGestureRecognizer:playerViewController.YouModTapGesture];
+            [mainov addGestureRecognizer:playerViewController.YouModTapGesture];
         }
         if (!playerViewController.YouModHoldGesture && INTFORVAL(HoldToSpeedIndex) != 0) {
             playerViewController.YouModHoldGesture = [[UILongPressGestureRecognizer alloc] initWithTarget:playerViewController action:@selector(YouModHoldToSpeed:)];
             playerViewController.YouModHoldGesture.minimumPressDuration = 0.4;
-            [playerViewController.playerView addGestureRecognizer:playerViewController.YouModHoldGesture];   
+            [mainov addGestureRecognizer:playerViewController.YouModHoldGesture];   
         }
     }
     %orig;
@@ -865,7 +867,7 @@ static CGFloat savedRate = 1.0;
     if (IS_ENABLED(GestureHUD)) {
         if (!self.YouModGestureHUD) {
             self.YouModGestureHUD = [[UILabel alloc] initWithFrame:CGRectZero];
-            self.YouModGestureHUD.backgroundColor = [UIColor colorWithWhite:0.0 alpha:0.95];
+            self.YouModGestureHUD.backgroundColor = [UIColor colorWithWhite:0.0 alpha:0.5];
             self.YouModGestureHUD.textColor = [UIColor colorWithWhite:1.0 alpha:0.75];
             self.YouModGestureHUD.tintColor = [UIColor colorWithWhite:1.0 alpha:0.75];
             self.YouModGestureHUD.textAlignment = NSTextAlignmentCenter;
