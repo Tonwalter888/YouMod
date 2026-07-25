@@ -263,8 +263,6 @@
 - (void)addHeaderWithTitle:(NSString *)arg1 subtitle:(NSString *)arg2;
 @end
 
-%
-
 // Gesture Section Enum
 typedef NS_ENUM(NSUInteger, GestureSection) {
     GestureSectionTop,
@@ -384,7 +382,7 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 @property (nonatomic, retain) UILongPressGestureRecognizer *YouModHoldGesture;
 @property (nonatomic, assign) BOOL YouModIsSpeedLocked;
 @property (nonatomic, assign) CGFloat YouModSavedNormalRate;
-฿ (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer;
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer;
 - (void)YouModAutoFullscreen;
 - (void)YouModSetAutoSpeed;
 - (void)setPlaybackRate:(float)rate;
