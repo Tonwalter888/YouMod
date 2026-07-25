@@ -1272,13 +1272,15 @@ static CGFloat savedRate = 1.0;
     CGFloat speed = YouModSpeedForHoldIndex(speedIndex);
     
     static CGPoint startLocation;
-    static BOOL hasToggledLockInCurrentGesture = NO;
+    static BOOL initialLockState;
+    static BOOL isPendingToggle;
 
     if (gesture.state == UIGestureRecognizerStateBegan) {
-        hasToggledLockInCurrentGesture = NO;
+        initialLockState = self.YouModIsSpeedLocked;
+        isPendingToggle = NO;
         startLocation = [gesture locationInView:self.playerView];
         
-        if (!self.YouModIsSpeedLocked) {
+        if (!initialLockState) {
             YTMainAppVideoPlayerOverlayViewController *con = [self activeVideoPlayerOverlay];
             self.YouModSavedNormalRate = [con currentPlaybackRate]; 
             
@@ -1289,26 +1291,42 @@ static CGFloat savedRate = 1.0;
         }
         
     } else if (gesture.state == UIGestureRecognizerStateChanged) {
-        if (IS_ENABLED(LockSpeed) && !hasToggledLockInCurrentGesture) {
-            CGPoint currentLocation = [gesture locationInView:self.playerView];
-            CGFloat dragDistanceY = currentLocation.y - startLocation.y;
+        if (!IS_ENABLED(LockSpeed)) return;
         
-            if (dragDistanceY > 50.0) {
-                hasToggledLockInCurrentGesture = YES; 
-                
-                if (!self.YouModIsSpeedLocked) {
-                    self.YouModIsSpeedLocked = YES;
+        CGPoint currentLocation = [gesture locationInView:self.playerView];
+        CGFloat dragDistanceY = currentLocation.y - startLocation.y;
+        
+        BOOL stateChanged = NO;
+        
+        if (!isPendingToggle && dragDistanceY > 50.0) {
+            isPendingToggle = YES;
+            stateChanged = YES;
+        } else if (isPendingToggle && dragDistanceY < 30.0) {
+            isPendingToggle = NO;
+            stateChanged = YES;
+        }
+        
+        if (stateChanged) {
+            if (!initialLockState) {
+                if (isPendingToggle) {
                     [self YouModShowSpeedToast:speed isLocked:YES];
-                    
                     UIImpactFeedbackGenerator *feedback = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleMedium];
                     [feedback impactOccurred];
                 } else {
-                    self.YouModIsSpeedLocked = NO;
-                    
+                    [self YouModShowSpeedToast:speed isLocked:NO];
+                    UIImpactFeedbackGenerator *feedback = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleLight];
+                    [feedback impactOccurred];
+                }
+            } else {
+                if (isPendingToggle) {
                     [self setPlaybackRate:self.YouModSavedNormalRate];
                     [self YouModShowSpeedToast:self.YouModSavedNormalRate isLocked:NO];
-                    
                     UIImpactFeedbackGenerator *feedback = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleLight];
+                    [feedback impactOccurred];
+                } else {
+                    [self setPlaybackRate:speed];
+                    [self YouModShowSpeedToast:speed isLocked:YES];
+                    UIImpactFeedbackGenerator *feedback = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleMedium];
                     [feedback impactOccurred];
                 }
             }
@@ -1317,14 +1335,14 @@ static CGFloat savedRate = 1.0;
     } else if (gesture.state == UIGestureRecognizerStateEnded || 
                gesture.state == UIGestureRecognizerStateCancelled || 
                gesture.state == UIGestureRecognizerStateFailed) {
-               
-        if (hasToggledLockInCurrentGesture) {
+        if (IS_ENABLED(LockSpeed) && isPendingToggle) {
+            self.YouModIsSpeedLocked = !initialLockState;
+        }
+        
+        if (self.YouModIsSpeedLocked) {
             [self YouModHideSpeedToast];
         } else {
-            if (!self.YouModIsSpeedLocked) {
-                [self setPlaybackRate:self.YouModSavedNormalRate];
-            }
-            
+            [self setPlaybackRate:self.YouModSavedNormalRate];
             [self YouModHideSpeedToast];
         }
     }
