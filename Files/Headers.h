@@ -255,6 +255,12 @@
 @interface YTMenuItemMDCButton : UIButton
 @end
 
+@interface YTPageHeaderViewController : UIViewController
+@end
+
+@interface YTIPageHeaderRenderer : GPBMessage
+@end
+
 @interface YTDefaultSheetController (YouMod)
 + (instancetype)sheetControllerWithParentResponder:(id)parentResponder;
 - (void)addAction:(YTActionSheetAction *)action;
@@ -269,6 +275,7 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
     GestureSectionBottom,
     GestureSectionInvalid
 };
+
 @interface YTWatchController (YouMod)
 - (void)reload;
 @end
@@ -286,6 +293,9 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 @end
 
 @interface YTPivotBarView : UIView
+@end
+
+@interface YTPivotBarItemView (YouMod) <UIContextMenuInteractionDelegate>
 @end
 
 @interface YTContextualSheetView : UIView

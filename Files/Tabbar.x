@@ -165,6 +165,105 @@ static NSString *ymTitleForTabID(NSString *tabID) {
 }
 %end
 
+static NSString *YMExtractYouTubeVideoID(NSString *urlString) {
+    if (!urlString || urlString.length == 0) return nil;
+
+    NSString *cleanString = [urlString stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+
+    if (cleanString.length == 11 && ![cleanString containsString:@"/"] && ![cleanString containsString:@"?"]) {
+        return cleanString;
+    }
+
+    NSString *extractedID = nil;
+    NSURL *url = [NSURL URLWithString:cleanString];
+
+    if (url) {
+        if ([url.host containsString:@"youtu.be"]) {
+            NSString *path = [url.path stringByReplacingOccurrencesOfString:@"/" withString:@""];
+            if (path.length >= 11) {
+                extractedID = [path substringToIndex:11];
+            }
+        } else if ([url.host containsString:@"youtube.com"]) {
+            if ([url.path containsString:@"/shorts/"] || [url.path containsString:@"/live/"] || [url.path containsString:@"/clip/"]) {
+                NSString *lastPath = [url.path lastPathComponent];
+                if ([lastPath containsString:@"?"]) {
+                    lastPath = [[lastPath componentsSeparatedByString:@"?"] firstObject];
+                }
+                if (lastPath.length >= 11) {
+                    extractedID = [lastPath substringToIndex:11];
+                }
+            } else {
+                NSURLComponents *components = [NSURLComponents componentsWithURL:url resolvingAgainstBaseURL:NO];
+                for (NSURLQueryItem *item in components.queryItems) {
+                    if ([item.name isEqualToString:@"v"] && item.value.length >= 11) {
+                        extractedID = [item.value substringToIndex:11];
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    if (!extractedID) {
+        NSError *error = nil;
+        NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"(?:v=|\\/(?:shorts|live|clip)\\Timer|youtu\\.be\\/)([a-zA-Z0-9_-]{11})"
+                                                                                options:NSRegularExpressionCaseInsensitive
+                                                                                  error:&error];
+        NSTextCheckingResult *match = [regex firstMatchInString:cleanString options:0 range:NSMakeRange(0, cleanString.length)];
+        if (match && match.numberOfRanges > 1) {
+            extractedID = [cleanString substringWithRange:[match rangeAtIndex:1]];
+        }
+    }
+
+    return (extractedID && extractedID.length == 11) ? extractedID : nil;
+}
+
+static NSString *gLastOpenedVideoID = nil;
+
+void YMOpenLinkFromClipboard(UIViewController *presentingVC) {
+    UIPasteboard *pasteboard = [UIPasteboard generalPasteboard];
+    
+    if (![pasteboard hasStrings]) return;
+
+    NSString *rawString = [pasteboard.string stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    NSString *videoID = YMExtractYouTubeVideoID(rawString);
+
+    if (!videoID || videoID.length == 0) return;
+
+    if (gLastOpenedVideoID && [gLastOpenedVideoID isEqualToString:videoID]) return;
+
+    NSString *schemeURLString = [NSString stringWithFormat:@"youtube://%@", videoID];
+    NSURL *targetURL = [NSURL URLWithString:schemeURLString];
+
+    if ([[UIApplication sharedApplication] canOpenURL:targetURL]) {
+        gLastOpenedVideoID = [videoID copy];
+        [[UIApplication sharedApplication] openURL:targetURL options:@{} completionHandler:nil];
+    }
+}
+
+static UIViewController *YMGetTopViewController() {
+    UIWindow *keyWindow = nil;
+    for (UIScene *scene in [UIApplication sharedApplication].connectedScenes) {
+        if (scene.activationState == UISceneActivationStateForegroundActive &&
+            [scene isKindOfClass:[UIWindowScene class]]) {
+            UIWindowScene *windowScene = (UIWindowScene *)scene;
+            for (UIWindow *window in windowScene.windows) {
+                if (window.isKeyWindow) {
+                    keyWindow = window;
+                    break;
+                }
+            }
+        }
+        if (keyWindow) break;
+    }
+    if (!keyWindow) return nil;
+    UIViewController *topVC = keyWindow.rootViewController;
+    while (topVC.presentedViewController) {
+        topVC = topVC.presentedViewController;
+    }
+    return topVC;
+}
+
 static BOOL isGestureRegistered = NO;
 // Hide Tab Labels + long-press on the first tab to open Manage Tabs
 %hook YTPivotBarItemView
@@ -177,21 +276,37 @@ static BOOL isGestureRegistered = NO;
     // Attach long-press gesture once per view; the action handler checks the
     // current pivotIdentifier at fire time, so cell reuse / pivot bar refresh
     // can rebind the same view to a different tab safely.
-    static const void *kYMLongPressKey = &kYMLongPressKey;
-    if (!objc_getAssociatedObject(self, kYMLongPressKey) && !isGestureRegistered) {
-        UILongPressGestureRecognizer *longPress = [[UILongPressGestureRecognizer alloc]
-            initWithTarget:self action:@selector(ymOpenManageTabs:)];
-        longPress.minimumPressDuration = 0.4;
-        [self addGestureRecognizer:longPress];
-        objc_setAssociatedObject(self, kYMLongPressKey, longPress, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    static const void *kYMContextMenuKey = &kYMContextMenuKey;
+    if (!objc_getAssociatedObject(self, kYMContextMenuKey) && !isGestureRegistered) {
+        UIContextMenuInteraction *interaction = [[UIContextMenuInteraction alloc] initWithDelegate:(id<UIContextMenuInteractionDelegate>)self];
+        [self addInteraction:interaction];
+        objc_setAssociatedObject(self, kYMContextMenuKey, interaction, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
         isGestureRegistered = YES;
     }
 }
-
 %new
 - (void)ymOpenManageTabs:(UILongPressGestureRecognizer *)gesture {
     if (gesture.state != UIGestureRecognizerStateBegan) return;
     YMPresentTabOrderModally(nil);
+}
+%new
+- (UIContextMenuConfiguration *)contextMenuInteraction:(UIContextMenuInteraction *)interaction configurationForMenuAtLocation:(CGPoint)location {
+    return [UIContextMenuConfiguration configurationWithIdentifier:nil previewProvider:nil actionProvider:^UIMenu * _Nullable(NSArray<UIMenuElement *> * _Nonnull suggestedActions) {
+        UIAction *tabBarAction = [UIAction actionWithTitle:@"Tab bar"
+                                                     image:[UIImage systemImageNamed:@"dock.rectangle"]
+                                                identifier:nil
+                                                   handler:^(__kindof UIAction * _Nonnull action) {
+            YMPresentTabOrderModally(nil);
+        }];
+        UIAction *openLinkAction = [UIAction actionWithTitle:@"Open link"
+                                               image:[UIImage systemImageNamed:@"link"]
+                                          identifier:nil
+                                             handler:^(__kindof UIAction * _Nonnull action) {
+            UIViewController *topVC = YMGetTopViewController();
+            YMOpenURLFromClipboard(topVC);
+        }];
+        return [UIMenu menuWithTitle:@"" children:@[tabBarAction, openLinkAction]];
+    }];
 }
 %end
 

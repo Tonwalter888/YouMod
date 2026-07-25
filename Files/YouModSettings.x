@@ -1130,11 +1130,13 @@ void YMPresentTabOrderModally(id parentResponder) {
 
     UINavigationBarAppearance *appearance = [[UINavigationBarAppearance alloc] init];
     [appearance configureWithDefaultBackground];
-    if ([UITraitCollection currentTraitCollection].userInterfaceStyle == UIUserInterfaceStyleDark) {
-        appearance.backgroundColor = [%c(YTColor) black3];
-    } else {
-        appearance.backgroundColor = [UIColor systemBackgroundColor];
-    }
+    appearance.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
+        if (traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark) {
+            return [%c(YTColor) black3];
+        } else {
+            return [UIColor systemBackgroundColor];
+        }
+    }];
         
     nav.navigationBar.standardAppearance = appearance;
     nav.navigationBar.scrollEdgeAppearance = appearance;

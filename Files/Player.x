@@ -468,6 +468,8 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
 - (BOOL)shouldExitFullScreenOnFinish { return IS_ENABLED(AutoExitFullScreen) ? YES : %orig; }
 %end
 
+extern BOOL isAllowtoUpdateLoop;
+
 // Always use remaining time in the video player - @bhackel
 %hook YTPlayerBarController
 // When a new video is played, enable time remaining flag
@@ -492,6 +494,7 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
     if (INTFORVAL(CaptionTrack) != 0) [playerviewController performSelector:@selector(YouModAutoCaptions) withObject:nil afterDelay:0.5];
     if (INTFORVAL(AutoSpeedIndex) != 0) [playerviewController performSelector:@selector(YouModSetAutoSpeed) withObject:nil afterDelay:0.5];
     if (INTFORVAL(AudioTrack) != 0) [playerviewController performSelector:@selector(YouModAutoAudioTrack) withObject:nil afterDelay:0.5];
+    isAllowtoUpdateLoop = YES;
 }
 %end
 
@@ -765,22 +768,23 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
     if (playerViewController) {
         YTMainAppVideoPlayerOverlayViewController *mainovc = [playerViewController activeVideoPlayerOverlay];
         YTMainAppVideoPlayerOverlayView *mainov = [mainovc videoPlayerOverlayView];
+        YTMainAppControlsOverlayView *conov = [mainov controlsOverlayView];
         // ใช้ Pan Gesture เพียงตัวเดียวเพื่อรวมทั้ง Vertical (เสียง/แสง/สปีด) และ Horizontal (Scrub)
         if (!playerViewController.YouModPanGesture && (IS_ENABLED(GestureControls) || IS_ENABLED(SeekOnOverlay))) {
             playerViewController.YouModPanGesture = [[UIPanGestureRecognizer alloc] initWithTarget:playerViewController action:@selector(YouModHandlePanGesture:)];
             playerViewController.YouModPanGesture.delegate = playerViewController;
-            [mainov addGestureRecognizer:playerViewController.YouModPanGesture];
+            [conov addGestureRecognizer:playerViewController.YouModPanGesture];
         }
         if (!playerViewController.YouModTapGesture && IS_ENABLED(PauseTwoFingers)) {
             playerViewController.YouModTapGesture = [[UITapGestureRecognizer alloc] initWithTarget:playerViewController action:@selector(YouModHandleTapGesture:)];
             playerViewController.YouModTapGesture.numberOfTouchesRequired = 2;
             playerViewController.YouModTapGesture.delegate = playerViewController;
-            [mainov addGestureRecognizer:playerViewController.YouModTapGesture];
+            [conov addGestureRecognizer:playerViewController.YouModTapGesture];
         }
         if (!playerViewController.YouModHoldGesture && INTFORVAL(HoldToSpeedIndex) != 0) {
             playerViewController.YouModHoldGesture = [[UILongPressGestureRecognizer alloc] initWithTarget:playerViewController action:@selector(YouModHoldToSpeed:)];
             playerViewController.YouModHoldGesture.minimumPressDuration = 0.4;
-            [mainov addGestureRecognizer:playerViewController.YouModHoldGesture];   
+            [conov addGestureRecognizer:playerViewController.YouModHoldGesture];   
         }
     }
     %orig;
@@ -1330,6 +1334,10 @@ static CGFloat savedRate = 1.0;
     YTMainAppVideoPlayerOverlayViewController *playerOverlay = self.activeVideoPlayerOverlay;
     YTAutoplayAutonavController *autoplayController = [playerOverlay valueForKey:@"_autonavController"];
     [autoplayController setLoopMode:LoopState];
+}
+- (void)loadWithPlayerPlayback:(id)arg {
+    isAllowtoUpdateLoop = NO;
+    %orig;
 }
 %end
 

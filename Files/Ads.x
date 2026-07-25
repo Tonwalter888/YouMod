@@ -332,6 +332,19 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
     %orig;
     if ([self.accessibilityIdentifier isEqualToString:@"eml.expandable_metadata.vpp"]) [self removeFromSuperview];
     if (IS_ENABLED(HideCommentsPreview) && [self.accessibilityIdentifier isEqualToString:@"id.ui.comments_entry_point_teaser"]) [self removeFromSuperview];
+    UIResponder *responder = self.nextResponder;
+    while (responder != nil) {
+        if ([responder isKindOfClass:%c(YTPageHeaderViewController)]) {
+            YTPageHeaderViewController *pageh = (YTPageHeaderViewController *)responder;
+            YTIPageHeaderRenderer *pagerender = [pageh valueForKey:@"_renderer"];
+            NSString *desc = [pagerender description];
+            if ([desc containsString:@"Premium"] && [desc containsString:@"SPunlimited"]) {
+                [self removeFromSuperview];
+            }
+            break;
+        }
+        responder = responder.nextResponder;
+    }
 }
 %end
 

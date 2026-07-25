@@ -1075,6 +1075,7 @@ static void YouModPresentMenu(YTPlayerViewController *player, NSArray <YouModMen
 }
 
 - (void)startDirectVideoDownloadWithVideoFormat:(YouModMediaFormat *)videoFormat audioFormat:(YouModMediaFormat *)audioFormat fileName:(NSString *)fileName presenter:(UIViewController *)presenter videoID:(NSString *)vidID {
+    [self cleanupTemporaryFiles];
     NSURL *videoURL = [NSURL URLWithString:videoFormat.urlString];
     NSURL *audioURL = [NSURL URLWithString:audioFormat.urlString];
     if (!videoURL || !audioURL) {
@@ -1129,6 +1130,7 @@ static void YouModPresentMenu(YTPlayerViewController *player, NSArray <YouModMen
 }
 
 - (void)startDirectAudioDownloadWithAudioFormat:(YouModMediaFormat *)audioFormat fileName:(NSString *)fileName presenter:(UIViewController *)presenter videoID:(NSString *)vidID {
+    [self cleanupTemporaryFiles];
     NSURL *audioURL = [NSURL URLWithString:audioFormat.urlString];
     if (!audioURL) {
         YouModSendError(LOC(@"NO_AUDIO_URL"));
@@ -1292,12 +1294,6 @@ static void YouModPresentMenu(YTPlayerViewController *player, NSArray <YouModMen
     self.active = NO;
     [self updateProgressTitle:LOC(@"DOWNLOAD_COMPLETED") progress:1.0f];
     if (self.progressPill) { [self.progressPill dismiss]; self.progressPill = nil; }
-
-    if ([self.destinationURL isEqual:fileURL]) self.destinationURL = nil;
-    if ([self.videoTempURL isEqual:fileURL]) self.videoTempURL = nil;
-    if ([self.audioTempURL isEqual:fileURL]) self.audioTempURL = nil;
-
-    [self cleanupTemporaryFiles];
 
     if (isVideo && IS_ENABLED(DownloadSaveToPhotos) && YouModVideoFileCanSaveToPhotos(fileURL)) {
         YouModSaveVideoToPhotos(fileURL, presenter, ^(BOOL success, NSError *error) {
@@ -1834,12 +1830,10 @@ static NSString *YouModExtractCommentText(UIView *cellView) {
     return @"";
 }
 
-extern int localPageStyle;
-
-static UIImage *YouModRenderViewToImage(UIView *view) {
+static UIImage *YouModRenderViewToImage(_ASDisplayView *view) {
     if (!view || view.bounds.size.width <= 0 || view.bounds.size.height <= 0) return nil;
     
-    UIColor *realBgColor = localPageStyle == 1 ? [%c(YTColor) black3] : [%c(YTColor) white1];
+    UIColor *realBgColor = view.keepalive_node.closestViewController.view.backgroundColor;
     UIGraphicsBeginImageContextWithOptions(view.bounds.size, YES, [UIScreen mainScreen].scale);
     CGContextRef context = UIGraphicsGetCurrentContext();    
     [realBgColor setFill];
