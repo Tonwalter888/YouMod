@@ -116,7 +116,6 @@ void sbUpdateOverlayInsetForPivotBar() {
         // transition (e.g. fullscreen exit), the raw result balloons toward the full
         // screen height — clamping to pivotHeight keeps the pill just above the safe
         // area instead of letting it drift to the middle of the screen.
-
         tabH = MAX(0.0, MIN(pivotHeight, overlayHeight - deviceSafeBottom - pivotTop));
     }
     UIEdgeInsets current = rootVC.additionalSafeAreaInsets;
@@ -374,10 +373,10 @@ UIColor *SBColorFromHex(NSString *hexString) {
 %property (nonatomic, strong) NSMutableSet *sbSkippedSegments;
 %property (nonatomic, strong) SBSkipNotificationView *sbNotificationView;
 %property (nonatomic, assign) BOOL sbEnabledForVideo;
-
 - (void)playbackController:(id)playbackController didActivateVideo:(id)video withPlaybackData:(id)playbackData {
     %orig;
     if (!IS_ENABLED(SBEnabled) || self.isPlayingAd) return;
+    if ([self.parentViewController isKindOfClass:%c(YTShortsPlayerViewController)] return;
 
     self.sbEnabledForVideo = YES;
     self.sbSkippedSegments = [NSMutableSet set];
@@ -386,7 +385,7 @@ UIColor *SBColorFromHex(NSString *hexString) {
     [self.sbNotificationView dismiss];
 
     NSString *videoID = [self currentVideoID];
-    if ([self.sbLastVideoID isEqualToString:videoID]) return;
+    if ([self.sbLastVideoID isEqualToString:videoID] && self.sbSegments.count > 0) return;
     self.sbLastVideoID = videoID;
 
     __weak typeof(self) weakSelf = self;
@@ -419,6 +418,7 @@ UIColor *SBColorFromHex(NSString *hexString) {
 %new
 - (void)sbCheckSegmentsAtCurrentTime {
     if (!IS_ENABLED(SBEnabled) || !self.sbEnabledForVideo || self.isPlayingAd) return;
+    if ([self.parentViewController isKindOfClass:%c(YTShortsPlayerViewController)] return;
 
     CGFloat currentTime = [self currentVideoMediaTime];
     float minDuration = FLOAT_FOR_KEY(SBMinDuration);
