@@ -303,7 +303,7 @@ static BOOL isGestureRegistered = NO;
                                           identifier:nil
                                              handler:^(__kindof UIAction * _Nonnull action) {
             UIViewController *topVC = YMGetTopViewController();
-            YMOpenURLFromClipboard(topVC);
+            YMOpenLinkFromClipboard(topVC);
         }];
         return [UIMenu menuWithTitle:@"" children:@[tabBarAction, openLinkAction]];
     }];
