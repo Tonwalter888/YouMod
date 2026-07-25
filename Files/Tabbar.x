@@ -218,9 +218,9 @@ static NSString *YMExtractYouTubeVideoID(NSString *urlString) {
     return (extractedID && extractedID.length == 11) ? extractedID : nil;
 }
 
-// static NSString *gLastOpenedVideoID = nil;
+static NSString *gLastOpenedVideoID = nil;
 
-void YMOpenLinkFromClipboard(UIViewController *presentingVC) {
+static void YMOpenLinkFromClipboard(UIViewController *presentingVC, BOOL isRuntime) {
     UIPasteboard *pasteboard = [UIPasteboard generalPasteboard];
     
     if (![pasteboard hasStrings]) return;
@@ -230,7 +230,7 @@ void YMOpenLinkFromClipboard(UIViewController *presentingVC) {
 
     if (!videoID || videoID.length == 0) return;
 
-    // if (gLastOpenedVideoID && [gLastOpenedVideoID isEqualToString:videoID]) return;
+    if (gLastOpenedVideoID && [gLastOpenedVideoID isEqualToString:videoID] && IS_ENABLED(AutoOpenLink) && !isRuntime) return;
 
     NSString *schemeURLString = [NSString stringWithFormat:@"youtube://%@", videoID];
     NSURL *targetURL = [NSURL URLWithString:schemeURLString];
@@ -292,18 +292,18 @@ static BOOL isGestureRegistered = NO;
 %new
 - (UIContextMenuConfiguration *)contextMenuInteraction:(UIContextMenuInteraction *)interaction configurationForMenuAtLocation:(CGPoint)location {
     return [UIContextMenuConfiguration configurationWithIdentifier:nil previewProvider:nil actionProvider:^UIMenu * _Nullable(NSArray<UIMenuElement *> * _Nonnull suggestedActions) {
-        UIAction *tabBarAction = [UIAction actionWithTitle:@"Tab bar"
+        UIAction *tabBarAction = [UIAction actionWithTitle:LOC(@"TABBAR")
                                                      image:[UIImage systemImageNamed:@"dock.rectangle"]
                                                 identifier:nil
                                                    handler:^(__kindof UIAction * _Nonnull action) {
             YMPresentTabOrderModally(nil);
         }];
-        UIAction *openLinkAction = [UIAction actionWithTitle:@"Open link"
+        UIAction *openLinkAction = [UIAction actionWithTitle:LOC(@"OPEN_LINK")
                                                image:[UIImage systemImageNamed:@"link"]
                                           identifier:nil
                                              handler:^(__kindof UIAction * _Nonnull action) {
             UIViewController *topVC = YMGetTopViewController();
-            YMOpenLinkFromClipboard(topVC);
+            YMOpenLinkFromClipboard(topVC, YES);
         }];
         return [UIMenu menuWithTitle:@"" children:@[tabBarAction, openLinkAction]];
     }];
@@ -353,6 +353,16 @@ static BOOL isTabSelected = NO;
         return NO;
     }
     return %orig;
+}
+%end
+
+%hook YTAppDelegate
+- (void)appDidBecomeActive {
+    %orig;
+    if (IS_ENABLED(AutoOpenLink)) {
+        UIViewController *topVC = YMGetTopViewController();
+        YMOpenLinkFromClipboard(topVC, NO);
+    }
 }
 %end
 

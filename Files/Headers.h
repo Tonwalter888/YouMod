@@ -90,7 +90,9 @@
 #define DownloadManager @"YouModDownloadManager"
 #define DownloadSaveToPhotos @"YouModDownloadSaveToPhotos"
 #define AddDownloadToShorts @"YouModAddDownloadToShorts"
-#define UseOrigAudio @"YouModUseOrigAudio"
+#define AudioPreferIndex @"YouModAudioPreferIndex"
+#define DownloadComment @"YouModDownloadComment"
+#define DownloadPost @"YouModDownloadPost"
 // Cache
 #define AutoClearCache @"YouModAutoClearCache"
 // Appearance
@@ -174,10 +176,8 @@
 #define PauseTwoFingers @"YouModPauseTwoFingers"
 #define HideCommentsSection @"YouModHideCommentsSection"
 #define HideCommentsPreview @"YouModHideCommentsPreview"
-#define UseAnotherMiniplayer @"YouModUseAnotherMiniplayer"
-#define SeekOnOverlay @"YouModSeekOnOverlay"
 #define LockSpeed @"YouModLockSpeed"
-#define RememberLoop @"YouModRememberLoop"
+#define UseAnotherMiniplayer @"YouModUseAnotherMiniplayer"
 // Shorts
 #define FullScreenShorts @"YouModFullScreenShorts"
 #define RemoveShortsLive @"YouModRemoveShortsLive"
@@ -209,6 +209,7 @@
 #define DisablesRTL @"YouModDisablesRTL"
 #define DeviceUIIndex @"YouModDeviceUIIndex"
 #define FloatingKeyboard @"YouModFloatingKeyboard"
+#define AutoOpenLink @"YouModAutoOpenLink"
 // #define CustomStartup @"YouModUseCustomVideoStartup"
 // Flyout menu
 #define RemovePlayInNextQueueOption @"YouModRemovePlayInNextQueueOption"

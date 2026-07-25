@@ -197,10 +197,12 @@ static NSArray *getAllSystemLanguageTitles() {
         YMPushSubSettings(LOC(@"DOWNLOADING"), @[
             YMToggle(LOC(@"DOWNLOAD_MANAGER"), LOC(@"DOWNLOAD_MANAGER_DESC"), DownloadManager),
             YMToggle(LOC(@"DOWNLOAD_SAVE_PHOTOS"), LOC(@"DOWNLOAD_SAVE_PHOTOS_DESC"), DownloadSaveToPhotos),
-            YMToggle(LOC(@"USE_ORIG_AUDIO"), LOC(@"USE_ORIG_AUDIO_DESC"), UseOrigAudio),
+            YMTextSegment(LOC(@"AUDIO_TRACK"), AudioPreferIndex, (@[LOC(@"SHOW_OPTIONS"), LOC(@"ORIGINAL"), LOC(@"ENGLISH")]), 0),
             YMToggle(LOC(@"ADD_SHORTS_DOWNLOAD"), LOC(@"ADD_SHORTS_DOWNLOAD_DESC"), AddDownloadToShorts),
             YMToggle(LOC(@"FIX_DOWNLOAD"), LOC(@"FIX_DOWNLOAD_DESC"), DownloadFix),
             YMPicker(LOC(@"DOWNLOAD_SERVER"), LOC(@"CHOOSE_DOWNLOAD_SERVER"), DownloadServerIndex, (@[LOC(@"EUROPRE1"), LOC(@"ASIA1")]), 0),
+            YMToggle(LOC(@"DOWNLOAD_COMMENT"), LOC(@"DOWNLOAD_COMMENT_DESC"), DownloadComment),
+            YMToggle(LOC(@"DOWNLOAD_POST"), LOC(@"DOWNLOAD_POST_DESC"), DownloadPost),
         ], settingsViewController, [self parentResponder]);
         return YES;
     }];
@@ -292,7 +294,6 @@ static NSArray *getAllSystemLanguageTitles() {
             YMToggle(LOC(@"HIDE_NEXT_AND_PREV_BUTTON"), LOC(@"HIDE_NEXT_AND_PREV_BUTTON_DESC"), HideNextAndPrevButtons),
             YMToggle(LOC(@"REPLACE_PREVNEXT_BUTTONS"), LOC(@"REPLACE_PREVNEXT_BUTTONS_DESC"), ReplacePrevNextButtons),
             YMToggle(LOC(@"REMOVE_AMBIANT"), LOC(@"REMOVE_AMBIANT_DESC"), RemoveAmbiant),
-            YMToggle(LOC(@"REMEMBER_LOOP"), LOC(@"REMEMBER_LOOP_DESC"), RememberLoop),
             YMToggle(LOC(@"REMOVE_DARK_OVERLAY"), LOC(@"REMOVE_DARK_OVERLAY_DESC"), RemoveDarkOverlay),
             YMToggle(LOC(@"HIDE_END_SCREEN"), LOC(@"HIDE_END_SCREEN_DESC"), HideEndScreenCards),
             YMToggle(LOC(@"HIDE_SUGGESTED_VIDEO"), LOC(@"HIDE_SUGGESTED_VIDEO_DESC"), HideSuggestedVideo),
@@ -332,7 +333,6 @@ static NSArray *getAllSystemLanguageTitles() {
             YMPicker(LOC(@"GESTURE_HUD_POSITION"), LOC(@"GESTURE_HUD_POSITION_DESC"), GestureHUDPosition, (@[LOC(@"TOP"), LOC(@"MIDDLE"), LOC(@"BOTTOM")]), 0),
             YMHeader(@""),
             YMToggle(LOC(@"TAP_TO_SEEK"), LOC(@"TAP_TO_SEEK_DESC"), TapToSeek),
-            YMToggle(LOC(@"SEEK_ON_OVERLAY"), LOC(@"SEEK_ON_OVERLAY_DESC"), SeekOnOverlay),
             YMToggle(LOC(@"PAUSE_TWO_FINGERS"), LOC(@"PAUSE_TWO_FINGERS_DESC"), PauseTwoFingers),
             YMToggle(LOC(@"PAUSE_ON_OVERLAY"), LOC(@"PAUSE_ON_OVERLAY_DESC"), PauseOnOverlay),
             YMToggle(LOC(@"COPY_TIMESTAMP_ON_PAUSE"), LOC(@"COPY_TIMESTAMP_ON_PAUSE_DESC"), CopyWithTimestampOnPause),
@@ -450,6 +450,7 @@ static NSArray *getAllSystemLanguageTitles() {
             YMToggle(LOC(@"FLOATING_KEYBOARD"), LOC(@"FLOATING_KEYBOARD_DESC"), FloatingKeyboard),
             YMToggle(LOC(@"DISABLES_RTL"), LOC(@"DISABLES_RTL_DESC"), DisablesRTL),
             YMTextSegment(LOC(@"DEVICE_UI"), DeviceUIIndex, (@[LOC(@"DEFAULT"), LOC(@"iPad"), LOC(@"iPhone")]), 0),
+            YMToggle(LOC(@"AUTO_OPEN_LINK"), LOC(@"AUTO_OPEN_LINK_DESC"), AutoOpenLink),
             YMHeader(LOC(@"FLYOUT_MENU")),
             YMToggle(LOC(@"REMOVE_PLAY_IN_NEXT_QUEUE_OPTION"), LOC(@"REMOVE_PLAY_IN_NEXT_QUEUE_OPTION_DESC"), RemovePlayInNextQueueOption),
             YMToggle(LOC(@"REMOVE_DOWNLOAD_OPTION"), LOC(@"REMOVE_DOWNLOAD_OPTION_DESC"), RemoveDownloadOption),

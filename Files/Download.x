@@ -729,7 +729,8 @@ static YouModMediaFormat *YouModMediaFormatFromStream(YTIFormatStream *stream, B
         YTIAudioTrack *audio = stream.audioTrack;
         NSString *audioidp = audio.id_p;
         if (audio.hasId_p) {
-            if (IS_ENABLED(UseOrigAudio) && ![audioidp hasSuffix:@".4"]) return nil;
+            if (INTFORVAL(AudioPreferIndex) == 1 && ![audioidp hasSuffix:@".4"]) return nil;
+            if (INTFORVAL(AudioPreferIndex) == 2 && ![audioidp hasPrefix:@"en"]) return nil;
             format.qualityLabel = audio.displayName;
             format.idp = audioidp;
         }
@@ -1821,9 +1822,11 @@ void YouModConfigureDownloadButton(_ASDisplayView *view) {
 
 static NSString *YouModExtractCommentText(UIView *cellView) {
     for (UIView *sub in cellView.subviews) {
-        for (UIView *sub2 in sub.subviews) {
-            if ([sub2.accessibilityIdentifier isEqualToString:@"id.comment.content.label"]) {
-                return sub2.accessibilityLabel;
+        for (_ASDisplayView *sub2 in sub.subviews) {
+            if ([sub2 isKindOfClass:%c(_ASDisplayView)]) {
+                if ([sub2.keepalive_node isKindOfClass:%c(ELMExpandableTextNode)] || [sub2.accessibilityIdentifier isEqualToString:@"id.comment.content.label"]) {
+                    return sub2.accessibilityLabel;
+                }
             }
         }
     }
@@ -1849,7 +1852,7 @@ static UIImage *YouModRenderViewToImage(_ASDisplayView *view) {
 
 - (void)layoutSubviews {
     %orig;
-    if ([self.accessibilityIdentifier isEqualToString:@"id.ui.comment_cell"]) {
+    if ([self.accessibilityIdentifier isEqualToString:@"id.ui.comment_cell"] && IS_ENABLED(DownloadComment)) {
         BOOL hasGesture = NO;
         for (UIGestureRecognizer *g in self.gestureRecognizers) {
             if ([g.name isEqualToString:@"YouModCommentLongPress"]) {
@@ -1864,6 +1867,21 @@ static UIImage *YouModRenderViewToImage(_ASDisplayView *view) {
             longPress.minimumPressDuration = 0.3;
             [self addGestureRecognizer:longPress];
         }
+    } else if ([self.accessibilityIdentifier isEqualToString:@"id.ui.backstage.original_post"] && IS_ENABLED(DownloadPost)) {
+        BOOL hasGesture = NO;
+        for (UIGestureRecognizer *g in self.gestureRecognizers) {
+            if ([g.name isEqualToString:@"YouModPostLongPress"]) {
+                hasGesture = YES;
+                break;
+            }
+        }
+        
+        if (!hasGesture) {
+            UILongPressGestureRecognizer *longPress = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(YouModHandlePostLongPress:)];
+            longPress.name = @"YouModPostLongPress";
+            longPress.minimumPressDuration = 0.3;
+            [self addGestureRecognizer:longPress];
+        }
     }
 }
 
@@ -1874,14 +1892,14 @@ static UIImage *YouModRenderViewToImage(_ASDisplayView *view) {
     NSString *commentText = YouModExtractCommentText(self);
     NSMutableArray *items = [NSMutableArray array];
 
-    [items addObject:[YouModMenuItem itemWithTitle:@"Copy comment text" subtitle:nil icon:YouModIconImage(250) handler:^{
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_COMMENT_TEXT") subtitle:nil icon:YouModIconImage(243) handler:^{
         if (commentText.length > 0) {
             [UIPasteboard generalPasteboard].string = commentText;
             YouModSendSuccess(LOC(@"COPIED_TO_CLIPBOARD"));
         }
     }]];
 
-    [items addObject:[YouModMenuItem itemWithTitle:@"Save comment as image" subtitle:nil icon:YouModIconImage(367) handler:^{
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"SAVE_COMMENT_IMAGE") subtitle:nil icon:YouModIconImage(367) handler:^{
         UIImage *image = YouModRenderViewToImage(self);
         if (image) {
             UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil);
@@ -1889,7 +1907,43 @@ static UIImage *YouModRenderViewToImage(_ASDisplayView *view) {
         }
     }]];
 
-    [items addObject:[YouModMenuItem itemWithTitle:@"Copy comment as image" subtitle:nil icon:YouModIconImage(208) handler:^{
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_COMMENT_IMAGE") subtitle:nil icon:YouModIconImage(208) handler:^{
+        UIImage *image = YouModRenderViewToImage(self);
+        if (image) {
+            [UIPasteboard generalPasteboard].image = image;
+            YouModSendSuccess(LOC(@"COPIED_TO_CLIPBOARD"));
+        }
+    }]];
+
+    UIViewController *presenter = YouModPresenterForSender(self, nil);
+    if (!presenter) return;
+
+    YouModPresentMenu(nil, items, presenter, self);
+}
+
+%new
+- (void)YouModHandlePostLongPress:(UILongPressGestureRecognizer *)sender {
+    if (sender.state != UIGestureRecognizerStateBegan) return;
+
+    NSString *postText = YouModExtractCommentText(self);
+    NSMutableArray *items = [NSMutableArray array];
+
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_POST_TEXT") subtitle:nil icon:YouModIconImage(243) handler:^{
+        if (postText.length > 0) {
+            [UIPasteboard generalPasteboard].string = postText;
+            YouModSendSuccess(LOC(@"COPIED_TO_CLIPBOARD"));
+        }
+    }]];
+
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"SAVE_POST_IMAGE") subtitle:nil icon:YouModIconImage(367) handler:^{
+        UIImage *image = YouModRenderViewToImage(self);
+        if (image) {
+            UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil);
+            YouModSendSuccess(LOC(@"SAVED_TO_PHOTOS"));
+        }
+    }]];
+
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_POST_IMAGE") subtitle:nil icon:YouModIconImage(208) handler:^{
         UIImage *image = YouModRenderViewToImage(self);
         if (image) {
             [UIPasteboard generalPasteboard].image = image;

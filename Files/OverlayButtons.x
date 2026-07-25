@@ -402,9 +402,6 @@ static UIImage *YouModIconImage(NSInteger iconType) {
 }
 %end
 
-int LoopState = 0;
-BOOL isAllowtoUpdateLoop = NO;
-
 %hook YTAutoplayAutonavController
 - (id)initWithParentResponder:(id)arg {
     self = %orig;
@@ -415,9 +412,6 @@ BOOL isAllowtoUpdateLoop = NO;
 }
 - (void)setLoopMode:(NSInteger)arg {
     NSInteger set = IS_ENABLED(KeepLoopKey) ? 2 : arg;
-    if (IS_ENABLED(RememberLoop) && isAllowtoUpdateLoop) {
-        LoopState = set;
-    }
     %orig(set);
 }
 %end

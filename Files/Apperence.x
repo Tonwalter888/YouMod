@@ -59,88 +59,12 @@ static BOOL isDarkMode(UIView *view) {
 %end
 
 %hook _ASDisplayView
-- (void)didMoveToWindow {
-    %orig;
-    NSSet *blackViews = [NSSet setWithObjects:
-        @"id.elements.components.comment_composer",
-        @"eml.cvr",
-        @"id.subs.subscriptions_channel_bar"
-        @"eml.vwc", nil
-    ];  
-    if (isDarkMode(self)) {
-         if ([blackViews containsObject:self.accessibilityIdentifier]) {
-            self.backgroundColor = [UIColor blackColor];
-            return;
-        }
-        // Action dialog
-        UIResponder *responder = self.nextResponder;
-        while (responder != nil) {
-            if ([responder isKindOfClass:%c(YTActionSheetDialogViewController)] || [responder isKindOfClass:%c(YTBottomSheetController)]) {
-                if ([self.superview.accessibilityIdentifier isEqualToString:@"eml.animated_subscribe_button"]) break;
-                self.backgroundColor = [UIColor blackColor];
-                break;
-            } else if ([self.accessibilityIdentifier isEqualToString:@"eml.live_chat_text_message"] && [responder isKindOfClass:%c(YCHAsyncLiveChatCollectionViewController)]) {
-                YCHAsyncLiveChatCollectionViewController *con = (YCHAsyncLiveChatCollectionViewController *)responder;
-                if ([con.view isKindOfClass:%c(YCHAsyncLiveChatImmersiveCollectionView)]) break;
-                self.backgroundColor = [UIColor blackColor];
-                break;
-            } else if ([self.accessibilityIdentifier isEqualToString:@"id.elements.components.text_field"] && [responder isKindOfClass:%c(YTELMViewController)]) {
-                YTELMViewController *con = (YTELMViewController *)responder;
-                YTIElementRenderer *renderer = [con valueForKey:@"_renderer"];
-                NSString *desc = [renderer description];
-                if ([desc containsString:@"timeline_search_input_form_id"] && [desc containsString:@"search_input.eml"]) {
-                    self.superview.backgroundColor = [UIColor blackColor];
-                }
-                break;
-            }
-            responder = responder.nextResponder;
-        }
-        if ([self.accessibilityIdentifier isEqualToString:@"id.elements.components.filter_chip_bar"]) {
-            self.backgroundColor = [UIColor blackColor];
-            self.superview.backgroundColor = [UIColor blackColor];
-            return;
-        }
-    } else {
-        if ([blackViews containsObject:self.accessibilityIdentifier]) {
-            self.backgroundColor = [UIColor clearColor];
-            return;
-        }     
-        // Action dialog
-        UIResponder *responder = self.nextResponder;
-        while (responder != nil) {
-            if ([responder isKindOfClass:%c(YTActionSheetDialogViewController)] || [responder isKindOfClass:%c(YTBottomSheetController)]) {
-                if ([self.superview.accessibilityIdentifier isEqualToString:@"eml.animated_subscribe_button"]) break;
-                self.backgroundColor = [UIColor clearColor];
-                break;
-            } else if ([self.accessibilityIdentifier isEqualToString:@"eml.live_chat_text_message"] && [responder isKindOfClass:%c(YCHAsyncLiveChatCollectionViewController)]) {
-                YCHAsyncLiveChatCollectionViewController *con = (YCHAsyncLiveChatCollectionViewController *)responder;
-                if ([con.view isKindOfClass:%c(YCHAsyncLiveChatImmersiveCollectionView)]) break;
-                self.backgroundColor = [UIColor whiteColor];
-                break;
-            } else if ([self.accessibilityIdentifier isEqualToString:@"id.elements.components.text_field"] && [responder isKindOfClass:%c(YTELMViewController)]) {
-                YTELMViewController *con = (YTELMViewController *)responder;
-                YTIElementRenderer *renderer = [con valueForKey:@"_renderer"];
-                NSString *desc = [renderer description];
-                if ([desc containsString:@"timeline_search_input_form_id"] && [desc containsString:@"search_input.eml"]) {
-                    self.superview.backgroundColor = [UIColor clearColor];
-                }
-                break;
-            }
-            responder = responder.nextResponder;
-        }
-        if ([self.accessibilityIdentifier isEqualToString:@"id.elements.components.filter_chip_bar"]) {
-            self.backgroundColor = [UIColor clearColor];
-            self.superview.backgroundColor = [UIColor clearColor];
-            return;
-        }
-    }
-}
 - (void)layoutSubviews {
     %orig;
     NSSet *blackViews = [NSSet setWithObjects:
         @"id.elements.components.comment_composer",
         @"eml.cvr",
-        @"id.subs.subscriptions_channel_bar"
+        @"id.subs.subscriptions_channel_bar",
         @"eml.vwc", nil
     ];  
     if (isDarkMode(self)) {
@@ -220,22 +144,6 @@ static BOOL isDarkMode(UIView *view) {
 %end
 
 %hook ASCollectionView
-- (void)didMoveToWindow {
-    %orig;
-    NSSet *blackViews = [NSSet setWithObjects:
-        @"eml.chip_bar_collection",
-        @"subs_channel_bar.collection", nil
-    ];  
-    if (isDarkMode(self)) {
-        if ([blackViews containsObject:self.accessibilityIdentifier]) self.backgroundColor = [UIColor blackColor];
-        if ([self.accessibilityIdentifier isEqualToString:@"subs_channel_bar.collection"]) self.backgroundColor = [UIColor blackColor];
-        if ([self.accessibilityIdentifier isEqualToString:@"id.elements.components.more_drawer_collection"]) self.superview.backgroundColor = [UIColor blackColor];
-    } else {
-        if ([blackViews containsObject:self.accessibilityIdentifier]) self.backgroundColor = [UIColor clearColor];
-        if ([self.accessibilityIdentifier isEqualToString:@"subs_channel_bar.collection"]) self.backgroundColor = [UIColor clearColor];
-        if ([self.accessibilityIdentifier isEqualToString:@"id.elements.components.more_drawer_collection"]) self.superview.backgroundColor = [UIColor whiteColor];
-    }
-}
 - (void)layoutSubviews {
     %orig;
     NSSet *blackViews = [NSSet setWithObjects:
