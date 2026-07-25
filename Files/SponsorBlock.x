@@ -376,7 +376,7 @@ UIColor *SBColorFromHex(NSString *hexString) {
 - (void)playbackController:(id)playbackController didActivateVideo:(id)video withPlaybackData:(id)playbackData {
     %orig;
     if (!IS_ENABLED(SBEnabled) || self.isPlayingAd) return;
-    if ([self.parentViewController isKindOfClass:%c(YTShortsPlayerViewController)] return;
+    if ([self.parentViewController isKindOfClass:%c(YTShortsPlayerViewController)]) return;
 
     self.sbEnabledForVideo = YES;
     self.sbSkippedSegments = [NSMutableSet set];
@@ -418,7 +418,7 @@ UIColor *SBColorFromHex(NSString *hexString) {
 %new
 - (void)sbCheckSegmentsAtCurrentTime {
     if (!IS_ENABLED(SBEnabled) || !self.sbEnabledForVideo || self.isPlayingAd) return;
-    if ([self.parentViewController isKindOfClass:%c(YTShortsPlayerViewController)] return;
+    if ([self.parentViewController isKindOfClass:%c(YTShortsPlayerViewController)]) return;
 
     CGFloat currentTime = [self currentVideoMediaTime];
     float minDuration = FLOAT_FOR_KEY(SBMinDuration);
