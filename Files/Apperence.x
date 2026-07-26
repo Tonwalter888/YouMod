@@ -65,6 +65,7 @@ static BOOL isDarkMode(UIView *view) {
         @"id.elements.components.comment_composer",
         @"eml.cvr",
         @"id.subs.subscriptions_channel_bar",
+        @"PAmedia_hub_device_picker.engagement_panel_header",
         @"eml.vwc", nil
     ];  
     if (isDarkMode(self)) {

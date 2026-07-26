@@ -1174,16 +1174,21 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
         isPendingToggle = NO;
         startLocation = [gesture locationInView:self.playerView];
         
+        YTMainAppVideoPlayerOverlayViewController *con = [self activeVideoPlayerOverlay];
+        CGFloat currentRate = [con currentPlaybackRate];
+
+        if (self.YouModSavedNormalRate <= 0) {
+            self.YouModSavedNormalRate = (currentRate > 0) ? currentRate : 1.0;
+        }
+
         if (!initialLockState) {
-            YTMainAppVideoPlayerOverlayViewController *con = [self activeVideoPlayerOverlay];
-            self.YouModSavedNormalRate = [con currentPlaybackRate];
-            
+            self.YouModSavedNormalRate = (currentRate > 0) ? currentRate : 1.0;
             [self setPlaybackRate:speed];
             [self YouModShowSpeedToast:speed isLocked:NO];
         } else {
+            [self setPlaybackRate:speed];
             [self YouModShowSpeedToast:speed isLocked:YES];
         }
-        
     } else if (gesture.state == UIGestureRecognizerStateChanged) {
         if (!IS_ENABLED(LockSpeed)) return;
         
@@ -1213,19 +1218,18 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
                 [self YouModShowSpeedToast:self.YouModSavedNormalRate isLocked:NO];
             }
         }
-        
     } else if (gesture.state == UIGestureRecognizerStateEnded || 
                gesture.state == UIGestureRecognizerStateCancelled || 
                gesture.state == UIGestureRecognizerStateFailed) {
-    
+
         if (IS_ENABLED(LockSpeed) && isPendingToggle) {
             self.YouModIsSpeedLocked = !initialLockState;
         }
-        
         if (self.YouModIsSpeedLocked) {
             [self setPlaybackRate:speed];
         } else {
-            [self setPlaybackRate:self.YouModSavedNormalRate];
+            CGFloat targetRate = (self.YouModSavedNormalRate >= 0.25) ? self.YouModSavedNormalRate : 1.0;
+            [self setPlaybackRate:targetRate];
         }
         isPendingToggle = NO;
         [self YouModHideSpeedToast];

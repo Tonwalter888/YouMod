@@ -358,7 +358,10 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
                 NSNumber *ytIconType = tabYTIconMap[tabID];
                 if (ytIconType) {
                     UIImage *img = YouModYTIconImage([ytIconType intValue]);
-                    if (img) [defaultTabImages addObject:img];
+                    if (img) {
+                        UIImage *whiteImg = [img imageWithTintColor:[UIColor whiteColor] renderingMode:UIImageRenderingModeAlwaysOriginal];
+                        [defaultTabImages addObject:whiteImg];
+                    }
                 } else {
                     NSString *bundleName = tabBundleIconMap[tabID];
                     if (bundleName) {
@@ -375,7 +378,10 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
             NSArray *fallbackIcons = @[@(65), @(769), @(66), @(61)];
             for (NSNumber *iconType in fallbackIcons) {
                 UIImage *img = YouModYTIconImage([iconType intValue]);
-                if (img) [defaultTabImages addObject:img];
+                if (img) {
+                    UIImage *whiteImg = [img imageWithTintColor:[UIColor whiteColor] renderingMode:UIImageRenderingModeAlwaysOriginal];
+                    [defaultTabImages addObject:whiteImg];
+                }
             }
         }
 

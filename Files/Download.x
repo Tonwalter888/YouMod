@@ -876,6 +876,13 @@ static void YouModPresentMenu(YTPlayerViewController *player, NSArray <YouModMen
 }
 
 - (void)cancelWithMessage:(NSString *)message {
+    if (![NSThread isMainThread]) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self cancelWithMessage:message];
+        });
+        return;
+    }
+
     [self.task cancel];
     [self.metadataTask cancel];
     [self.rangeDownloader cancel];
@@ -1329,14 +1336,18 @@ static void YouModPresentMenu(YTPlayerViewController *player, NSArray <YouModMen
 }
 
 - (void)triggerSilentDownloadWithQuality:(NSString *)quality isAudio:(BOOL)isAudio videoID:(NSString *)vidID presenter:(UIViewController *)presenter {
+    __weak typeof(self) weakSelf = self;
     [self requestDownloadForVideoId:vidID isAudio:isAudio quality:quality presenter:presenter completion:^(NSURL *localURL, NSString *errorMsg) {
-        if (!self || self.cancelled) return;
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+        if (!strongSelf || strongSelf.cancelled) return;
+        
         dispatch_async(dispatch_get_main_queue(), ^{
+            if (!strongSelf || strongSelf.cancelled) return;
             if (!localURL) { 
-                YouModSendError(errorMsg); 
+                [strongSelf cancelWithMessage:errorMsg];
                 return; 
             }
-            [self completeWithFileURL:localURL isVideo:!isAudio presenter:presenter];
+            [strongSelf completeWithFileURL:localURL isVideo:!isAudio presenter:presenter];
         });
     }];
 }
@@ -1520,6 +1531,11 @@ static void YouModDownloadThumbnail(NSString *videoID, UIViewController *present
 
 static void YouModCopyTextToPasteboard(NSString *text, NSString *successKey) {
     UIPasteboard.generalPasteboard.string = text;
+    YouModSendSuccess(LOC(successKey));
+}
+
+static void YouModCopyImageToPasteboard(UIImage *image, NSString *successKey) {
+    UIPasteboard.generalPasteboard.image = image;
     YouModSendSuccess(LOC(successKey));
 }
 
@@ -1879,8 +1895,7 @@ static UIImage *YouModRenderViewToImage(_ASDisplayView *view) {
     [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_COMMENT_TEXT") subtitle:nil icon:YouModYTIconImage(243) handler:^{
         YouModExtractCommentTextAsync(self, ^(NSString *commentText) {
             if (commentText.length > 0) {
-                [UIPasteboard generalPasteboard].string = commentText;
-                YouModSendSuccess(LOC(@"COPIED_TO_CLIPBOARD"));
+                YouModCopyTextToPasteboard(commentText, @"COPIED_TO_CLIPBOARD");
             }
         });
     }]];
@@ -1896,8 +1911,7 @@ static UIImage *YouModRenderViewToImage(_ASDisplayView *view) {
     [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_COMMENT_IMAGE") subtitle:nil icon:YouModYTIconImage(208) handler:^{
         UIImage *image = YouModRenderViewToImage(self);
         if (image) {
-            [UIPasteboard generalPasteboard].image = image;
-            YouModSendSuccess(LOC(@"COPIED_TO_CLIPBOARD"));
+            YouModCopyImageToPasteboard(image, @"COPIED_TO_CLIPBOARD");
         }
     }]];
 
@@ -1916,8 +1930,7 @@ static UIImage *YouModRenderViewToImage(_ASDisplayView *view) {
     [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_POST_TEXT") subtitle:nil icon:YouModYTIconImage(243) handler:^{
         YouModExtractCommentTextAsync(self, ^(NSString *commentText) {
             if (commentText.length > 0) {
-                [UIPasteboard generalPasteboard].string = commentText;
-                YouModSendSuccess(LOC(@"COPIED_TO_CLIPBOARD"));
+                YouModCopyTextToPasteboard(commentText, @"COPIED_TO_CLIPBOARD");
             }
         });
     }]];
@@ -1933,8 +1946,7 @@ static UIImage *YouModRenderViewToImage(_ASDisplayView *view) {
     [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_POST_IMAGE") subtitle:nil icon:YouModYTIconImage(208) handler:^{
         UIImage *image = YouModRenderViewToImage(self);
         if (image) {
-            [UIPasteboard generalPasteboard].image = image;
-            YouModSendSuccess(LOC(@"COPIED_TO_CLIPBOARD"));
+            YouModCopyImageToPasteboard(image, @"COPIED_TO_CLIPBOARD");
         }
     }]];
 
