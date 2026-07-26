@@ -1824,15 +1824,8 @@ static NSString *YouModExtractCommentText(UIView *cellView) {
     for (UIView *sub in cellView.subviews) {
         for (_ASDisplayView *sub2 in sub.subviews) {
             if ([sub2 isKindOfClass:%c(_ASDisplayView)]) {
-                if ([sub2.accessibilityIdentifier isEqualToString:@"id.comment.content.label"]) {
+                if ([sub2.keepalive_node isKindOfClass:NSClassFromString(@"ELMExpandableTextNode")] || [sub2.accessibilityIdentifier isEqualToString:@"id.comment.content.label"]) {
                     return sub2.accessibilityLabel;
-                }
-                for (_ASDisplayView *sub3 in sub2.subviews) {
-                    if ([sub3 isKindOfClass:%c(_ASDisplayView)]) {
-                        if ([sub3.keepalive_node isKindOfClass:%c(ELMTextNode)]) {
-                            return sub3.accessibilityLabel;
-                        }
-                    }
                 }
             }
         }
