@@ -167,12 +167,11 @@ static NSArray *getAllSystemLanguageValues() {
     return [sortedCodes copy];
 }
 
-static float playbackRate = 1.0;
-
 static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoController *video, YTSingleVideoTime *time) {
     if (!IS_ENABLED(ShowExtraTimeRemaining) && !IS_ENABLED(SBShowDuration)) return;
 
-    CGFloat rate = playbackRate != 0 ? playbackRate : 1.0;
+    YTMainAppVideoPlayerOverlayViewController *con = [self activeVideoPlayerOverlay];
+    CGFloat rate = [con currentPlaybackRate] != 0 ? [con currentPlaybackRate] : 1.0;
     NSTimeInterval remainingSeconds = (lround(video.totalMediaTime) - lround(time.time)) / rate;
 
     NSString *remainingTimeText;
@@ -896,7 +895,8 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
         } else if (controlType == 2) {
             initialVolume = [[AVAudioSession sharedInstance] outputVolume];
         } else if (controlType == 3) {
-            initialSpeed = playbackRate;
+            YTMainAppVideoPlayerOverlayViewController *con = [self activeVideoPlayerOverlay];
+            initialSpeed = [con currentPlaybackRate];
         }
 
         if (IS_ENABLED(GestureHUD)) {
@@ -1033,11 +1033,6 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
 - (void)potentiallyMutatedSingleVideo:(YTSingleVideoController *)video currentVideoTimeDidChange:(YTSingleVideoTime *)time {
     %orig;
     YouModAddEndTime(self, video, time);
-}
-
-- (void)setPlaybackRate:(float)rate {
-    playbackRate = rate;
-    %orig;
 }
 
 %new
