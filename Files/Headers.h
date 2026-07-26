@@ -427,10 +427,6 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 @interface YTRelatedVideosView : UIView
 @end
 
-@interface YTRelatedVideosViewController : UIViewController
-- (BOOL)isExpanded;
-@end
-
 @interface YTAutoplayAutonavController : NSObject
 - (void)setLoopMode:(NSInteger)loopMode;
 @end
@@ -461,6 +457,9 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 
 @interface YTEngagementPanelView : UIView
 - (UIView *)footerView;
+@end
+
+@interface YTEngagementPanelContainerView : UIView
 @end
 
 @interface YTMainAppControlsOverlayView (YouMod)

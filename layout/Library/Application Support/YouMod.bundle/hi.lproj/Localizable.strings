@@ -311,6 +311,8 @@
 "USE_ANOTHER_MINIPLAYER_DESC" = "Uses another miniplayer style redesigned from older YT versions.";
 "LOCK_SPEED" = "Lock speed";
 "LOCK_SPEED_DESC" = "Locks at adjusted speed by swiping down.";
+"SEEK_ON_OVERLAY" = "Seek on overlay";
+"SEEK_ON_OVERLAY_DESC" = "Allows controlling playback seeking by swiping left and right on the video overlay.";
 
 "SHORTS" = "Shorts";
 "SHORTS_ONLY" = "Shorts only mode";

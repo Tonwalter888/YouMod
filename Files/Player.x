@@ -703,7 +703,6 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
 - (void)watchController:(YTWatchController *)watchController didSetPlayerViewController:(YTPlayerViewController *)playerViewController {
     if (playerViewController) {
         YTPlayerView *pv = playerViewController.playerView;
-        // ใช้ Pan Gesture เพียงตัวเดียวเพื่อรวมทั้ง Vertical (เสียง/แสง/สปีด) และ Horizontal (Scrub)
         if (!playerViewController.YouModPanGesture && (IS_ENABLED(GestureControls) || IS_ENABLED(SeekOnOverlay))) {
             playerViewController.YouModPanGesture = [[UIPanGestureRecognizer alloc] initWithTarget:playerViewController action:@selector(YouModHandlePanGesture:)];
             playerViewController.YouModPanGesture.delegate = playerViewController;
@@ -743,13 +742,38 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
         YTFullscreenEngagementOverlayView *fullov = [ov valueForKey:@"_fullscreenEngagementOverlayView"];
         if (fullov) {
             YTRelatedVideosView *relatedview = [fullov valueForKey:@"_relatedVideosView"];
-            YTRelatedVideosViewController *relatedcontroller = [relatedview valueForKey:@"_delegate"];
-            if ([relatedcontroller isExpanded]) return NO;
+            NSInteger overlayState = [relatedview valueForKey:@"_overlayState"];
+            if (overlayState == 1) return NO;
         }           
+
         UIPanGestureRecognizer *panGesture = (UIPanGestureRecognizer *)gestureRecognizer;
         CGPoint startLocation = [panGesture locationInView:self.view];
         CGPoint velocity = [panGesture velocityInView:self.view];
-        CGFloat viewWidth = self.view.bounds.size.width;
+        CGFloat fullWidth = self.view.bounds.size.width;
+        CGFloat activeWidth = fullWidth;
+
+        // Also return NO if the startLocation is on the engagement panel
+        YTEngagementPanelContainerView *engagecontainer = [ov valueForKey:@"_engagementPanelContainerView"];
+        if (engagecontainer) {
+            NSInteger panelstate = [engagecontainer valueForKey:@"_engagementPanelState"];
+            if (panelstate == 3) {
+                UILayoutContainerView *mainpanel = nil;
+                for (UIView *sub in engagecontainer.subviews) {
+                    if ([sub isKindOfClass:%c(UILayoutContainerView)]) {
+                        mainpanel = sub;
+                        break;
+                    }
+                }
+                if (mainpanel) {
+                    CGFloat panelWidth = mainpanel.bounds.size.width;
+                    if (panelWidth > 0 && panelWidth < fullWidth) {
+                        CGFloat remainingWidth = fullWidth - panelWidth;
+                        if (startLocation.x > remainingWidth) return NO;
+                        activeWidth = remainingWidth;
+                    }
+                }
+            }
+        }
 
         BOOL isHorizontal = fabs(velocity.x) > fabs(velocity.y);
 
@@ -772,9 +796,9 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
             int leftAction = [[NSUserDefaults standardUserDefaults] objectForKey:LeftSideGesture] ? INTFORVAL(LeftSideGesture) : 1;
             int rightAction = [[NSUserDefaults standardUserDefaults] objectForKey:RightSideGesture] ? INTFORVAL(RightSideGesture) : 2;
 
-            if (startLocation.x > viewWidth * areaPercent && startLocation.x < viewWidth * (1.0 - areaPercent)) return NO;
-            if (startLocation.x <= viewWidth * areaPercent && leftAction == 0) return NO;
-            if (startLocation.x >= viewWidth * (1.0 - areaPercent) && rightAction == 0) return NO;
+            if (startLocation.x > activeWidth * areaPercent && startLocation.x < activeWidth * (1.0 - areaPercent)) return NO;
+            if (startLocation.x <= activeWidth * areaPercent && leftAction == 0) return NO;
+            if (startLocation.x >= activeWidth * (1.0 - areaPercent) && rightAction == 0) return NO;
 
             return YES;
         }
