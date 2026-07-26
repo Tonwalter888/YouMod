@@ -86,6 +86,8 @@
 #define KeepMutedKey @"YouModKeepMutedKey"
 #define KeepLoopKey @"YouModKeepLoopKey"
 #define QualityButton @"YouModQualityButton"
+#define GlobalSpeedLocked @"YouModGlobalSpeedLocked"
+#define GlobalSavedNormalRate @"YouModGlobalSavedNormalRate"
 // Downloading
 #define DownloadManager @"YouModDownloadManager"
 #define DownloadSaveToPhotos @"YouModDownloadSaveToPhotos"
@@ -392,8 +394,6 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 @property (nonatomic, strong) UIView *YouModSpeedToastView;
 @property (nonatomic, strong) UILabel *YouModSpeedToastLabel;
 @property (nonatomic, retain) UILongPressGestureRecognizer *YouModHoldGesture;
-@property (nonatomic, assign) BOOL YouModIsSpeedLocked;
-@property (nonatomic, assign) CGFloat YouModSavedNormalRate;
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer;
 - (void)YouModAutoFullscreen;
 - (void)YouModSetAutoSpeed;

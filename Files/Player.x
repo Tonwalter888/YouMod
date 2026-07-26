@@ -731,8 +731,6 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
 %property (nonatomic, strong) UIView *YouModSpeedToastView;
 %property (nonatomic, strong) UILabel *YouModSpeedToastLabel;
 %property (nonatomic, retain) UILongPressGestureRecognizer *YouModHoldGesture;
-%property (nonatomic, assign) BOOL YouModIsSpeedLocked;
-%property (nonatomic, assign) CGFloat YouModSavedNormalRate;
 %new
 - (BOOL)gestureRecognizerShouldBegin:(UIGestureRecognizer *)gestureRecognizer {
     if (gestureRecognizer == self.YouModPanGesture) {
@@ -1025,7 +1023,7 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
 
 %new
 - (void)YouModSetAutoSpeed {
-    if (self.YouModIsSpeedLocked) {
+    if (IS_ENABLED(GlobalSpeedLocked)) {
         NSInteger speedIndex = INTFORVAL(HoldToSpeedIndex);
         CGFloat speed = YouModSpeedForHoldIndex(speedIndex);
         [self setPlaybackRate:speed];
@@ -1235,20 +1233,30 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
     static BOOL initialLockState;
     static BOOL isPendingToggle;
 
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+
     if (gesture.state == UIGestureRecognizerStateBegan) {
-        initialLockState = self.YouModIsSpeedLocked;
+        YTMainAppVideoPlayerOverlayViewController *con = [self activeVideoPlayerOverlay];
+        CGFloat currentRate = [con currentPlaybackRate];
+        CGFloat savedNormal = FLOAT_FOR_KEY(GlobalSpeedLocked);
+        
+        if (savedNormal <= 0) {
+            savedNormal = (currentRate > 0) ? currentRate : 1.0;
+            [defaults setFloat:savedNormal forKey:GlobalSavedNormalRate];
+            [defaults setBool:NO forKey:GlobalSpeedLocked];
+            [defaults synchronize];
+        }
+
+        initialLockState = IS_ENABLED(GlobalSpeedLocked);
         isPendingToggle = NO;
         startLocation = [gesture locationInView:self.playerView];
         
-        YTMainAppVideoPlayerOverlayViewController *con = [self activeVideoPlayerOverlay];
-        CGFloat currentRate = [con currentPlaybackRate];
-
-        if (self.YouModSavedNormalRate <= 0) {
-            self.YouModSavedNormalRate = (currentRate > 0) ? currentRate : 1.0;
-        }
-
         if (!initialLockState) {
-            self.YouModSavedNormalRate = (currentRate > 0) ? currentRate : 1.0;
+            if (currentRate != speed) {
+                savedNormal = (currentRate > 0) ? currentRate : 1.0;
+                [defaults setFloat:savedNormal forKey:GlobalSavedNormalRate];
+                [defaults synchronize];
+            }
             [self setPlaybackRate:speed];
             [self YouModShowSpeedToast:speed isLocked:NO];
         } else {
@@ -1281,20 +1289,28 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
             if (previewLockState) {
                 [self YouModShowSpeedToast:speed isLocked:YES];
             } else {
-                [self YouModShowSpeedToast:self.YouModSavedNormalRate isLocked:NO];
+                CGFloat savedNormal = [defaults floatForKey:GlobalSavedNormalRate];
+                CGFloat targetRate = (savedNormal >= 0.25) ? savedNormal : 1.0;
+                [self YouModShowSpeedToast:targetRate isLocked:NO];
             }
         }
     } else if (gesture.state == UIGestureRecognizerStateEnded || 
                gesture.state == UIGestureRecognizerStateCancelled || 
                gesture.state == UIGestureRecognizerStateFailed) {
-
-        if (IS_ENABLED(LockSpeed) && isPendingToggle) {
-            self.YouModIsSpeedLocked = !initialLockState;
+                
+        BOOL finalLockState = initialLockState;
+        if (gesture.state == UIGestureRecognizerStateEnded) {
+            if (IS_ENABLED(LockSpeed) && isPendingToggle) {
+                finalLockState = !initialLockState;
+                [defaults setBool:finalLockState forKey:GlobalSpeedLocked];
+                [defaults synchronize];
+            }
         }
-        if (self.YouModIsSpeedLocked) {
+        if (finalLockState) {
             [self setPlaybackRate:speed];
         } else {
-            CGFloat targetRate = (self.YouModSavedNormalRate >= 0.25) ? self.YouModSavedNormalRate : 1.0;
+            CGFloat savedNormal = [defaults floatForKey:GlobalSavedNormalRate];
+            CGFloat targetRate = (savedNormal >= 0.25) ? savedNormal : 1.0;
             [self setPlaybackRate:targetRate];
         }
         isPendingToggle = NO;

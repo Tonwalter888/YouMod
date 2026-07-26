@@ -77,7 +77,7 @@ static const CGFloat YMOverlayButtonTopInset = 52.0; // fallback row top when th
 static const CGFloat YMOverlayButtonEdgePadding = 12.0; // fallback right padding when the gear isn't found
 
 // Point size of a text button's label. Tweak this to change how large the text renders.
-static const CGFloat YMOverlayTextButtonFontSize = 20.0;
+static const CGFloat YMOverlayTextButtonFontSize = 16.0;
 // Width of a text button. Tweak this to make text buttons wider or narrower; icon
 // buttons stay square at YMOverlayButtonSize.
 static const CGFloat YMOverlayTextButtonWidth = 40.0;
@@ -175,10 +175,14 @@ static YTQTMButton *YMCreateOverlayButton(YTMainAppControlsOverlayView *overlay,
         button.titleLabel.font = YMOverlayTextButtonFont();
         button.titleLabel.textAlignment = NSTextAlignmentCenter;
         button.sizeWithPaddingAndInsets = NO;
-        button.titleLabel.adjustsFontSizeToFitWidth = YES;
         button.titleLabel.numberOfLines = 2;
-        button.titleLabel.minimumScaleFactor = 0.7;
-        button.titleLabel.lineBreakMode = NSLineBreakByWordWrapping;
+        button.titleLabel.adjustsFontSizeToFitWidth = YES;
+        button.titleLabel.lineBreakMode = NSLineBreakByClipping; 
+        button.titleLabel.baselineAdjustment = UIBaselineAdjustmentAlignCenters;
+        button.contentEdgeInsets = UIEdgeInsetsZero;
+        button.titleEdgeInsets = UIEdgeInsetsZero;
+        button.contentVerticalAlignment = UIControlContentVerticalAlignmentCenter;
+        button.contentHorizontalAlignment = UIControlContentHorizontalAlignmentCenter;
     } else {
         UIImageSymbolConfiguration *config = [UIImageSymbolConfiguration configurationWithPointSize:20 weight:UIImageSymbolWeightMedium];
         // Template rendering so YTQTMButton's tint colours the glyph reliably.
@@ -307,6 +311,11 @@ static YTQTMButton *YMCreateOverlayButton(YTMainAppControlsOverlayView *overlay,
     for (YMOverlayButtonSpec *spec in YMRegisteredOverlayButtons()) {
         if ([spec.identifier isEqualToString:@"speed.video"]) {
             spec.title = currentSpeedLabel;
+            
+            YTQTMButton *btn = (YTQTMButton *)[self viewWithTag:spec.viewTag];
+            if (btn) {
+                [btn setTitle:currentSpeedLabel forState:UIControlStateNormal];
+            }
             break;
         }
     }
@@ -317,6 +326,11 @@ static YTQTMButton *YMCreateOverlayButton(YTMainAppControlsOverlayView *overlay,
     for (YMOverlayButtonSpec *spec in YMRegisteredOverlayButtons()) {
         if ([spec.identifier isEqualToString:@"quality.video"]) {
             spec.title = currentQualityLabel;
+            
+            YTQTMButton *btn = (YTQTMButton *)[self viewWithTag:spec.viewTag];
+            if (btn) {
+                [btn setTitle:currentQualityLabel forState:UIControlStateNormal];
+            }
             break;
         }
     }
