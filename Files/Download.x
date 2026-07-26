@@ -1824,8 +1824,15 @@ static NSString *YouModExtractCommentText(UIView *cellView) {
     for (UIView *sub in cellView.subviews) {
         for (_ASDisplayView *sub2 in sub.subviews) {
             if ([sub2 isKindOfClass:%c(_ASDisplayView)]) {
-                if ([sub2.keepalive_node isKindOfClass:%c(ELMExpandableTextNode)] || [sub2.accessibilityIdentifier isEqualToString:@"id.comment.content.label"]) {
+                if ([sub2.accessibilityIdentifier isEqualToString:@"id.comment.content.label"]) {
                     return sub2.accessibilityLabel;
+                }
+                for (_ASDisplayView *sub3 in sub2.subviews) {
+                    if ([sub3 isKindOfClass:%c(_ASDisplayView)]) {
+                        if ([sub3.keepalive_node isKindOfClass:%c(ELMTextNode)]) {
+                            return sub3.accessibilityLabel;
+                        }
+                    }
                 }
             }
         }
@@ -1837,8 +1844,10 @@ static UIImage *YouModRenderViewToImage(_ASDisplayView *view) {
     if (!view || view.bounds.size.width <= 0 || view.bounds.size.height <= 0) return nil;
     
     UIColor *realBgColor = view.keepalive_node.closestViewController.view.backgroundColor;
+    UIColor *clear = [UIColor clearColor];
     UIGraphicsBeginImageContextWithOptions(view.bounds.size, YES, [UIScreen mainScreen].scale);
     CGContextRef context = UIGraphicsGetCurrentContext();    
+    [clear setFill];
     [realBgColor setFill];
     CGContextFillRect(context, view.bounds);
     [view drawViewHierarchyInRect:view.bounds afterScreenUpdates:YES];

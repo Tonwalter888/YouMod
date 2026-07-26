@@ -104,7 +104,7 @@
 "COPY" = "คัดลอก";
 "COPIED_TO_CLIPBOARD" = "คัดลอกไปยังคลิปบอร์ดแล้ว";
 "CONNECTING_TO_SERVER" = "กำลังเชื่อมต่อกับเซิร์ฟเวอร์...";
-"DOWNLOADING_TO_SERVER" = "กำลังดาวน์โหลดลงเซิร์ฟเวอร์...";
+"DOWNLOADING_TO_SERVER" = "กำลังดาวน์โหลดไปยังเซิร์ฟเวอร์...";
 "COPY_COMMENT_TEXT" = "คัดลอกข้อความคอมเมนต์";
 "SAVE_COMMENT_IMAGE" = "บันทึกคอมเมนต์เป็นรูปภาพ";
 "COPY_COMMENT_IMAGE" = "คัดลอกคอมเมนต์เป็นรูปภาพ";

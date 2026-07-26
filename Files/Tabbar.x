@@ -292,7 +292,7 @@ static BOOL isGestureRegistered = NO;
 %new
 - (UIContextMenuConfiguration *)contextMenuInteraction:(UIContextMenuInteraction *)interaction configurationForMenuAtLocation:(CGPoint)location {
     return [UIContextMenuConfiguration configurationWithIdentifier:nil previewProvider:nil actionProvider:^UIMenu * _Nullable(NSArray<UIMenuElement *> * _Nonnull suggestedActions) {
-        UIAction *tabBarAction = [UIAction actionWithTitle:LOC(@"TABBAR")
+        UIAction *tabBarAction = [UIAction actionWithTitle:LOC(@"MANAGE_TABS")
                                                      image:[UIImage systemImageNamed:@"dock.rectangle"]
                                                 identifier:nil
                                                    handler:^(__kindof UIAction * _Nonnull action) {
