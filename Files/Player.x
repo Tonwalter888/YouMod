@@ -1017,7 +1017,9 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
 %new
 - (void)YouModSetAutoSpeed {
     if (self.YouModIsSpeedLocked) {
-        [self setPlaybackRate:self.YouModSavedNormalRate];
+        NSInteger speedIndex = INTFORVAL(HoldToSpeedIndex);
+        CGFloat speed = YouModSpeedForHoldIndex(speedIndex);
+        [self setPlaybackRate:speed];
         return;
     }
     if (INTFORVAL(AutoSpeedIndex) == 0) return;
