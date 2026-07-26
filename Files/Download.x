@@ -1917,14 +1917,15 @@ static UIImage *YouModRenderViewToImage(_ASDisplayView *view) {
 - (void)YouModHandleCommentLongPress:(UILongPressGestureRecognizer *)sender {
     if (sender.state != UIGestureRecognizerStateBegan) return;
 
-    NSString *commentText = YouModExtractCommentText(self);
     NSMutableArray *items = [NSMutableArray array];
 
     [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_COMMENT_TEXT") subtitle:nil icon:YouModIconImage(243) handler:^{
-        if (commentText.length > 0) {
-            [UIPasteboard generalPasteboard].string = commentText;
-            YouModSendSuccess(LOC(@"COPIED_TO_CLIPBOARD"));
-        }
+        YouModExtractCommentTextAsync(self, ^(NSString *commentText) {
+            if (commentText.length > 0) {
+                [UIPasteboard generalPasteboard].string = commentText;
+                YouModSendSuccess(LOC(@"COPIED_TO_CLIPBOARD"));
+            }
+        });
     }]];
 
     [items addObject:[YouModMenuItem itemWithTitle:LOC(@"SAVE_COMMENT_IMAGE") subtitle:nil icon:YouModIconImage(367) handler:^{
@@ -1953,14 +1954,15 @@ static UIImage *YouModRenderViewToImage(_ASDisplayView *view) {
 - (void)YouModHandlePostLongPress:(UILongPressGestureRecognizer *)sender {
     if (sender.state != UIGestureRecognizerStateBegan) return;
 
-    NSString *postText = YouModExtractCommentText(self);
     NSMutableArray *items = [NSMutableArray array];
 
     [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_POST_TEXT") subtitle:nil icon:YouModIconImage(243) handler:^{
-        if (postText.length > 0) {
-            [UIPasteboard generalPasteboard].string = postText;
-            YouModSendSuccess(LOC(@"COPIED_TO_CLIPBOARD"));
-        }
+        YouModExtractCommentTextAsync(self, ^(NSString *commentText) {
+            if (commentText.length > 0) {
+                [UIPasteboard generalPasteboard].string = commentText;
+                YouModSendSuccess(LOC(@"COPIED_TO_CLIPBOARD"));
+            }
+        });
     }]];
 
     [items addObject:[YouModMenuItem itemWithTitle:LOC(@"SAVE_POST_IMAGE") subtitle:nil icon:YouModIconImage(367) handler:^{
