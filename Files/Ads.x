@@ -133,10 +133,12 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
             if (isShortsShelf && ![description containsString:@"subscriptions-shorts-shelf-item"] && !isHistory) {
                 return YES;
             }
+            if ([description containsString:@"video_lockup_overlay"]) return YES;
         } else if (IS_ENABLED(HideShortsShelf)) {
             if (isShortsShelf && !isHistory) {
                 return YES;
             }
+            if ([description containsString:@"video_lockup_overlay"]) return YES;
         }
         
         // Filter horizontal shelf
