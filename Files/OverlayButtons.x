@@ -77,7 +77,7 @@ static const CGFloat YMOverlayButtonTopInset = 52.0; // fallback row top when th
 static const CGFloat YMOverlayButtonEdgePadding = 12.0; // fallback right padding when the gear isn't found
 
 // Point size of a text button's label. Tweak this to change how large the text renders.
-static const CGFloat YMOverlayTextButtonFontSize = 16.0;
+static const CGFloat YMOverlayTextButtonFontSize = 14.0;
 // Width of a text button. Tweak this to make text buttons wider or narrower; icon
 // buttons stay square at YMOverlayButtonSize.
 static const CGFloat YMOverlayTextButtonWidth = 40.0;
@@ -419,15 +419,15 @@ static NSString *getCompactQualityLabel(MLFormat *format) {
     NSString *qualityLabel = [format qualityLabel];
     BOOL shouldShowFPS = [format FPS] > 30;
     if ([qualityLabel hasPrefix:@"2160p"])
-        qualityLabel = [qualityLabel stringByReplacingOccurrencesOfString:@"2160p" withString:shouldShowFPS ? @"4K\n" : @"4K"];
+        qualityLabel = [qualityLabel stringByReplacingOccurrencesOfString:@"2160p" withString:@"4K"];
     else if ([qualityLabel hasPrefix:@"1440p"])
-        qualityLabel = [qualityLabel stringByReplacingOccurrencesOfString:@"1440p" withString:shouldShowFPS ? @"2K\n" : @"2K"];
+        qualityLabel = [qualityLabel stringByReplacingOccurrencesOfString:@"1440p" withString:@"2K"];
     else if ([qualityLabel hasPrefix:@"1080p"])
-        qualityLabel = [qualityLabel stringByReplacingOccurrencesOfString:@"1080p" withString:shouldShowFPS ? @"FHD\n" : @"FHD"];
+        qualityLabel = [qualityLabel stringByReplacingOccurrencesOfString:@"1080p" withString:@"FHD"];
     else if ([qualityLabel hasPrefix:@"720p"])
-        qualityLabel = [qualityLabel stringByReplacingOccurrencesOfString:@"720p" withString:shouldShowFPS ? @"HD\n" : @"HD"];
+        qualityLabel = [qualityLabel stringByReplacingOccurrencesOfString:@"720p" withString:@"HD"];
     else if (shouldShowFPS)
-        qualityLabel = [qualityLabel stringByReplacingOccurrencesOfString:@"p" withString:@"p\n"];
+        qualityLabel = [qualityLabel stringByReplacingOccurrencesOfString:@"p" withString:@""];
     if ([qualityLabel hasSuffix:@" HDR"])
         qualityLabel = [qualityLabel stringByReplacingOccurrencesOfString:@" HDR" withString:@"\nHDR"];
     return qualityLabel;

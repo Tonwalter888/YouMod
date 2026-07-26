@@ -114,6 +114,7 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
     if (!IS_ENABLED(ShowExtraTimeRemaining) && !IS_ENABLED(SBShowDuration)) return;
 
     YTMainAppVideoPlayerOverlayViewController *con = [self activeVideoPlayerOverlay];
+    if (![con isKindOfClass:%c(YTMainAppVideoPlayerOverlayViewController)]) return;
     CGFloat rate = [con currentPlaybackRate] != 0 ? [con currentPlaybackRate] : 1.0;
     NSTimeInterval remainingSeconds = (lround(video.totalMediaTime) - lround(time.time)) / rate;
 
