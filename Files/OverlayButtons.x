@@ -71,7 +71,7 @@ static const NSInteger YMOverlayButtonBaseTag = 9910;
 
 // Button geometry. The top inset places the row just below YouTube's own
 // CC/gear row in the top-right corner of the player overlay.
-static const CGFloat YMOverlayButtonSize = 40.0;
+static const CGFloat YMOverlayButtonSize = 30.0;
 static const CGFloat YMOverlayButtonGap = 8.0;
 static const CGFloat YMOverlayButtonTopInset = 52.0; // fallback row top when the gear can't be located
 static const CGFloat YMOverlayButtonEdgePadding = 12.0; // fallback right padding when the gear isn't found
@@ -80,7 +80,7 @@ static const CGFloat YMOverlayButtonEdgePadding = 12.0; // fallback right paddin
 static const CGFloat YMOverlayTextButtonFontSize = 12.3;
 // Width of a text button. Tweak this to make text buttons wider or narrower; icon
 // buttons stay square at YMOverlayButtonSize.
-static const CGFloat YMOverlayTextButtonWidth = 40.0;
+static const CGFloat YMOverlayTextButtonWidth = 30.0;
 
 static NSMutableArray<YMOverlayButtonSpec *> *gOverlayButtons = nil;
 static NSInteger gOverlayButtonNextTag = YMOverlayButtonBaseTag;
