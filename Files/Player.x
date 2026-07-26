@@ -753,7 +753,7 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
         // Also return NO if the startLocation is on the engagement panel
         YTEngagementPanelContainerView *engagecontainer = [ov valueForKey:@"_engagementPanelContainerView"];
         if (engagecontainer) {
-            if (self.engagementPanelState == 3) {
+            if (engagecontainer.engagementPanelState == 3) {
                 UIView *mainpanel = nil;
                 for (UIView *sub in engagecontainer.subviews) {
                     if ([sub isKindOfClass:%c(UILayoutContainerView)]) {
