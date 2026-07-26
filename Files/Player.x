@@ -1176,7 +1176,7 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
         
         if (!initialLockState) {
             YTMainAppVideoPlayerOverlayViewController *con = [self activeVideoPlayerOverlay];
-            self.YouModSavedNormalRate = [con currentPlaybackRate]; 
+            self.YouModSavedNormalRate = [con currentPlaybackRate];
             
             [self setPlaybackRate:speed];
             [self YouModShowSpeedToast:speed isLocked:NO];
@@ -1201,44 +1201,34 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
         }
         
         if (stateChanged) {
-            if (!initialLockState) {
-                if (isPendingToggle) {
-                    [self YouModShowSpeedToast:speed isLocked:YES];
-                    UIImpactFeedbackGenerator *feedback = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleMedium];
-                    [feedback impactOccurred];
-                } else {
-                    [self YouModShowSpeedToast:speed isLocked:NO];
-                    UIImpactFeedbackGenerator *feedback = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleLight];
-                    [feedback impactOccurred];
-                }
+            UIImpactFeedbackStyle feedbackStyle = isPendingToggle ? UIImpactFeedbackStyleMedium : UIImpactFeedbackStyleLight;
+            UIImpactFeedbackGenerator *feedback = [[UIImpactFeedbackGenerator alloc] initWithStyle:feedbackStyle];
+            [feedback impactOccurred];
+
+            BOOL previewLockState = initialLockState ? !isPendingToggle : isPendingToggle;
+            
+            if (previewLockState) {
+                [self YouModShowSpeedToast:speed isLocked:YES];
             } else {
-                if (isPendingToggle) {
-                    [self setPlaybackRate:self.YouModSavedNormalRate];
-                    [self YouModShowSpeedToast:self.YouModSavedNormalRate isLocked:NO];
-                    UIImpactFeedbackGenerator *feedback = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleLight];
-                    [feedback impactOccurred];
-                } else {
-                    [self setPlaybackRate:speed];
-                    [self YouModShowSpeedToast:speed isLocked:YES];
-                    UIImpactFeedbackGenerator *feedback = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleMedium];
-                    [feedback impactOccurred];
-                }
+                [self YouModShowSpeedToast:self.YouModSavedNormalRate isLocked:NO];
             }
         }
         
     } else if (gesture.state == UIGestureRecognizerStateEnded || 
                gesture.state == UIGestureRecognizerStateCancelled || 
                gesture.state == UIGestureRecognizerStateFailed) {
+    
         if (IS_ENABLED(LockSpeed) && isPendingToggle) {
             self.YouModIsSpeedLocked = !initialLockState;
         }
         
         if (self.YouModIsSpeedLocked) {
-            [self YouModHideSpeedToast];
+            [self setPlaybackRate:speed];
         } else {
             [self setPlaybackRate:self.YouModSavedNormalRate];
-            [self YouModHideSpeedToast];
         }
+        isPendingToggle = NO;
+        [self YouModHideSpeedToast];
     }
 }
 %end
