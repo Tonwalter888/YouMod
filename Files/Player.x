@@ -740,8 +740,8 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
         YTFullscreenEngagementOverlayView *fullov = [ov valueForKey:@"_fullscreenEngagementOverlayView"];
         if (fullov) {
             YTRelatedVideosView *relatedview = [fullov valueForKey:@"_relatedVideosView"];
-            NSInteger *overlayState = [relatedview valueForKey:@"_overlayState"];
-            if (overlayState == 1) return NO;
+            YTRelatedVideosViewController *relatedcon = [relatedview valueForKey:@"_delegate"];
+            if ([relatedcon isExpanded]) return NO;
         }           
 
         UIPanGestureRecognizer *panGesture = (UIPanGestureRecognizer *)gestureRecognizer;

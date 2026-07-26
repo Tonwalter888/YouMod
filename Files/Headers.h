@@ -463,6 +463,10 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 - (NSInteger)engagementPanelState;
 @end
 
+@interface YTRelatedVideosViewController : UIViewController
+- (BOOL)isExpanded;
+@end
+
 @interface YTMainAppControlsOverlayView (YouMod)
 - (YTMainAppVideoPlayerOverlayViewController *)eventsDelegate;
 @end
