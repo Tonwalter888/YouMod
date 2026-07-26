@@ -740,7 +740,7 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
         YTFullscreenEngagementOverlayView *fullov = [ov valueForKey:@"_fullscreenEngagementOverlayView"];
         if (fullov) {
             YTRelatedVideosView *relatedview = [fullov valueForKey:@"_relatedVideosView"];
-            NSInteger overlayState = [relatedview valueForKey:@"_overlayState"];
+            NSInteger *overlayState = [relatedview valueForKey:@"_overlayState"];
             if (overlayState == 1) return NO;
         }           
 
@@ -753,9 +753,9 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
         // Also return NO if the startLocation is on the engagement panel
         YTEngagementPanelContainerView *engagecontainer = [ov valueForKey:@"_engagementPanelContainerView"];
         if (engagecontainer) {
-            NSInteger panelstate = [engagecontainer valueForKey:@"_engagementPanelState"];
+            NSInteger *panelstate = [engagecontainer valueForKey:@"_engagementPanelState"];
             if (panelstate == 3) {
-                UILayoutContainerView *mainpanel = nil;
+                UIView *mainpanel = nil;
                 for (UIView *sub in engagecontainer.subviews) {
                     if ([sub isKindOfClass:%c(UILayoutContainerView)]) {
                         mainpanel = sub;
@@ -1297,7 +1297,7 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
     } else if (gesture.state == UIGestureRecognizerStateEnded || 
                gesture.state == UIGestureRecognizerStateCancelled || 
                gesture.state == UIGestureRecognizerStateFailed) {
-                
+
         BOOL finalLockState = initialLockState;
         if (gesture.state == UIGestureRecognizerStateEnded) {
             if (IS_ENABLED(LockSpeed) && isPendingToggle) {
