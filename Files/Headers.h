@@ -703,10 +703,3 @@ extern UIViewController *YouModTopViewController(UIViewController *root);
 @property (nonatomic, strong) UIScrollView *scrollView;
 @property (nonatomic, strong) UIImageView *imageView;
 @end
-
-@interface YMTranslationViewController : UIViewController
-@property (nonatomic, copy) NSString *originalText;
-@property (nonatomic, copy) NSString *currentLangCode;
-@property (nonatomic, strong) UITextView *textView;
-@property (nonatomic, strong) UIButton *langButton;
-@end
