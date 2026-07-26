@@ -659,6 +659,11 @@ static const CGFloat SBAlertDurationDefault = 4.0;
 
 extern void YMRegisterOverlayButton(YMOverlayButtonSpec *spec);
 extern NSArray<YMOverlayButtonSpec *> *YMRegisteredOverlayButtons(void);
+extern NSBundle *YouModBundle();
+extern UIImage *YouModYTIconImage(NSInteger iconType);
+extern NSArray *getAllSystemLanguageTitles();
+extern NSArray *getAllSystemLanguageValues();
+extern UIViewController *YouModTopViewController(UIViewController *root);
 
 @interface YMDownloadProgressView : UIView
 @property (nonatomic, strong) UILabel *titleLabel;
@@ -697,4 +702,11 @@ extern NSArray<YMOverlayButtonSpec *> *YMRegisteredOverlayButtons(void);
 @property (nonatomic, strong) UIImage *thumbnailImage;
 @property (nonatomic, strong) UIScrollView *scrollView;
 @property (nonatomic, strong) UIImageView *imageView;
+@end
+
+@interface YMTranslationViewController : UIViewController
+@property (nonatomic, copy) NSString *originalText;
+@property (nonatomic, copy) NSString *currentLangCode;
+@property (nonatomic, strong) UITextView *textView;
+@property (nonatomic, strong) UIButton *langButton;
 @end

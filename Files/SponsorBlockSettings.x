@@ -5,20 +5,7 @@
 
 extern UIColor *SBColorFromHex(NSString *hexString);
 
-static NSBundle *SBSettingsBundle() {
-    static NSBundle *bundle = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        NSString *tweakBundlePath = [[NSBundle mainBundle] pathForResource:@"YouMod" ofType:@"bundle"];
-        if (tweakBundlePath)
-            bundle = [NSBundle bundleWithPath:tweakBundlePath];
-        else
-            bundle = [NSBundle bundleWithPath:[NSString stringWithFormat:PS_ROOT_PATH_NS(@"/Library/Application Support/%@.bundle"), @"YouMod"]];
-    });
-    return bundle;
-}
-
-#define SB_LOC(x) [SBSettingsBundle() localizedStringForKey:x value:nil table:nil]
+#define LOC(x) [YouModBundle() localizedStringForKey:x value:nil table:nil]
 
 // Purple accent used to tint the toggle switches and duration sliders on this
 // page. (Distinct from the player overlay button's accent in SponsorBlock.x.)
@@ -73,7 +60,7 @@ static NSArray<SBToggleRow *> *sbToggleRows() {
 }
 
 static NSString *SBActionName(NSInteger action) {
-    return SB_LOC(SBActionLocKey((SBSegmentAction)action));
+    return LOC(SBActionLocKey((SBSegmentAction)action));
 }
 
 static NSString *SBHexFromColor(UIColor *color) {
@@ -245,8 +232,8 @@ static const void *kSBColorIndexPathKey = &kSBColorIndexPathKey;
 
 - (UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section {
     NSString *title = nil;
-    if (section == 0) title = SB_LOC(@"SB_SECTION_MAIN");
-    else if (section == 2) title = SB_LOC(@"SB_CATEGORIES_HEADER");
+    if (section == 0) title = LOC(@"SB_SECTION_MAIN");
+    else if (section == 2) title = LOC(@"SB_CATEGORIES_HEADER");
     if (!title) return nil;
 
     UIView *header = [[UIView alloc] init];
@@ -300,8 +287,8 @@ static const void *kSBColorIndexPathKey = &kSBColorIndexPathKey;
 
     SBToggleRow *def = sbToggleRows()[row];
 
-    cell.textLabel.text = SB_LOC(def.titleKey);
-    cell.detailTextLabel.text = SB_LOC(def.descKey);
+    cell.textLabel.text = LOC(def.titleKey);
+    cell.detailTextLabel.text = LOC(def.descKey);
 
     UISwitch *sw = [[UISwitch alloc] init];
     sw.on = [[NSUserDefaults standardUserDefaults] boolForKey:def.key];
@@ -327,7 +314,7 @@ static const void *kSBColorIndexPathKey = &kSBColorIndexPathKey;
     cell.backgroundColor = [UIColor clearColor];
     cell.selectionStyle = UITableViewCellSelectionStyleNone;
 
-    NSString *title = (row == 0) ? SB_LOC(@"SB_SKIP_ALERT_DURATION") : SB_LOC(@"SB_UNSKIP_ALERT_DURATION");
+    NSString *title = (row == 0) ? LOC(@"SB_SKIP_ALERT_DURATION") : LOC(@"SB_UNSKIP_ALERT_DURATION");
     NSString *key = (row == 0) ? SBSkipAlertDuration : SBUnskipAlertDuration;
     float currentVal = [[NSUserDefaults standardUserDefaults] floatForKey:key];
     if (currentVal <= 0) currentVal = SBAlertDurationDefault;
@@ -402,7 +389,7 @@ static const void *kSBColorIndexPathKey = &kSBColorIndexPathKey;
     NSInteger catIndex = row / 2;
     BOOL isColorRow = (row % 2 == 1);
     NSString *category = sbAllCategories()[catIndex];
-    NSBundle *bundle = SBSettingsBundle();
+    NSBundle *bundle = YouModBundle();
     NSString *catLocKey = [NSString stringWithFormat:@"SB_CAT_%@", category];
     NSString *catName = [bundle localizedStringForKey:catLocKey value:category table:nil];
 
@@ -444,7 +431,7 @@ static const void *kSBColorIndexPathKey = &kSBColorIndexPathKey;
         actionOptions = @[@(SBSegmentActionDisable), @(SBSegmentActionAutoSkip), @(SBSegmentActionAsk), @(SBSegmentActionDisplay)];
     }
 
-    NSBundle *bundle = SBSettingsBundle();
+    NSBundle *bundle = YouModBundle();
     for (NSNumber *option in actionOptions) {
         NSInteger actionVal = [option integerValue];
         NSString *actionTitle = [bundle localizedStringForKey:SBActionLocKey((SBSegmentAction)actionVal) value:nil table:nil];
@@ -469,7 +456,7 @@ static const void *kSBColorIndexPathKey = &kSBColorIndexPathKey;
     UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:nil];
     cell.backgroundColor = [UIColor clearColor];
     cell.selectionStyle = UITableViewCellSelectionStyleNone;
-    cell.textLabel.text = [NSString stringWithFormat:@"%@ %@", catName, SB_LOC(@"SB_SEGMENT_COLOR_SUFFIX")];
+    cell.textLabel.text = [NSString stringWithFormat:@"%@ %@", catName, LOC(@"SB_SEGMENT_COLOR_SUFFIX")];
     cell.textLabel.textColor = [self sbTextColor];
     cell.textLabel.font = [UIFont systemFontOfSize:15];
 
@@ -495,8 +482,8 @@ static const void *kSBColorIndexPathKey = &kSBColorIndexPathKey;
     self.activeColorIndexPath = indexPath;
 
     UIColorPickerViewController *picker = [[UIColorPickerViewController alloc] init];
-    NSString *catName = [SBSettingsBundle() localizedStringForKey:[NSString stringWithFormat:@"SB_CAT_%@", category] value:category table:nil];
-    picker.title = [NSString stringWithFormat:@"%@ %@", catName, SB_LOC(@"SB_SEGMENT_COLOR_SUFFIX")];
+    NSString *catName = [YouModBundle() localizedStringForKey:[NSString stringWithFormat:@"SB_CAT_%@", category] value:category table:nil];
+    picker.title = [NSString stringWithFormat:@"%@ %@", catName, LOC(@"SB_SEGMENT_COLOR_SUFFIX")];
     NSString *currentHex = [[NSUserDefaults standardUserDefaults] stringForKey:colorKey];
     if (currentHex) picker.selectedColor = SBColorFromHex(currentHex);
     picker.supportsAlpha = NO;

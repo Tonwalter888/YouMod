@@ -1,21 +1,6 @@
 #import "Headers.h"
 #import <objc/runtime.h>
 
-#define TweakName @"YouMod"
-
-static NSBundle *YouModBundle() {
-    static NSBundle *bundle = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        NSString *tweakBundlePath = [[NSBundle mainBundle] pathForResource:TweakName ofType:@"bundle"];
-        if (tweakBundlePath)
-            bundle = [NSBundle bundleWithPath:tweakBundlePath];
-        else
-            bundle = [NSBundle bundleWithPath:[NSString stringWithFormat:PS_ROOT_PATH_NS(@"/Library/Application Support/%@.bundle"), TweakName]];
-    });
-    return bundle;
-}
-
 #define LOC(x) [YouModBundle() localizedStringForKey:x value:nil table:nil]
 
 // Tab icons
@@ -241,29 +226,6 @@ static void YMOpenLinkFromClipboard(UIViewController *presentingVC, BOOL isRunti
     }
 }
 
-static UIViewController *YMGetTopViewController() {
-    UIWindow *keyWindow = nil;
-    for (UIScene *scene in [UIApplication sharedApplication].connectedScenes) {
-        if (scene.activationState == UISceneActivationStateForegroundActive &&
-            [scene isKindOfClass:[UIWindowScene class]]) {
-            UIWindowScene *windowScene = (UIWindowScene *)scene;
-            for (UIWindow *window in windowScene.windows) {
-                if (window.isKeyWindow) {
-                    keyWindow = window;
-                    break;
-                }
-            }
-        }
-        if (keyWindow) break;
-    }
-    if (!keyWindow) return nil;
-    UIViewController *topVC = keyWindow.rootViewController;
-    while (topVC.presentedViewController) {
-        topVC = topVC.presentedViewController;
-    }
-    return topVC;
-}
-
 static BOOL isGestureRegistered = NO;
 // Hide Tab Labels + long-press on the first tab to open Manage Tabs
 %hook YTPivotBarItemView
@@ -302,7 +264,7 @@ static BOOL isGestureRegistered = NO;
                                                image:[UIImage systemImageNamed:@"link"]
                                           identifier:nil
                                              handler:^(__kindof UIAction * _Nonnull action) {
-            UIViewController *topVC = YMGetTopViewController();
+            UIViewController *topVC = YouModTopViewController(nil);
             YMOpenLinkFromClipboard(topVC, YES);
         }];
         return [UIMenu menuWithTitle:@"" children:@[tabBarAction, openLinkAction]];
@@ -360,7 +322,7 @@ static BOOL isTabSelected = NO;
 - (void)appDidBecomeActive {
     %orig;
     if (IS_ENABLED(AutoOpenLink)) {
-        UIViewController *topVC = YMGetTopViewController();
+        UIViewController *topVC = YouModTopViewController(nil);
         YMOpenLinkFromClipboard(topVC, NO);
     }
 }

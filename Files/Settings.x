@@ -27,19 +27,6 @@ extern void YMPushTabOrder(id settingsVC, id parentResponder);
 - (void)updateSponsorBlockSectionWithEntry:(id)entry;
 @end
 
-static NSBundle *YouModBundle() {
-    static NSBundle *bundle = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        NSString *tweakBundlePath = [[NSBundle mainBundle] pathForResource:TweakName ofType:@"bundle"];
-        if (tweakBundlePath)
-            bundle = [NSBundle bundleWithPath:tweakBundlePath];
-        else
-            bundle = [NSBundle bundleWithPath:[NSString stringWithFormat:PS_ROOT_PATH_NS(@"/Library/Application Support/%@.bundle"), TweakName]];
-    });
-    return bundle;
-}
-
 static NSString *GetCacheSize() { // YTLite - @dayanch96
     NSString *cachePath = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES).firstObject;
     NSArray *filesArray = [[NSFileManager defaultManager] subpathsOfDirectoryAtPath:cachePath error:nil];
@@ -52,26 +39,6 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
     NSByteCountFormatter *formatter = [[NSByteCountFormatter alloc] init];
     formatter.countStyle = NSByteCountFormatterCountStyleFile;
     return [formatter stringFromByteCount:folderSize];
-}
-
-// Audio track list
-static NSArray *getAllSystemLanguageTitles() {
-    NSMutableArray *titles = [NSMutableArray array];
-    NSArray *allLocales = [%c(YTLanguages) languageList];
-    NSMutableSet *seenLanguages = [NSMutableSet set];
-    NSLocale *currentLocale = [NSLocale currentLocale];
-    
-    for (NSString *localeId in allLocales) {
-        NSDictionary *components = [NSLocale componentsFromLocaleIdentifier:localeId];
-        NSString *langCode = components[NSLocaleLanguageCode];
-        
-        if (langCode && ![seenLanguages containsObject:langCode]) {
-            [seenLanguages addObject:langCode];
-            NSString *displayName = [currentLocale localizedStringForLocaleIdentifier:langCode];
-            if (displayName) [titles addObject:displayName];
-        }
-    }
-    return [titles sortedArrayUsingSelector:@selector(localizedCaseInsensitiveCompare:)];
 }
 
 %hook YTSettingsGroupData
@@ -390,9 +357,7 @@ static NSArray *getAllSystemLanguageTitles() {
                 if ([tabID isEqualToString:@"create"]) continue;
                 NSNumber *ytIconType = tabYTIconMap[tabID];
                 if (ytIconType) {
-                    YTIIcon *icon = [%c(YTIIcon) new];
-                    icon.iconType = [ytIconType intValue];
-                    UIImage *img = [icon iconImageWithColor:[UIColor whiteColor]];
+                    UIImage *img = YouModYTIconImage([ytIconType intValue]);
                     if (img) [defaultTabImages addObject:img];
                 } else {
                     NSString *bundleName = tabBundleIconMap[tabID];
@@ -409,9 +374,7 @@ static NSArray *getAllSystemLanguageTitles() {
         if (defaultTabImages.count == 0) {
             NSArray *fallbackIcons = @[@(65), @(769), @(66), @(61)];
             for (NSNumber *iconType in fallbackIcons) {
-                YTIIcon *icon = [%c(YTIIcon) new];
-                icon.iconType = [iconType intValue];
-                UIImage *img = [icon iconImageWithColor:[UIColor whiteColor]];
+                UIImage *img = YouModYTIconImage([iconType intValue]);
                 if (img) [defaultTabImages addObject:img];
             }
         }

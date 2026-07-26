@@ -3,19 +3,6 @@
 
 #define Prefix @"YouMod"
 
-static NSBundle *YouModBundle() {
-    static NSBundle *bundle = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        NSString *tweakBundlePath = [[NSBundle mainBundle] pathForResource:Prefix ofType:@"bundle"];
-        if (tweakBundlePath)
-            bundle = [NSBundle bundleWithPath:tweakBundlePath];
-        else
-            bundle = [NSBundle bundleWithPath:[NSString stringWithFormat:PS_ROOT_PATH_NS(@"/Library/Application Support/%@.bundle"), Prefix]];
-    });
-    return bundle;
-}
-
 #define LOC(x) [YouModBundle() localizedStringForKey:x value:nil table:nil]
 
 @implementation YouModPrefsManager

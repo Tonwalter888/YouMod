@@ -8,29 +8,7 @@
 #import <stdarg.h>
 #import <stdlib.h>
 
-#define TweakName @"YouMod"
-
-static NSBundle *YouModBundle() {
-    static NSBundle *bundle = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        NSString *tweakBundlePath = [[NSBundle mainBundle] pathForResource:TweakName ofType:@"bundle"];
-        if (tweakBundlePath)
-            bundle = [NSBundle bundleWithPath:tweakBundlePath];
-        else
-            bundle = [NSBundle bundleWithPath:[NSString stringWithFormat:PS_ROOT_PATH_NS(@"/Library/Application Support/%@.bundle"), TweakName]];
-    });
-    return bundle;
-}
-
 #define LOC(x) [YouModBundle() localizedStringForKey:x value:nil table:nil]
-
-static UIImage *YouModIconImage(NSInteger iconType) {
-    YTIIcon *icon = [%c(YTIIcon) new];
-    icon.iconType = iconType;
-    UIImage *image = [icon iconImageWithColor:[UIColor labelColor]];
-    return [image imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
-}
 
 @interface YouModMenuItem : NSObject
 @property (nonatomic, copy) NSString *title;
@@ -461,25 +439,6 @@ static id YouModObjectFromSelector(id object, SEL selector) {
     } @catch (__unused NSException *exception) {
         return nil;
     }
-}
-
-static UIViewController *YouModTopViewController(UIViewController *root) {
-    if (!root) {
-        UIWindow *keyWindow = nil;
-        for (UIWindow *window in UIApplication.sharedApplication.windows) {
-            if (window.isKeyWindow) {
-                keyWindow = window;
-                break;
-            }
-        }
-        root = keyWindow.rootViewController;
-    }
-    while (root.presentedViewController) root = root.presentedViewController;
-    if ([root isKindOfClass:UINavigationController.class])
-        return YouModTopViewController(((UINavigationController *)root).topViewController);
-    if ([root isKindOfClass:UITabBarController.class])
-        return YouModTopViewController(((UITabBarController *)root).selectedViewController);
-    return root;
 }
 
 static void YouModSendToast(NSString *message) {
@@ -1571,16 +1530,16 @@ static void YouModShowCopyVideoInfoSheet(YTPlayerViewController *player, UIViewC
     NSString *all = [NSString stringWithFormat:@"%@ - %@\n%@", author, title, description];
 
     NSMutableArray *items = [NSMutableArray array];
-    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_ALL_VID_INFO") subtitle:nil icon:YouModIconImage(250) handler:^{
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_ALL_VID_INFO") subtitle:nil icon:YouModYTIconImage(250) handler:^{
         YouModCopyTextToPasteboard(all, @"COPIED_VID_INFO");
     }]];
-    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_AUTHOR") subtitle:nil icon:YouModIconImage(250) handler:^{
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_AUTHOR") subtitle:nil icon:YouModYTIconImage(250) handler:^{
         YouModCopyTextToPasteboard(author, @"COPIED_AUTHOR");
     }]];
-    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_TITLE") subtitle:nil icon:YouModIconImage(250) handler:^{
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_TITLE") subtitle:nil icon:YouModYTIconImage(250) handler:^{
         YouModCopyTextToPasteboard(title, @"COPIED_TITLE");
     }]];
-    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_DESCRIPTION") subtitle:nil icon:YouModIconImage(250) handler:^{
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_DESCRIPTION") subtitle:nil icon:YouModYTIconImage(250) handler:^{
         YouModCopyTextToPasteboard(description, @"COPIED_DESCRIPTION");
     }]];
 
@@ -1608,7 +1567,7 @@ static void YouModShowAudioTrackSelectionSheet(YTPlayerViewController *player, U
     for (YouModMediaFormat *format in audioFormats) {
         NSString *rowTitle = format.qualityLabel;
         NSString *subtitle = YouModFormatSubtitle(format, NO);
-        [items addObject:[YouModMenuItem itemWithTitle:rowTitle subtitle:subtitle icon:YouModIconImage(906) handler:^{
+        [items addObject:[YouModMenuItem itemWithTitle:rowTitle subtitle:subtitle icon:YouModYTIconImage(906) handler:^{
             if (downloadVideo) {
                 [[YouModDownloadCoordinator sharedCoordinator] startVideoDownloadWithVideoFormat:videoFormat audioFormat:format fileName:fileName presenter:presenter videoID:player.currentVideoID];
             } else {
@@ -1634,11 +1593,11 @@ static void YouModShowVideoQualitySheet(YTPlayerViewController *player, UIViewCo
         NSString *rowTitle = format.qualityLabel;
         NSString *subtitle = YouModFormatSubtitle(format, YES);
         if (isShorts) {
-            [items addObject:[YouModMenuItem itemWithTitle:rowTitle subtitle:subtitle icon:YouModIconImage(769) handler:^{
+            [items addObject:[YouModMenuItem itemWithTitle:rowTitle subtitle:subtitle icon:YouModYTIconImage(769) handler:^{
                 YouModShowAudioTrackSelectionSheet(player, presenter, sender, title, YES, format);
             }]];
         } else {
-            [items addObject:[YouModMenuItem itemWithTitle:rowTitle subtitle:subtitle icon:YouModIconImage(658) handler:^{
+            [items addObject:[YouModMenuItem itemWithTitle:rowTitle subtitle:subtitle icon:YouModYTIconImage(658) handler:^{
                 YouModShowAudioTrackSelectionSheet(player, presenter, sender, title, YES, format);
             }]];
         }
@@ -1667,7 +1626,7 @@ static void YouModShowCaptionsSheet(YTPlayerViewController *player, UIViewContro
         YTIFormattedString *nameObj = track.name;
         NSString *nameStr = nameObj.dropdownOptionTitle;
         
-        [items addObject:[YouModMenuItem itemWithTitle:nameStr subtitle:languageCode icon:YouModIconImage(50) handler:^{
+        [items addObject:[YouModMenuItem itemWithTitle:nameStr subtitle:languageCode icon:YouModYTIconImage(50) handler:^{
             NSString *vttURL = [baseURL stringByAppendingString:@"&fmt=vtt"];
             NSURL *url = [NSURL URLWithString:vttURL];
             if (!url) {
@@ -1714,13 +1673,13 @@ static void YouModShowThumbnailSheet(YTPlayerViewController *player, UIViewContr
     NSString *videoID = player.currentVideoID;
 
     NSMutableArray *items = [NSMutableArray array];
-    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"SAVE_THUMBNAIL") subtitle:nil icon:YouModIconImage(57) handler:^{
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"SAVE_THUMBNAIL") subtitle:nil icon:YouModYTIconImage(57) handler:^{
         YouModDownloadThumbnail(videoID, presenter);
     }]];
-    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"SHOW_THUMBNAIL") subtitle:nil icon:YouModIconImage(208) handler:^{
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"SHOW_THUMBNAIL") subtitle:nil icon:YouModYTIconImage(208) handler:^{
         YouModShowThumbnailViewer(videoID, presenter);
     }]];
-    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_THUMBNAIL") subtitle:nil icon:YouModIconImage(250) handler:^{
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_THUMBNAIL") subtitle:nil icon:YouModYTIconImage(250) handler:^{
         YouModCopyThumbnail(videoID, presenter);
     }]];
 
@@ -1735,24 +1694,24 @@ static void YouModShowDownloadManager(YTPlayerViewController *player, UIViewCont
     NSMutableArray *items = [NSMutableArray array];
 
     if (isShorts) {
-        [items addObject:[YouModMenuItem itemWithTitle:LOC(@"DOWNLOAD_SHORTS") subtitle:nil icon:YouModIconImage(769) handler:^{
+        [items addObject:[YouModMenuItem itemWithTitle:LOC(@"DOWNLOAD_SHORTS") subtitle:nil icon:YouModYTIconImage(769) handler:^{
             YouModShowVideoQualitySheet(player, presenter, sender, YES);
         }]];
     } else {
-        [items addObject:[YouModMenuItem itemWithTitle:LOC(@"DOWNLOAD_VIDEO") subtitle:nil icon:YouModIconImage(658) handler:^{
+        [items addObject:[YouModMenuItem itemWithTitle:LOC(@"DOWNLOAD_VIDEO") subtitle:nil icon:YouModYTIconImage(658) handler:^{
             YouModShowVideoQualitySheet(player, presenter, sender, NO);
         }]];
     }
-    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"DOWNLOAD_AUDIO") subtitle:nil icon:YouModIconImage(21) handler:^{
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"DOWNLOAD_AUDIO") subtitle:nil icon:YouModYTIconImage(21) handler:^{
         YouModStartDownloadAudio(player, presenter, sender);
     }]];
-    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"DOWNLOAD_CAPTIONS") subtitle:nil icon:YouModIconImage(50) handler:^{
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"DOWNLOAD_CAPTIONS") subtitle:nil icon:YouModYTIconImage(50) handler:^{
         YouModShowCaptionsSheet(player, presenter, sender);
     }]];
-    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"THUMBNAIL_OPTIONS") subtitle:nil icon:YouModIconImage(367) handler:^{
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"THUMBNAIL_OPTIONS") subtitle:nil icon:YouModYTIconImage(367) handler:^{
         YouModShowThumbnailSheet(player, presenter, sender);
     }]];
-    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_VID_INFO") subtitle:nil icon:YouModIconImage(250) handler:^{
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_VID_INFO") subtitle:nil icon:YouModYTIconImage(250) handler:^{
         YouModShowCopyVideoInfoSheet(player, presenter, sender);
     }]];
     YouModPresentMenu(player, items, presenter, sender);
@@ -1917,7 +1876,7 @@ static UIImage *YouModRenderViewToImage(_ASDisplayView *view) {
 
     NSMutableArray *items = [NSMutableArray array];
 
-    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_COMMENT_TEXT") subtitle:nil icon:YouModIconImage(243) handler:^{
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_COMMENT_TEXT") subtitle:nil icon:YouModYTIconImage(243) handler:^{
         YouModExtractCommentTextAsync(self, ^(NSString *commentText) {
             if (commentText.length > 0) {
                 [UIPasteboard generalPasteboard].string = commentText;
@@ -1926,7 +1885,7 @@ static UIImage *YouModRenderViewToImage(_ASDisplayView *view) {
         });
     }]];
 
-    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"SAVE_COMMENT_IMAGE") subtitle:nil icon:YouModIconImage(367) handler:^{
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"SAVE_COMMENT_IMAGE") subtitle:nil icon:YouModYTIconImage(367) handler:^{
         UIImage *image = YouModRenderViewToImage(self);
         if (image) {
             UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil);
@@ -1934,7 +1893,7 @@ static UIImage *YouModRenderViewToImage(_ASDisplayView *view) {
         }
     }]];
 
-    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_COMMENT_IMAGE") subtitle:nil icon:YouModIconImage(208) handler:^{
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_COMMENT_IMAGE") subtitle:nil icon:YouModYTIconImage(208) handler:^{
         UIImage *image = YouModRenderViewToImage(self);
         if (image) {
             [UIPasteboard generalPasteboard].image = image;
@@ -1954,7 +1913,7 @@ static UIImage *YouModRenderViewToImage(_ASDisplayView *view) {
 
     NSMutableArray *items = [NSMutableArray array];
 
-    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_POST_TEXT") subtitle:nil icon:YouModIconImage(243) handler:^{
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_POST_TEXT") subtitle:nil icon:YouModYTIconImage(243) handler:^{
         YouModExtractCommentTextAsync(self, ^(NSString *commentText) {
             if (commentText.length > 0) {
                 [UIPasteboard generalPasteboard].string = commentText;
@@ -1963,7 +1922,7 @@ static UIImage *YouModRenderViewToImage(_ASDisplayView *view) {
         });
     }]];
 
-    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"SAVE_POST_IMAGE") subtitle:nil icon:YouModIconImage(367) handler:^{
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"SAVE_POST_IMAGE") subtitle:nil icon:YouModYTIconImage(367) handler:^{
         UIImage *image = YouModRenderViewToImage(self);
         if (image) {
             UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil);
@@ -1971,7 +1930,7 @@ static UIImage *YouModRenderViewToImage(_ASDisplayView *view) {
         }
     }]];
 
-    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_POST_IMAGE") subtitle:nil icon:YouModIconImage(208) handler:^{
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_POST_IMAGE") subtitle:nil icon:YouModYTIconImage(208) handler:^{
         UIImage *image = YouModRenderViewToImage(self);
         if (image) {
             [UIPasteboard generalPasteboard].image = image;

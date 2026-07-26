@@ -1150,7 +1150,7 @@ void YMPresentTabOrderModally(id parentResponder) {
         initWithBarButtonSystemItem:UIBarButtonSystemItemDone
         primaryAction:doneAction];
 
-    UIViewController *presenter = [%c(YTUIUtils) topViewControllerForPresenting];
+    UIViewController *presenter = YouModTopViewController(nil);
     if (!presenter) return;
     [presenter presentViewController:nav animated:YES completion:nil];
 }

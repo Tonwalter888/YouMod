@@ -1,20 +1,5 @@
 #import "Headers.h"
 
-#define TweakName @"YouMod"
-
-static NSBundle *YouModBundle() {
-    static NSBundle *bundle = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        NSString *tweakBundlePath = [[NSBundle mainBundle] pathForResource:TweakName ofType:@"bundle"];
-        if (tweakBundlePath)
-            bundle = [NSBundle bundleWithPath:tweakBundlePath];
-        else
-            bundle = [NSBundle bundleWithPath:[NSString stringWithFormat:PS_ROOT_PATH_NS(@"/Library/Application Support/%@.bundle"), TweakName]];
-    });
-    return bundle;
-}
-
 #define LOC(x) [YouModBundle() localizedStringForKey:x value:nil table:nil]
 
 static BOOL isWiFiConnected() {
@@ -123,48 +108,6 @@ static void YouModConfigureRemoteSkipCommands(void) {
             return YouModSeekByInterval(YouModForwardSecondsValue()) ? MPRemoteCommandHandlerStatusSuccess : MPRemoteCommandHandlerStatusNoSuchContent;
         }];
     }
-}
-
-// Audio track list
-static NSArray *getAllSystemLanguageTitles() {
-    NSMutableArray *titles = [NSMutableArray array];
-    NSArray *allLocales = [%c(YTLanguages) languageList];
-    NSMutableSet *seenLanguages = [NSMutableSet set];
-    NSLocale *currentLocale = [NSLocale currentLocale];
-    
-    for (NSString *localeId in allLocales) {
-        NSDictionary *components = [NSLocale componentsFromLocaleIdentifier:localeId];
-        NSString *langCode = components[NSLocaleLanguageCode];
-        
-        if (langCode && ![seenLanguages containsObject:langCode]) {
-            [seenLanguages addObject:langCode];
-            NSString *displayName = [currentLocale localizedStringForLocaleIdentifier:langCode];
-            if (displayName) [titles addObject:displayName];
-        }
-    }
-    return [titles sortedArrayUsingSelector:@selector(localizedCaseInsensitiveCompare:)];
-}
-
-static NSArray *getAllSystemLanguageValues() {
-    NSArray *sortedTitles = getAllSystemLanguageTitles();
-    NSMutableArray *sortedCodes = [NSMutableArray array];
-    NSArray *allLocales = [%c(YTLanguages) languageList];
-    NSLocale *currentLocale = [NSLocale currentLocale];
-    
-    NSMutableDictionary *titleToCodeMap = [NSMutableDictionary dictionary];
-    for (NSString *localeId in allLocales) {
-        NSDictionary *components = [NSLocale componentsFromLocaleIdentifier:localeId];
-        NSString *langCode = components[NSLocaleLanguageCode];
-        if (langCode) {
-            NSString *displayName = [currentLocale localizedStringForLocaleIdentifier:langCode];
-            if (displayName) titleToCodeMap[displayName] = langCode;
-        }
-    }
-    
-    for (NSString *title in sortedTitles) {
-        [sortedCodes addObject:titleToCodeMap[title] ? titleToCodeMap[title] : @"en"];
-    }
-    return [sortedCodes copy];
 }
 
 static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoController *video, YTSingleVideoTime *time) {

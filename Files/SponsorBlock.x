@@ -14,17 +14,6 @@ static const CGFloat SBSegmentEndGuardSeconds = 0.5;
 // otherwise the following time-change callback dismisses it immediately.
 static const NSTimeInterval SBSkipNotificationDelaySeconds = 0.3;
 
-// The YouMod resource bundle, resolved once. Localized strings for the skip
-// banners are looked up here.
-static NSBundle *SBBundle(void) {
-    static NSBundle *bundle = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        bundle = [NSBundle bundleWithPath:[[NSBundle mainBundle] pathForResource:@"YouMod" ofType:@"bundle"]];
-    });
-    return bundle;
-}
-
 // Clamps a stored banner duration to the supported range, falling back to the
 // default when unset or out of range.
 static float SBClampedAlertDuration(NSString *key) {
@@ -456,7 +445,7 @@ UIColor *SBColorFromHex(NSString *hexString) {
 
     if (IS_ENABLED(SBShowNotifications)) {
         useBackwardIconForButton = YES;
-        NSBundle *bundle = SBBundle();
+        NSBundle *bundle = YouModBundle();
         NSString *catName = [bundle localizedStringForKey:[NSString stringWithFormat:@"SB_CAT_%@", segment.category] value:segment.category table:nil];
         NSString *message = [NSString stringWithFormat:[bundle localizedStringForKey:@"SB_SKIPPED" value:@"%@ skipped" table:nil], catName];
         NSString *unskipTitle = [bundle localizedStringForKey:@"SB_UNSKIP" value:@"Unskip" table:nil];
@@ -487,7 +476,7 @@ UIColor *SBColorFromHex(NSString *hexString) {
     [self.sbSkippedSegments addObject:segment.UUID];
 
     useBackwardIconForButton = NO;
-    NSBundle *bundle = SBBundle();
+    NSBundle *bundle = YouModBundle();
     NSString *catName = [bundle localizedStringForKey:[NSString stringWithFormat:@"SB_CAT_%@", segment.category] value:segment.category table:nil];
     NSString *message = [NSString stringWithFormat:[bundle localizedStringForKey:@"SB_DETECTED" value:@"%@ detected" table:nil], catName];
 
@@ -510,7 +499,7 @@ UIColor *SBColorFromHex(NSString *hexString) {
     for (SBSegment *seg in segments) {
         if ([seg.category isEqualToString:@"poi_highlight"] && [seg configuredAction] == SBSegmentActionAsk) {
             useBackwardIconForButton = NO;
-            NSBundle *bundle = SBBundle();
+            NSBundle *bundle = YouModBundle();
             NSString *message = [bundle localizedStringForKey:@"SB_JUMP_TO_HIGHLIGHT" value:@"Highlight available. Jump to the point?" table:nil];
             NSString *skipTitle = [bundle localizedStringForKey:@"SB_SKIP_NOW" value:@"Skip" table:nil];
 
@@ -542,7 +531,7 @@ UIColor *SBColorFromHex(NSString *hexString) {
 
             if (IS_ENABLED(SBShowNotifications)) {
                 useBackwardIconForButton = YES;
-                NSBundle *bundle = SBBundle();
+                NSBundle *bundle = YouModBundle();
                 NSString *message = [bundle localizedStringForKey:@"SB_JUMPED_TO_HIGHLIGHT" value:@"Jumped to highlight" table:nil];
                 NSString *unskipTitle = [bundle localizedStringForKey:@"SB_UNSKIP" value:@"Unskip" table:nil];
 

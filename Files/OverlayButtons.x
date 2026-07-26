@@ -1,7 +1,5 @@
 #import "Headers.h"
 
-#define TweakName @"YouMod"
-
 static NSString *YouModUpdateSpeedLabel = @"YouModUpdateSpeedLabel";
 static NSString *currentSpeedLabel = @"1x";
 static float currentPlaybackRate = 1.0;
@@ -28,19 +26,6 @@ static void didSelectRate(float rate) {
 - (void)updateQualityButton:(id)arg;
 - (void)updateSpeedButton:(id)arg;
 @end
-
-static NSBundle *YouModBundle() {
-    static NSBundle *bundle = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        NSString *tweakBundlePath = [[NSBundle mainBundle] pathForResource:TweakName ofType:@"bundle"];
-        if (tweakBundlePath)
-            bundle = [NSBundle bundleWithPath:tweakBundlePath];
-        else
-            bundle = [NSBundle bundleWithPath:[NSString stringWithFormat:PS_ROOT_PATH_NS(@"/Library/Application Support/%@.bundle"), TweakName]];
-    });
-    return bundle;
-}
 
 #define LOC(x) [YouModBundle() localizedStringForKey:x value:nil table:nil]
 
