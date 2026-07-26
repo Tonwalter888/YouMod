@@ -1820,17 +1820,43 @@ void YouModConfigureDownloadButton(_ASDisplayView *view) {
     }
 }
 
-static NSString *YouModExtractCommentText(UIView *cellView) {
-    for (UIView *sub in cellView.subviews) {
-        for (_ASDisplayView *sub2 in sub.subviews) {
-            if ([sub2 isKindOfClass:%c(_ASDisplayView)]) {
-                if ([sub2.keepalive_node isKindOfClass:NSClassFromString(@"ELMExpandableTextNode")] || [sub2.accessibilityIdentifier isEqualToString:@"id.comment.content.label"]) {
-                    return sub2.accessibilityLabel;
+static void YouModExtractCommentTextAsync(UIView *cellView, void (^completion)(NSString *text)) {
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        NSString *resultText = @"";
+
+        NSMutableArray<UIView *> *queue = [NSMutableArray arrayWithObject:cellView];
+        Class asDisplayClass = NSClassFromString(@"_ASDisplayView");
+        Class elmTextExClass = NSClassFromString(@"ELMExpandableTextNode");
+        Class elmTextClass = NSClassFromString(@"ELMTextNode");
+
+        while (queue.count > 0) {
+            UIView *current = queue.firstObject;
+            [queue removeObjectAtIndex:0];
+
+            if (asDisplayClass && [current isKindOfClass:asDisplayClass]) {
+                id node = [current performSelector:@selector(keepalive_node)];
+
+                BOOL isExpandableText = node && elmTextExClass && [node isKindOfClass:elmTextExClass];
+                BOOL isText = node && elmTextClass && [node isKindOfClass:elmTextClass];
+                BOOL isCommentLabel = [current.accessibilityIdentifier isEqualToString:@"id.comment.content.label"];
+
+                if (isText || isExpandableText || isCommentLabel) {
+                    resultText = current.accessibilityLabel ?: @"";
+                    break;
                 }
             }
+
+            @synchronized (current) {
+                [queue addObjectsFromArray:current.subviews];
+            }
         }
-    }
-    return @"";
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (completion) {
+                completion(resultText);
+            }
+        });
+    });
 }
 
 static UIImage *YouModRenderViewToImage(_ASDisplayView *view) {
