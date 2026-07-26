@@ -808,6 +808,8 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
         }
     });
 
+    YTMainAppVideoPlayerOverlayViewController *ovcon = [self activeVideoPlayerOverlay];
+
     if (IS_ENABLED(GestureHUD)) {
         if (!self.YouModGestureHUD) {
             self.YouModGestureHUD = [[UILabel alloc] initWithFrame:CGRectZero];
@@ -832,7 +834,6 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
         }
 
         if (currentPanMode == 2) {
-            YTMainAppVideoPlayerOverlayViewController *ovcon = [self activeVideoPlayerOverlay];
             YTMainAppVideoPlayerOverlayView *ovview = [ovcon videoPlayerOverlayView];
             YTInlinePlayerBarContainerView *wth = ovview.playerBar;
             YTPlayerBarController *playerbarcon = [wth valueForKey:@"_delegate"];
@@ -867,7 +868,7 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
             
             if (controlType == 1) initialBrightness = [UIScreen mainScreen].brightness;
             else if (controlType == 2) initialVolume = [[AVAudioSession sharedInstance] outputVolume];
-            else if (controlType == 3) initialSpeed = playbackRate;
+            else if (controlType == 3) initialSpeed = [ovcon currentPlaybackRate];
 
             if (IS_ENABLED(GestureHUD) && controlType != 0) {
                 int sizeSetting = [[NSUserDefaults standardUserDefaults] objectForKey:GestureHUDSize] ? (int)[[NSUserDefaults standardUserDefaults] integerForKey:GestureHUDSize] : 1;
@@ -893,7 +894,6 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
 
     if (panGestureRecognizer.state == UIGestureRecognizerStateChanged) {
         if (currentPanMode == 2) {
-            YTMainAppVideoPlayerOverlayViewController *ovcon = [self activeVideoPlayerOverlay];
             YTMainAppVideoPlayerOverlayView *ovview = [ovcon videoPlayerOverlayView];
             YTInlinePlayerBarContainerView *wth = ovview.playerBar;
             YTPlayerBarController *playerbarcon = [wth valueForKey:@"_delegate"];
@@ -950,7 +950,6 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
     
     if (panGestureRecognizer.state == UIGestureRecognizerStateEnded || panGestureRecognizer.state == UIGestureRecognizerStateCancelled || panGestureRecognizer.state == UIGestureRecognizerStateFailed) {
         if (currentPanMode == 2) {
-            YTMainAppVideoPlayerOverlayViewController *ovcon = [self activeVideoPlayerOverlay];
             YTMainAppVideoPlayerOverlayView *ovview = [ovcon videoPlayerOverlayView];
             YTInlinePlayerBarContainerView *wth = ovview.playerBar;
             YTPlayerBarController *playerbarcon = [wth valueForKey:@"_delegate"];
