@@ -77,7 +77,7 @@ static const CGFloat YMOverlayButtonTopInset = 52.0; // fallback row top when th
 static const CGFloat YMOverlayButtonEdgePadding = 12.0; // fallback right padding when the gear isn't found
 
 // Point size of a text button's label. Tweak this to change how large the text renders.
-static const CGFloat YMOverlayTextButtonFontSize = 12.3;
+static const CGFloat YMOverlayTextButtonFontSize = 12;
 // Width of a text button. Tweak this to make text buttons wider or narrower; icon
 // buttons stay square at YMOverlayButtonSize.
 static const CGFloat YMOverlayTextButtonWidth = 30.0;
@@ -190,6 +190,7 @@ static YTQTMButton *YMCreateOverlayButton(YTMainAppControlsOverlayView *overlay,
         button = [%c(YTQTMButton) iconButton];
         [button setImage:icon forState:UIControlStateNormal];
         button.tintColor = tint;
+        button.imageView.contentMode = UIViewContentModeScaleAspectFit;
     }
 
     button.exclusiveTouch = YES;
