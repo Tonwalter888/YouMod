@@ -460,6 +460,7 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 @end
 
 @interface YTEngagementPanelContainerView : UIView
+- (NSInteger)engagementPanelState;
 @end
 
 @interface YTMainAppControlsOverlayView (YouMod)
