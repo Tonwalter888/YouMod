@@ -782,9 +782,6 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
 }
 %end
 
-static BOOL isSpeedLocked = NO;
-static CGFloat savedRate = 1.0; 
-
 %hook YTPlayerViewController
 %property (nonatomic, retain) UIPanGestureRecognizer *YouModPanGesture;
 %property (nonatomic, retain) UITapGestureRecognizer *YouModTapGesture;
@@ -1019,8 +1016,8 @@ static CGFloat savedRate = 1.0;
 
 %new
 - (void)YouModSetAutoSpeed {
-    if (isSpeedLocked) {
-        [self setPlaybackRate:savedRate];
+    if (self.YouModIsSpeedLocked) {
+        [self setPlaybackRate:self.YouModSavedNormalRate];
         return;
     }
     if (INTFORVAL(AutoSpeedIndex) == 0) return;
