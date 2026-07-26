@@ -1862,11 +1862,9 @@ static void YouModExtractCommentTextAsync(UIView *cellView, void (^completion)(N
 static UIImage *YouModRenderViewToImage(_ASDisplayView *view) {
     if (!view || view.bounds.size.width <= 0 || view.bounds.size.height <= 0) return nil;
     
-    UIColor *realBgColor = view.keepalive_node.closestViewController.view.backgroundColor;
-    UIColor *clear = [UIColor clearColor];
-    UIGraphicsBeginImageContextWithOptions(view.bounds.size, YES, [UIScreen mainScreen].scale);
+    UIColor *realBgColor = view.keepalive_node.closestViewController.view.backgroundColor;  
+    UIGraphicsBeginImageContextWithOptions(view.bounds.size, NO, [UIScreen mainScreen].scale);
     CGContextRef context = UIGraphicsGetCurrentContext();    
-    [clear setFill];
     [realBgColor setFill];
     CGContextFillRect(context, view.bounds);
     [view drawViewHierarchyInRect:view.bounds afterScreenUpdates:YES];
