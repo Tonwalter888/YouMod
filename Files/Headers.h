@@ -178,6 +178,7 @@
 #define HideCommentsPreview @"YouModHideCommentsPreview"
 #define LockSpeed @"YouModLockSpeed"
 #define UseAnotherMiniplayer @"YouModUseAnotherMiniplayer"
+#define SeekOnOverlay @"YouModSeekOnOverlay"
 // Shorts
 #define FullScreenShorts @"YouModFullScreenShorts"
 #define RemoveShortsLive @"YouModRemoveShortsLive"
@@ -418,6 +419,16 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 
 @interface YTPlayerBarController (YouMod)
 - (void)didScrub:(UIPanGestureRecognizer *)gesture;
+@end
+
+@interface YTFullscreenEngagementOverlayView : UIView
+@end
+
+@interface YTRelatedVideosView : UIView
+@end
+
+@interface YTRelatedVideosViewController : UIViewController
+- (BOOL)isExpanded;
 @end
 
 @interface YTAutoplayAutonavController : NSObject

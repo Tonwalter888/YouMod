@@ -301,6 +301,7 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
             YMPicker(LOC(@"GESTURE_HUD_POSITION"), LOC(@"GESTURE_HUD_POSITION_DESC"), GestureHUDPosition, (@[LOC(@"TOP"), LOC(@"MIDDLE"), LOC(@"BOTTOM")]), 0),
             YMHeader(@""),
             YMToggle(LOC(@"TAP_TO_SEEK"), LOC(@"TAP_TO_SEEK_DESC"), TapToSeek),
+            YMToggle(LOC(@"SEEK_ON_OVERLAY"), LOC(@"SEEK_ON_OVERLAY_DESC"), SeekOnOverlay),
             YMToggle(LOC(@"PAUSE_TWO_FINGERS"), LOC(@"PAUSE_TWO_FINGERS_DESC"), PauseTwoFingers),
             YMToggle(LOC(@"PAUSE_ON_OVERLAY"), LOC(@"PAUSE_ON_OVERLAY_DESC"), PauseOnOverlay),
             YMToggle(LOC(@"COPY_TIMESTAMP_ON_PAUSE"), LOC(@"COPY_TIMESTAMP_ON_PAUSE_DESC"), CopyWithTimestampOnPause),

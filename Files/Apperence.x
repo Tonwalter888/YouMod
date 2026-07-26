@@ -63,10 +63,10 @@ static BOOL isDarkMode(UIView *view) {
     %orig;
     NSSet *blackViews = [NSSet setWithObjects:
         @"id.elements.components.comment_composer",
-        @"eml.cvr",
+        // @"eml.cvr",
         @"id.subs.subscriptions_channel_bar",
-        @"PAmedia_hub_device_picker.engagement_panel_header",
-        @"eml.vwc", nil
+        @"PAmedia_hub_device_picker.engagement_panel_header", nil
+        // @"eml.vwc", nil
     ];  
     if (isDarkMode(self)) {
          if ([blackViews containsObject:self.accessibilityIdentifier]) {
