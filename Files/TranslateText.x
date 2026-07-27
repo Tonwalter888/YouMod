@@ -51,8 +51,7 @@ static void YouModTranslateText(NSString *text, NSString *targetLang, void (^com
     self.languageTitles = getAllSystemLanguageTitles();
     self.languageCodes = getAllSystemLanguageValues();
     
-    NSString *deviceLang = [[NSLocale preferredLanguages].firstObject componentsSeparatedByString:@"-"].firstObject;
-    self.selectedLangCode = deviceLang ?: @"en";
+    self.selectedLangCode = @"en";
     self.selectedLangName = @"English";
     
     NSUInteger defaultIndex = [self.languageCodes indexOfObject:self.selectedLangCode];
