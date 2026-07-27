@@ -85,7 +85,7 @@ static BOOL isDarkMode(UIView *view) {
                 if ([con.view isKindOfClass:%c(YCHAsyncLiveChatImmersiveCollectionView)]) break;
                 self.backgroundColor = [UIColor blackColor];
                 break;
-             } else if ([responder isKindOfClass:%c(YTELMViewController)]) {
+            } else if ([responder isKindOfClass:%c(YTELMViewController)]) {
                 YTELMViewController *con = (YTELMViewController *)responder;
                 YTIElementRenderer *renderer = [con valueForKey:@"_renderer"];
                 NSString *desc = [renderer description];
