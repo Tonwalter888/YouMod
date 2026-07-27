@@ -862,7 +862,26 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
             [playerbarcon didScrub:panGestureRecognizer];
         } else if (currentPanMode == 1) {
             CGPoint startLocation = [panGestureRecognizer locationInView:self.view];
-            CGFloat viewWidth = self.view.bounds.size.width;
+            CGFloat fullWidth = self.view.bounds.size.width;
+            CGFloat activeWidth = fullWidth;
+
+            YTMainAppVideoPlayerOverlayView *ov = [ovcon videoPlayerOverlayView];
+            YTEngagementPanelContainerView *engagecontainer = [ov valueForKey:@"_engagementPanelContainerView"];
+            if (engagecontainer && engagecontainer.engagementPanelState == 3) {
+                UIView *mainpanel = nil;
+                for (UIView *sub in engagecontainer.subviews) {
+                    if ([sub isKindOfClass:%c(UILayoutContainerView)]) {
+                        mainpanel = sub;
+                        break;
+                    }
+                }
+                if (mainpanel) {
+                    CGFloat panelWidth = mainpanel.bounds.size.width;
+                    if (panelWidth > 0 && panelWidth < fullWidth) {
+                        activeWidth = fullWidth - panelWidth;
+                    }
+                }
+            }
 
             float areaPercent = 0.15;
             int areaSetting = INTFORVAL(GestureActivationArea);
@@ -878,9 +897,9 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
             int leftAction = [[NSUserDefaults standardUserDefaults] objectForKey:LeftSideGesture] ? INTFORVAL(LeftSideGesture) : 1;
             int rightAction = [[NSUserDefaults standardUserDefaults] objectForKey:RightSideGesture] ? INTFORVAL(RightSideGesture) : 2;
 
-            if (startLocation.x <= viewWidth * areaPercent) {
+            if (startLocation.x <= activeWidth * areaPercent) {
                 controlType = leftAction; 
-            } else if (startLocation.x >= viewWidth * (1.0 - areaPercent)) {
+            } else if (startLocation.x >= activeWidth * (1.0 - areaPercent)) {
                 controlType = rightAction;
             } else {
                 controlType = 0;
@@ -909,7 +928,7 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
                 else if (posSetting == 2) centerY = viewHeight * 5.0 / 6.0;
 
                 [self.view bringSubviewToFront:self.YouModGestureHUD];
-                self.YouModGestureHUD.center = CGPointMake(viewWidth / 2, centerY);
+                self.YouModGestureHUD.center = CGPointMake(activeWidth / 2, centerY);
             }
         }
     }

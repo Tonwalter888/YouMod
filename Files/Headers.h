@@ -675,7 +675,7 @@ static const CGFloat SBAlertDurationDefault = 4.0;
 extern void YMRegisterOverlayButton(YMOverlayButtonSpec *spec);
 extern NSArray<YMOverlayButtonSpec *> *YMRegisteredOverlayButtons(void);
 extern NSBundle *YouModBundle();
-extern UIImage *YouModYTIconImage(NSInteger iconType);
+extern UIImage *YouModYTIconImage(NSInteger iconType, BOOL useCustomColor, UIColor *customColor);
 extern NSArray *getAllSystemLanguageTitles();
 extern NSArray *getAllSystemLanguageValues();
 extern UIViewController *YouModTopViewController(UIViewController *root);

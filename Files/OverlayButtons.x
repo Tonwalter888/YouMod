@@ -71,16 +71,17 @@ static const NSInteger YMOverlayButtonBaseTag = 9910;
 
 // Button geometry. The top inset places the row just below YouTube's own
 // CC/gear row in the top-right corner of the player overlay.
-static const CGFloat YMOverlayButtonSize = 35.0;
-static const CGFloat YMOverlayButtonGap = 13.0;
+static const CGFloat YMOverlayButtonSize = 30.0;
+static const CGFloat YMOverlayButtonSpace = 5.0;
+static const CGFloat YMOverlayButtonGap = 18.0;
 static const CGFloat YMOverlayButtonTopInset = 52.0; // fallback row top when the gear can't be located
 static const CGFloat YMOverlayButtonEdgePadding = 12.0; // fallback right padding when the gear isn't found
 
 // Point size of a text button's label. Tweak this to change how large the text renders.
-static const CGFloat YMOverlayTextButtonFontSize = 23.5;
+static const CGFloat YMOverlayTextButtonFontSize = 15.0;
 // Width of a text button. Tweak this to make text buttons wider or narrower; icon
 // buttons stay square at YMOverlayButtonSize.
-static const CGFloat YMOverlayTextButtonWidth = 35.0;
+static const CGFloat YMOverlayTextButtonWidth = 30.0;
 
 static NSMutableArray<YMOverlayButtonSpec *> *gOverlayButtons = nil;
 static NSInteger gOverlayButtonNextTag = YMOverlayButtonBaseTag;
@@ -228,7 +229,7 @@ static YTQTMButton *YMCreateOverlayButton(YTMainAppControlsOverlayView *overlay,
     // buttons (which may be wider than icon buttons) still pack without overlap.
     CGRect gearFrame = YMGearFrameInOverlay(self);
     BOOL hasGear = !CGRectIsNull(gearFrame);
-    CGFloat trailingCenterX = hasGear ? CGRectGetMidX(gearFrame) : self.bounds.size.width - YMOverlayButtonEdgePadding - YMOverlayButtonSize / 2.0;
+    CGFloat trailingCenterX = hasGear ? CGRectGetMidX(gearFrame) + YMOverlayButtonSpace : self.bounds.size.width - YMOverlayButtonEdgePadding - YMOverlayButtonSize / 2.0;
     CGFloat rowTop = hasGear ? CGRectGetMaxY(gearFrame) : YMOverlayButtonTopInset;
     CGFloat prevHalfWidth = 0;
 
@@ -333,6 +334,22 @@ static YTQTMButton *YMCreateOverlayButton(YTMainAppControlsOverlayView *overlay,
                 [btn setTitle:currentQualityLabel forState:UIControlStateNormal];
             }
             break;
+        }
+    }
+}
+%end
+
+%hook YTRelatedVideosViewController
+- (void)setExpanded:(BOOL)arg {
+    %orig;
+    if (arg) {
+        YTRelatedVideosView *relatedview = (YTRelatedVideosView *)self.view;
+        YTFullscreenEngagementOverlayView *fullov = (YTFullscreenEngagementOverlayView *)relatedview.superview;
+        YTMainAppVideoPlayerOverlayView *mainov = (YTMainAppVideoPlayerOverlayView *)fullov.superview;
+        YTMainAppControlsOverlayView *conov = [mainov controlsOverlayView];
+        for (YMOverlayButtonSpec *spec in YMRegisteredOverlayButtons()) {
+            YTQTMButton *btn = (YTQTMButton *)[conov viewWithTag:spec.viewTag];
+            if (btn) btn.hidden = !visible;
         }
     }
 }

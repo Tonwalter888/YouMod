@@ -16,10 +16,15 @@ NSBundle *YouModBundle() {
 }
 
 // YouTube icon image (YTIIcon)
-UIImage *YouModYTIconImage(NSInteger iconType) {
+UIImage *YouModYTIconImage(NSInteger iconType, BOOL useCustomColor, UIColor *customColor) {
     YTIIcon *icon = [%c(YTIIcon) new];
     icon.iconType = iconType;
-    UIImage *image = [icon iconImageWithColor:[UIColor labelColor]];
+    UIImage *image = nil;
+    if (useCustomColor) {
+        image = [icon iconImageWithColor:customColor];
+    } else {
+        image = [icon iconImageWithColor:[UIColor labelColor]];
+    }
     return [image imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
 }
 

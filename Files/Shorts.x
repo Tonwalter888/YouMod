@@ -58,11 +58,11 @@ static BOOL isShortsOnlyOn = YES;
 }
 - (void)loadPlayerBar {
     %orig;
+    if (isShortsOnlyOn && IS_ENABLED(ShortsOnly)) [self YouModOnlyShorts];
     YTPlayerViewController *main = self.player;
     if (INTFORVAL(CaptionTrack) != 0) [main performSelector:@selector(YouModAutoCaptions) withObject:nil afterDelay:0.5];
     if (INTFORVAL(AutoSpeedIndex) != 0) [main performSelector:@selector(YouModSetAutoSpeed) withObject:nil afterDelay:0.5];
     if (INTFORVAL(AudioTrack) != 0) [self performSelector:@selector(YouModAutoAudioTrack:) withObject:main afterDelay:0.5];
-    if (isShortsOnlyOn && IS_ENABLED(ShortsOnly)) [self YouModOnlyShorts];
 }
 %new
 - (void)YouModOnlyShorts {

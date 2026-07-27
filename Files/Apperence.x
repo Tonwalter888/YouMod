@@ -85,12 +85,14 @@ static BOOL isDarkMode(UIView *view) {
                 if ([con.view isKindOfClass:%c(YCHAsyncLiveChatImmersiveCollectionView)]) break;
                 self.backgroundColor = [UIColor blackColor];
                 break;
-            } else if ([self.accessibilityIdentifier isEqualToString:@"id.elements.components.text_field"] && [responder isKindOfClass:%c(YTELMViewController)]) {
+             } else if ([responder isKindOfClass:%c(YTELMViewController)]) {
                 YTELMViewController *con = (YTELMViewController *)responder;
                 YTIElementRenderer *renderer = [con valueForKey:@"_renderer"];
                 NSString *desc = [renderer description];
-                if ([desc containsString:@"timeline_search_input_form_id"] && [desc containsString:@"search_input.eml"]) {
+                if ([self.accessibilityIdentifier isEqualToString:@"id.elements.components.text_field"] && [desc containsString:@"timeline_search_input_form_id"] && [desc containsString:@"search_input.eml"]) {
                     self.superview.backgroundColor = [UIColor blackColor];
+                } else if ([desc containsString:@"transcript_panel.eml"]) {
+                    self.backgroundColor = [UIColor blackColor];
                 }
                 break;
             }
@@ -118,12 +120,14 @@ static BOOL isDarkMode(UIView *view) {
                 if ([con.view isKindOfClass:%c(YCHAsyncLiveChatImmersiveCollectionView)]) break;
                 self.backgroundColor = [UIColor whiteColor];
                 break;
-            } else if ([self.accessibilityIdentifier isEqualToString:@"id.elements.components.text_field"] && [responder isKindOfClass:%c(YTELMViewController)]) {
+            } else if ([responder isKindOfClass:%c(YTELMViewController)]) {
                 YTELMViewController *con = (YTELMViewController *)responder;
                 YTIElementRenderer *renderer = [con valueForKey:@"_renderer"];
                 NSString *desc = [renderer description];
-                if ([desc containsString:@"timeline_search_input_form_id"] && [desc containsString:@"search_input.eml"]) {
+                if ([self.accessibilityIdentifier isEqualToString:@"id.elements.components.text_field"] && [desc containsString:@"timeline_search_input_form_id"] && [desc containsString:@"search_input.eml"]) {
                     self.superview.backgroundColor = [UIColor clearColor];
+                } else if ([desc containsString:@"transcript_panel.eml"]) {
+                    self.backgroundColor = [UIColor clearColor];
                 }
                 break;
             }

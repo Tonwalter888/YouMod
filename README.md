@@ -1,7 +1,5 @@
 # YouMod
 
-TODO: Cleanup download things
-
 <img src="https://img.shields.io/badge/Platform-iOS%20%7C%20iPadOS%2014.0%2B-blue" alt="Badge"/>
 <a href="https://github.com/Tonwalter888/YouMod/releases/latest"><img src="https://custom-icon-badges.demolab.com/github/v/release/Tonwalter888/YouMod?color=brightgreen&label=Latest%20release" alt="Badge"></img></a>
 <a href="https://github.com/Tonwalter888/YouMod/releases/latest"><img src="https://img.shields.io/github/downloads/Tonwalter888/YouMod/total?label=Download" alt="Badge"></img></a>
@@ -54,6 +52,7 @@ This project uses GPLv3 license. See [LICENSE](https://github.com/Tonwalter888/Y
 
 ## Credits
 - [YTLite](https://github.com/dayanch96/YTLite) - dayanch96
+- [YTMusicUltimate](https://github.com/dayanch96/YTMusicUltimate) - dayanch96
 - [OLEDKeyboard](https://github.com/dayanch96/OLEDKeyboard) - dayanch96
 - [YTLitePlus](https://github.com/YTLitePlus/YTLitePlus)
 - [uYouEnhanced](https://github.com/arichornlover/uYouEnhanced) - arichornlover
