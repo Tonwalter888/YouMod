@@ -51,13 +51,14 @@ static void YouModTranslateText(NSString *text, NSString *targetLang, void (^com
     self.languageTitles = getAllSystemLanguageTitles();
     self.languageCodes = getAllSystemLanguageValues();
     
-    self.selectedLangCode = @"en";
+    NSString *deviceLang = [[NSLocale preferredLanguages].firstObject componentsSeparatedByString:@"-"].firstObject;
+    self.selectedLangCode = deviceLang ?: @"en";
     self.selectedLangName = @"English";
     
     NSUInteger defaultIndex = [self.languageCodes indexOfObject:self.selectedLangCode];
-    if (defaultIndex != NSNotFound) {
+    if (defaultIndex != NSNotFound && defaultIndex < self.languageTitles.count) {
         self.selectedLangName = self.languageTitles[defaultIndex];
-    } else if (self.languageTitles.count > 0) {
+    } else if (self.languageTitles.count > 0 && self.languageCodes.count > 0) {
         self.selectedLangCode = self.languageCodes.firstObject;
         self.selectedLangName = self.languageTitles.firstObject;
     }
@@ -162,21 +163,23 @@ static void YouModTranslateText(NSString *text, NSString *targetLang, void (^com
     
     UIAlertController *alert = [UIAlertController alertControllerWithTitle:LOC(@"SELECT_LANG") message:nil preferredStyle:UIAlertControllerStyleActionSheet];
     
+    __weak typeof(self) weakSelf = self;
     for (NSUInteger i = 0; i < self.languageTitles.count; i++) {
         NSString *name = self.languageTitles[i];
         NSString *code = self.languageCodes[i];
-        
         NSString *itemTitle = [code isEqualToString:self.selectedLangCode] ? [NSString stringWithFormat:@"✓ %@", name] : name;
-        
-        [alert addAction:[UIAlertAction actionWithStyle:UIAlertActionStyleDefault title:itemTitle handler:^(UIAlertAction *action) {
-            self.selectedLangCode = code;
-            self.selectedLangName = name;
-            self.langValueLabel.text = [NSString stringWithFormat:@"%@ ↕", name];
-            [self performTranslation];
+
+        [alert addAction:[UIAlertAction actionWithTitle:itemTitle style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+            __strong typeof(weakSelf) strongSelf = weakSelf;
+            if (!strongSelf) return;
+            strongSelf.selectedLangCode = code;
+            strongSelf.selectedLangName = name;
+            strongSelf.langValueLabel.text = [NSString stringWithFormat:@"%@ ↕", name];
+            [strongSelf performTranslation];
         }]];
     }
     
-    [alert addAction:[UIAlertAction actionWithStyle:UIAlertActionStyleCancel title:LOC(@"CANCEL") handler:nil]];
+    [alert addAction:[UIAlertAction actionWithTitle:LOC(@"CANCEL") style:UIAlertActionStyleCancel handler:nil]];
     
     if (alert.popoverPresentationController) {
         alert.popoverPresentationController.sourceView = gesture.view;
@@ -190,13 +193,17 @@ static void YouModTranslateText(NSString *text, NSString *targetLang, void (^com
     self.resultTextView.text = LOC(@"TRANSLATING");
     self.resultTextView.textColor = [UIColor colorWithRed:0.75 green:0.55 blue:1.0 alpha:1.0];
     
+    __weak typeof(self) weakSelf = self;
     YouModTranslateText(self.originalText, self.selectedLangCode, ^(NSString *translatedText, NSError *error) {
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+        if (!strongSelf) return;
+        
         if (translatedText && translatedText.length > 0) {
-            self.resultTextView.text = translatedText;
-            self.resultTextView.textColor = [UIColor whiteColor];
+            strongSelf.resultTextView.text = translatedText;
+            strongSelf.resultTextView.textColor = [UIColor whiteColor];
         } else {
-            self.resultTextView.text = LOC(@"TRANSLATE_FAILED");
-            self.resultTextView.textColor = [UIColor systemRedColor];
+            strongSelf.resultTextView.text = LOC(@"TRANSLATE_FAILED");
+            strongSelf.resultTextView.textColor = [UIColor systemRedColor];
         }
     });
 }
