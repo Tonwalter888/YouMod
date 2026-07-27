@@ -342,15 +342,13 @@ static YTQTMButton *YMCreateOverlayButton(YTMainAppControlsOverlayView *overlay,
 %hook YTRelatedVideosViewController
 - (void)setExpanded:(BOOL)arg {
     %orig;
-    if (arg) {
-        YTRelatedVideosView *relatedview = (YTRelatedVideosView *)self.view;
-        YTFullscreenEngagementOverlayView *fullov = (YTFullscreenEngagementOverlayView *)relatedview.superview;
-        YTMainAppVideoPlayerOverlayView *mainov = (YTMainAppVideoPlayerOverlayView *)fullov.superview;
-        YTMainAppControlsOverlayView *conov = [mainov controlsOverlayView];
-        for (YMOverlayButtonSpec *spec in YMRegisteredOverlayButtons()) {
-            YTQTMButton *btn = (YTQTMButton *)[conov viewWithTag:spec.viewTag];
-            if (btn) btn.hidden = !visible;
-        }
+    YTRelatedVideosView *relatedview = (YTRelatedVideosView *)self.view;
+    YTFullscreenEngagementOverlayView *fullov = (YTFullscreenEngagementOverlayView *)relatedview.superview;
+    YTMainAppVideoPlayerOverlayView *mainov = (YTMainAppVideoPlayerOverlayView *)fullov.superview;
+    YTMainAppControlsOverlayView *conov = [mainov controlsOverlayView];
+    for (YMOverlayButtonSpec *spec in YMRegisteredOverlayButtons()) {
+        YTQTMButton *btn = (YTQTMButton *)[conov viewWithTag:spec.viewTag];
+        if (btn) btn.hidden = arg;
     }
 }
 %end
