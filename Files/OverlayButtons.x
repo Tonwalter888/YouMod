@@ -205,6 +205,8 @@ static YTQTMButton *YMCreateOverlayButton(YTMainAppControlsOverlayView *overlay,
 
 #pragma mark - YTMainAppControlsOverlayView Hook
 
+static BOOL isRelatedVideosExpanded = NO;
+
 %hook YTMainAppControlsOverlayView
 
 - (void)layoutSubviews {
@@ -213,20 +215,7 @@ static YTQTMButton *YMCreateOverlayButton(YTMainAppControlsOverlayView *overlay,
     if (specs.count == 0) return;
 
     YTPlayerViewController *player = YMPlayerVCFromOverlay(self);
-
-    // layoutSubviews is the high-frequency path and may (re)create buttons, so it
-    // owns the hidden state — otherwise a freshly created button shows on top of a
-    // faded-out overlay until the next setOverlayVisible: call.
     BOOL overlayVisible = self.isOverlayVisible;
-
-    // Anchor the row to the gear: right-most button under the gear's centre-x, row top
-    // just below the gear's bottom edge; grow leftward. Deriving Y from the gear (rather
-    // than a fixed inset) keeps the row the same distance below the gear on every device —
-    // YouTube's gear sits at a different Y on iPhone vs iPad. Fall back to the screen edge
-    // and the fixed top inset when the gear can't be located, so buttons never collapse to
-    // x=0 or y=0. trailingCenterX is the center of the button placed in the previous
-    // iteration; each button steps left by half of both widths plus the gap, so text
-    // buttons (which may be wider than icon buttons) still pack without overlap.
     CGRect gearFrame = YMGearFrameInOverlay(self);
     BOOL hasGear = !CGRectIsNull(gearFrame);
     CGFloat trailingCenterX = hasGear ? CGRectGetMidX(gearFrame) + YMOverlayButtonSpace : self.bounds.size.width - YMOverlayButtonEdgePadding - YMOverlayButtonSize / 2.0;
@@ -243,10 +232,9 @@ static YTQTMButton *YMCreateOverlayButton(YTMainAppControlsOverlayView *overlay,
         }
         if (!btn) btn = YMCreateOverlayButton(self, spec);
 
-        btn.hidden = !overlayVisible;
+        btn.hidden = !overlayVisible || isRelatedVideosExpanded;
+
         if (spec.tintProvider) {
-            // Text buttons colour their label through customTitleColor; icon buttons
-            // through tintColor. Route the dynamic colour to the right channel.
             UIColor *dynamic = spec.tintProvider(player);
             if (spec.title.length > 0) btn.customTitleColor = dynamic;
             else btn.tintColor = dynamic;
@@ -257,10 +245,7 @@ static YTQTMButton *YMCreateOverlayButton(YTMainAppControlsOverlayView *overlay,
             ? trailingCenterX
             : trailingCenterX - prevHalfWidth - YMOverlayButtonGap - width / 2.0;
 
-        btn.frame = CGRectMake(centerX - width / 2.0,
-                                rowTop,
-                                width,
-                                YMOverlayButtonSize);
+        btn.frame = CGRectMake(centerX - width / 2.0, rowTop, width, YMOverlayButtonSize);
         trailingCenterX = centerX;
         prevHalfWidth = width / 2.0;
     }
@@ -270,7 +255,7 @@ static YTQTMButton *YMCreateOverlayButton(YTMainAppControlsOverlayView *overlay,
     %orig;
     for (YMOverlayButtonSpec *spec in YMRegisteredOverlayButtons()) {
         YTQTMButton *btn = (YTQTMButton *)[self viewWithTag:spec.viewTag];
-        if (btn) btn.hidden = !visible;
+        if (btn) btn.hidden = !visible || isRelatedVideosExpanded;
     }
 }
 
@@ -342,14 +327,12 @@ static YTQTMButton *YMCreateOverlayButton(YTMainAppControlsOverlayView *overlay,
 %hook YTRelatedVideosViewController
 - (void)setExpanded:(BOOL)arg {
     %orig;
+    isRelatedVideosExpanded = arg;
     YTRelatedVideosView *relatedview = (YTRelatedVideosView *)self.view;
     YTFullscreenEngagementOverlayView *fullov = (YTFullscreenEngagementOverlayView *)relatedview.superview;
     YTMainAppVideoPlayerOverlayView *mainov = (YTMainAppVideoPlayerOverlayView *)fullov.superview;
     YTMainAppControlsOverlayView *conov = [mainov controlsOverlayView];
-    for (YMOverlayButtonSpec *spec in YMRegisteredOverlayButtons()) {
-        YTQTMButton *btn = (YTQTMButton *)[conov viewWithTag:spec.viewTag];
-        if (btn) btn.hidden = arg;
-    }
+    [conov setNeedsLayout];
 }
 %end
 
@@ -360,13 +343,6 @@ static void YouModShowShareNotification(NSString *message, BOOL success) {
     } else {
         [SBSkipNotificationView showErrorInView:parent message:message duration:4.0];
     }
-}
-
-static UIImage *YouModIconImage(NSInteger iconType) {
-    YTIIcon *icon = [%c(YTIIcon) new];
-    icon.iconType = iconType;
-    UIImage *image = [icon iconImageWithColor:[UIColor labelColor]];
-    return [image imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
 }
 
 %hook YTPlayerViewController
@@ -387,12 +363,12 @@ static UIImage *YouModIconImage(NSInteger iconType) {
     UIViewController *presenter = (UIViewController *)[self activeVideoPlayerOverlay];
     YTDefaultSheetController *sheet = [%c(YTDefaultSheetController) sheetControllerWithParentResponder:presenter];
 
-    YTActionSheetAction *copyURL = [%c(YTActionSheetAction) actionWithTitle:LOC(@"COPY_URL") iconImage:YouModIconImage(250) style:0 handler:^(__unused YTActionSheetAction *action) {
+    YTActionSheetAction *copyURL = [%c(YTActionSheetAction) actionWithTitle:LOC(@"COPY_URL") iconImage:YouModYTIconImage(250, NO, nil) style:0 handler:^(__unused YTActionSheetAction *action) {
         UIPasteboard.generalPasteboard.string = videoURL;
         YouModShowShareNotification(LOC(@"URL_COPIED"), YES);
     }];
 
-    YTActionSheetAction *copyTimestamp = [%c(YTActionSheetAction) actionWithTitle:LOC(@"COPY_URL_TIMESTAMP") iconImage:YouModIconImage(250) style:0 handler:^(__unused YTActionSheetAction *action) {
+    YTActionSheetAction *copyTimestamp = [%c(YTActionSheetAction) actionWithTitle:LOC(@"COPY_URL_TIMESTAMP") iconImage:YouModYTIconImage(250, NO, nil) style:0 handler:^(__unused YTActionSheetAction *action) {
         UIPasteboard.generalPasteboard.string = timestampURL;
         YouModShowShareNotification(LOC(@"URL_TIMESTAMP_COPIED"), YES);
     }];

@@ -191,6 +191,8 @@
 "DISABLES_CAPTION_TRACK_DESC" = "Automatically disable captions if the preferred language is auto-generated or not found.";
 "DEFAULT_SPEED" = "Default playback rate";
 "DEFAULT_SPEED_DESC" = "Overrides the default playback speed.";
+"QUALITY_BUTTON" = "Quality controls button";
+"QUALITY_BUTTON_DESC" = "Displays a quality controls button on overlay.";
 "SPEED_BUTTON" = "Speed controls button";
 "SPEED_BUTTON_DESC" = "Displays a speed controls button on overlay.";
 "MUTE_BUTTON" = "Mute button";
