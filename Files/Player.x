@@ -1308,9 +1308,14 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
             if (previewLockState) {
                 [self YouModShowSpeedToast:speed isLocked:YES];
             } else {
-                CGFloat savedNormal = [defaults floatForKey:GlobalSavedNormalRate];
-                CGFloat targetRate = (savedNormal >= 0.25) ? savedNormal : 1.0;
-                [self YouModShowSpeedToast:targetRate isLocked:NO];
+                CGFloat toastSpeed;
+                if (initialLockState) {
+                    CGFloat savedNormal = [defaults floatForKey:GlobalSavedNormalRate];
+                    toastSpeed = (savedNormal >= 0.25) ? savedNormal : 1.0;
+                } else {
+                    toastSpeed = speed;
+                }
+                [self YouModShowSpeedToast:toastSpeed isLocked:NO];
             }
         }
     } else if (gesture.state == UIGestureRecognizerStateEnded || 
