@@ -1793,48 +1793,6 @@ void YouModConfigureDownloadButton(_ASDisplayView *view) {
     }
 }
 
-static void YouModTranslateText(NSString *text, NSString *targetLang, void (^completion)(NSString *translatedText, NSError *error)) {
-    if (!text || text.length == 0) {
-        if (completion) completion(@"", nil);
-        return;
-    }
-    
-    NSString *encodedText = [text stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
-    NSString *urlString = [NSString stringWithFormat:@"https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=%@&dt=t&q=%@", targetLang ?: @"en", encodedText];
-    NSURL *url = [NSURL URLWithString:urlString];
-    
-    NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithURL:url completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
-        if (error || !data) {
-            dispatch_async(dispatch_get_main_queue(), ^{
-                if (completion) completion(nil, error);
-            });
-            return;
-        }
-        
-        @try {
-            id json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
-            if ([json isKindOfClass:[NSArray class]] && [json count] > 0) {
-                NSArray *sentences = json[0];
-                NSMutableString *result = [NSMutableString string];
-                for (id sentence in sentences) {
-                    if ([sentence isKindOfClass:[NSArray class]] && [sentence count] > 0) {
-                        [result appendString:sentence[0]];
-                    }
-                }
-                dispatch_async(dispatch_get_main_queue(), ^{
-                    if (completion) completion(result, nil);
-                });
-                return;
-            }
-        } @catch (NSException *e) {}
-        
-        dispatch_async(dispatch_get_main_queue(), ^{
-            if (completion) completion(nil, [NSError errorWithDomain:@"YouModTranslate" code:-1 userInfo:nil]);
-        });
-    }];
-    [task resume];
-}
-
 static void YouModShowTranslationDialog(NSString *text, UIViewController *presenter) {
     if (!text || text.length == 0 || !presenter) return;
     
