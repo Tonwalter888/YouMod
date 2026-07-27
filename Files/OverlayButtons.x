@@ -77,8 +77,6 @@ static const CGFloat YMOverlayButtonGap = 18.0;
 static const CGFloat YMOverlayButtonTopInset = 52.0; // fallback row top when the gear can't be located
 static const CGFloat YMOverlayButtonEdgePadding = 12.0; // fallback right padding when the gear isn't found
 
-// Point size of a text button's label. Tweak this to change how large the text renders.
-static const CGFloat YMOverlayTextButtonFontSize = 15.0;
 // Width of a text button. Tweak this to make text buttons wider or narrower; icon
 // buttons stay square at YMOverlayButtonSize.
 static const CGFloat YMOverlayTextButtonWidth = 30.0;
@@ -154,12 +152,25 @@ static CGRect YMGearFrameInOverlay(YTMainAppControlsOverlayView *overlay) {
 
 // The font for a text button's label, in YouTube Sans to match native controls,
 // with a plain system-font fallback on versions lacking the YouTube Sans style API.
-static UIFont *YMOverlayTextButtonFont(void) {
+static UIFont *YMOverlayTextButtonFont(NSString *text, CGSize maxSize) {
+    if (text.length == 0) return [UIFont systemFontOfSize:15 weight:UIFontWeightSemibold];
+    
     YTDefaultTypeStyle *typeStyle = [%c(YTTypeStyle) defaultTypeStyle];
-    if ([typeStyle respondsToSelector:@selector(ytSansFontOfSize:weight:)]) {
-        return [typeStyle ytSansFontOfSize:YMOverlayTextButtonFontSize weight:UIFontWeightSemibold];
-    }
-    return [UIFont systemFontOfSize:YMOverlayTextButtonFontSize weight:UIFontWeightSemibold];
+    BOOL hasYTFont = [typeStyle respondsToSelector:@selector(ytSansFontOfSize:weight:)];
+    NSInteger bestSize = 10;
+
+    for (NSInteger size = (NSInteger)maxSize.height; size >= 8; size--) {
+        UIFont *testFont = hasYTFont ? [typeStyle ytSansFontOfSize:(CGFloat)size weight:UIFontWeightSemibold] : [UIFont systemFontOfSize:(CGFloat)size weight:UIFontWeightSemibold];
+        CGRect rect = [text boundingRectWithSize:CGSizeMake(maxSize.width, CGFLOAT_MAX)
+                                         options:NSStringDrawingUsesLineFragmentOrigin
+                                      attributes:@{NSFontAttributeName: testFont}
+                                         context:nil];
+        if (ceil(rect.size.width) <= maxSize.width && ceil(rect.size.height) <= maxSize.height) {
+            bestSize = size;
+            break;
+        }
+    } 
+    return hasYTFont ? [typeStyle ytSansFontOfSize:(CGFloat)bestSize weight:UIFontWeightSemibold] : [UIFont systemFontOfSize:(CGFloat)bestSize weight:UIFontWeightSemibold];
 }
 
 static YTQTMButton *YMCreateOverlayButton(YTMainAppControlsOverlayView *overlay, YMOverlayButtonSpec *spec) {
@@ -173,7 +184,7 @@ static YTQTMButton *YMCreateOverlayButton(YTMainAppControlsOverlayView *overlay,
         button = [%c(YTQTMButton) textButton];
         [button setTitle:spec.title forState:UIControlStateNormal];
         button.customTitleColor = tint;
-        button.titleLabel.font = YMOverlayTextButtonFont();
+        button.titleLabel.font = YMOverlayTextButtonFont(spec.title, CGSizeMake(YMOverlayTextButtonWidth, YMOverlayButtonSize));
         button.titleLabel.textAlignment = NSTextAlignmentCenter;
         button.sizeWithPaddingAndInsets = NO;
         button.titleLabel.numberOfLines = 2;
@@ -218,8 +229,8 @@ static BOOL isRelatedVideosExpanded = NO;
     BOOL overlayVisible = self.isOverlayVisible;
     CGRect gearFrame = YMGearFrameInOverlay(self);
     BOOL hasGear = !CGRectIsNull(gearFrame);
-    CGFloat trailingCenterX = hasGear ? CGRectGetMidX(gearFrame) + YMOverlayButtonSpace : self.bounds.size.width - YMOverlayButtonEdgePadding - YMOverlayButtonSize / 2.0;
-    CGFloat rowTop = hasGear ? CGRectGetMaxY(gearFrame) : YMOverlayButtonTopInset;
+    CGFloat trailingCenterX = hasGear ? CGRectGetMidX(gearFrame) : self.bounds.size.width - YMOverlayButtonEdgePadding - YMOverlayButtonSize / 2.0;
+    CGFloat rowTop = hasGear ? CGRectGetMaxY(gearFrame) + YMOverlayButtonSpace : YMOverlayButtonTopInset;
     CGFloat prevHalfWidth = 0;
 
     for (YMOverlayButtonSpec *spec in specs) {
@@ -298,10 +309,11 @@ static BOOL isRelatedVideosExpanded = NO;
     for (YMOverlayButtonSpec *spec in YMRegisteredOverlayButtons()) {
         if ([spec.identifier isEqualToString:@"speed.video"]) {
             spec.title = currentSpeedLabel;
-            
+
             YTQTMButton *btn = (YTQTMButton *)[self viewWithTag:spec.viewTag];
             if (btn) {
                 [btn setTitle:currentSpeedLabel forState:UIControlStateNormal];
+                btn.titleLabel.font = YMOverlayTextButtonFont(currentSpeedLabel, CGSizeMake(YMOverlayTextButtonWidth, YMOverlayButtonSize));
             }
             break;
         }
@@ -317,6 +329,7 @@ static BOOL isRelatedVideosExpanded = NO;
             YTQTMButton *btn = (YTQTMButton *)[self viewWithTag:spec.viewTag];
             if (btn) {
                 [btn setTitle:currentQualityLabel forState:UIControlStateNormal];
+                btn.titleLabel.font = YMOverlayTextButtonFont(currentQualityLabel, CGSizeMake(YMOverlayTextButtonWidth, YMOverlayButtonSize));
             }
             break;
         }
