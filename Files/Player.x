@@ -121,7 +121,7 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
     NSTimeInterval SBTotalTimeRemaining = 0.0;
     
     if (IS_ENABLED(SBShowDuration)) {
-        if (self.sbSegments && self.sbSegments.count > 0) {
+        if (self.sbSegments && self.sbSegments.count > 0 && self.sbEnabledForVideo) {
             for (SBSegment *segment in self.sbSegments) {
                 SBSegmentAction action = [segment configuredAction];
                 if (action == SBSegmentActionDisable) continue;
