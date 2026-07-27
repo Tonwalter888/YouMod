@@ -5,8 +5,6 @@
 
 extern UIColor *SBColorFromHex(NSString *hexString);
 
-#define LOC(x) [YouModBundle() localizedStringForKey:x value:nil table:nil]
-
 // Purple accent used to tint the toggle switches and duration sliders on this
 // page. (Distinct from the player overlay button's accent in SponsorBlock.x.)
 static UIColor *SBControlTintColor(void) {

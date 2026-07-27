@@ -1,8 +1,6 @@
 #import "Headers.h"
 #import <objc/runtime.h>
 
-#define LOC(x) [YouModBundle() localizedStringForKey:x value:nil table:nil]
-
 // Tab icons
 %hook YTAppPivotBarItemStyle
 - (UIImage *)pivotBarItemIconImageWithIconType:(int)type color:(UIColor *)color useNewIcons:(BOOL)isNew selected:(BOOL)isSelected {

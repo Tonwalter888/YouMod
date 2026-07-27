@@ -1,7 +1,5 @@
 #import "Headers.h"
 
-#define LOC(x) [YouModBundle() localizedStringForKey:x value:nil table:nil]
-
 // Enables shorts quality - works best with YTClassicVideoQuality
 %hook YTHotConfig
 - (BOOL)enableOmitAdvancedMenuInShortsVideoQualityPicker { return IS_ENABLED(EnablesShortsQuality) ? YES : %orig; }

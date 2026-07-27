@@ -680,6 +680,8 @@ extern NSArray *getAllSystemLanguageTitles();
 extern NSArray *getAllSystemLanguageValues();
 extern UIViewController *YouModTopViewController(UIViewController *root);
 
+#define LOC(x) [YouModBundle() localizedStringForKey:x value:nil table:nil]
+
 @interface YMDownloadProgressView : UIView
 @property (nonatomic, strong) UILabel *titleLabel;
 @property (nonatomic, strong) UILabel *subtitleLabel;
@@ -717,4 +719,14 @@ extern UIViewController *YouModTopViewController(UIViewController *root);
 @property (nonatomic, strong) UIImage *thumbnailImage;
 @property (nonatomic, strong) UIScrollView *scrollView;
 @property (nonatomic, strong) UIImageView *imageView;
+@end
+
+@interface YouModTranslationViewController : UIViewController
+@property (nonatomic, copy) NSString *originalText;
+@property (nonatomic, copy) NSString *selectedLangCode;
+@property (nonatomic, copy) NSString *selectedLangName;
+@property (nonatomic, strong) UILabel *langValueLabel;
+@property (nonatomic, strong) UITextView *resultTextView;
+@property (nonatomic, strong) NSArray *languageTitles;
+@property (nonatomic, strong) NSArray *languageCodes;
 @end

@@ -27,8 +27,6 @@ static void didSelectRate(float rate) {
 - (void)updateSpeedButton:(id)arg;
 @end
 
-#define LOC(x) [YouModBundle() localizedStringForKey:x value:nil table:nil]
-
 // YouGetCaption (https://github.com/PoomSmart/YouGetCaption)
 static void showTranscript(YTFormat3CaptionViewController *cvc) {
     UIView *parent = sbGetNotificationParent();
@@ -184,7 +182,7 @@ static YTQTMButton *YMCreateOverlayButton(YTMainAppControlsOverlayView *overlay,
         button = [%c(YTQTMButton) textButton];
         [button setTitle:spec.title forState:UIControlStateNormal];
         button.customTitleColor = tint;
-        button.titleLabel.font = YMOverlayTextButtonFont(spec.title, CGSizeMake(YMOverlayTextButtonWidth, YMOverlayButtonSize));
+        button.titleLabel.font = YMOverlayTextButtonFont(spec.title, CGSizeMake(25, 25));
         button.titleLabel.textAlignment = NSTextAlignmentCenter;
         button.sizeWithPaddingAndInsets = NO;
         button.titleLabel.numberOfLines = 2;
@@ -259,6 +257,7 @@ static BOOL isRelatedVideosExpanded = NO;
         btn.frame = CGRectMake(centerX - width / 2.0, rowTop, width, YMOverlayButtonSize);
         trailingCenterX = centerX;
         prevHalfWidth = width / 2.0;
+        [self bringSubviewToFront:btn];
     }
 }
 
@@ -313,7 +312,7 @@ static BOOL isRelatedVideosExpanded = NO;
             YTQTMButton *btn = (YTQTMButton *)[self viewWithTag:spec.viewTag];
             if (btn) {
                 [btn setTitle:currentSpeedLabel forState:UIControlStateNormal];
-                btn.titleLabel.font = YMOverlayTextButtonFont(currentSpeedLabel, CGSizeMake(YMOverlayTextButtonWidth, YMOverlayButtonSize));
+                btn.titleLabel.font = YMOverlayTextButtonFont(currentSpeedLabel, CGSizeMake(25, 25));
             }
             break;
         }
@@ -329,7 +328,7 @@ static BOOL isRelatedVideosExpanded = NO;
             YTQTMButton *btn = (YTQTMButton *)[self viewWithTag:spec.viewTag];
             if (btn) {
                 [btn setTitle:currentQualityLabel forState:UIControlStateNormal];
-                btn.titleLabel.font = YMOverlayTextButtonFont(currentQualityLabel, CGSizeMake(YMOverlayTextButtonWidth, YMOverlayButtonSize));
+                btn.titleLabel.font = YMOverlayTextButtonFont(currentQualityLabel, CGSizeMake(25, 25));
             }
             break;
         }

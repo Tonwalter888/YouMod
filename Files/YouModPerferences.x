@@ -3,8 +3,6 @@
 
 #define Prefix @"YouMod"
 
-#define LOC(x) [YouModBundle() localizedStringForKey:x value:nil table:nil]
-
 @implementation YouModPrefsManager
 
 + (instancetype)sharedManager {

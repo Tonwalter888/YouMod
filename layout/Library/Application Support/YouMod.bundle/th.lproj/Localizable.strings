@@ -125,6 +125,13 @@
 "SERVER_ASIA1" = "ไทย - เอเชีย";
 "SHOW_OPTIONS" = "แสดงตัวเลือก";
 "ENGLISH" = "อังกฤษ";
+"TRANSLATION" = "แปลภาษา";
+"LANGUAGE" = "ภาษา";
+"TRANSLATING" = "กำลังแปล...";
+"SELECT_LANG" = "เลือกภาษา";
+"TRANSLATE_FAILED" = "แปลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง";
+"SAVE_CURRENT_IMAGE" = "บันทึกรูปปัจจุบัน";
+"COPY_CURRENT_IMAGE" = "คัดลอกรูปปัจจุบัน";
 
 "APPEARANCE" = "ลักษณะ";
 "OLED_THEME" = "ธีม OLED";

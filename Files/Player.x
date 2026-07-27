@@ -1,7 +1,5 @@
 #import "Headers.h"
 
-#define LOC(x) [YouModBundle() localizedStringForKey:x value:nil table:nil]
-
 static BOOL isWiFiConnected() {
     struct sockaddr_in zeroAddress;
     bzero(&zeroAddress, sizeof(zeroAddress));
@@ -216,8 +214,7 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
 %new
 - (void)handleYouModScrubTap:(UITapGestureRecognizer *)gesture {
     if (gesture.state == UIGestureRecognizerStateEnded) {
-        UIView *gestureView = gesture.view;
-        UIView *progressBar;
+        UIView *progressBar = nil;
 
         for (UIView *subview in self.subviews) {
             if ([subview isKindOfClass:%c(YTModularPlayerBarView)]) {
@@ -227,31 +224,11 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
         }
         if (!progressBar) return;
         
-        UIWindow *keyWindow = nil;
-        for (UIWindowScene *scene in [UIApplication sharedApplication].connectedScenes) {
-            if (scene.activationState == UISceneActivationStateForegroundActive) {
-                for (UIWindow *window in scene.windows) {
-                    if (window.isKeyWindow) {
-                        keyWindow = window;
-                        break;
-                    }
-                }
-            }
-            if (keyWindow) break;
-        }
-
-        CGPoint touchPointInWindow = [gesture locationInView:keyWindow];
-        CGFloat barStartX = 0.0;
-        CGFloat barWidth = gestureView.bounds.size.width;
-        
-        if (progressBar) {
-            CGRect barFrameInWindow = [progressBar convertRect:progressBar.bounds toView:keyWindow];
-            barStartX = barFrameInWindow.origin.x;
-            barWidth = barFrameInWindow.size.width;
-        }
+        CGPoint touchPoint = [gesture locationInView:progressBar];
+        CGFloat barWidth = progressBar.bounds.size.width;
         
         if (barWidth > 0) {
-            CGFloat relativeX = touchPointInWindow.x - barStartX;
+            CGFloat relativeX = touchPoint.x;
             CGFloat percentage = relativeX / barWidth;
             CGFloat snapThreshold = 8.0;
             

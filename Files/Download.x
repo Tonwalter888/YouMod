@@ -8,8 +8,6 @@
 #import <stdarg.h>
 #import <stdlib.h>
 
-#define LOC(x) [YouModBundle() localizedStringForKey:x value:nil table:nil]
-
 @interface YouModMenuItem : NSObject
 @property (nonatomic, copy) NSString *title;
 @property (nonatomic, copy) NSString *subtitle;
@@ -1795,6 +1793,58 @@ void YouModConfigureDownloadButton(_ASDisplayView *view) {
     }
 }
 
+static void YouModTranslateText(NSString *text, NSString *targetLang, void (^completion)(NSString *translatedText, NSError *error)) {
+    if (!text || text.length == 0) {
+        if (completion) completion(@"", nil);
+        return;
+    }
+    
+    NSString *encodedText = [text stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
+    NSString *urlString = [NSString stringWithFormat:@"https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=%@&dt=t&q=%@", targetLang ?: @"en", encodedText];
+    NSURL *url = [NSURL URLWithString:urlString];
+    
+    NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithURL:url completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+        if (error || !data) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if (completion) completion(nil, error);
+            });
+            return;
+        }
+        
+        @try {
+            id json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+            if ([json isKindOfClass:[NSArray class]] && [json count] > 0) {
+                NSArray *sentences = json[0];
+                NSMutableString *result = [NSMutableString string];
+                for (id sentence in sentences) {
+                    if ([sentence isKindOfClass:[NSArray class]] && [sentence count] > 0) {
+                        [result appendString:sentence[0]];
+                    }
+                }
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    if (completion) completion(result, nil);
+                });
+                return;
+            }
+        } @catch (NSException *e) {}
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (completion) completion(nil, [NSError errorWithDomain:@"YouModTranslate" code:-1 userInfo:nil]);
+        });
+    }];
+    [task resume];
+}
+
+static void YouModShowTranslationDialog(NSString *text, UIViewController *presenter) {
+    if (!text || text.length == 0 || !presenter) return;
+    
+    YouModTranslationViewController *vc = [[YouModTranslationViewController alloc] init];
+    vc.originalText = text;
+    vc.modalPresentationStyle = UIModalPresentationOverCurrentContext;
+    vc.modalTransitionStyle = UIModalTransitionStyleCrossDissolve;
+    [presenter presentViewController:vc animated:YES completion:nil];
+}
+
 static void YouModExtractCommentTextAsync(UIView *cellView, void (^completion)(NSString *text)) {
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         NSString *resultText = @"";
@@ -1849,6 +1899,41 @@ static UIImage *YouModRenderViewToImage(_ASDisplayView *view) {
     return image;
 }
 
+static UIImage *YouModExtractPostImage(UIView *cellView) {
+    NSMutableArray<UIView *> *queue = [NSMutableArray arrayWithObject:cellView];
+    Class asDisplayClass = NSClassFromString(@"_ASDisplayView");
+    Class imageZoomNodeClass = NSClassFromString(@"YTImageZoomNode");
+    UIView *targetViewForRender = nil;
+
+    while (queue.count > 0) {
+        UIView *current = queue.firstObject;
+        [queue removeObjectAtIndex:0];
+
+        if (asDisplayClass && [current isKindOfClass:asDisplayClass]) {
+            id node = [current performSelector:@selector(keepalive_node)];
+            
+            if (imageZoomNodeClass && [node isKindOfClass:imageZoomNodeClass]) {
+                if (!targetViewForRender) {
+                    targetViewForRender = current;
+                }
+            }
+        }
+
+        @synchronized (current) {
+            [queue addObjectsFromArray:current.subviews];
+        }
+    }
+
+    if (targetViewForRender && targetViewForRender.bounds.size.width > 0 && targetViewForRender.bounds.size.height > 0) {
+        UIGraphicsImageRenderer *renderer = [[UIGraphicsImageRenderer alloc] initWithSize:targetViewForRender.bounds.size];
+        return [renderer imageWithActions:^(UIGraphicsImageRendererContext * _Nonnull rendererContext) {
+            [targetViewForRender.layer renderInContext:rendererContext.CGContext];
+        }];
+    }
+
+    return nil;
+}
+
 %hook _ASDisplayView
 
 - (void)layoutSubviews {
@@ -1892,6 +1977,15 @@ static UIImage *YouModRenderViewToImage(_ASDisplayView *view) {
 
     NSMutableArray *items = [NSMutableArray array];
 
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"TRANSLATE_COMMENT") subtitle:nil icon:YouModYTIconImage(540, NO, nil) handler:^{
+        YouModExtractCommentTextAsync(self, ^(NSString *commentText) {
+            if (commentText.length > 0) {
+                UIViewController *presenter = YouModPresenterForSender(self, nil);
+                YouModShowTranslationDialog(commentText, presenter);
+            }
+        });
+    }]];
+
     [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_COMMENT_TEXT") subtitle:nil icon:YouModYTIconImage(243, NO, nil) handler:^{
         YouModExtractCommentTextAsync(self, ^(NSString *commentText) {
             if (commentText.length > 0) {
@@ -1927,6 +2021,15 @@ static UIImage *YouModRenderViewToImage(_ASDisplayView *view) {
 
     NSMutableArray *items = [NSMutableArray array];
 
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"TRANSLATE_POST") subtitle:nil icon:YouModYTIconImage(540, NO, nil) handler:^{
+        YouModExtractCommentTextAsync(self, ^(NSString *commentText) {
+            if (commentText.length > 0) {
+                UIViewController *presenter = YouModPresenterForSender(self, nil);
+                YouModShowTranslationDialog(commentText, presenter);
+            }
+        });
+    }]];
+
     [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_POST_TEXT") subtitle:nil icon:YouModYTIconImage(243, NO, nil) handler:^{
         YouModExtractCommentTextAsync(self, ^(NSString *commentText) {
             if (commentText.length > 0) {
@@ -1945,6 +2048,21 @@ static UIImage *YouModRenderViewToImage(_ASDisplayView *view) {
 
     [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_POST_IMAGE") subtitle:nil icon:YouModYTIconImage(208, NO, nil) handler:^{
         UIImage *image = YouModRenderViewToImage(self);
+        if (image) {
+            YouModCopyImageToPasteboard(image, @"COPIED_TO_CLIPBOARD");
+        }
+    }]];
+
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"SAVE_CURRENT_IMAGE") subtitle:nil icon:YouModYTIconImage(367, YES, [UIColor systemPurpleColor]) handler:^{
+        UIImage *image = YouModExtractPostImage(self);
+        if (image) {
+            UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil);
+            YouModSendSuccess(LOC(@"SAVED_TO_PHOTOS"));
+        }
+    }]];
+
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_CURRENT_IMAGE") subtitle:nil icon:YouModYTIconImage(208, YES, [UIColor systemPurpleColor]) handler:^{
+        UIImage *image = YouModExtractPostImage(self);
         if (image) {
             YouModCopyImageToPasteboard(image, @"COPIED_TO_CLIPBOARD");
         }

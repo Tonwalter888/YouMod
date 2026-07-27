@@ -121,6 +121,13 @@
 "SERVER_ASIA1" = "Thailand - Asia";
 "SHOW_OPTIONS" = "Show options";
 "ENGLISH" = "English";
+"TRANSLATION" = "Translation";
+"LANGUAGE" = "Language";
+"TRANSLATING" = "Translating...";
+"SELECT_LANG" = "Select language";
+"TRANSLATE_FAILED" = "Failed to translate, please try again.";
+"SAVE_CURRENT_IMAGE" = "Save current image";
+"COPY_CURRENT_IMAGE" = "Copy current image";
 
 "APPEARANCE" = "Внешний вид";
 "OLED_THEME" = "OLED dark mode";

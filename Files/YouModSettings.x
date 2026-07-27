@@ -3,17 +3,6 @@
 #import <objc/runtime.h>
 #import <objc/message.h>
 
-static NSBundle *YMSettingsBundle() {
-    static NSBundle *bundle = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        NSString *path = [[NSBundle mainBundle] pathForResource:@"YouMod" ofType:@"bundle"];
-        if (path) bundle = [NSBundle bundleWithPath:path];
-    });
-    return bundle;
-}
-#define YMLOC(x) [YMSettingsBundle() localizedStringForKey:x value:nil table:nil]
-
 #pragma mark - Data Model
 
 typedef NS_ENUM(NSInteger, YMRowType) {
@@ -752,26 +741,26 @@ static const void *kYMTabSavedScrollEdgeAppearanceKey = &kYMTabSavedScrollEdgeAp
 - (void)setInitialSnapshot:(NSArray *)snap { objc_setAssociatedObject(self, kYMTabSnapshotKey, snap, OBJC_ASSOCIATION_RETAIN_NONATOMIC); }
 
 - (NSString *)localizedNameForTabID:(NSString *)tabID {
-    if ([tabID isEqualToString:@"home"]) return YMLOC(@"HOME_TAB");
-    if ([tabID isEqualToString:@"shorts"]) return YMLOC(@"SHORTS_TAB");
-    if ([tabID isEqualToString:@"create"]) return YMLOC(@"CREATE_TAB");
-    if ([tabID isEqualToString:@"subscriptions"]) return YMLOC(@"SUBSCRIPTIONS_TAB");
-    if ([tabID isEqualToString:@"library"]) return YMLOC(@"LIBRARY_TAB");
-    if ([tabID isEqualToString:@"history"]) return YMLOC(@"HISTORY_TAB");
-    if ([tabID isEqualToString:@"gaming"]) return YMLOC(@"GAMING_TAB");
-    if ([tabID isEqualToString:@"sports"]) return YMLOC(@"SPORTS_TAB");
-    if ([tabID isEqualToString:@"notifications"]) return YMLOC(@"NOTI_TAB");
-    if ([tabID isEqualToString:@"news"]) return YMLOC(@"NEWS_TAB");
-    if ([tabID isEqualToString:@"music"]) return YMLOC(@"MUSIC_TAB");
-    if ([tabID isEqualToString:@"watchlater"]) return YMLOC(@"WATCH_LATER_TAB");
-    if ([tabID isEqualToString:@"playlist"]) return YMLOC(@"PLAYLIST_TAB");
-    if ([tabID isEqualToString:@"like"]) return YMLOC(@"LIKE_TAB");
-    if ([tabID isEqualToString:@"live"]) return YMLOC(@"LIVE_TAB");
-    if ([tabID isEqualToString:@"post"]) return YMLOC(@"POST_TAB");
-    if ([tabID isEqualToString:@"video"]) return YMLOC(@"VIDEO_TAB");
-    if ([tabID isEqualToString:@"movie"]) return YMLOC(@"MOVIE_TAB");
-    if ([tabID isEqualToString:@"course"]) return YMLOC(@"COURSE_TAB");
-    if ([tabID isEqualToString:@"minigame"]) return YMLOC(@"MINIGAME_TAB");
+    if ([tabID isEqualToString:@"home"]) return LOC(@"HOME_TAB");
+    if ([tabID isEqualToString:@"shorts"]) return LOC(@"SHORTS_TAB");
+    if ([tabID isEqualToString:@"create"]) return LOC(@"CREATE_TAB");
+    if ([tabID isEqualToString:@"subscriptions"]) return LOC(@"SUBSCRIPTIONS_TAB");
+    if ([tabID isEqualToString:@"library"]) return LOC(@"LIBRARY_TAB");
+    if ([tabID isEqualToString:@"history"]) return LOC(@"HISTORY_TAB");
+    if ([tabID isEqualToString:@"gaming"]) return LOC(@"GAMING_TAB");
+    if ([tabID isEqualToString:@"sports"]) return LOC(@"SPORTS_TAB");
+    if ([tabID isEqualToString:@"notifications"]) return LOC(@"NOTI_TAB");
+    if ([tabID isEqualToString:@"news"]) return LOC(@"NEWS_TAB");
+    if ([tabID isEqualToString:@"music"]) return LOC(@"MUSIC_TAB");
+    if ([tabID isEqualToString:@"watchlater"]) return LOC(@"WATCH_LATER_TAB");
+    if ([tabID isEqualToString:@"playlist"]) return LOC(@"PLAYLIST_TAB");
+    if ([tabID isEqualToString:@"like"]) return LOC(@"LIKE_TAB");
+    if ([tabID isEqualToString:@"live"]) return LOC(@"LIVE_TAB");
+    if ([tabID isEqualToString:@"post"]) return LOC(@"POST_TAB");
+    if ([tabID isEqualToString:@"video"]) return LOC(@"VIDEO_TAB");
+    if ([tabID isEqualToString:@"movie"]) return LOC(@"MOVIE_TAB");
+    if ([tabID isEqualToString:@"course"]) return LOC(@"COURSE_TAB");
+    if ([tabID isEqualToString:@"minigame"]) return LOC(@"MINIGAME_TAB");
     return tabID;
 }
 
@@ -779,7 +768,7 @@ static const void *kYMTabSavedScrollEdgeAppearanceKey = &kYMTabSavedScrollEdgeAp
     static YTAssetLoader *cachedLoader = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        cachedLoader = [[%c(YTAssetLoader) alloc] initWithBundle:YMSettingsBundle()];
+        cachedLoader = [[%c(YTAssetLoader) alloc] initWithBundle:YouModBundle()];
     });
 
     if ([tabID isEqualToString:@"create"]) {
@@ -814,7 +803,7 @@ static const void *kYMTabSavedScrollEdgeAppearanceKey = &kYMTabSavedScrollEdgeAp
     struct objc_super superStruct = { self, ytStyled ?: [UIViewController class] };
     ((void (*)(struct objc_super *, SEL))objc_msgSendSuper)(&superStruct, @selector(viewDidLoad));
 
-    self.title = YMLOC(@"MANAGE_TABS");
+    self.title = LOC(@"MANAGE_TABS");
     [self loadTabData];
     [self takeSnapshot];
 
@@ -1033,15 +1022,15 @@ static const void *kYMTabSavedScrollEdgeAppearanceKey = &kYMTabSavedScrollEdgeAp
     if (wantsEnabled && [self enabledCount] >= kYMTabMaxEnabled) {
         sender.on = NO;
         YTAlertView *alert = [%c(YTAlertView) infoDialog];
-        alert.title = YMLOC(@"TAB_LIMIT");
-        alert.subtitle = YMLOC(@"TAB_LIMIT_DESC");
+        alert.title = LOC(@"TAB_LIMIT");
+        alert.subtitle = LOC(@"TAB_LIMIT_DESC");
         [alert show];
         return;
     } else if (!wantsEnabled && [self enabledCount] <= kYMTabMinEnabled) {
         sender.on = YES;
         YTAlertView *alert = [%c(YTAlertView) infoDialog];
-        alert.title = YMLOC(@"WARNING");
-        alert.subtitle = YMLOC(@"ZERO_TAB_DESC");
+        alert.title = LOC(@"WARNING");
+        alert.subtitle = LOC(@"ZERO_TAB_DESC");
         [alert show];
         return;
     }
@@ -1084,7 +1073,7 @@ static const void *kYMTabSavedScrollEdgeAppearanceKey = &kYMTabSavedScrollEdgeAp
     headerView.backgroundColor = [UIColor clearColor];
     
     UILabel *hintLabel = [[UILabel alloc] init];
-    hintLabel.text = YMLOC(@"TAB_REORDER_HINT");
+    hintLabel.text = LOC(@"TAB_REORDER_HINT");
     hintLabel.textColor = [self ymSecondaryColor];
     hintLabel.font = [UIFont systemFontOfSize:13];
     hintLabel.numberOfLines = 0;
