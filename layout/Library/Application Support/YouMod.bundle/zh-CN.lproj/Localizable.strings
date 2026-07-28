@@ -170,6 +170,8 @@
 "HIDE_SEARCH_HISTORY_DESC" = "使用搜索栏时隐藏之前的搜索历史和推荐。\n注意：你的搜索历史在其他 YouTube 客户端中仍然可以访问。";
 "HIDE_PLAYABLES" = "Hide Playables";
 "HIDE_PLAYABLES_DESC" = "Remove playables (Mini-games) from the feed.";
+"HIDE_RELATED_VIDEOS" = "Hide related videos";
+"HIDE_RELATED_VIDEOS_DESC" = "Hide related videos below the player. (Not in the overlay)";
 
 "PLAYER" = "播放器";
 "PLAYBACK_SPEED" = "Playback speed";
@@ -375,6 +377,8 @@
 "MOVIE_TAB" = "Movies";
 "COURSE_TAB" = "Courses";
 "MINIGAME_TAB" = "Mini-games";
+"FASHION_TAB" = "Fashion";
+"LEARNING_TAB" = "Learning";
 "MANAGE_TABS" = "Manage Tabs";
 "MANAGE_TABS_DESC" = "Reorder and toggle tabs";
 "TAB_REORDER_HINT" = "Drag to reorder. Toggle to show/hide.\nTab settings can also be accessed by long pressing the first tab in the tab bar.";

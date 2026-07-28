@@ -1240,7 +1240,6 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
             savedNormal = (currentRate > 0) ? currentRate : 1.0;
             [defaults setFloat:savedNormal forKey:GlobalSavedNormalRate];
             [defaults setBool:NO forKey:GlobalSpeedLocked];
-            [defaults synchronize];
         }
 
         initialLockState = IS_ENABLED(GlobalSpeedLocked);
@@ -1251,7 +1250,6 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
             if (currentRate != speed) {
                 savedNormal = (currentRate > 0) ? currentRate : 1.0;
                 [defaults setFloat:savedNormal forKey:GlobalSavedNormalRate];
-                [defaults synchronize];
             }
             [self setPlaybackRate:speed];
             [self YouModShowSpeedToast:speed isLocked:NO];
@@ -1304,7 +1302,6 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
             if (IS_ENABLED(LockSpeed) && isPendingToggle) {
                 finalLockState = !initialLockState;
                 [defaults setBool:finalLockState forKey:GlobalSpeedLocked];
-                [defaults synchronize];
             }
         }
         if (finalLockState) {

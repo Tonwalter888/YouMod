@@ -24,3 +24,15 @@
 %hook YTPersonalizedSuggestionsCacheProvider
 - (id)activeCache { return IS_ENABLED(HideSearchHis) ? nil : %orig; }
 %end
+
+// Hide related videos in the player
+%hook YTWatchNextResultsViewController
+- (void)setVisibleSections:(NSInteger)sections {
+    if (![self.parentViewController isKindOfClass:%c(YTWatchNextResponseViewController)]) {
+        %orig;
+        return;
+    }
+    NSInteger value = IS_ENABLED(HideRelatedVideos) ? 1 : sections;
+    %orig(value);
+}
+%end

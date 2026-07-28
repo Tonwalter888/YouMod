@@ -170,6 +170,8 @@
 "HIDE_SEARCH_HISTORY_DESC" = "Скрыть предыдущие поисковые запросы и подсказки при использовании строки поиска.\nПРИМЕЧАНИЕ: История поиска по-прежнему будет доступна в других клиентах YouTube.";
 "HIDE_PLAYABLES" = "Remove playables";
 "HIDE_PLAYABLES_DESC" = "Removes playables (mini-games) from the feed.";
+"HIDE_RELATED_VIDEOS" = "Hide related videos";
+"HIDE_RELATED_VIDEOS_DESC" = "Hide related videos below the player. (Not in the overlay)";
 
 "PLAYER" = "Плеер";
 "PLAYBACK_SPEED" = "Playback speed";
@@ -376,6 +378,8 @@
 "MOVIE_TAB" = "Movies";
 "COURSE_TAB" = "Courses";
 "MINIGAME_TAB" = "Playables";
+"FASHION_TAB" = "Fashion";
+"LEARNING_TAB" = "Learning";
 "MANAGE_TABS" = "Manage tabs";
 "MANAGE_TABS_DESC" = "Reorder and toggle tabs";
 "TAB_REORDER_HINT" = "Drag to reorder. Toggle to show/hide.\nTab settings are also accessible by long-pressing the first tab in the tab bar.";

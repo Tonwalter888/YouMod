@@ -63,6 +63,7 @@
 #import <YouTubeHeader/MLCaption.h>
 #import <YouTubeHeader/MLFormat3Captions.h>
 #import <YouTubeHeader/YTFormat3CaptionViewController.h>
+#import <YouTubeHeader/YTWatchNextResultsViewController.h>
 
 // For Settings.x and SponsorBlockSettings.x
 #import <PSHeader/Misc.h>
@@ -118,6 +119,7 @@
 #define KeepShortsSubscript @"YouModKeepShortsSubscript"
 #define HideSearchHis @"YouModHideSearchHistoryAndSuggestions"
 #define HideSurveys @"YouModHideSurveys"
+#define HideRelatedVideos @"YouModHideRelatedVideos"
 // Player
 #define WifiQualityIndex @"YouModWifiQualityIndex"
 #define CellQualityIndex @"YouModCellQualityIndex"

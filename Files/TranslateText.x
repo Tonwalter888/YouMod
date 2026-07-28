@@ -46,8 +46,26 @@ static void YouModTranslateText(NSString *text, NSString *targetLang, void (^com
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    self.view.backgroundColor = [UIColor colorWithWhite:0.0 alpha:0.6];
     
+    self.view.backgroundColor = [UIColor colorWithRed:0.13 green:0.13 blue:0.13 alpha:1.0];
+    self.title = LOC(@"TRANSLATION");
+
+    if (self.navigationController) {
+        UINavigationBarAppearance *appearance = [[UINavigationBarAppearance alloc] init];
+        [appearance configureWithOpaqueBackground];
+        appearance.backgroundColor = [UIColor colorWithRed:0.13 green:0.13 blue:0.13 alpha:1.0];
+        appearance.titleTextAttributes = @{
+            NSForegroundColorAttributeName: [UIColor whiteColor],
+            NSFontAttributeName: [UIFont boldSystemFontOfSize:17]
+        };
+        self.navigationController.navigationBar.standardAppearance = appearance;
+        self.navigationController.navigationBar.scrollEdgeAppearance = appearance;
+    }
+    
+    UIBarButtonItem *closeItem = [[UIBarButtonItem alloc] initWithTitle:@"✕" style:UIBarButtonItemStylePlain target:self action:@selector(closeTapped)];
+    closeItem.tintColor = [UIColor colorWithWhite:0.8 alpha:1.0];
+    self.navigationItem.rightBarButtonItem = closeItem;
+
     self.languageTitles = getAllSystemLanguageTitles();
     self.languageCodes = getAllSystemLanguageValues();
     
@@ -61,95 +79,59 @@ static void YouModTranslateText(NSString *text, NSString *targetLang, void (^com
         self.selectedLangCode = self.languageCodes.firstObject;
         self.selectedLangName = self.languageTitles.firstObject;
     }
-    
-    UIView *containerView = [[UIView alloc] init];
-    containerView.translatesAutoresizingMaskIntoConstraints = NO;
-    containerView.backgroundColor = [UIColor colorWithRed:0.13 green:0.13 blue:0.13 alpha:1.0];
-    containerView.layer.cornerRadius = 16;
-    containerView.clipsToBounds = YES;
-    [self.view addSubview:containerView];
-    
-    [NSLayoutConstraint activateConstraints:@[
-        [containerView.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
-        [containerView.centerYAnchor constraintEqualToAnchor:self.view.centerYAnchor],
-        [containerView.widthAnchor constraintEqualToAnchor:self.view.widthAnchor multiplier:0.85],
-        [containerView.heightAnchor constraintGreaterThanOrEqualToConstant:280],
-        [containerView.heightAnchor constraintLessThanOrEqualToAnchor:self.view.heightAnchor multiplier:0.7]
-    ]];
-    
-    UILabel *titleLabel = [[UILabel alloc] init];
-    titleLabel.translatesAutoresizingMaskIntoConstraints = NO;
-    titleLabel.text = LOC(@"TRANSLATION");
-    titleLabel.textColor = [UIColor whiteColor];
-    titleLabel.font = [UIFont boldSystemFontOfSize:17];
-    titleLabel.textAlignment = NSTextAlignmentCenter;
-    [containerView addSubview:titleLabel];
-    
-    UIButton *closeButton = [UIButton buttonWithType:UIButtonTypeSystem];
-    closeButton.translatesAutoresizingMaskIntoConstraints = NO;
-    [closeButton setTitle:@"✕" forState:UIControlStateNormal];
-    [closeButton setTitleColor:[UIColor colorWithWhite:0.7 alpha:1.0] forState:UIControlStateNormal];
-    closeButton.titleLabel.font = [UIFont systemFontOfSize:18 weight:UIFontWeightBold];
-    [closeButton addTarget:self action:@selector(closeTapped) forControlEvents:UIControlEventTouchUpInside];
-    [containerView addSubview:closeButton];
-    
+
     UIView *langRowView = [[UIView alloc] init];
     langRowView.translatesAutoresizingMaskIntoConstraints = NO;
     langRowView.backgroundColor = [UIColor colorWithWhite:0.18 alpha:1.0];
-    langRowView.layer.cornerRadius = 10;
+    langRowView.layer.cornerRadius = 12;
     UITapGestureRecognizer *langTap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(selectLanguageTapped:)];
     [langRowView addGestureRecognizer:langTap];
-    [containerView addSubview:langRowView];
-    
+    [self.view addSubview:langRowView];
+
     UILabel *langTitleLabel = [[UILabel alloc] init];
     langTitleLabel.translatesAutoresizingMaskIntoConstraints = NO;
     langTitleLabel.text = LOC(@"LANGUAGE");
     langTitleLabel.textColor = [UIColor whiteColor];
     langTitleLabel.font = [UIFont systemFontOfSize:15 weight:UIFontWeightMedium];
     [langRowView addSubview:langTitleLabel];
-    
+
     self.langValueLabel = [[UILabel alloc] init];
     self.langValueLabel.translatesAutoresizingMaskIntoConstraints = NO;
     self.langValueLabel.text = [NSString stringWithFormat:@"%@ ↕", self.selectedLangName];
     self.langValueLabel.textColor = [UIColor colorWithRed:0.75 green:0.55 blue:1.0 alpha:1.0];
     self.langValueLabel.font = [UIFont systemFontOfSize:14 weight:UIFontWeightMedium];
     [langRowView addSubview:self.langValueLabel];
-    
+
     self.resultTextView = [[UITextView alloc] init];
     self.resultTextView.translatesAutoresizingMaskIntoConstraints = NO;
-    self.resultTextView.backgroundColor = [UIColor clearColor];
+    self.resultTextView.backgroundColor = [UIColor colorWithWhite:0.18 alpha:0.5];
+    self.resultTextView.layer.cornerRadius = 12;
     self.resultTextView.textColor = [UIColor whiteColor];
-    self.resultTextView.font = [UIFont systemFontOfSize:15];
+    self.resultTextView.font = [UIFont systemFontOfSize:16];
     self.resultTextView.editable = NO;
-    [containerView addSubview:self.resultTextView];
-    
+    self.resultTextView.textContainerInset = UIEdgeInsetsMake(12, 12, 12, 12);
+    [self.view addSubview:self.resultTextView];
+
+    UILayoutGuide *guide = self.view.safeAreaLayoutGuide;
+
     [NSLayoutConstraint activateConstraints:@[
-        [titleLabel.topAnchor constraintEqualToAnchor:containerView.topAnchor constant:16],
-        [titleLabel.centerXAnchor constraintEqualToAnchor:containerView.centerXAnchor],
-        
-        [closeButton.centerYAnchor constraintEqualToAnchor:titleLabel.centerYAnchor],
-        [closeButton.trailingAnchor constraintEqualToAnchor:containerView.trailingAnchor constant:-16],
-        [closeButton.widthAnchor constraintEqualToConstant:30],
-        [closeButton.heightAnchor constraintEqualToConstant:30],
-        
-        [langRowView.topAnchor constraintEqualToAnchor:titleLabel.bottomAnchor constant:20],
-        [langRowView.leadingAnchor constraintEqualToAnchor:containerView.leadingAnchor constant:16],
-        [langRowView.trailingAnchor constraintEqualToAnchor:containerView.trailingAnchor constant:-16],
+        [langRowView.topAnchor constraintEqualToAnchor:guide.topAnchor constant:12],
+        [langRowView.leadingAnchor constraintEqualToAnchor:guide.leadingAnchor constant:16],
+        [langRowView.trailingAnchor constraintEqualToAnchor:guide.trailingAnchor constant:-16],
         [langRowView.heightAnchor constraintEqualToConstant:48],
-        
+
         [langTitleLabel.leadingAnchor constraintEqualToAnchor:langRowView.leadingAnchor constant:16],
         [langTitleLabel.centerYAnchor constraintEqualToAnchor:langRowView.centerYAnchor],
-        
+
         [self.langValueLabel.trailingAnchor constraintEqualToAnchor:langRowView.trailingAnchor constant:-16],
         [self.langValueLabel.centerYAnchor constraintEqualToAnchor:langRowView.centerYAnchor],
-        
-        [self.resultTextView.topAnchor constraintEqualToAnchor:langRowView.bottomAnchor constant:16],
-        [self.resultTextView.leadingAnchor constraintEqualToAnchor:containerView.leadingAnchor constant:16],
-        [self.resultTextView.trailingAnchor constraintEqualToAnchor:containerView.trailingAnchor constant:-16],
-        [self.resultTextView.bottomAnchor constraintEqualToAnchor:containerView.bottomAnchor constant:-16],
-        [self.resultTextView.heightAnchor constraintEqualToConstant:140]
+
+        [self.resultTextView.topAnchor constraintEqualToAnchor:langRowView.bottomAnchor constant:12],
+        [self.resultTextView.leadingAnchor constraintEqualToAnchor:guide.leadingAnchor constant:16],
+        [self.resultTextView.trailingAnchor constraintEqualToAnchor:guide.trailingAnchor constant:-16],
+        [self.resultTextView.bottomAnchor constraintEqualToAnchor:guide.bottomAnchor constant:-16]
     ]];
-    
+
     [self performTranslation];
 }
 

@@ -170,6 +170,8 @@
 "HIDE_SEARCH_HISTORY_DESC" = "Hide previous search history and suggestions when using the search bar.\nNOTE: Your search history will still be accessible in your other YouTube clients.";
 "HIDE_PLAYABLES" = "Remove playables";
 "HIDE_PLAYABLES_DESC" = "Removes playables (mini-games) from the feed.";
+"HIDE_RELATED_VIDEOS" = "Hide related videos";
+"HIDE_RELATED_VIDEOS_DESC" = "Hide related videos below the player. (Not in the overlay)";
 
 "PLAYER" = "Player";
 "PLAYBACK_SPEED" = "Playback speed";
@@ -374,6 +376,8 @@
 "MOVIE_TAB" = "Movies";
 "COURSE_TAB" = "Courses";
 "MINIGAME_TAB" = "Playables";
+"FASHION_TAB" = "Fashion";
+"LEARNING_TAB" = "Learning";
 "MANAGE_TABS" = "Manage tabs";
 "MANAGE_TABS_DESC" = "Reorder and toggle tabs";
 "TAB_REORDER_HINT" = "Drag to reorder. Toggle to show/hide.\nTab settings are also accessible by long-pressing the first tab in the tab bar.";

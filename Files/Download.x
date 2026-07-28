@@ -668,8 +668,13 @@ static YouModMediaFormat *YouModMediaFormatFromStream(YTIFormatStream *stream, B
     BOOL typeMatches = video ? ([lowerMime containsString:@"video/"]) : ([lowerMime containsString:@"audio/"]);
     if (!typeMatches) return nil;
 
-    BOOL mimeLooksMP4 = [lowerMime containsString:@"mp4"] && ([lowerMime containsString:@"avc1"] || ([lowerMime containsString:@"mp4a"] && stream.itag == 140));
-    if (mimeType.length && !mimeLooksMP4) return nil;
+    if (IS_ENABLED(DownloadFix)) {
+        BOOL mimeLooksMP4 = [lowerMime containsString:@"mp4"];
+        if (mimeType.length && !mimeLooksMP4) return nil;
+    } else {
+        BOOL mimeLooksMP4 = [lowerMime containsString:@"mp4"] && ([lowerMime containsString:@"avc1"] || ([lowerMime containsString:@"mp4a"] && stream.itag == 140));
+        if (mimeType.length && !mimeLooksMP4) return nil;
+    }
 
     YouModMediaFormat *format = [YouModMediaFormat new];
     format.source = stream;
@@ -1798,9 +1803,28 @@ static void YouModShowTranslationDialog(NSString *text, UIViewController *presen
     
     YouModTranslationViewController *vc = [[YouModTranslationViewController alloc] init];
     vc.originalText = text;
-    vc.modalPresentationStyle = UIModalPresentationOverCurrentContext;
-    vc.modalTransitionStyle = UIModalTransitionStyleCrossDissolve;
-    [presenter presentViewController:vc animated:YES completion:nil];
+    
+    UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:vc];
+    
+    if (UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad) {
+        nav.modalPresentationStyle = UIModalPresentationFormSheet;
+    } else {
+        if (@available(iOS 15.0, *)) {
+            UISheetPresentationController *sheet = nav.sheetPresentationController;
+            if (sheet) {
+                sheet.detents = @[ 
+                    [UISheetPresentationControllerDetent mediumDetent],
+                    [UISheetPresentationControllerDetent largeDetent]
+                ];
+                sheet.prefersGrabberVisible = YES;
+                sheet.preferredCornerRadius = 20.0;
+            }
+        } else {
+            nav.modalPresentationStyle = UIModalPresentationPageSheet;
+        }
+    }
+    
+    [presenter presentViewController:nav animated:YES completion:nil];
 }
 
 static void YouModExtractCommentTextAsync(UIView *cellView, void (^completion)(NSString *text)) {
@@ -1935,7 +1959,7 @@ static UIImage *YouModExtractPostImage(UIView *cellView) {
 
     NSMutableArray *items = [NSMutableArray array];
 
-    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"TRANSLATE_COMMENT") subtitle:nil icon:YouModYTIconImage(540, NO, nil) handler:^{
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"TRANSLATE_COMMENT") subtitle:nil icon:YouModYTIconImage(897, NO, nil) handler:^{
         YouModExtractCommentTextAsync(self, ^(NSString *commentText) {
             if (commentText.length > 0) {
                 UIViewController *presenter = YouModPresenterForSender(self, nil);
@@ -1979,7 +2003,7 @@ static UIImage *YouModExtractPostImage(UIView *cellView) {
 
     NSMutableArray *items = [NSMutableArray array];
 
-    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"TRANSLATE_POST") subtitle:nil icon:YouModYTIconImage(540, NO, nil) handler:^{
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"TRANSLATE_POST") subtitle:nil icon:YouModYTIconImage(897, NO, nil) handler:^{
         YouModExtractCommentTextAsync(self, ^(NSString *commentText) {
             if (commentText.length > 0) {
                 UIViewController *presenter = YouModPresenterForSender(self, nil);
@@ -2011,6 +2035,7 @@ static UIImage *YouModExtractPostImage(UIView *cellView) {
         }
     }]];
 
+    /*
     [items addObject:[YouModMenuItem itemWithTitle:LOC(@"SAVE_CURRENT_IMAGE") subtitle:nil icon:YouModYTIconImage(367, YES, [UIColor systemPurpleColor]) handler:^{
         UIImage *image = YouModExtractPostImage(self);
         if (image) {
@@ -2025,6 +2050,7 @@ static UIImage *YouModExtractPostImage(UIView *cellView) {
             YouModCopyImageToPasteboard(image, @"COPIED_TO_CLIPBOARD");
         }
     }]];
+    */
 
     UIViewController *presenter = YouModPresenterForSender(self, nil);
     if (!presenter) return;
