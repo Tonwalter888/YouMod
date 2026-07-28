@@ -668,13 +668,8 @@ static YouModMediaFormat *YouModMediaFormatFromStream(YTIFormatStream *stream, B
     BOOL typeMatches = video ? ([lowerMime containsString:@"video/"]) : ([lowerMime containsString:@"audio/"]);
     if (!typeMatches) return nil;
 
-    if (IS_ENABLED(DownloadFix)) {
-        BOOL mimeLooksMP4 = [lowerMime containsString:@"mp4"];
-        if (mimeType.length && !mimeLooksMP4) return nil;
-    } else {
-        BOOL mimeLooksMP4 = [lowerMime containsString:@"mp4"] && ([lowerMime containsString:@"avc1"] || ([lowerMime containsString:@"mp4a"] && stream.itag == 140));
-        if (mimeType.length && !mimeLooksMP4) return nil;
-    }
+    BOOL mimeLooksMP4 = [lowerMime containsString:@"mp4"] && ([lowerMime containsString:@"avc1"] || ([lowerMime containsString:@"mp4a"] && stream.itag == 140));
+    if (mimeType.length && !mimeLooksMP4) return nil;
 
     YouModMediaFormat *format = [YouModMediaFormat new];
     format.source = stream;
@@ -1806,64 +1801,53 @@ static void YouModShowTranslationDialog(NSString *text, UIViewController *presen
     
     UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:vc];
     
-    if (UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad) {
-        nav.modalPresentationStyle = UIModalPresentationFormSheet;
-    } else {
-        if (@available(iOS 15.0, *)) {
-            UISheetPresentationController *sheet = nav.sheetPresentationController;
-            if (sheet) {
-                sheet.detents = @[ 
-                    [UISheetPresentationControllerDetent mediumDetent],
-                    [UISheetPresentationControllerDetent largeDetent]
-                ];
-                sheet.prefersGrabberVisible = YES;
-                sheet.preferredCornerRadius = 20.0;
-            }
-        } else {
-            nav.modalPresentationStyle = UIModalPresentationPageSheet;
+    if (@available(iOS 15.0, *)) {
+        UISheetPresentationController *sheet = nav.sheetPresentationController;
+        if (sheet) {
+            sheet.detents = @[ 
+                [UISheetPresentationControllerDetent mediumDetent],
+                [UISheetPresentationControllerDetent largeDetent]
+            ];
+            sheet.prefersGrabberVisible = YES;
+            sheet.preferredCornerRadius = 24.0;
         }
+    } else {
+        // Fallback for iOS 14
+        nav.modalPresentationStyle = UIModalPresentationFormSheet;
     }
-    
     [presenter presentViewController:nav animated:YES completion:nil];
 }
 
-static void YouModExtractCommentTextAsync(UIView *cellView, void (^completion)(NSString *text)) {
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-        NSString *resultText = @"";
+static NSString *YouModExtractCommentText(UIView *cellView) {
+    if (!cellView) return @"";
 
-        NSMutableArray<UIView *> *queue = [NSMutableArray arrayWithObject:cellView];
-        Class asDisplayClass = NSClassFromString(@"_ASDisplayView");
-        Class elmTextExClass = NSClassFromString(@"ELMExpandableTextNode");
-        Class elmTextClass = NSClassFromString(@"ELMTextNode");
+    NSString *resultText = @"";
+    NSMutableArray<UIView *> *queue = [NSMutableArray arrayWithObject:cellView];
+    Class asDisplayClass = NSClassFromString(@"_ASDisplayView");
+    Class elmTextExClass = NSClassFromString(@"ELMExpandableTextNode");
+    Class elmTextClass = NSClassFromString(@"ELMTextNode");
 
-        while (queue.count > 0) {
-            UIView *current = queue.firstObject;
-            [queue removeObjectAtIndex:0];
+    while (queue.count > 0) {
+        UIView *current = queue.firstObject;
+        [queue removeObjectAtIndex:0];
 
-            if (asDisplayClass && [current isKindOfClass:asDisplayClass]) {
-                id node = [current performSelector:@selector(keepalive_node)];
+        if (asDisplayClass && [current isKindOfClass:asDisplayClass]) {
+            id node = [current performSelector:@selector(keepalive_node)];
 
-                BOOL isExpandableText = node && elmTextExClass && [node isKindOfClass:elmTextExClass];
-                BOOL isText = node && elmTextClass && [node isKindOfClass:elmTextClass];
-                BOOL isCommentLabel = [current.accessibilityIdentifier isEqualToString:@"id.comment.content.label"];
+            BOOL isExpandableText = node && elmTextExClass && [node isKindOfClass:elmTextExClass];
+            BOOL isText = node && elmTextClass && [node isKindOfClass:elmTextClass];
+            BOOL isCommentLabel = [current.accessibilityIdentifier isEqualToString:@"id.comment.content.label"];
 
-                if (isText || isExpandableText || isCommentLabel) {
-                    resultText = current.accessibilityLabel ?: @"";
-                    break;
-                }
-            }
-
-            @synchronized (current) {
-                [queue addObjectsFromArray:current.subviews];
+            if (isText || isExpandableText || isCommentLabel) {
+                resultText = current.accessibilityLabel ?: @"";
+                break;
             }
         }
 
-        dispatch_async(dispatch_get_main_queue(), ^{
-            if (completion) {
-                completion(resultText);
-            }
-        });
-    });
+        [queue addObjectsFromArray:current.subviews];
+    }
+
+    return resultText;
 }
 
 static UIImage *YouModRenderViewToImage(_ASDisplayView *view) {
@@ -1960,23 +1944,18 @@ static UIImage *YouModExtractPostImage(UIView *cellView) {
     if (sender.state != UIGestureRecognizerStateBegan) return;
 
     NSMutableArray *items = [NSMutableArray array];
+    NSString *commentText = YouModExtractCommentText(self);
 
-    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"TRANSLATE_COMMENT") subtitle:nil icon:YouModYTIconImage(897, NO, nil) handler:^{
-        YouModExtractCommentTextAsync(self, ^(NSString *commentText) {
-            if (commentText.length > 0) {
-                UIViewController *presenter = YouModPresenterForSender(self, nil);
-                YouModShowTranslationDialog(commentText, presenter);
-            }
-        });
-    }]];
+    if (commentText && commentText.length > 0) {
+        [items addObject:[YouModMenuItem itemWithTitle:LOC(@"TRANSLATE_COMMENT") subtitle:nil icon:YouModYTIconImage(897, NO, nil) handler:^{
+            UIViewController *presenter = YouModPresenterForSender(self, nil);
+            YouModShowTranslationDialog(commentText, presenter);
+        }]];
 
-    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_COMMENT_TEXT") subtitle:nil icon:YouModYTIconImage(243, NO, nil) handler:^{
-        YouModExtractCommentTextAsync(self, ^(NSString *commentText) {
-            if (commentText.length > 0) {
-                YouModCopyTextToPasteboard(commentText, @"COPIED_TO_CLIPBOARD");
-            }
-        });
-    }]];
+        [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_COMMENT_TEXT") subtitle:nil icon:YouModYTIconImage(243, NO, nil) handler:^{
+            YouModCopyTextToPasteboard(commentText, @"COPIED_TO_CLIPBOARD");
+        }]];
+    }
 
     [items addObject:[YouModMenuItem itemWithTitle:LOC(@"SAVE_COMMENT_IMAGE") subtitle:nil icon:YouModYTIconImage(367, NO, nil) handler:^{
         UIImage *image = YouModRenderViewToImage(self);
@@ -2004,23 +1983,18 @@ static UIImage *YouModExtractPostImage(UIView *cellView) {
     if (sender.state != UIGestureRecognizerStateBegan) return;
 
     NSMutableArray *items = [NSMutableArray array];
+    NSString *commentText = YouModExtractCommentText(self);
 
-    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"TRANSLATE_POST") subtitle:nil icon:YouModYTIconImage(897, NO, nil) handler:^{
-        YouModExtractCommentTextAsync(self, ^(NSString *commentText) {
-            if (commentText.length > 0) {
-                UIViewController *presenter = YouModPresenterForSender(self, nil);
-                YouModShowTranslationDialog(commentText, presenter);
-            }
-        });
-    }]];
+    if (commentText && commentText.length > 0) {
+        [items addObject:[YouModMenuItem itemWithTitle:LOC(@"TRANSLATE_POST") subtitle:nil icon:YouModYTIconImage(897, NO, nil) handler:^{
+            UIViewController *presenter = YouModPresenterForSender(self, nil);
+            YouModShowTranslationDialog(commentText, presenter);
+        }]];
 
-    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_POST_TEXT") subtitle:nil icon:YouModYTIconImage(243, NO, nil) handler:^{
-        YouModExtractCommentTextAsync(self, ^(NSString *commentText) {
-            if (commentText.length > 0) {
-                YouModCopyTextToPasteboard(commentText, @"COPIED_TO_CLIPBOARD");
-            }
-        });
-    }]];
+        [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_POST_TEXT") subtitle:nil icon:YouModYTIconImage(243, NO, nil) handler:^{
+            YouModCopyTextToPasteboard(commentText, @"COPIED_TO_CLIPBOARD");
+        }]];
+    }
 
     [items addObject:[YouModMenuItem itemWithTitle:LOC(@"SAVE_POST_IMAGE") subtitle:nil icon:YouModYTIconImage(367, NO, nil) handler:^{
         UIImage *image = YouModRenderViewToImage(self);

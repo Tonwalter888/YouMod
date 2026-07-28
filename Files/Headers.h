@@ -732,3 +732,10 @@ extern UIViewController *YouModTopViewController(UIViewController *root);
 @property (nonatomic, strong) NSArray *languageTitles;
 @property (nonatomic, strong) NSArray *languageCodes;
 @end
+
+@interface YouModLanguagePickerViewController : UITableViewController
+@property (nonatomic, copy) NSArray<NSString *> *titles;
+@property (nonatomic, copy) NSArray<NSString *> *codes;
+@property (nonatomic, copy) NSString *selectedCode;
+@property (nonatomic, copy) void (^onSelect)(NSString *code, NSString *title);
+@end

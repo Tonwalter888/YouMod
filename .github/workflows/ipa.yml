@@ -54,12 +54,6 @@ on:
         required: false
         type: boolean
 
-      youquality:
-        description: "Integrate YouQuality"
-        default: true
-        required: false
-        type: boolean
-
       demc:
         description: "Integrate DontEatMyContent"
         default: true
@@ -80,12 +74,6 @@ on:
 
       gonerino:
         description: "Integrate Gonerino"
-        default: true
-        required: false
-        type: boolean
-
-      getcap:
-        description: "Integrate YouGetCaption"
         default: true
         required: false
         type: boolean
@@ -117,7 +105,7 @@ jobs:
       - name: Hide Sensitive Inputs
         uses: levibostian/action-hide-sensitive-inputs@v1
         with:
-          exclude_inputs: bundle_id,display_name,youpip,ytuhd,ryd,abconfig,youquality,ytweaks,youslider,gonerino,getcap,demc,volboost
+          exclude_inputs: bundle_id,display_name,youpip,ytuhd,ryd,abconfig,ytweaks,youslider,gonerino,demc,volboost
           
       - name: Install MEGA downloader
         if: ${{ startsWith(inputs.ipa_url, 'https://mega.nz/') }}
@@ -248,16 +236,12 @@ jobs:
         run: git clone --quiet --depth=1 https://github.com/PoomSmart/YouGroupSettings.git
            
       - name: Clone YTVideoOverlay
-        if: ${{ inputs.youpip || inputs.ytuhd || inputs.youquality || inputs.getcap }}
+        if: ${{ inputs.youpip || inputs.ytuhd }}
         run: git clone --quiet --depth=1 https://github.com/PoomSmart/YTVideoOverlay.git
           
       - name: Clone YTABConfig
         if: ${{ inputs.abconfig }}
         run: git clone --quiet --depth=1 https://github.com/PoomSmart/YTABConfig.git
-                  
-      - name: Clone YouQuality
-        if: ${{ inputs.youquality }}
-        run: git clone --quiet --depth=1 https://github.com/PoomSmart/YouQuality.git
 
       - name: Clone UncappedAVPlayer
         run: git clone --quiet --depth=1 https://github.com/PoomSmart/UncappedAVPlayer.git
@@ -279,10 +263,6 @@ jobs:
       - name: Clone Gonerino
         if: ${{ inputs.gonerino }}
         run: git clone --quiet --depth=1 https://github.com/castdrian/Gonerino.git
-
-      - name: Clone YouGetCaption
-        if: ${{ inputs.getcap }}
-        run: git clone --quiet --depth=1 https://github.com/PoomSmart/YouGetCaption.git
 
       - name: Clone youtube-native-share
         if: ${{ inputs.ytshare }}
@@ -327,7 +307,7 @@ jobs:
           mv packages/*.deb ${{ github.workspace }}/ygs.deb
 
       - name: Build YTVideoOverlay
-        if: ${{ inputs.youpip || inputs.ytuhd || inputs.youquality || inputs.getcap }}
+        if: ${{ inputs.youpip || inputs.ytuhd }}
         run: |
           cd YTVideoOverlay
           make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
@@ -339,13 +319,6 @@ jobs:
           cd YTABConfig
           make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
           mv packages/*.deb ${{ github.workspace }}/ytabconfig.deb
-
-      - name: Build YouQuality
-        if: ${{ inputs.youquality }}
-        run: |
-          cd YouQuality
-          make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
-          mv packages/*.deb ${{ github.workspace }}/youquality.deb
 
       - name: Build UncappedAVPlayer
         run: |
@@ -380,13 +353,6 @@ jobs:
           cd Gonerino
           make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
           mv packages/*.deb ${{ github.workspace }}/gonerino.deb
-
-      - name: Build YouGetCaption
-        if: ${{ inputs.getcap }}
-        run: |
-          cd YouGetCaption
-          make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
-          mv packages/*.deb ${{ github.workspace }}/ygc.deb
 
       - name: Build youtube-native-share
         if: ${{ inputs.ytshare }}

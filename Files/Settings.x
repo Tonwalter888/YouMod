@@ -224,7 +224,6 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
             YMToggle(YMLOC(@"HIDE_SHORTS_SHELF"), YMLOC(@"HIDE_SHORTS_SHELF_DESC"), HideShortsShelf),
             YMToggle(YMLOC(@"KEEP_SHORTS_SUBSCRIPT"), YMLOC(@"KEEP_SHORTS_SUBSCRIPT_DESC"), KeepShortsSubscript),
             YMToggle(YMLOC(@"HIDE_SEARCH_HISTORY"), YMLOC(@"HIDE_SEARCH_HISTORY_DESC"), HideSearchHis),
-            YMToggle(YMLOC(@"HIDE_RELATED_VIDEOS"), YMLOC(@"HIDE_RELATED_VIDEOS_DESC"), HideRelatedVideos),
         ], settingsViewController, [self parentResponder]);
         return YES;
     }];
@@ -278,6 +277,7 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
             YMToggle(YMLOC(@"EXTRA_SPEED"), YMLOC(@"EXTRA_SPEED_DESC"), ExtraSpeed),
             // YMToggle(YMLOC(@"USE_ANOTHER_MINIPLAYER"), YMLOC(@"USE_ANOTHER_MINIPLAYER_DESC"), UseAnotherMiniplayer),
             YMToggle(YMLOC(@"PORTRAIT_FULLSCREEN"), YMLOC(@"PORTRAIT_FULLSCREEN_DESC"), PortFull),
+            YMToggle(YMLOC(@"HIDE_RELATED_VIDEOS"), YMLOC(@"HIDE_RELATED_VIDEOS_DESC"), HideRelatedVideos),
             YMToggle(YMLOC(@"HIDE_COMMENTS_SECTION"), YMLOC(@"HIDE_COMMENTS_SECTION_DESC"), HideCommentsSection),
             YMToggle(YMLOC(@"HIDE_COMMENTS_PREVIEW"), YMLOC(@"HIDE_COMMENTS_PREVIEW_DESC"), HideCommentsPreview),
             YMHeader(YMLOC(@"CONTROL_CENTER")),
