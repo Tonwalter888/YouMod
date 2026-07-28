@@ -31,7 +31,7 @@ Up to the latest, this is the goal of this tweak. Any versions starting from 19.
 1. Click on **Sync fork**, and if your branch is out-of-date, click on **Update branch**.
 2. Navigate to **Actions** in your forked repository and select **Build IPA with tweaks**.
 3. Click the **Run workflow** button located on the right side.
-4. Get a decrypted .ipa file (I cannot provide this due to legal reasons.), then upload it to a file provider (e.g., filebin.net,filemail.com,catbox.moe or Dropbox is recommended). Paste the URL of the decrypted IPA file in the provided field. You can also change the BundleID and Display Name if desired.
+4. Get a decrypted .ipa file (I cannot provide this due to legal reasons.), then upload it to a file provider (e.g., filebin.net,filemail.com,catbox.moe, Mega, or Dropbox is recommended). Paste the URL of the decrypted IPA file in the provided field. You can also change the BundleID and Display Name if desired.
 
 **NOTE:** Make sure to provide a direct download link to the file, not a link to a webpage. Otherwise, the process will fail.
 
