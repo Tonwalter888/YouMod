@@ -531,12 +531,10 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 - (YTCaptionTrackSwitchController *)captionTrackController;
 - (NSString *)videoID;
 - (CGFloat)mediaTime;
-- (void)setVideoFreeZoomOverlayController:(id)arg;
 @end
 
 @interface YTSingleVideoController (YouMod)
-@property (nonatomic, assign, readonly) CGFloat totalMediaTime;
-- (YTSingleVideoTime *)currentVideoTime;
+- (CGFloat)totalMediaTime;
 - (void)setVideoFormatConstraint:(id)arg;
 - (void)YouModAutoQuality;
 - (NSArray *)availableCaptionTracks;
@@ -707,14 +705,6 @@ extern UIViewController *YouModTopViewController(UIViewController *root);
 - (void)sbShowHighlightBannerIfNeeded:(NSArray<SBSegment *> *)segments;
 - (void)sbSkipToHighlight;
 - (void)sbRefreshMarkers:(NSArray<SBSegment *> *)segments;
-@end
-
-@interface YTSegmentableInlinePlayerBarView : UIView
-@property (nonatomic, assign, readwrite) BOOL enableSnapToChapter;
-@property (nonatomic, strong) NSArray<UIView *> *sbMarkerViews;
-- (void)sbRenderSegments:(NSArray<SBSegment *> *)segments;
-- (void)sbClearSegments;
-- (void)sbRepositionMarkers;
 @end
 
 @interface YouModThumbnailViewController : UIViewController <UIScrollViewDelegate, UIGestureRecognizerDelegate>

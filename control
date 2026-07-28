@@ -3,7 +3,7 @@ Name: YouMod
 Version: 2.0.0
 Architecture: iphoneos-arm
 Description: A lightweight YouTube enhancer
-Maintainer: Tonwalter888
+Maintainer: Tonwalter888, G Rohit
 Author: Tonwalter888
 Section: Tweaks
 Depends: mobilesubstrate (>= 0.9.5000), firmware (>= 14.0)

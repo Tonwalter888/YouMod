@@ -4,23 +4,23 @@
 <a href="https://github.com/Tonwalter888/YouMod/releases/latest"><img src="https://custom-icon-badges.demolab.com/github/v/release/Tonwalter888/YouMod?color=brightgreen&label=Latest%20release" alt="Badge"></img></a>
 <a href="https://github.com/Tonwalter888/YouMod/releases/latest"><img src="https://img.shields.io/github/downloads/Tonwalter888/YouMod/total?label=Download" alt="Badge"></img></a>
 
-A tweak that's try to recreate features like in YTLite as much as possible. Contributors are welcome! ^^
+A tweak that's try to recreate features like in YTLite as much as possible. Contributions are welcome! ^^
 
-Thanks for 300 stars and 500 forks! This might be the best project I've done.
+Thanks for 350 stars and 650 forks! This might be the best project I've done.
 
-If you want to contribute this project, scroll down below for how to do it.
+If you want to contribute this project, scroll down to `How to contribute this project?` part.
 
 ## Why I created this project?
 The reason is because of YTLite no longer free. So I'll try my best to recreate all the features as much as I can, plus alternative tweaks combined.
 
 ## Features
-This tweak can hide, remove elements and others in YouTube. Such as:
-- Downloading (Video, Audio, Captions, Thumbnail, Video datails, Currently supports up to 1080p60)
+This tweak add a lot of QoL feature and can hide elements in YouTube. Such as:
+- Downloading (Video, Audio, Captions, Thumbnail, Video datails, etc. Currently supports up to 1080p60)
 - Appearance (OLED theme and keyboard)
 - Navigation bar (Hiding buttons)
-- Player (Hiding elements, buttons, and Add custom actions)
+- Player (Hiding elements, buttons, and Add custom actions, etc.)
 - Shorts (Hiding elements and Add custom actions)
-- Tab bar (Reorder tabs and Hiding things)
+- Tab bar (Reorder tabs, Hiding things, etc.)
 - Built-in SponsorBlock
 - And much more!
 
