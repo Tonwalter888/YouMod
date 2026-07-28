@@ -1881,6 +1881,7 @@ static UIImage *YouModRenderViewToImage(_ASDisplayView *view) {
     return image;
 }
 
+/*
 static UIImage *YouModExtractPostImage(UIView *cellView) {
     NSMutableArray<UIView *> *queue = [NSMutableArray arrayWithObject:cellView];
     Class asDisplayClass = NSClassFromString(@"_ASDisplayView");
@@ -1915,6 +1916,7 @@ static UIImage *YouModExtractPostImage(UIView *cellView) {
 
     return nil;
 }
+*/
 
 %hook _ASDisplayView
 
