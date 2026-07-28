@@ -721,6 +721,7 @@ extern UIViewController *YouModTopViewController(UIViewController *root);
 @property (nonatomic, strong) UITextView *resultTextView;
 @property (nonatomic, strong) NSArray *languageTitles;
 @property (nonatomic, strong) NSArray *languageCodes;
+@property (nonatomic, strong) UIButton *reloadButton;
 @end
 
 @interface YouModLanguagePickerViewController : UITableViewController
