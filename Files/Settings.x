@@ -21,6 +21,8 @@ extern YMSettingsItem *YMSegment(NSString *title, NSString *key, NSArray<NSNumbe
 extern YMSettingsItem *YMTextSegment(NSString *title, NSString *key, NSArray<NSString *> *labels, NSInteger defaultValue);
 extern YMSettingsItem *YMImageSegment(NSString *title, NSString *key, NSArray<UIImage *> *images, NSInteger defaultValue);
 extern void YMPushTabOrder(id settingsVC, id parentResponder);
+extern void YMRegisterSettingsGroup(NSString *title, NSArray<YMSettingsItem *> *items);
+extern void YMPushSettingsSearch(id settingsVC, id parentResponder);
 
 @interface YTSettingsSectionItemManager (YouMod)
 - (void)updateYouModSectionWithEntry:(id)entry;
@@ -158,10 +160,25 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
         }];
     [sectionItems addObject:settings];
 
+    // Search — opens the global settings search page. The top-level list is YouTube's
+    // native settings collection view, which we can't attach a live search bar to
+    // without triggering YouTube's own search mode (it hijacks the pane), so global
+    // search lives on a pushed page whose own search bar is focused on appear.
+    // No settingIcon: YouTube already uses the magnifier (YT_SEARCH) for the Navbar
+    // row, so an icon here would duplicate it. The row's title carries the meaning.
+    YTSettingsSectionItem *search = [YTSettingsSectionItemClass itemWithTitle:YMLOC(@"SEARCH")
+        titleDescription:YMLOC(@"SEARCH_DESC")
+        accessibilityIdentifier:nil
+        detailTextBlock:nil
+        selectBlock:^BOOL (YTSettingsCell *cell, NSUInteger arg1) {
+            YMPushSettingsSearch(settingsViewController, [self parentResponder]);
+            return YES;
+        }];
+    [sectionItems addObject:search];
+
     // Section 1
     // Downloading
-    YTSettingsSectionItem *downloadinggroup = [YTSettingsSectionItemClass itemWithTitle:YMLOC(@"DOWNLOADING") accessibilityIdentifier:nil detailTextBlock:nil selectBlock:^BOOL (YTSettingsCell *cell, NSUInteger arg1) {
-        YMPushSubSettings(YMLOC(@"DOWNLOADING"), @[
+    NSArray<YMSettingsItem *> *downloadingItems = @[
             YMToggle(YMLOC(@"DOWNLOAD_MANAGER"), YMLOC(@"DOWNLOAD_MANAGER_DESC"), DownloadManager),
             YMToggle(YMLOC(@"DOWNLOAD_SAVE_PHOTOS"), YMLOC(@"DOWNLOAD_SAVE_PHOTOS_DESC"), DownloadSaveToPhotos),
             YMTextSegment(YMLOC(@"AUDIO_TRACK"), AudioPreferIndex, (@[YMLOC(@"SHOW_OPTIONS"), YMLOC(@"ORIGINAL"), YMLOC(@"ENGLISH")]), 0),
@@ -170,7 +187,10 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
             YMPicker(YMLOC(@"DOWNLOAD_SERVER"), YMLOC(@"CHOOSE_DOWNLOAD_SERVER"), DownloadServerIndex, (@[YMLOC(@"SERVER_EUROPRE1"), YMLOC(@"SERVER_ASIA1")]), 0),
             YMToggle(YMLOC(@"DOWNLOAD_COMMENT"), YMLOC(@"DOWNLOAD_COMMENT_DESC"), DownloadComment),
             YMToggle(YMLOC(@"DOWNLOAD_POST"), YMLOC(@"DOWNLOAD_POST_DESC"), DownloadPost),
-        ], settingsViewController, [self parentResponder]);
+    ];
+    YMRegisterSettingsGroup(YMLOC(@"DOWNLOADING"), downloadingItems);
+    YTSettingsSectionItem *downloadinggroup = [YTSettingsSectionItemClass itemWithTitle:YMLOC(@"DOWNLOADING") accessibilityIdentifier:nil detailTextBlock:nil selectBlock:^BOOL (YTSettingsCell *cell, NSUInteger arg1) {
+        YMPushSubSettings(YMLOC(@"DOWNLOADING"), downloadingItems, settingsViewController, [self parentResponder]);
         return YES;
     }];
     YTIIcon *downloadIcon = [%c(YTIIcon) new];
@@ -180,11 +200,13 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
 
     // Section 2
     // Appearance
-    YTSettingsSectionItem *appergroup = [YTSettingsSectionItemClass itemWithTitle:YMLOC(@"APPEARANCE") accessibilityIdentifier:nil detailTextBlock:nil selectBlock:^BOOL (YTSettingsCell *cell, NSUInteger arg1) {
-        YMPushSubSettings(YMLOC(@"APPEARANCE"), @[
+    NSArray<YMSettingsItem *> *appearanceItems = @[
             YMToggle(YMLOC(@"OLED_THEME"), YMLOC(@"OLED_THEME_DESC"), OLEDTheme),
             YMToggle(YMLOC(@"OLED_KEYBOARD"), YMLOC(@"OLED_KEYBOARD_DESC"), OLEDKeyboard),
-        ], settingsViewController, [self parentResponder]);
+    ];
+    YMRegisterSettingsGroup(YMLOC(@"APPEARANCE"), appearanceItems);
+    YTSettingsSectionItem *appergroup = [YTSettingsSectionItemClass itemWithTitle:YMLOC(@"APPEARANCE") accessibilityIdentifier:nil detailTextBlock:nil selectBlock:^BOOL (YTSettingsCell *cell, NSUInteger arg1) {
+        YMPushSubSettings(YMLOC(@"APPEARANCE"), appearanceItems, settingsViewController, [self parentResponder]);
         return YES;
     }];
     YTIIcon *icon0 = [%c(YTIIcon) new];
@@ -194,8 +216,7 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
 
     // Section 3
     // Navigation bar
-    YTSettingsSectionItem *navbargroup = [YTSettingsSectionItemClass itemWithTitle:YMLOC(@"NAVBAR") accessibilityIdentifier:nil detailTextBlock:nil selectBlock:^BOOL (YTSettingsCell *cell, NSUInteger arg1) {
-        YMPushSubSettings(YMLOC(@"NAVBAR"), @[
+    NSArray<YMSettingsItem *> *navbarItems = @[
             YMToggle(YMLOC(@"STICKY_NAVBAR"), YMLOC(@"STICKY_NAVBAR_DESC"), StickyNavBar),
             YMToggle(YMLOC(@"HIDE_YT_LOGO"), YMLOC(@"HIDE_YT_LOGO_DESC"), HideYTLogo),
             YMToggle(YMLOC(@"PREMIUM_LOGO"), YMLOC(@"PREMIUM_LOGO_DESC"), YTPremiumLogo),
@@ -203,7 +224,10 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
             YMToggle(YMLOC(@"HIDE_SEARCH_BUTTON"), YMLOC(@"HIDE_SEARCH_BUTTON_DESC"), HideSearch),
             YMToggle(YMLOC(@"HIDE_VOICE_SEARCH_BUTTON"), YMLOC(@"HIDE_VOICE_SEARCH_BUTTON_DESC"), HideVoiceSearch),
             YMToggle(YMLOC(@"HIDE_CAST_BUTTON_NAVBAR"), YMLOC(@"HIDE_CAST_BUTTON_NAVBAR_DESC"), HideCastButtonNav),
-        ], settingsViewController, [self parentResponder]);
+    ];
+    YMRegisterSettingsGroup(YMLOC(@"NAVBAR"), navbarItems);
+    YTSettingsSectionItem *navbargroup = [YTSettingsSectionItemClass itemWithTitle:YMLOC(@"NAVBAR") accessibilityIdentifier:nil detailTextBlock:nil selectBlock:^BOOL (YTSettingsCell *cell, NSUInteger arg1) {
+        YMPushSubSettings(YMLOC(@"NAVBAR"), navbarItems, settingsViewController, [self parentResponder]);
         return YES;
     }];
     YTIIcon *icon1 = [%c(YTIIcon) new];
@@ -213,8 +237,7 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
 
     // Section 4
     // Feed
-    YTSettingsSectionItem *feedgroup = [YTSettingsSectionItemClass itemWithTitle:YMLOC(@"FEED") accessibilityIdentifier:nil detailTextBlock:nil selectBlock:^BOOL (YTSettingsCell *cell, NSUInteger arg1) {
-        YMPushSubSettings(YMLOC(@"FEED"), @[
+    NSArray<YMSettingsItem *> *feedItems = @[
             YMToggle(YMLOC(@"HIDE_SUBBAR"), YMLOC(@"HIDE_SUBBAR_DESC"), HideSubbar),
             YMToggle(YMLOC(@"HIDE_HORI_SHELF"), YMLOC(@"HIDE_HORI_SHELF_DESC"), HideHoriShelf),
             YMToggle(YMLOC(@"HIDE_MUSIC_PLAYLISTS"), YMLOC(@"HIDE_MUSIC_PLAYLISTS_DESC"), HideGenMusicShelf),
@@ -224,7 +247,10 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
             YMToggle(YMLOC(@"HIDE_SHORTS_SHELF"), YMLOC(@"HIDE_SHORTS_SHELF_DESC"), HideShortsShelf),
             YMToggle(YMLOC(@"KEEP_SHORTS_SUBSCRIPT"), YMLOC(@"KEEP_SHORTS_SUBSCRIPT_DESC"), KeepShortsSubscript),
             YMToggle(YMLOC(@"HIDE_SEARCH_HISTORY"), YMLOC(@"HIDE_SEARCH_HISTORY_DESC"), HideSearchHis),
-        ], settingsViewController, [self parentResponder]);
+    ];
+    YMRegisterSettingsGroup(YMLOC(@"FEED"), feedItems);
+    YTSettingsSectionItem *feedgroup = [YTSettingsSectionItemClass itemWithTitle:YMLOC(@"FEED") accessibilityIdentifier:nil detailTextBlock:nil selectBlock:^BOOL (YTSettingsCell *cell, NSUInteger arg1) {
+        YMPushSubSettings(YMLOC(@"FEED"), feedItems, settingsViewController, [self parentResponder]);
         return YES;
     }];
     YTIIcon *icon2 = [%c(YTIIcon) new];
@@ -234,8 +260,7 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
 
     // Section 5
     // Player
-    YTSettingsSectionItem *playergroup = [YTSettingsSectionItemClass itemWithTitle:YMLOC(@"PLAYER") accessibilityIdentifier:nil detailTextBlock:nil selectBlock:^BOOL (YTSettingsCell *cell, NSUInteger arg1) {
-        YMPushSubSettings(YMLOC(@"PLAYER"), @[
+    NSArray<YMSettingsItem *> *playerItems = @[
             YMPicker(YMLOC(@"QUALITY_WIFI"), YMLOC(@"QUALITY_WIFI_DESC"), WifiQualityIndex, (@[YMLOC(@"DEFAULT"), YMLOC(@"BEST"), @"2160p60", @"2160p", @"1440p60", @"1440p", @"1080p60", @"1080p", @"720p60", @"720p", @"480p", @"360p", @"240p", @"144p"]), 0),
             YMPicker(YMLOC(@"QUALITY_CELLULAR"), YMLOC(@"QUALITY_CELLULAR_DESC"), CellQualityIndex, (@[YMLOC(@"DEFAULT"), YMLOC(@"BEST"), @"2160p60", @"2160p", @"1440p60", @"1440p", @"1080p60", @"1080p", @"720p60", @"720p", @"480p", @"360p", @"240p", @"144p"]), 0),
             YMPicker(YMLOC(@"QUALITY_LOW_POWER"), YMLOC(@"QUALITY_LOW_POWER_DESC"), LowPowerQualityIndex, (@[YMLOC(@"DEFAULT"), YMLOC(@"BEST"), @"2160p60", @"2160p", @"1440p60", @"1440p", @"1080p60", @"1080p", @"720p60", @"720p", @"480p", @"360p", @"240p", @"144p"]), 0),
@@ -311,7 +336,10 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
             YMToggle(YMLOC(@"DISABLES_ZOOM"), YMLOC(@"DISABLES_ZOOM_DESC"), DisablesFreeZoom),
             YMToggle(YMLOC(@"DISABLES_SNAP_TO_CHAPTER"), YMLOC(@"DISABLES_SNAP_TO_CHAPTER_DESC"), DontSnapToChapter),
             YMToggle(YMLOC(@"DISABLES_ENGAGE_PANEL"), YMLOC(@"DISABLES_ENGAGE_PANEL_DESC"), DisablesEngagementPanel),
-        ], settingsViewController, [self parentResponder]);
+    ];
+    YMRegisterSettingsGroup(YMLOC(@"PLAYER"), playerItems);
+    YTSettingsSectionItem *playergroup = [YTSettingsSectionItemClass itemWithTitle:YMLOC(@"PLAYER") accessibilityIdentifier:nil detailTextBlock:nil selectBlock:^BOOL (YTSettingsCell *cell, NSUInteger arg1) {
+        YMPushSubSettings(YMLOC(@"PLAYER"), playerItems, settingsViewController, [self parentResponder]);
         return YES;
     }];
     YTIIcon *icon3 = [%c(YTIIcon) new];
@@ -321,8 +349,7 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
 
     // Section 6
     // Shorts
-    YTSettingsSectionItem *shortsgroup = [YTSettingsSectionItemClass itemWithTitle:YMLOC(@"SHORTS") accessibilityIdentifier:nil detailTextBlock:nil selectBlock:^BOOL (YTSettingsCell *cell, NSUInteger arg1) {
-        YMPushSubSettings(YMLOC(@"SHORTS"), @[
+    NSArray<YMSettingsItem *> *shortsItems = @[
             YMTextSegment(YMLOC(@"SHORTS_ACTION"), ShortsActionIndex, (@[YMLOC(@"LOOP"), YMLOC(@"SKIP_TO_NEXT_SHORTS"), YMLOC(@"PAUSE_SHORTS")]), 0),
             YMToggle(YMLOC(@"ENABLES_SHORTS_QUALITY"), YMLOC(@"ENABLES_SHORTS_QUALITY_DESC"), EnablesShortsQuality),
             YMToggle(YMLOC(@"SHOW_SHORTS_SEEKBAR"), YMLOC(@"SHOW_SHORTS_SEEKBAR_DESC"), ShowShortsSeekbar),
@@ -333,7 +360,10 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
             YMHeader(YMLOC(@"INTERFACE")),
             YMToggle(YMLOC(@"HIDE_SHORTS_PRODUCT"), YMLOC(@"HIDE_SHORTS_PRODUCT_DESC"), HideShortsProducts),
             YMToggle(YMLOC(@"HIDE_SHORTS_RECBAR"), YMLOC(@"HIDE_SHORTS_RECBAR_DESC"), HideShortsRecbar),
-        ], settingsViewController, [self parentResponder]);
+    ];
+    YMRegisterSettingsGroup(YMLOC(@"SHORTS"), shortsItems);
+    YTSettingsSectionItem *shortsgroup = [YTSettingsSectionItemClass itemWithTitle:YMLOC(@"SHORTS") accessibilityIdentifier:nil detailTextBlock:nil selectBlock:^BOOL (YTSettingsCell *cell, NSUInteger arg1) {
+        YMPushSubSettings(YMLOC(@"SHORTS"), shortsItems, settingsViewController, [self parentResponder]);
         return YES;
     }];
     YTIIcon *icon4 = [%c(YTIIcon) new];
@@ -400,8 +430,7 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
 
     // Section 8
     // Miscellaneous
-    YTSettingsSectionItem *othergroup = [YTSettingsSectionItemClass itemWithTitle:YMLOC(@"MISCELLANEOUS") accessibilityIdentifier:nil detailTextBlock:nil selectBlock:^BOOL (YTSettingsCell *cell, NSUInteger arg1) {
-        YMPushSubSettings(YMLOC(@"MISCELLANEOUS"), @[
+    NSArray<YMSettingsItem *> *miscItems = @[
             YMToggle(YMLOC(@"BACKGROUND_PLAYBACK"), YMLOC(@"BACKGROUND_PLAYBACK_DESC"), BackgroundPlayback),
             YMToggle(YMLOC(@"DISABLES_SHORTS_PIP"), YMLOC(@"DISABLES_SHORTS_PIP_DESC"), DisablesShortsPiP),
             YMToggle(YMLOC(@"DISABLE_HINTS"), YMLOC(@"DISABLE_HINTS_DESC"), DisableHints),
@@ -439,7 +468,10 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
             YMToggle(YMLOC(@"REMOVE_HELP_OPTION"), YMLOC(@"REMOVE_HELP_OPTION_DESC"), RemoveHelpOption),
             YMToggle(YMLOC(@"REMOVE_NOTIFY_OPTION"), YMLOC(@"REMOVE_NOTIFY_OPTION_DESC"), RemoveNotifyOption),
             YMToggle(YMLOC(@"REMOVE_CLEARSCREEN_OPTION"), YMLOC(@"REMOVE_CLEARSCREEN_OPTION_DESC"), RemoveClearScreenOption),
-        ], settingsViewController, [self parentResponder]);
+    ];
+    YMRegisterSettingsGroup(YMLOC(@"MISCELLANEOUS"), miscItems);
+    YTSettingsSectionItem *othergroup = [YTSettingsSectionItemClass itemWithTitle:YMLOC(@"MISCELLANEOUS") accessibilityIdentifier:nil detailTextBlock:nil selectBlock:^BOOL (YTSettingsCell *cell, NSUInteger arg1) {
+        YMPushSubSettings(YMLOC(@"MISCELLANEOUS"), miscItems, settingsViewController, [self parentResponder]);
         return YES;
     }];
     YTIIcon *icon6 = [%c(YTIIcon) new];

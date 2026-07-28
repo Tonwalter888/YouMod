@@ -122,7 +122,7 @@ static NSString *SBHexFromColor(UIColor *color) {
 
 #pragma mark - SBSettingsViewController
 
-@interface SBSettingsViewController : UIViewController <UITableViewDelegate, UITableViewDataSource, UIColorPickerViewControllerDelegate>
+@interface SBSettingsViewController : UIViewController <UITableViewDelegate, UITableViewDataSource, UIColorPickerViewControllerDelegate, UISearchResultsUpdating>
 - (UITableView *)tableView;
 - (void)setTableView:(UITableView *)tv;
 - (NSString *)activeColorKey;
@@ -131,11 +131,22 @@ static NSString *SBHexFromColor(UIColor *color) {
 - (void)setActiveColorIndexPath:(NSIndexPath *)ip;
 - (UIColor *)sbTextColor;
 - (UIColor *)sbSecondaryTextColor;
+// Cell builders, also reused by the global settings search (sbSearchRows).
+- (UITableViewCell *)toggleCellForRow:(NSInteger)row tableView:(UITableView *)tableView;
+- (UITableViewCell *)sliderCellForRow:(NSInteger)row tableView:(UITableView *)tableView;
+- (UITableViewCell *)actionCellForCategory:(NSString *)category name:(NSString *)catName tableView:(UITableView *)tableView;
+- (UITableViewCell *)colorCellForCategory:(NSString *)category name:(NSString *)catName tableView:(UITableView *)tableView;
 @end
+
+// Flat list of all SB settings as search rows (declared before use by the per-page
+// filter below; defined in the Settings Search section).
+extern NSArray<YMSearchRow *> *sbFlatRowsWithRenderer(SBSettingsViewController *renderer);
 
 static const void *kSBTableViewKey = &kSBTableViewKey;
 static const void *kSBColorKeyKey = &kSBColorKeyKey;
 static const void *kSBColorIndexPathKey = &kSBColorIndexPathKey;
+static const void *kSBPageFilterKey = &kSBPageFilterKey;
+static const void *kSBAllFlatRowsKey = &kSBAllFlatRowsKey;
 
 @implementation SBSettingsViewController
 
@@ -145,6 +156,31 @@ static const void *kSBColorIndexPathKey = &kSBColorIndexPathKey;
 - (void)setActiveColorKey:(NSString *)key { objc_setAssociatedObject(self, kSBColorKeyKey, key, OBJC_ASSOCIATION_RETAIN_NONATOMIC); }
 - (NSIndexPath *)activeColorIndexPath { return objc_getAssociatedObject(self, kSBColorIndexPathKey); }
 - (void)setActiveColorIndexPath:(NSIndexPath *)ip { objc_setAssociatedObject(self, kSBColorIndexPathKey, ip, OBJC_ASSOCIATION_RETAIN_NONATOMIC); }
+
+// Per-page search state. pageFilter is the active query (nil/empty = not filtering);
+// while filtering, the page collapses to one flat section of matching search rows.
+- (NSString *)pageFilter { return objc_getAssociatedObject(self, kSBPageFilterKey); }
+- (void)setPageFilter:(NSString *)f { objc_setAssociatedObject(self, kSBPageFilterKey, f, OBJC_ASSOCIATION_COPY_NONATOMIC); }
+- (NSArray<YMSearchRow *> *)allFlatRows { return objc_getAssociatedObject(self, kSBAllFlatRowsKey); }
+- (void)setAllFlatRows:(NSArray<YMSearchRow *> *)r { objc_setAssociatedObject(self, kSBAllFlatRowsKey, r, OBJC_ASSOCIATION_RETAIN_NONATOMIC); }
+
+- (BOOL)isFiltering { return self.pageFilter.length > 0; }
+
+- (NSArray<YMSearchRow *> *)filteredFlatRows {
+    NSString *q = self.pageFilter;
+    if (q.length == 0) return @[];
+    NSMutableArray<YMSearchRow *> *matches = [NSMutableArray array];
+    NSStringCompareOptions opts = NSCaseInsensitiveSearch | NSDiacriticInsensitiveSearch;
+    for (YMSearchRow *row in self.allFlatRows) {
+        if ([row.searchText rangeOfString:q options:opts].location != NSNotFound) [matches addObject:row];
+    }
+    return matches;
+}
+
+- (void)updateSearchResultsForSearchController:(UISearchController *)searchController {
+    self.pageFilter = [searchController.searchBar.text stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+    [self.tableView reloadData];
+}
 
 - (void)viewDidLoad {
     Class ytStyled = objc_getClass("YTStyledViewController");
@@ -168,6 +204,19 @@ static const void *kSBColorIndexPathKey = &kSBColorIndexPathKey;
     }
 
     [self.view addSubview:self.tableView];
+
+    // Pinned per-page search bar that filters this page's own rows. The flat row
+    // list is built once with self as the renderer (its cells write straight to
+    // NSUserDefaults, so reusing the live VC is safe).
+    self.allFlatRows = sbFlatRowsWithRenderer(self);
+    UISearchController *sc = [[UISearchController alloc] initWithSearchResultsController:nil];
+    sc.searchResultsUpdater = self;
+    sc.obscuresBackgroundDuringPresentation = NO;
+    sc.searchBar.placeholder = LOC(@"SEARCH");
+    sc.searchBar.tintColor = SBControlTintColor();
+    self.navigationItem.searchController = sc;
+    self.navigationItem.hidesSearchBarWhenScrolling = NO;
+    self.definesPresentationContext = YES;
 }
 
 - (void)traitCollectionDidChange:(UITraitCollection *)previousTraitCollection {
@@ -220,15 +269,19 @@ static const void *kSBColorIndexPathKey = &kSBColorIndexPathKey;
 
 #pragma mark - Sections: 0=Main, 1=Sliders, 2=Segments
 
-- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView { return 3; }
+- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
+    return self.isFiltering ? 1 : 3;  // one flat section of matches while searching
+}
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
+    if (self.isFiltering) return self.filteredFlatRows.count;
     if (section == 0) return sbToggleRows().count;  // toggles
     if (section == 1) return 2;  // sliders
     return sbAllCategories().count * 2;  // action + color per category
 }
 
 - (UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section {
+    if (self.isFiltering) return nil;  // headers dropped in the flat filtered list
     NSString *title = nil;
     if (section == 0) title = LOC(@"SB_SECTION_MAIN");
     else if (section == 2) title = LOC(@"SB_CATEGORIES_HEADER");
@@ -250,11 +303,16 @@ static const void *kSBColorIndexPathKey = &kSBColorIndexPathKey;
 }
 
 - (CGFloat)tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)section {
+    if (self.isFiltering) return 0;
     if (section == 1) return 16;
     return 36;
 }
 
 - (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath {
+    if (self.isFiltering) {
+        CGFloat h = self.filteredFlatRows[indexPath.row].cellHeight;
+        return h > 0 ? h : UITableViewAutomaticDimension;
+    }
     if (indexPath.section == 1) return 70;
     if (indexPath.section == 2) {
         BOOL isActionRow = (indexPath.row % 2 == 0);
@@ -266,6 +324,7 @@ static const void *kSBColorIndexPathKey = &kSBColorIndexPathKey;
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
+    if (self.isFiltering) return self.filteredFlatRows[indexPath.row].makeCell(tableView);
     if (indexPath.section == 0) return [self toggleCellForRow:indexPath.row tableView:tableView];
     if (indexPath.section == 1) return [self sliderCellForRow:indexPath.row tableView:tableView];
     return [self segmentCellForRow:indexPath.row tableView:tableView];
@@ -469,6 +528,15 @@ static const void *kSBColorIndexPathKey = &kSBColorIndexPathKey;
 }
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
+    if (self.isFiltering) {
+        // In the flat filtered list the row carries its own tap handler (colour rows
+        // open the picker); route through it with a reload that refreshes results.
+        YMSearchRow *row = self.filteredFlatRows[indexPath.row];
+        [tableView deselectRowAtIndexPath:indexPath animated:YES];
+        __weak typeof(self) weakSelf = self;
+        if (row.onSelect) row.onSelect(self, ^{ [weakSelf.tableView reloadData]; });
+        return;
+    }
     if (indexPath.section != 2) return;
     if (indexPath.row % 2 != 1) return; // only color rows are tappable
 
@@ -518,6 +586,112 @@ static const void *kSBColorIndexPathKey = &kSBColorIndexPathKey;
 }
 
 @end
+
+#pragma mark - Settings Search integration
+
+// Retained delegate for a colour picker opened from a search result. The stock
+// SBSettingsViewController colour flow reloads a specific SB-table index path,
+// which doesn't exist in the search results table; this dedicated delegate writes
+// the chosen colour and calls the search table's own reload instead. It is
+// associated with the presented picker so it lives exactly as long as the picker.
+@interface SBSearchColorDelegate : NSObject <UIColorPickerViewControllerDelegate>
+@property (nonatomic, copy) NSString *colorKey;
+@property (nonatomic, copy) void (^reload)(void);
+@end
+@implementation SBSearchColorDelegate
+- (void)applyColor:(UIColor *)color {
+    [[NSUserDefaults standardUserDefaults] setObject:SBHexFromColor(color) forKey:self.colorKey];
+    if (self.reload) self.reload();
+}
+- (void)colorPickerViewControllerDidFinish:(UIColorPickerViewController *)vc { [self applyColor:vc.selectedColor]; }
+- (void)colorPickerViewController:(UIColorPickerViewController *)vc didSelectColor:(UIColor *)color continuously:(BOOL)continuously {
+    if (!continuously) [self applyColor:color];
+}
+@end
+
+static const void *kSBSearchColorDelegateKey = &kSBSearchColorDelegateKey;
+
+// Build the flat list of every SponsorBlock setting as YMSearchRows, each rendered
+// by the given SBSettingsViewController's own cell builders. Shared by the global
+// settings search (via sbSearchRows) and SponsorBlock's own per-page search filter.
+NSArray<YMSearchRow *> *sbFlatRowsWithRenderer(SBSettingsViewController *renderer) {
+    NSMutableArray<YMSearchRow *> *rows = [NSMutableArray array];
+    // Weak so a row's makeCell block can't retain the renderer: on the SponsorBlock
+    // page the renderer IS the presented VC, which also retains this row list, so a
+    // strong capture would cycle and leak the VC on every visit. The renderer always
+    // outlives cell rendering (it's the live VC or a retained child), so weak is safe.
+    __weak SBSettingsViewController *renderer_w = renderer;
+
+    // Section 0 — toggles.
+    NSArray<SBToggleRow *> *toggles = sbToggleRows();
+    for (NSInteger i = 0; i < (NSInteger)toggles.count; i++) {
+        SBToggleRow *def = toggles[i];
+        YMSearchRow *row = [YMSearchRow new];
+        row.searchText = [NSString stringWithFormat:@"%@ %@", LOC(def.titleKey), LOC(def.descKey)];
+        row.makeCell = ^UITableViewCell *(UITableView *tv) { return [renderer_w toggleCellForRow:i tableView:tv]; };
+        [rows addObject:row];
+    }
+
+    // Section 1 — the two alert-duration sliders.
+    for (NSInteger i = 0; i < 2; i++) {
+        YMSearchRow *row = [YMSearchRow new];
+        row.searchText = (i == 0) ? LOC(@"SB_SKIP_ALERT_DURATION") : LOC(@"SB_UNSKIP_ALERT_DURATION");
+        row.cellHeight = 70;
+        row.makeCell = ^UITableViewCell *(UITableView *tv) { return [renderer_w sliderCellForRow:i tableView:tv]; };
+        [rows addObject:row];
+    }
+
+    // Section 2 — per category: an action picker and a colour circle.
+    NSBundle *bundle = YouModBundle();
+    for (NSString *category in sbAllCategories()) {
+        NSString *catName = [bundle localizedStringForKey:[NSString stringWithFormat:@"SB_CAT_%@", category] value:category table:nil];
+
+        YMSearchRow *actionRow = [YMSearchRow new];
+        actionRow.searchText = catName;
+        actionRow.cellHeight = 48;
+        actionRow.makeCell = ^UITableViewCell *(UITableView *tv) { return [renderer_w actionCellForCategory:category name:catName tableView:tv]; };
+        [rows addObject:actionRow];
+
+        YMSearchRow *colorRow = [YMSearchRow new];
+        colorRow.searchText = [NSString stringWithFormat:@"%@ %@", catName, LOC(@"SB_SEGMENT_COLOR_SUFFIX")];
+        colorRow.cellHeight = 48;
+        colorRow.makeCell = ^UITableViewCell *(UITableView *tv) { return [renderer_w colorCellForCategory:category name:catName tableView:tv]; };
+        colorRow.onSelect = ^(UIViewController *presenter, void (^reload)(void)) {
+            NSString *colorKey = SB_COLOR_KEY(category);
+            UIColorPickerViewController *picker = [[UIColorPickerViewController alloc] init];
+            picker.title = [NSString stringWithFormat:@"%@ %@", catName, LOC(@"SB_SEGMENT_COLOR_SUFFIX")];
+            NSString *currentHex = [[NSUserDefaults standardUserDefaults] stringForKey:colorKey];
+            if (currentHex) picker.selectedColor = SBColorFromHex(currentHex);
+            picker.supportsAlpha = NO;
+
+            SBSearchColorDelegate *delegate = [SBSearchColorDelegate new];
+            delegate.colorKey = colorKey;
+            delegate.reload = reload;
+            picker.delegate = delegate;
+            objc_setAssociatedObject(picker, kSBSearchColorDelegateKey, delegate, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+
+            [presenter presentViewController:picker animated:YES completion:nil];
+        };
+        [rows addObject:colorRow];
+    }
+
+    return rows;
+}
+
+NSArray<YMSearchRow *> *sbSearchRows(UIViewController *host) {
+    // One renderer builds every SB result cell. It's added as a child VC so the
+    // cells inherit the host's trait collection (light/dark), and its tableView is
+    // pointed at the host's (search results) table so SB's own cell handlers —
+    // e.g. the action picker's [self.tableView reloadData] — refresh the visible
+    // results rather than a table the renderer never presents.
+    SBSettingsViewController *renderer = [[SBSettingsViewController alloc] init];
+    [host addChildViewController:renderer];
+    [renderer didMoveToParentViewController:host];
+    if ([host respondsToSelector:@selector(tableView)]) {
+        renderer.tableView = ((UITableView *(*)(id, SEL))objc_msgSend)(host, @selector(tableView));
+    }
+    return sbFlatRowsWithRenderer(renderer);
+}
 
 #pragma mark - Hook entry point
 

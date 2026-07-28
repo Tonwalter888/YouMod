@@ -1,6 +1,9 @@
 "SETTINGS" = "Settings";
 "INTERFACE" = "Interface";
 
+"SEARCH" = "Search";
+"SEARCH_DESC" = "Search all YouMod settings.";
+
 "LOOP_DISABLED" = "Loop disabled";
 "LOOP_ENABLED" = "Loop enabled";
 

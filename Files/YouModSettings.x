@@ -126,7 +126,7 @@ typedef NS_ENUM(NSInteger, YMRowType) {
 
 #pragma mark - YMSubSettingsViewController
 
-@interface YMSubSettingsViewController : UIViewController <UITableViewDelegate, UITableViewDataSource>
+@interface YMSubSettingsViewController : UIViewController <UITableViewDelegate, UITableViewDataSource, UISearchResultsUpdating>
 - (UITableView *)tableView;
 - (void)setTableView:(UITableView *)tv;
 - (NSString *)navTitle;
@@ -135,6 +135,10 @@ typedef NS_ENUM(NSInteger, YMRowType) {
 - (void)setItems:(NSArray<YMSettingsItem *> *)items;
 - (UIColor *)ymTextColor;
 - (UIColor *)ymSecondaryColor;
+- (UITableViewCell *)cellForItem:(YMSettingsItem *)item tableView:(UITableView *)tableView;
+// Whether this page installs a per-page search bar that filters its own rows.
+// The global-search subclass overrides this to NO (it hosts its own search).
+- (BOOL)usesPageSearch;
 @end
 
 static const void *kYMTableViewKey = &kYMTableViewKey;
@@ -144,6 +148,7 @@ static const void *kYMSwitchKeyAssoc = &kYMSwitchKeyAssoc;
 static const void *kYMSliderKeyAssoc = &kYMSliderKeyAssoc;
 static const void *kYMSliderStepAssoc = &kYMSliderStepAssoc;
 static const void *kYMSliderLabelAssoc = &kYMSliderLabelAssoc;
+static const void *kYMPageFilterKey = &kYMPageFilterKey;
 
 @implementation YMSubSettingsViewController
 
@@ -153,6 +158,44 @@ static const void *kYMSliderLabelAssoc = &kYMSliderLabelAssoc;
 - (void)setNavTitle:(NSString *)t { objc_setAssociatedObject(self, kYMNavTitleKey, t, OBJC_ASSOCIATION_RETAIN_NONATOMIC); }
 - (NSArray<YMSettingsItem *> *)items { return objc_getAssociatedObject(self, kYMItemsKey); }
 - (void)setItems:(NSArray<YMSettingsItem *> *)items { objc_setAssociatedObject(self, kYMItemsKey, items, OBJC_ASSOCIATION_RETAIN_NONATOMIC); }
+
+- (BOOL)usesPageSearch { return YES; }
+
+// The active per-page filter text (nil/empty = not filtering).
+- (NSString *)pageFilter { return objc_getAssociatedObject(self, kYMPageFilterKey); }
+- (void)setPageFilter:(NSString *)f { objc_setAssociatedObject(self, kYMPageFilterKey, f, OBJC_ASSOCIATION_COPY_NONATOMIC); }
+
+// The rows to display: all items, or — while a page search is active — only those
+// whose title/subtitle match, with headers dropped (a filtered list has no sections).
+- (NSArray<YMSettingsItem *> *)displayedItems {
+    NSString *q = self.pageFilter;
+    if (q.length == 0) return self.items;
+    NSMutableArray<YMSettingsItem *> *matches = [NSMutableArray array];
+    NSStringCompareOptions opts = NSCaseInsensitiveSearch | NSDiacriticInsensitiveSearch;
+    for (YMSettingsItem *item in self.items) {
+        if (item.type == YMRowTypeHeader) continue;
+        NSString *hay = [NSString stringWithFormat:@"%@ %@", item.title ?: @"", item.subtitle ?: @""];
+        if ([hay rangeOfString:q options:opts].location != NSNotFound) [matches addObject:item];
+    }
+    return matches;
+}
+
+// Install a pinned search bar that filters this page's own rows in place.
+- (void)installPageSearchBar {
+    UISearchController *sc = [[UISearchController alloc] initWithSearchResultsController:nil];
+    sc.searchResultsUpdater = self;
+    sc.obscuresBackgroundDuringPresentation = NO;
+    sc.searchBar.placeholder = LOC(@"SEARCH");
+    sc.searchBar.tintColor = [UIColor colorWithRed:0.6 green:0.2 blue:0.9 alpha:1.0];
+    self.navigationItem.searchController = sc;
+    self.navigationItem.hidesSearchBarWhenScrolling = NO;
+    self.definesPresentationContext = YES;
+}
+
+- (void)updateSearchResultsForSearchController:(UISearchController *)searchController {
+    self.pageFilter = [searchController.searchBar.text stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+    [self.tableView reloadData];
+}
 
 - (void)viewDidLoad {
     Class ytStyled = objc_getClass("YTStyledViewController");
@@ -186,6 +229,8 @@ static const void *kYMSliderLabelAssoc = &kYMSliderLabelAssoc;
     }
 
     [self.view addSubview:self.tableView];
+
+    if (self.usesPageSearch) [self installPageSearchBar];
 }
 
 - (void)traitCollectionDidChange:(UITraitCollection *)previousTraitCollection {
@@ -252,11 +297,17 @@ static const void *kYMSliderLabelAssoc = &kYMSliderLabelAssoc;
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
-    return self.items.count;
+    return self.displayedItems.count;
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
-    YMSettingsItem *item = self.items[indexPath.row];
+    return [self cellForItem:self.displayedItems[indexPath.row] tableView:tableView];
+}
+
+// Builds the cell for a single item, dispatching on its row type. Shared by this
+// page's data source and the global settings-search results table, so both render
+// the same live, editable controls from one type dispatch.
+- (UITableViewCell *)cellForItem:(YMSettingsItem *)item tableView:(UITableView *)tableView {
     if (item.type == YMRowTypeToggle) {
         return [self toggleCellForItem:item tableView:tableView];
     } else if (item.type == YMRowTypeAction) {
@@ -277,7 +328,7 @@ static const void *kYMSliderLabelAssoc = &kYMSliderLabelAssoc;
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
-    YMSettingsItem *item = self.items[indexPath.row];
+    YMSettingsItem *item = self.displayedItems[indexPath.row];
     if (item.type == YMRowTypeAction && item.action) {
         item.action(self);
     }
@@ -668,6 +719,177 @@ static const void *kYMSliderLabelAssoc = &kYMSliderLabelAssoc;
 }
 
 @end
+
+#pragma mark - Settings Search
+
+// A searchable group of YouMod (YMSettingsItem-based) settings: the group's
+// display name plus its items. Registered by Settings.x so the search VC can build
+// a flat index without knowing how each group's items are constructed.
+@interface YMSettingsGroup : NSObject
+@property (nonatomic, copy) NSString *title;
+@property (nonatomic, copy) NSArray<YMSettingsItem *> *items;
+@end
+@implementation YMSettingsGroup
+@end
+
+@implementation YMSearchRow
+@end
+
+// The registered YouMod setting groups (excludes SponsorBlock, which contributes
+// its own rows via sbSearchRows). Settings.x re-registers these each time the
+// settings screen is built; registration dedupes by title (see below).
+static NSMutableArray<YMSettingsGroup *> *gYMSearchGroups = nil;
+
+void YMRegisterSettingsGroup(NSString *title, NSArray<YMSettingsItem *> *items) {
+    if (!gYMSearchGroups) gYMSearchGroups = [NSMutableArray array];
+    // Replace any prior registration for this title (idempotent) so re-opening the
+    // settings screen — which rebuilds the section — doesn't duplicate index rows.
+    for (YMSettingsGroup *existing in [gYMSearchGroups copy]) {
+        if ([existing.title isEqualToString:title]) [gYMSearchGroups removeObject:existing];
+    }
+    YMSettingsGroup *group = [YMSettingsGroup new];
+    group.title = title;
+    group.items = items;
+    [gYMSearchGroups addObject:group];
+}
+
+// Global settings search. Subclasses YMSubSettingsViewController to inherit every
+// YMSettingsItem cell builder (toggle/slider/picker/segment) and its change
+// handlers, so results are the live, editable controls. Rows that don't originate
+// from a YMSettingsItem (SponsorBlock's action pickers and colour circles) are
+// supplied as YMSearchRow objects that render themselves.
+@interface YMSettingsSearchViewController : YMSubSettingsViewController <UISearchResultsUpdating>
+@end
+
+static const void *kYMSearchAllRowsKey = &kYMSearchAllRowsKey;
+static const void *kYMSearchFilteredRowsKey = &kYMSearchFilteredRowsKey;
+static const void *kYMSearchControllerKey = &kYMSearchControllerKey;
+
+@implementation YMSettingsSearchViewController
+
+- (NSArray<YMSearchRow *> *)allRows { return objc_getAssociatedObject(self, kYMSearchAllRowsKey); }
+- (void)setAllRows:(NSArray<YMSearchRow *> *)r { objc_setAssociatedObject(self, kYMSearchAllRowsKey, r, OBJC_ASSOCIATION_RETAIN_NONATOMIC); }
+- (NSArray<YMSearchRow *> *)filteredRows { return objc_getAssociatedObject(self, kYMSearchFilteredRowsKey); }
+- (void)setFilteredRows:(NSArray<YMSearchRow *> *)r { objc_setAssociatedObject(self, kYMSearchFilteredRowsKey, r, OBJC_ASSOCIATION_RETAIN_NONATOMIC); }
+- (UISearchController *)searchController { return objc_getAssociatedObject(self, kYMSearchControllerKey); }
+- (void)setSearchController:(UISearchController *)c { objc_setAssociatedObject(self, kYMSearchControllerKey, c, OBJC_ASSOCIATION_RETAIN_NONATOMIC); }
+
+// This VC hosts its own search controller (below), so it must not also install the
+// inherited per-page search bar.
+- (BOOL)usesPageSearch { return NO; }
+
+// Wrap a YMSettingsItem as a search row rendered through the inherited cell builder.
+- (YMSearchRow *)searchRowForItem:(YMSettingsItem *)item groupTitle:(NSString *)groupTitle {
+    __weak typeof(self) weakSelf = self;
+    YMSearchRow *row = [YMSearchRow new];
+    NSString *sub = item.subtitle.length ? item.subtitle : @"";
+    row.searchText = [NSString stringWithFormat:@"%@ %@ %@", item.title ?: @"", sub, groupTitle ?: @""];
+    row.makeCell = ^UITableViewCell *(UITableView *tv) { return [weakSelf cellForItem:item tableView:tv]; };
+    return row;
+}
+
+- (void)buildIndex {
+    NSMutableArray<YMSearchRow *> *all = [NSMutableArray array];
+    for (YMSettingsGroup *group in gYMSearchGroups) {
+        for (YMSettingsItem *item in group.items) {
+            // Headers and action rows (which navigate elsewhere) aren't settings to find.
+            if (item.type == YMRowTypeHeader || item.type == YMRowTypeAction) continue;
+            if (item.title.length == 0) continue;
+            [all addObject:[self searchRowForItem:item groupTitle:group.title]];
+        }
+    }
+    [all addObjectsFromArray:sbSearchRows(self)];
+    self.allRows = all;
+    self.filteredRows = @[];
+}
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    [self buildIndex];
+
+    UISearchController *sc = [[UISearchController alloc] initWithSearchResultsController:nil];
+    sc.searchResultsUpdater = self;
+    sc.obscuresBackgroundDuringPresentation = NO;
+    sc.searchBar.placeholder = LOC(@"SEARCH");
+    sc.searchBar.tintColor = [UIColor colorWithRed:0.6 green:0.2 blue:0.9 alpha:1.0];
+    self.searchController = sc;
+
+    self.navigationItem.searchController = sc;
+    self.navigationItem.hidesSearchBarWhenScrolling = NO;
+    self.definesPresentationContext = YES;
+}
+
+// Focus our own search bar once the page is actually on screen (becomeFirstResponder
+// from viewDidLoad is unreliable — the bar isn't in the window yet), so the keyboard
+// is up as soon as the search page appears.
+- (void)viewDidAppear:(BOOL)animated {
+    Class ytStyled = objc_getClass("YTStyledViewController");
+    struct objc_super superStruct = { self, ytStyled ?: [UIViewController class] };
+    ((void (*)(struct objc_super *, SEL, BOOL))objc_msgSendSuper)(&superStruct, @selector(viewDidAppear:), animated);
+
+    // Focus the search field so the keyboard is up on arrival. A nav-bar
+    // UISearchController only accepts first responder once it's active AND its bar is
+    // in the window, which lags the appearance transition — so activate it, then
+    // become first responder on the next runloop.
+    UISearchController *sc = self.searchController;
+    if (sc.isActive && sc.searchBar.isFirstResponder) return;
+    sc.active = YES;
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [sc.searchBar becomeFirstResponder];
+    });
+}
+
+- (void)updateSearchResultsForSearchController:(UISearchController *)searchController {
+    NSString *query = searchController.searchBar.text ?: @"";
+    query = [query stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+    if (query.length == 0) {
+        self.filteredRows = @[];
+    } else {
+        NSMutableArray<YMSearchRow *> *matches = [NSMutableArray array];
+        NSStringCompareOptions opts = NSCaseInsensitiveSearch | NSDiacriticInsensitiveSearch;
+        for (YMSearchRow *row in self.allRows) {
+            if ([row.searchText rangeOfString:query options:opts].location != NSNotFound) {
+                [matches addObject:row];
+            }
+        }
+        self.filteredRows = matches;
+    }
+    [self.tableView reloadData];
+}
+
+- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
+    return self.filteredRows.count;
+}
+
+- (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
+    return self.filteredRows[indexPath.row].makeCell(tableView);
+}
+
+- (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath {
+    CGFloat h = self.filteredRows[indexPath.row].cellHeight;
+    return h > 0 ? h : UITableViewAutomaticDimension;
+}
+
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
+    [tableView deselectRowAtIndexPath:indexPath animated:YES];
+    YMSearchRow *row = self.filteredRows[indexPath.row];
+    if (!row.onSelect) return;
+    __weak typeof(self) weakSelf = self;
+    row.onSelect(self, ^{ [weakSelf.tableView reloadData]; });
+}
+
+@end
+
+// Push the global settings search page onto the native settings nav stack.
+void YMPushSettingsSearch(id settingsVC, id parentResponder) {
+    Class styledClass = objc_getClass("YMSettingsSearchViewControllerStyled");
+    if (!styledClass) styledClass = [YMSettingsSearchViewController class];
+
+    YMSettingsSearchViewController *vc = (YMSettingsSearchViewController *)((id (*)(id, SEL, id))objc_msgSend)([styledClass alloc], @selector(initWithParentResponder:), parentResponder);
+    if (!vc) vc = [[styledClass alloc] init];
+    vc.navTitle = LOC(@"SEARCH");
+    [settingsVC pushViewController:vc];
+}
 
 #pragma mark - Convenience Factory Functions
 
@@ -1166,22 +1388,31 @@ static void ymRegisterStyledSubclass(Class sourceClass, const char *name) {
     Class newClass = objc_allocateClassPair(ytStyled, name, 0);
     if (!newClass) return;
 
-    unsigned int count = 0;
-    Method *methods = class_copyMethodList(sourceClass, &count);
-    for (unsigned int i = 0; i < count; i++) {
-        class_addMethod(newClass, method_getName(methods[i]), method_getImplementation(methods[i]), method_getTypeEncoding(methods[i]));
-    }
-    free(methods);
+    // Copy methods and properties from sourceClass up through its own class chain,
+    // stopping before UIViewController/YTStyledViewController. Walking the chain
+    // (not just sourceClass) is required when sourceClass itself subclasses another
+    // YouMod controller — e.g. YMSettingsSearchViewController inherits its cell
+    // builders from YMSubSettingsViewController; a single-level copy would drop
+    // them. Subclass levels are copied first so an override wins over its parent
+    // (class_addMethod does not replace an already-added selector).
+    for (Class cls = sourceClass; cls && cls != [UIViewController class]; cls = class_getSuperclass(cls)) {
+        unsigned int count = 0;
+        Method *methods = class_copyMethodList(cls, &count);
+        for (unsigned int i = 0; i < count; i++) {
+            class_addMethod(newClass, method_getName(methods[i]), method_getImplementation(methods[i]), method_getTypeEncoding(methods[i]));
+        }
+        free(methods);
 
-    unsigned int propCount = 0;
-    objc_property_t *props = class_copyPropertyList(sourceClass, &propCount);
-    for (unsigned int i = 0; i < propCount; i++) {
-        unsigned int attrCount = 0;
-        objc_property_attribute_t *attrs = property_copyAttributeList(props[i], &attrCount);
-        class_addProperty(newClass, property_getName(props[i]), attrs, attrCount);
-        free(attrs);
+        unsigned int propCount = 0;
+        objc_property_t *props = class_copyPropertyList(cls, &propCount);
+        for (unsigned int i = 0; i < propCount; i++) {
+            unsigned int attrCount = 0;
+            objc_property_attribute_t *attrs = property_copyAttributeList(props[i], &attrCount);
+            class_addProperty(newClass, property_getName(props[i]), attrs, attrCount);
+            free(attrs);
+        }
+        free(props);
     }
-    free(props);
 
     objc_registerClassPair(newClass);
 }
@@ -1237,4 +1468,5 @@ static void ymRegisterStyledSubclass(Class sourceClass, const char *name) {
 %ctor {
     ymRegisterStyledSubclass([YMSubSettingsViewController class], "YMSubSettingsViewControllerStyled");
     ymRegisterStyledSubclass([YMTabOrderViewController class], "YMTabOrderViewControllerStyled");
+    ymRegisterStyledSubclass([YMSettingsSearchViewController class], "YMSettingsSearchViewControllerStyled");
 }

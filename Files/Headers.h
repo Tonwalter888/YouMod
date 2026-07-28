@@ -71,6 +71,8 @@
 #import <YouTubeHeader/YTSettingsSectionItem.h>
 #import <YouTubeHeader/YTSettingsSectionItemManager.h>
 #import <YouTubeHeader/YTSettingsViewController.h>
+#import <YouTubeHeader/YTSettingsSectionController.h>
+#import <YouTubeHeader/YTSearchableSettingsViewController.h>
 #import <YouTubeHeader/YTUIUtils.h>
 
 #define DownloadFix @"YouModDownloadFix"
@@ -674,6 +676,30 @@ static const CGFloat SBAlertDurationDefault = 4.0;
 
 extern void YMRegisterOverlayButton(YMOverlayButtonSpec *spec);
 extern NSArray<YMOverlayButtonSpec *> *YMRegisteredOverlayButtons(void);
+
+#pragma mark - Settings Search
+
+// One row in the global settings-search results. A row renders its own cell and
+// (optionally) handles its own tap, so a single results table can host cells from
+// different settings pages (the generic YouMod pages and SponsorBlock) without the
+// search controller knowing how any of them are built. searchText is what the query
+// is matched against (title + description). makeCell builds the live, editable
+// control; onSelect handles taps that need to present UI (e.g. the colour picker),
+// receiving the presenting VC and a reload block to refresh the results.
+@interface YMSearchRow : NSObject
+@property (nonatomic, copy) NSString *searchText;
+@property (nonatomic, copy) UITableViewCell *(^makeCell)(UITableView *tableView);
+@property (nonatomic, assign) CGFloat cellHeight; // 0 = UITableViewAutomaticDimension
+@property (nonatomic, copy) void (^onSelect)(UIViewController *presenter, void (^reload)(void));
+@end
+
+// SponsorBlock's searchable rows (toggles, sliders, per-category action pickers and
+// colour circles), rendered by SponsorBlock's own cell builders so its settings are
+// editable inline in the global search. host adopts the rendering VC as a child so
+// the cells inherit the correct trait collection (light/dark). Defined in
+// SponsorBlockSettings.x; consumed by the search VC in YouModSettings.x.
+extern NSArray<YMSearchRow *> *sbSearchRows(UIViewController *host);
+
 extern NSBundle *YouModBundle();
 extern UIImage *YouModYTIconImage(NSInteger iconType, BOOL useCustomColor, UIColor *customColor);
 extern NSArray *getAllSystemLanguageTitles();
