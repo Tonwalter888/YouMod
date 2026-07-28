@@ -10,10 +10,6 @@ static const CGFloat SBMarkerMinWidth = 2.0;
 static const CGFloat SBPoiMarkerWidth = 3.0;
 static const CGFloat SBPoiMarkerXOffset = 1.5;
 
-// Height of the segment markers drawn on the inline (thumbnail) player bar,
-// bottom-aligned so they sit flush with the bottom edge of the bar.
-static const CGFloat SBInlineMarkerHeight = 4.0;
-
 #pragma mark - SBSkipNotificationView Implementation
 
 @implementation SBSkipNotificationView
