@@ -27,7 +27,7 @@
 
 // Hide related videos in the player
 %hook YTWatchNextResultsViewController
-- (void)viewDidLoad {
+- (void)setVisibleSections:(NSInteger)sections {
     %orig;
     if ([self.parentViewController isKindOfClass:%c(YTWatchNextResponseViewController)]) {
         [self.view removeFromSuperview];
