@@ -919,12 +919,30 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
             if (controlType == 1) {
                 float newBrightness = fmaxf(fminf(initialBrightness + delta, 1.0), 0.0);
                 [[UIScreen mainScreen] setBrightness:newBrightness];
-                symbolName = @"sun.max.fill";
+                
+                if (newBrightness <= 0.5f) {
+                    symbolName = @"sun.min.fill";
+                } else {
+                    symbolName = @"sun.max.fill";
+                }
+                
                 percentString = [NSString stringWithFormat:@" %d%%", (int)(newBrightness * 100)];
             } else if (controlType == 2) {
                 float newVolume = fmaxf(fminf(initialVolume + delta, 1.0), 0.0);
                 volumeViewSlider.value = newVolume;
-                symbolName = @"speaker.wave.2.fill";
+                
+                if (newVolume == 0.0f) {
+                    symbolName = @"speaker.slash.fill";
+                } else if (newVolume <= 0.25f) {
+                    symbolName = @"speaker.fill";
+                } else if (newVolume <= 0.50f) {
+                    symbolName = @"speaker.wave.1.fill";
+                } else if (newVolume <= 0.75f) {
+                    symbolName = @"speaker.wave.2.fill";
+                } else {
+                    symbolName = @"speaker.wave.3.fill";
+                }
+                
                 percentString = [NSString stringWithFormat:@" %d%%", (int)(newVolume * 100)];
             } else if (controlType == 3) {
                 float speedSensitivity = 8.0; 
@@ -938,7 +956,17 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
                     [self setPlaybackRate:steppedSpeed];
                     lastUpdatedSpeed = steppedSpeed;
                 }
-                symbolName = @"speedometer";
+                
+                if (steppedSpeed < 1.0f) {
+                    symbolName = @"tortoise.fill";
+                } else if (steppedSpeed == 1.0f) {
+                    symbolName = @"speedometer";
+                } else if (steppedSpeed <= 5.0f) {
+                    symbolName = @"hare.fill";
+                } else {
+                    symbolName = @"bolt.fill";
+                }
+                
                 percentString = [NSString stringWithFormat:@" %.2fx", steppedSpeed];
             }
 

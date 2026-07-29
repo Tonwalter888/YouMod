@@ -60,7 +60,7 @@ static void YouModTranslateText(NSString *text, NSString *targetLang, void (^com
     [self.view addSubview:self.containerView];
     
     UILabel *headerLabel = [[UILabel alloc] init];
-    headerLabel.text = @"Language";
+    headerLabel.text = LOC(@"LANGUAGE");
     headerLabel.font = [UIFont systemFontOfSize:15 weight:UIFontWeightMedium];
     headerLabel.textColor = [UIColor systemGrayColor];
     headerLabel.translatesAutoresizingMaskIntoConstraints = NO;
@@ -80,11 +80,21 @@ static void YouModTranslateText(NSString *text, NSString *targetLang, void (^com
     self.tableView.translatesAutoresizingMaskIntoConstraints = NO;
     [self.containerView addSubview:self.tableView];
     
+    NSLayoutConstraint *widthConstraint = [self.containerView.widthAnchor constraintEqualToAnchor:self.view.widthAnchor multiplier:0.8];
+    widthConstraint.priority = UILayoutPriorityDefaultHigh; // 750
+
+    NSLayoutConstraint *heightConstraint = [self.containerView.heightAnchor constraintEqualToAnchor:self.view.heightAnchor multiplier:0.6];
+    heightConstraint.priority = UILayoutPriorityDefaultHigh; // 750
+
     [NSLayoutConstraint activateConstraints:@[
         [self.containerView.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
         [self.containerView.centerYAnchor constraintEqualToAnchor:self.view.centerYAnchor],
-        [self.containerView.widthAnchor constraintEqualToAnchor:self.view.widthAnchor multiplier:0.8 max:320.0],
-        [self.containerView.heightAnchor constraintEqualToAnchor:self.view.heightAnchor multiplier:0.6 max:460.0],
+        
+        widthConstraint,
+        [self.containerView.widthAnchor constraintLessThanOrEqualToConstant:320.0],
+        
+        heightConstraint,
+        [self.containerView.heightAnchor constraintLessThanOrEqualToConstant:460.0],
         
         [headerLabel.topAnchor constraintEqualToAnchor:self.containerView.topAnchor constant:14],
         [headerLabel.leadingAnchor constraintEqualToAnchor:self.containerView.leadingAnchor constant:20],
@@ -265,7 +275,6 @@ static void YouModTranslateText(NSString *text, NSString *targetLang, void (^com
     [self performTranslation];
 }
 
-// Helper method สร้างปุ่ม Navigation ให้มีขนาดและดีไซน์เท่ากันทั้งหมด
 - (UIBarButtonItem *)createEqualBarButtonWithSymbol:(NSString *)symbolName action:(SEL)action {
     UIButton *button = [UIButton buttonWithType:UIButtonTypeSystem];
     UIImageSymbolConfiguration *config = [UIImageSymbolConfiguration configurationWithPointSize:15 weight:UIFontWeightMedium];
