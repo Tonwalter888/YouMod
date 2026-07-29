@@ -25,7 +25,7 @@ UIImage *YouModYTIconImage(NSInteger iconType, BOOL useCustomColor, UIColor *cus
     } else {
         image = [icon iconImageWithColor:[UIColor labelColor]];
     }
-    return [image imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
+    return [image imageWithRenderingMode:UIImageRenderingModeAlwaysOriginal];
 }
 
 // Language list

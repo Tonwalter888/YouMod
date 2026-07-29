@@ -50,6 +50,7 @@ static void YouModTranslateText(NSString *text, NSString *targetLang, void (^com
     self.view.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.4];
     
     UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(dismissPicker)];
+    tap.delegate = self;
     [self.view addGestureRecognizer:tap];
     
     self.containerView = [[UIView alloc] init];
@@ -136,6 +137,13 @@ static void YouModTranslateText(NSString *text, NSString *targetLang, void (^com
         NSIndexPath *indexPath = [NSIndexPath indexPathForRow:selectedIndex inSection:0];
         [self.tableView scrollToRowAtIndexPath:indexPath atScrollPosition:UITableViewScrollPositionMiddle animated:NO];
     }
+}
+
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldReceiveTouch:(UITouch *)touch {
+    if ([touch.view isDescendantOfView:self.containerView]) {
+        return NO;
+    }
+    return YES;
 }
 
 - (void)dismissPicker {
