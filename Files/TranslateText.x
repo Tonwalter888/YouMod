@@ -360,16 +360,19 @@ static void YouModTranslateText(NSString *text, NSString *targetLang, void (^com
 }
 
 - (void)copyTapped {
-    if (self.resultTextView.text.length > 0 && ![self.resultTextView.text isEqualToString:LOC(@"TRANSLATING")]) {
+    if (self.resultTextView.text.length > 0 && ![self.resultTextView.text isEqualToString:LOC(@"TRANSLATING")] && ![self.resultTextView.text isEqualToString:LOC(@"TRANSLATE_FAILED")]) {
         [UIPasteboard generalPasteboard].string = self.resultTextView.text;
         
         UIImpactFeedbackGenerator *feedback = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleLight];
         [feedback impactOccurred];
+
+        UIView *parent = sbGetNotificationParent();
+        [SBSkipNotificationView showInView:parent message:LOC(@"COPIED_TO_CLIPBOARD") buttonTitle:nil action:nil duration:3.0];
     }
 }
 
 - (void)shareTapped:(id)sender {
-    if (self.resultTextView.text.length == 0 || [self.resultTextView.text isEqualToString:LOC(@"TRANSLATING")]) return;
+    if (self.resultTextView.text.length == 0 || [self.resultTextView.text isEqualToString:LOC(@"TRANSLATING")] || [self.resultTextView.text isEqualToString:LOC(@"TRANSLATE_FAILED")]) return;
     
     UIActivityViewController *activityVC = [[UIActivityViewController alloc] initWithActivityItems:@[self.resultTextView.text] applicationActivities:nil];
     if (activityVC.popoverPresentationController) {
