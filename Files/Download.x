@@ -1326,7 +1326,7 @@ static void YouModPresentMenu(YTPlayerViewController *player, NSArray <YouModMen
 
 - (NSString *)serverEndpoint {
     if (INTFORVAL(DownloadServerIndex) == 0) {
-        return @"https://appropriatenet.tail6a9ca7.ts.net/"; // Europe (@AppropriateNet2928)
+        return @"https://appropriatenet2928.tail6a9ca7.ts.net/"; // Europe (@AppropriateNet2928)
     } else if (INTFORVAL(DownloadServerIndex) == 1) {
         return @"https://waterdl.freeddns.org/"; // Thailand - Asia (@Tonwalter888)
     }
