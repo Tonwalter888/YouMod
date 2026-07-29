@@ -77,6 +77,7 @@
 
 #define DownloadFix @"YouModDownloadFix"
 #define DownloadServerIndex @"YouModDownloadServerIndex"
+#define SABRDownload @"YouModSABRDownload"
 
 #define IS_ENABLED(k) [[NSUserDefaults standardUserDefaults] boolForKey:k]
 #define INTFORVAL(v) [[NSUserDefaults standardUserDefaults] integerForKey:v]
@@ -758,4 +759,13 @@ extern UIViewController *YouModTopViewController(UIViewController *root);
 @property (nonatomic, copy) void (^onSelectLanguage)(NSString *code, NSString *title);
 @property (nonatomic, strong) UITableView *tableView;
 @property (nonatomic, strong) UIView *containerView;
+@end
+
+// On-device SABR downloader (SABRDownload.x). Produces two elementary files (video
+// mp4 + audio m4a) for the existing muxer; progress/completion on the main queue.
+@interface YMSABR : NSObject
++ (void)downloadVideoItag:(int)videoItag audioItag:(int)audioItag
+                 progress:(void (^)(float fraction))progress
+               completion:(void (^)(NSURL *videoURL, NSURL *audioURL, NSString *err))completion;
++ (void)cancelCurrent;
 @end

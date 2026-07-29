@@ -885,6 +885,7 @@ static void YouModPresentMenu(YTPlayerViewController *player, NSArray <YouModMen
     [self.metadataTask cancel];
     [self.rangeDownloader cancel];
     [self.exporter cancelExport];
+    [YMSABR cancelCurrent];
     
     self.task = nil;
     self.metadataTask = nil;
@@ -1041,6 +1042,12 @@ static void YouModPresentMenu(YTPlayerViewController *player, NSArray <YouModMen
 
 - (void)startDirectVideoDownloadWithVideoFormat:(YouModMediaFormat *)videoFormat audioFormat:(YouModMediaFormat *)audioFormat fileName:(NSString *)fileName presenter:(UIViewController *)presenter videoID:(NSString *)vidID {
     [self cleanupTemporaryFiles];
+    // On-device SABR path (opt-in). Checked first: on modern YouTube the format URLs
+    // are empty (media flows via SABR), so the URL check below would otherwise abort.
+    if (IS_ENABLED(SABRDownload)) {
+        [self startSABRVideoDownloadWithVideoFormat:videoFormat audioFormat:audioFormat fileName:fileName presenter:presenter];
+        return;
+    }
     NSURL *videoURL = [NSURL URLWithString:videoFormat.urlString];
     NSURL *audioURL = [NSURL URLWithString:audioFormat.urlString];
     if (!videoURL || !audioURL) {
@@ -1084,6 +1091,38 @@ static void YouModPresentMenu(YTPlayerViewController *player, NSArray <YouModMen
             [self mergeVideoURL:videoFileURL audioURL:audioFileURL fileName:fileName outputExtension:outputExtension durationMs:durationMs presenter:presenter];
         }];
     }];
+}
+
+// On-device SABR download: fetch the chosen mp4 video + m4a audio itags via the SABR
+// engine (which captures/replays the app's own signed request), then hand the two
+// elementary files to the existing muxer. Additive — the direct/server paths above
+// are untouched.
+- (void)startSABRVideoDownloadWithVideoFormat:(YouModMediaFormat *)videoFormat audioFormat:(YouModMediaFormat *)audioFormat fileName:(NSString *)fileName presenter:(UIViewController *)presenter {
+    self.active = YES;
+    self.cancelled = NO;
+    self.completedBytes = 0;
+    self.totalBytes = 0;
+    [self showProgressWithTitle:LOC(@"DOWNLOADING_VIDEO") presenter:presenter];
+
+    unsigned long long durationMs = videoFormat.durationMs ?: audioFormat.durationMs;
+    __weak typeof(self) weakSelf = self;
+    [YMSABR downloadVideoItag:videoFormat.itag audioItag:audioFormat.itag
+        progress:^(float fraction) {
+            __strong typeof(weakSelf) self = weakSelf;
+            if (!self || self.cancelled) return;
+            [self updateProgressTitle:LOC(@"DOWNLOADING_VIDEO") progress:fraction];
+        }
+        completion:^(NSURL *videoURL, NSURL *audioURL, NSString *err) {
+            __strong typeof(weakSelf) self = weakSelf;
+            if (!self || self.cancelled) return;
+            if (err || !videoURL || !audioURL) {
+                [self failWithError:[NSError errorWithDomain:@"YouMod" code:20 userInfo:@{NSLocalizedDescriptionKey: err ?: LOC(@"DOWNLOAD_FAILED")}]];
+                return;
+            }
+            self.videoTempURL = videoURL; // so cleanupTemporaryFiles removes them afterwards
+            self.audioTempURL = audioURL;
+            [self mergeVideoURL:videoURL audioURL:audioURL fileName:fileName outputExtension:@"mp4" durationMs:durationMs presenter:presenter];
+        }];
 }
 
 - (void)startAudioDownloadWithAudioFormat:(YouModMediaFormat *)audioFormat fileName:(NSString *)fileName presenter:(UIViewController *)presenter videoID:(NSString *)vidID {

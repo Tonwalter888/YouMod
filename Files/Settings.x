@@ -185,6 +185,7 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
             YMToggle(YMLOC(@"ADD_SHORTS_DOWNLOAD"), YMLOC(@"ADD_SHORTS_DOWNLOAD_DESC"), AddDownloadToShorts),
             YMToggle(YMLOC(@"FIX_DOWNLOAD"), YMLOC(@"FIX_DOWNLOAD_DESC"), DownloadFix),
             YMPicker(YMLOC(@"DOWNLOAD_SERVER"), YMLOC(@"CHOOSE_DOWNLOAD_SERVER"), DownloadServerIndex, (@[YMLOC(@"SERVER_EUROPRE1"), YMLOC(@"SERVER_ASIA1")]), 0),
+            YMToggle(YMLOC(@"SABR_DOWNLOAD"), YMLOC(@"SABR_DOWNLOAD_DESC"), SABRDownload),
             YMToggle(YMLOC(@"DOWNLOAD_COMMENT"), YMLOC(@"DOWNLOAD_COMMENT_DESC"), DownloadComment),
             YMToggle(YMLOC(@"DOWNLOAD_POST"), YMLOC(@"DOWNLOAD_POST_DESC"), DownloadPost),
     ];
