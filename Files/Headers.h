@@ -741,18 +741,21 @@ extern UIViewController *YouModTopViewController(UIViewController *root);
 
 @interface YouModTranslationViewController : UIViewController
 @property (nonatomic, copy) NSString *originalText;
+@property (nonatomic, strong) UILabel *langValueLabel;
+@property (nonatomic, strong) UIButton *reloadButton;
+@property (nonatomic, strong) UITextView *resultTextView;
 @property (nonatomic, copy) NSString *selectedLangCode;
 @property (nonatomic, copy) NSString *selectedLangName;
-@property (nonatomic, strong) UILabel *langValueLabel;
-@property (nonatomic, strong) UITextView *resultTextView;
-@property (nonatomic, strong) NSArray *languageTitles;
-@property (nonatomic, strong) NSArray *languageCodes;
-@property (nonatomic, strong) UIButton *reloadButton;
+@property (nonatomic, strong) NSArray<NSString *> *languageTitles;
+@property (nonatomic, strong) NSArray<NSString *> *languageCodes;
+- (void)performTranslation;
 @end
 
-@interface YouModLanguagePickerViewController : UITableViewController
+@interface YouModLanguagePickerViewController : UIViewController <UITableViewDelegate, UITableViewDataSource>
+@property (nonatomic, copy) NSString *selectedLangCode;
 @property (nonatomic, copy) NSArray<NSString *> *titles;
 @property (nonatomic, copy) NSArray<NSString *> *codes;
-@property (nonatomic, copy) NSString *selectedCode;
-@property (nonatomic, copy) void (^onSelect)(NSString *code, NSString *title);
+@property (nonatomic, copy) void (^onSelectLanguage)(NSString *code, NSString *title);
+@property (nonatomic, strong) UITableView *tableView;
+@property (nonatomic, strong) UIView *containerView;
 @end

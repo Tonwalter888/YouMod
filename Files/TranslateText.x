@@ -46,66 +46,100 @@ static void YouModTranslateText(NSString *text, NSString *targetLang, void (^com
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    self.title = LOC(@"SELECT_LANG");
-    self.view.backgroundColor = [UIColor systemBackgroundColor];
-    [self.tableView registerClass:[UITableViewCell class] forCellReuseIdentifier:@"LangCell"];
-    self.tableView.tableFooterView = [[UIView alloc] init];
     
-    if (self.navigationController) {
-        UINavigationBarAppearance *appearance = [[UINavigationBarAppearance alloc] init];
-        [appearance configureWithOpaqueBackground];
-        appearance.backgroundColor = [UIColor systemBackgroundColor];
-        appearance.titleTextAttributes = @{
-            NSForegroundColorAttributeName: [UIColor labelColor],
-            NSFontAttributeName: [UIFont boldSystemFontOfSize:17]
-        };
-        self.navigationController.navigationBar.standardAppearance = appearance;
-        self.navigationController.navigationBar.scrollEdgeAppearance = appearance;
-    }
-
-    UIBarButtonItem *closeItem = [[UIBarButtonItem alloc] initWithImage:[UIImage systemImageNamed:@"xmark"] style:UIBarButtonItemStylePlain target:self action:@selector(closeTapped)];
-    closeItem.tintColor = [UIColor labelColor];
-    self.navigationItem.rightBarButtonItem = closeItem;
+    self.view.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.4];
+    
+    UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(dismissPicker)];
+    [self.view addGestureRecognizer:tap];
+    
+    self.containerView = [[UIView alloc] init];
+    self.containerView.backgroundColor = [UIColor systemBackgroundColor];
+    self.containerView.layer.cornerRadius = 20.0;
+    self.containerView.clipsToBounds = YES;
+    self.containerView.translatesAutoresizingMaskIntoConstraints = NO;
+    [self.view addSubview:self.containerView];
+    
+    UILabel *headerLabel = [[UILabel alloc] init];
+    headerLabel.text = @"Language";
+    headerLabel.font = [UIFont systemFontOfSize:15 weight:UIFontWeightMedium];
+    headerLabel.textColor = [UIColor systemGrayColor];
+    headerLabel.translatesAutoresizingMaskIntoConstraints = NO;
+    [self.containerView addSubview:headerLabel];
+    
+    UIView *headerDivider = [[UIView alloc] init];
+    headerDivider.backgroundColor = [UIColor separatorColor];
+    headerDivider.translatesAutoresizingMaskIntoConstraints = NO;
+    [self.containerView addSubview:headerDivider];
+    
+    self.tableView = [[UITableView alloc] initWithFrame:CGRectZero style:UITableViewStylePlain];
+    self.tableView.delegate = self;
+    self.tableView.dataSource = self;
+    self.tableView.backgroundColor = [UIColor clearColor];
+    self.tableView.separatorStyle = UITableViewCellSeparatorStyleSingleLine;
+    self.tableView.separatorColor = [UIColor separatorColor];
+    self.tableView.translatesAutoresizingMaskIntoConstraints = NO;
+    [self.containerView addSubview:self.tableView];
+    
+    [NSLayoutConstraint activateConstraints:@[
+        [self.containerView.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
+        [self.containerView.centerYAnchor constraintEqualToAnchor:self.view.centerYAnchor],
+        [self.containerView.widthAnchor constraintEqualToAnchor:self.view.widthAnchor multiplier:0.8 max:320.0],
+        [self.containerView.heightAnchor constraintEqualToAnchor:self.view.heightAnchor multiplier:0.6 max:460.0],
+        
+        [headerLabel.topAnchor constraintEqualToAnchor:self.containerView.topAnchor constant:14],
+        [headerLabel.leadingAnchor constraintEqualToAnchor:self.containerView.leadingAnchor constant:20],
+        [headerLabel.trailingAnchor constraintEqualToAnchor:self.containerView.trailingAnchor constant:-20],
+        
+        [headerDivider.topAnchor constraintEqualToAnchor:headerLabel.bottomAnchor constant:12],
+        [headerDivider.leadingAnchor constraintEqualToAnchor:self.containerView.leadingAnchor],
+        [headerDivider.trailingAnchor constraintEqualToAnchor:self.containerView.trailingAnchor],
+        [headerDivider.heightAnchor constraintEqualToConstant:0.5],
+        
+        [self.tableView.topAnchor constraintEqualToAnchor:headerDivider.bottomAnchor],
+        [self.tableView.leadingAnchor constraintEqualToAnchor:self.containerView.leadingAnchor],
+        [self.tableView.trailingAnchor constraintEqualToAnchor:self.containerView.trailingAnchor],
+        [self.tableView.bottomAnchor constraintEqualToAnchor:self.containerView.bottomAnchor]
+    ]];
 }
 
-- (void)viewWillAppear:(BOOL)animated {
-    [super viewWillAppear:animated];
+- (void)viewDidAppear:(BOOL)animated {
+    [super viewDidAppear:animated];
     
-    NSUInteger selectedIndex = [self.codes indexOfObject:self.selectedCode];
+    NSUInteger selectedIndex = [self.codes indexOfObject:self.selectedLangCode];
     if (selectedIndex != NSNotFound && selectedIndex < self.titles.count) {
         NSIndexPath *indexPath = [NSIndexPath indexPathForRow:selectedIndex inSection:0];
-        dispatch_async(dispatch_get_main_queue(), ^{
-            [self.tableView scrollToRowAtIndexPath:indexPath atScrollPosition:UITableViewScrollPositionMiddle animated:NO];
-        });
+        [self.tableView scrollToRowAtIndexPath:indexPath atScrollPosition:UITableViewScrollPositionMiddle animated:NO];
     }
 }
 
-- (void)closeTapped {
+- (void)dismissPicker {
     [self dismissViewControllerAnimated:YES completion:nil];
 }
 
-#pragma mark - TableView Data Source & Delegate
+#pragma mark - TableView Delegate & DataSource
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
     return self.titles.count;
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
-    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"LangCell" forIndexPath:indexPath];
+    static NSString *cellID = @"LangCell";
+    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:cellID];
+    if (!cell) {
+        cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:cellID];
+        cell.backgroundColor = [UIColor clearColor];
+    }
+    
     NSString *name = self.titles[indexPath.row];
     NSString *code = self.codes[indexPath.row];
-    
     cell.textLabel.text = name;
-    cell.textLabel.font = [UIFont systemFontOfSize:16 weight:UIFontWeightRegular];
-    cell.textLabel.textColor = [UIColor labelColor];
-    cell.backgroundColor = [UIColor clearColor];
     
-    if ([code isEqualToString:self.selectedCode]) {
-        cell.accessoryType = UITableViewCellAccessoryCheckmark;
-        cell.tintColor = [UIColor systemPurpleColor];
+    if ([code isEqualToString:self.selectedLangCode]) {
+        cell.textLabel.textColor = [UIColor systemPurpleColor];
         cell.textLabel.font = [UIFont systemFontOfSize:16 weight:UIFontWeightBold];
     } else {
-        cell.accessoryType = UITableViewCellAccessoryNone;
+        cell.textLabel.textColor = [UIColor labelColor];
+        cell.textLabel.font = [UIFont systemFontOfSize:16 weight:UIFontWeightRegular];
     }
     
     return cell;
@@ -113,10 +147,10 @@ static void YouModTranslateText(NSString *text, NSString *targetLang, void (^com
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
-    if (self.onSelect) {
-        self.onSelect(self.codes[indexPath.row], self.titles[indexPath.row]);
+    if (self.onSelectLanguage) {
+        self.onSelectLanguage(self.codes[indexPath.row], self.titles[indexPath.row]);
     }
-    [self dismissViewControllerAnimated:YES completion:nil];
+    [self dismissPicker];
 }
 
 @end
@@ -141,14 +175,9 @@ static void YouModTranslateText(NSString *text, NSString *targetLang, void (^com
         self.navigationController.navigationBar.scrollEdgeAppearance = appearance;
     }
     
-    UIBarButtonItem *closeItem = [[UIBarButtonItem alloc] initWithImage:[UIImage systemImageNamed:@"xmark"] style:UIBarButtonItemStylePlain target:self action:@selector(closeTapped)];
-    closeItem.tintColor = [UIColor labelColor];
-
-    UIBarButtonItem *copyItem = [[UIBarButtonItem alloc] initWithImage:[UIImage systemImageNamed:@"doc.on.doc"] style:UIBarButtonItemStylePlain target:self action:@selector(copyTapped)];
-    copyItem.tintColor = [UIColor labelColor];
-
-    UIBarButtonItem *shareItem = [[UIBarButtonItem alloc] initWithImage:[UIImage systemImageNamed:@"square.and.arrow.up"] style:UIBarButtonItemStylePlain target:self action:@selector(shareTapped:)];
-    shareItem.tintColor = [UIColor labelColor];
+    UIBarButtonItem *closeItem = [self createEqualBarButtonWithSymbol:@"xmark" action:@selector(closeTapped)];
+    UIBarButtonItem *copyItem = [self createEqualBarButtonWithSymbol:@"doc.on.doc" action:@selector(copyTapped)];
+    UIBarButtonItem *shareItem = [self createEqualBarButtonWithSymbol:@"square.and.arrow.up" action:@selector(shareTapped:)];
 
     self.navigationItem.rightBarButtonItems = @[closeItem, copyItem, shareItem];
 
@@ -236,6 +265,24 @@ static void YouModTranslateText(NSString *text, NSString *targetLang, void (^com
     [self performTranslation];
 }
 
+// Helper method สร้างปุ่ม Navigation ให้มีขนาดและดีไซน์เท่ากันทั้งหมด
+- (UIBarButtonItem *)createEqualBarButtonWithSymbol:(NSString *)symbolName action:(SEL)action {
+    UIButton *button = [UIButton buttonWithType:UIButtonTypeSystem];
+    UIImageSymbolConfiguration *config = [UIImageSymbolConfiguration configurationWithPointSize:15 weight:UIFontWeightMedium];
+    UIImage *image = [UIImage systemImageNamed:symbolName withConfiguration:config];
+    [button setImage:image forState:UIControlStateNormal];
+    button.tintColor = [UIColor labelColor];
+    
+    button.translatesAutoresizingMaskIntoConstraints = NO;
+    [NSLayoutConstraint activateConstraints:@[
+        [button.widthAnchor constraintEqualToConstant:32],
+        [button.heightAnchor constraintEqualToConstant:32]
+    ]];
+    
+    [button addTarget:self action:action forControlEvents:UIControlEventTouchUpInside];
+    return [[UIBarButtonItem alloc] initWithCustomView:button];
+}
+
 - (void)updateLanguageLabelText {
     NSString *langName = self.selectedLangName ?: @"";
     UIColor *purpleColor = [UIColor systemPurpleColor];
@@ -276,12 +323,17 @@ static void YouModTranslateText(NSString *text, NSString *targetLang, void (^com
     }
 }
 
-- (void)shareTapped:(UIBarButtonItem *)sender {
+- (void)shareTapped:(id)sender {
     if (self.resultTextView.text.length == 0 || [self.resultTextView.text isEqualToString:LOC(@"TRANSLATING")]) return;
     
     UIActivityViewController *activityVC = [[UIActivityViewController alloc] initWithActivityItems:@[self.resultTextView.text] applicationActivities:nil];
     if (activityVC.popoverPresentationController) {
-        activityVC.popoverPresentationController.barButtonItem = sender;
+        if ([sender isKindOfClass:[UIBarButtonItem class]]) {
+            activityVC.popoverPresentationController.barButtonItem = (UIBarButtonItem *)sender;
+        } else if ([sender isKindOfClass:[UIView class]]) {
+            activityVC.popoverPresentationController.sourceView = (UIView *)sender;
+            activityVC.popoverPresentationController.sourceRect = ((UIView *)sender).bounds;
+        }
     }
     [self presentViewController:activityVC animated:YES completion:nil];
 }
@@ -292,10 +344,10 @@ static void YouModTranslateText(NSString *text, NSString *targetLang, void (^com
     YouModLanguagePickerViewController *pickerVC = [[YouModLanguagePickerViewController alloc] init];
     pickerVC.titles = self.languageTitles;
     pickerVC.codes = self.languageCodes;
-    pickerVC.selectedCode = self.selectedLangCode;
+    pickerVC.selectedLangCode = self.selectedLangCode;
     
     __weak typeof(self) weakSelf = self;
-    pickerVC.onSelect = ^(NSString *code, NSString *title) {
+    pickerVC.onSelectLanguage = ^(NSString *code, NSString *title) {
         __strong typeof(weakSelf) strongSelf = weakSelf;
         if (!strongSelf) return;
         strongSelf.selectedLangCode = code;
@@ -304,20 +356,9 @@ static void YouModTranslateText(NSString *text, NSString *targetLang, void (^com
         [strongSelf performTranslation];
     };
     
-    UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:pickerVC];
-    if (@available(iOS 15.0, *)) {
-        UISheetPresentationController *sheet = nav.sheetPresentationController;
-        if (sheet) {
-            sheet.detents = @[
-                [UISheetPresentationControllerDetent mediumDetent],
-                [UISheetPresentationControllerDetent largeDetent]
-            ];
-            sheet.prefersGrabberVisible = YES;
-            sheet.preferredCornerRadius = 20.0;
-        }
-    }
-    
-    [self presentViewController:nav animated:YES completion:nil];
+    pickerVC.modalPresentationStyle = UIModalPresentationOverFullScreen;
+    pickerVC.modalTransitionStyle = UIModalTransitionStyleCrossDissolve;
+    [self presentViewController:pickerVC animated:YES completion:nil];
 }
 
 - (void)performTranslation {
