@@ -80,11 +80,22 @@ static void YouModTranslateText(NSString *text, NSString *targetLang, void (^com
     self.tableView.translatesAutoresizingMaskIntoConstraints = NO;
     [self.containerView addSubview:self.tableView];
     
+    UIButton *cancelButton = [UIButton buttonWithType:UIButtonTypeSystem];
+    [cancelButton setTitle:LOC(@"CANCEL") forState:UIControlStateNormal];
+    [cancelButton setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+    cancelButton.backgroundColor = [UIColor systemPurpleColor];
+    cancelButton.titleLabel.font = [UIFont systemFontOfSize:16 weight:UIFontWeightBold];
+    cancelButton.layer.cornerRadius = 14.0;
+    cancelButton.clipsToBounds = YES;
+    cancelButton.translatesAutoresizingMaskIntoConstraints = NO;
+    [cancelButton addTarget:self action:@selector(dismissPicker) forControlEvents:UIControlEventTouchUpInside];
+    [self.containerView addSubview:cancelButton];
+    
     NSLayoutConstraint *widthConstraint = [self.containerView.widthAnchor constraintEqualToAnchor:self.view.widthAnchor multiplier:0.8];
-    widthConstraint.priority = UILayoutPriorityDefaultHigh; // 750
+    widthConstraint.priority = UILayoutPriorityDefaultHigh;
 
-    NSLayoutConstraint *heightConstraint = [self.containerView.heightAnchor constraintEqualToAnchor:self.view.heightAnchor multiplier:0.6];
-    heightConstraint.priority = UILayoutPriorityDefaultHigh; // 750
+    NSLayoutConstraint *heightConstraint = [self.containerView.heightAnchor constraintEqualToAnchor:self.view.heightAnchor multiplier:0.65];
+    heightConstraint.priority = UILayoutPriorityDefaultHigh;
 
     [NSLayoutConstraint activateConstraints:@[
         [self.containerView.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
@@ -94,7 +105,7 @@ static void YouModTranslateText(NSString *text, NSString *targetLang, void (^com
         [self.containerView.widthAnchor constraintLessThanOrEqualToConstant:320.0],
         
         heightConstraint,
-        [self.containerView.heightAnchor constraintLessThanOrEqualToConstant:460.0],
+        [self.containerView.heightAnchor constraintLessThanOrEqualToConstant:500.0],
         
         [headerLabel.topAnchor constraintEqualToAnchor:self.containerView.topAnchor constant:14],
         [headerLabel.leadingAnchor constraintEqualToAnchor:self.containerView.leadingAnchor constant:20],
@@ -108,7 +119,12 @@ static void YouModTranslateText(NSString *text, NSString *targetLang, void (^com
         [self.tableView.topAnchor constraintEqualToAnchor:headerDivider.bottomAnchor],
         [self.tableView.leadingAnchor constraintEqualToAnchor:self.containerView.leadingAnchor],
         [self.tableView.trailingAnchor constraintEqualToAnchor:self.containerView.trailingAnchor],
-        [self.tableView.bottomAnchor constraintEqualToAnchor:self.containerView.bottomAnchor]
+        [self.tableView.bottomAnchor constraintEqualToAnchor:cancelButton.topAnchor constant:-10],
+        
+        [cancelButton.leadingAnchor constraintEqualToAnchor:self.containerView.leadingAnchor constant:16],
+        [cancelButton.trailingAnchor constraintEqualToAnchor:self.containerView.trailingAnchor constant:-16],
+        [cancelButton.bottomAnchor constraintEqualToAnchor:self.containerView.bottomAnchor constant:-14],
+        [cancelButton.heightAnchor constraintEqualToConstant:44]
     ]];
 }
 
@@ -147,9 +163,21 @@ static void YouModTranslateText(NSString *text, NSString *targetLang, void (^com
     if ([code isEqualToString:self.selectedLangCode]) {
         cell.textLabel.textColor = [UIColor systemPurpleColor];
         cell.textLabel.font = [UIFont systemFontOfSize:16 weight:UIFontWeightBold];
+        
+        UIImage *checkImg = [UIImage systemImageNamed:@"checkmark"];
+        cell.imageView.image = [checkImg imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
+        cell.imageView.tintColor = [UIColor systemPurpleColor];
     } else {
         cell.textLabel.textColor = [UIColor labelColor];
         cell.textLabel.font = [UIFont systemFontOfSize:16 weight:UIFontWeightRegular];
+        
+        static UIImage *emptyImage = nil;
+        if (!emptyImage) {
+            UIGraphicsBeginImageContextWithOptions(CGSizeMake(20, 20), NO, 0.0);
+            emptyImage = UIGraphicsGetImageFromCurrentImageContext();
+            UIGraphicsEndImageContext();
+        }
+        cell.imageView.image = emptyImage;
     }
     
     return cell;
