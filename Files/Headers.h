@@ -751,7 +751,7 @@ extern UIViewController *YouModTopViewController(UIViewController *root);
 - (void)performTranslation;
 @end
 
-@interface YouModLanguagePickerViewController : UIViewController <UITableViewDelegate, UITableViewDataSource>
+@interface YouModLanguagePickerViewController : UIViewController <UITableViewDelegate, UITableViewDataSource, UIGestureRecognizerDelegate>
 @property (nonatomic, copy) NSString *selectedLangCode;
 @property (nonatomic, copy) NSArray<NSString *> *titles;
 @property (nonatomic, copy) NSArray<NSString *> *codes;
