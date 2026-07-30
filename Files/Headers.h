@@ -581,6 +581,10 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 - (NSString *)dropdownOptionTitle;
 @end
 
+@interface YTIThumbnailDetails (YouMod)
+- (NSMutableArray *)thumbnailsArray;
+@end
+
 @interface YTIVideoDetails (YouMod)
 - (NSString *)title;
 - (NSString *)author;
