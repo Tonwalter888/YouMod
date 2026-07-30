@@ -19,8 +19,10 @@
 
 #import "Headers.h"
 
-// Gated on the opt-in "On-device download (SABR)" setting.
-#define SABR_ENABLED() IS_ENABLED(SABRDownload)
+// Active only when the "Download method" setting is On-device (SABR). The capture
+// hook must share this gate with the download routing in Download.x, or it won't
+// capture the request the engine later needs.
+#define SABR_ENABLED() (INTFORVAL(DownloadMethod) == DownloadMethodOnDevice)
 
 // Serial queue guarding all shared engine state (capture globals, per-download
 // bookkeeping). Capture hooks and network completions fire on arbitrary threads and

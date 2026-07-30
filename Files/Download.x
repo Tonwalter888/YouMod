@@ -8,13 +8,6 @@
 #import <stdarg.h>
 #import <stdlib.h>
 
-// DownloadMethod setting values (index into the "Download method" picker).
-typedef NS_ENUM(NSInteger, YouModDownloadMethod) {
-    YouModDownloadMethodDirect   = 0, // YouTube's built-in stream URLs
-    YouModDownloadMethodServer   = 1, // external server (triggerSilentDownload…)
-    YouModDownloadMethodOnDevice = 2, // on-device SABR engine
-};
-
 @interface YouModMenuItem : NSObject
 @property (nonatomic, copy) NSString *title;
 @property (nonatomic, copy) NSString *subtitle;
@@ -1064,7 +1057,7 @@ static void YouModPresentMenu(YTPlayerViewController *player, NSArray <YouModMen
     [self cleanupTemporaryFiles];
     // On-device SABR path. Checked first: on modern YouTube the format URLs are empty
     // (media flows via SABR), so the URL check below would otherwise abort.
-    if (INTFORVAL(DownloadMethod) == YouModDownloadMethodOnDevice) {
+    if (INTFORVAL(DownloadMethod) == DownloadMethodOnDevice) {
         [self startSABRVideoDownloadWithVideoFormat:videoFormat audioFormat:audioFormat fileName:fileName presenter:presenter];
         return;
     }
@@ -1082,7 +1075,7 @@ static void YouModPresentMenu(YTPlayerViewController *player, NSArray <YouModMen
     self.videoTempURL = YouModTemporaryFileURL(YouModFileExtensionForFormat(videoFormat));
     self.audioTempURL = YouModTemporaryFileURL(YouModFileExtensionForFormat(audioFormat));
     NSString *outputExtension = YouModMergedVideoOutputExtension(videoFormat, audioFormat);
-    if (INTFORVAL(DownloadMethod) == YouModDownloadMethodServer) {
+    if (INTFORVAL(DownloadMethod) == DownloadMethodServer) {
         NSString *resolutionStr = [NSString stringWithFormat:@"%d", videoFormat.itag];
         [self triggerSilentDownloadWithQuality:resolutionStr isAudio:NO videoID:vidID presenter:presenter];
         return;
@@ -1216,7 +1209,7 @@ static void YouModPresentMenu(YTPlayerViewController *player, NSArray <YouModMen
     [self cleanupTemporaryFiles];
     // On-device SABR path. Checked first: on modern YouTube the format URLs are empty
     // (media flows via SABR), so the URL check below would otherwise abort.
-    if (INTFORVAL(DownloadMethod) == YouModDownloadMethodOnDevice) {
+    if (INTFORVAL(DownloadMethod) == DownloadMethodOnDevice) {
         [self startSABRAudioDownloadWithAudioFormat:audioFormat fileName:fileName presenter:presenter];
         return;
     }
@@ -1235,7 +1228,7 @@ static void YouModPresentMenu(YTPlayerViewController *player, NSArray <YouModMen
     NSString *tempFileName = [NSString stringWithFormat:@"Temp_%@", fileName];
     NSURL *downloadURL = YouModUniqueFileURL(tempFileName, @"m4a");
     self.audioTempURL = downloadURL;
-    if (INTFORVAL(DownloadMethod) == YouModDownloadMethodServer) {
+    if (INTFORVAL(DownloadMethod) == DownloadMethodServer) {
         [self triggerSilentDownloadWithQuality:nil isAudio:YES videoID:vidID presenter:presenter];
         return;
     }
@@ -1693,7 +1686,7 @@ static void YouModShowAudioTrackSelectionSheet(YTPlayerViewController *player, U
 
     // Skip the audio-track chooser for a single format, or the server path (which
     // can't fetch a chosen track). Direct and on-device SABR both honor the choice.
-    if (audioFormats.count == 1 || INTFORVAL(DownloadMethod) == YouModDownloadMethodServer) {
+    if (audioFormats.count == 1 || INTFORVAL(DownloadMethod) == DownloadMethodServer) {
         YouModMediaFormat *selectedFormat = audioFormats.firstObject;
         if (downloadVideo) {
             [[YouModDownloadCoordinator sharedCoordinator] startVideoDownloadWithVideoFormat:videoFormat audioFormat:selectedFormat fileName:fileName presenter:presenter videoID:player.currentVideoID];
