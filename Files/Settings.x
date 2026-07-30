@@ -608,6 +608,7 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
         BackgroundPlayback: @YES,
         DownloadManager: @YES,
         DownloadSaveToPhotos: @YES,
+        SBButtonKey: @YES,
         DisableHints: @YES,
         RewindSeconds: @10.0,
         ForwardSeconds: @10.0,
