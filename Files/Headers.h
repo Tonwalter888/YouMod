@@ -64,6 +64,8 @@
 #import <YouTubeHeader/MLFormat3Captions.h>
 #import <YouTubeHeader/YTFormat3CaptionViewController.h>
 #import <YouTubeHeader/YTWatchNextResultsViewController.h>
+#import <YouTubeHeader/YTIThumbnailDetails.h>
+#import <YouTubeHeader/YTIThumbnailDetails_Thumbnail.h>
 
 // For Settings.x and SponsorBlockSettings.x
 #import <PSHeader/Misc.h>
@@ -583,6 +585,7 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 - (NSString *)title;
 - (NSString *)author;
 - (NSString *)shortDescription;
+- (YTIThumbnailDetails *)thumbnail;
 @end
 
 @interface YTDataUtils : NSObject

@@ -636,23 +636,24 @@ static NSArray *YouModCaptionTracksForPlayer(YTPlayerViewController *player) {
     return nil;
 }
 
+static YTIVideoDetails *YouModVideoDetailsForPlayer(YTPlayerViewController *player) {
+    YTIPlayerResponse *ires = YouModPlayerDataForPlayer(player);
+    return ires.videoDetails;
+}
+
 static NSString *YouModAuthorForPlayer(YTPlayerViewController *player) {
-    YTIPlayerResponse *playerData = YouModPlayerDataForPlayer(player);
-    YTIVideoDetails *details = playerData.videoDetails;
+    YTIVideoDetails *details = YouModVideoDetailsForPlayer(player);
     return details.author;
 }
 
 static NSString *YouModTitleForPlayer(YTPlayerViewController *player) {
-    YTIPlayerResponse *playerData = YouModPlayerDataForPlayer(player);
-    YTIVideoDetails *details = playerData.videoDetails;
+    YTIVideoDetails *details = YouModVideoDetailsForPlayer(player);
     return details.title;
 }
 
 static NSString *YouModDescriptionForPlayer(YTPlayerViewController *player) {
-    YTIPlayerResponse *playerData = YouModPlayerDataForPlayer(player);
-    YTIVideoDetails *details = playerData.videoDetails;
-    NSString *description = details.shortDescription;
-    return description;
+    YTIVideoDetails *details = YouModVideoDetailsForPlayer(player);
+    return details.shortDescription;
 }
 
 static NSArray *YouModAdaptiveFormatObjectsForPlayer(YTPlayerViewController *player) {
@@ -758,10 +759,22 @@ static YTPlayerViewController *YouModPlayerFromViewController(UIViewController *
     return YouModCurrentPlayerViewController;
 }
 
-static NSURL *YouModThumbnailURLForVideoID(NSString *videoID) {
-    if (videoID.length == 0) return nil;
-    NSString *urlString = [NSString stringWithFormat:@"https://i.ytimg.com/vi/%@/hqdefault.jpg", videoID];
-    return [NSURL URLWithString:urlString];
+static NSURL *YouModThumbnailURL(YTPlayerViewController *player) {
+    if (!player) return nil;
+    YTIVideoDetails *details = YouModVideoDetailsForPlayer(player);
+    YTIThumbnailDetails *thumb = details.thumbnail;
+    YTIThumbnailDetails_Thumbnail *bestThumbnail = nil;
+    NSUInteger maxPixels = 0;
+    
+    for (YTIThumbnailDetails_Thumbnail *thumb in thumb.thumbnailsArray) {
+        NSUInteger pixels = (NSUInteger)thumb.width * (NSUInteger)thumb.height;
+        if (pixels > maxPixels) {
+            maxPixels = pixels;
+            bestThumbnail = thumb;
+        }
+    }
+
+    return [NSURL URLWithString:bestThumbnail.URL];
 }
 
 static void YouModRequestPhotoAccess(void (^completion)(BOOL granted)) {
@@ -1488,8 +1501,8 @@ static void YouModPresentMenu(YTPlayerViewController *player, NSArray <YouModMen
 
 @end
 
-static void YouModShowThumbnailViewer(NSString *videoID, UIViewController *presenter) {
-    NSURL *thumbnailURL = YouModThumbnailURLForVideoID(videoID);
+static void YouModShowThumbnailViewer(YTPlayerViewController *player, UIViewController *presenter) {
+    NSURL *thumbnailURL = YouModThumbnailURL(player);
     if (!thumbnailURL) {
         YouModSendError(LOC(@"NO_THUMBNAIL_FOUND"));
         return;
@@ -1513,8 +1526,8 @@ static void YouModShowThumbnailViewer(NSString *videoID, UIViewController *prese
     }] resume];
 }
 
-static void YouModCopyThumbnail(NSString *videoID, UIViewController *presenter) {
-    NSURL *thumbnailURL = YouModThumbnailURLForVideoID(videoID);
+static void YouModCopyThumbnail(YTPlayerViewController *player, UIViewController *presenter) {
+    NSURL *thumbnailURL = YouModThumbnailURL(player);
     if (!thumbnailURL) {
         YouModSendError(LOC(@"NO_THUMBNAIL_FOUND"));
         return;
@@ -1534,8 +1547,8 @@ static void YouModCopyThumbnail(NSString *videoID, UIViewController *presenter) 
     }] resume];
 }
 
-static void YouModDownloadThumbnail(NSString *videoID, UIViewController *presenter) {
-    NSURL *thumbnailURL = YouModThumbnailURLForVideoID(videoID);
+static void YouModDownloadThumbnail(YTPlayerViewController *player, UIViewController *presenter) {
+    NSURL *thumbnailURL = YouModThumbnailURL(player);
     if (!thumbnailURL) {
         YouModSendError(LOC(@"NO_THUMBNAIL_FOUND"));
         return;
@@ -1723,17 +1736,16 @@ static void YouModShowCaptionsSheet(YTPlayerViewController *player, UIViewContro
 }
 
 static void YouModShowThumbnailSheet(YTPlayerViewController *player, UIViewController *presenter, UIView *sender) {
-    NSString *videoID = player.currentVideoID;
-
     NSMutableArray *items = [NSMutableArray array];
+
     [items addObject:[YouModMenuItem itemWithTitle:LOC(@"SAVE_THUMBNAIL") subtitle:nil icon:YouModYTIconImage(57, NO, nil) handler:^{
-        YouModDownloadThumbnail(videoID, presenter);
+        YouModDownloadThumbnail(player, presenter);
     }]];
     [items addObject:[YouModMenuItem itemWithTitle:LOC(@"SHOW_THUMBNAIL") subtitle:nil icon:YouModYTIconImage(208, NO, nil) handler:^{
-        YouModShowThumbnailViewer(videoID, presenter);
+        YouModShowThumbnailViewer(player, presenter);
     }]];
     [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_THUMBNAIL") subtitle:nil icon:YouModYTIconImage(250, NO, nil) handler:^{
-        YouModCopyThumbnail(videoID, presenter);
+        YouModCopyThumbnail(player, presenter);
     }]];
 
     YouModPresentMenu(nil, items, presenter, sender);
