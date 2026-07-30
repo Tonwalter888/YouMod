@@ -1883,7 +1883,7 @@ static NSString *YouModExtractCommentText(UIView *cellView) {
         [queue removeObjectAtIndex:0];
 
         if (asDisplayClass && [current isKindOfClass:asDisplayClass]) {
-            id node = [current performSelector:@selector(keepalive_node)];
+            ASDisplayNode *node = [current performSelector:@selector(keepalive_node)];
 
             BOOL isExpandableText = node && elmTextExClass && [node isKindOfClass:elmTextExClass];
             BOOL isText = node && elmTextClass && [node isKindOfClass:elmTextClass];
@@ -1892,6 +1892,13 @@ static NSString *YouModExtractCommentText(UIView *cellView) {
             if (isText || isExpandableText || isCommentLabel) {
                 resultText = current.accessibilityLabel ?: @"";
                 break;
+            }
+
+            for (ELMTextNode *obj in node.yogaChildren) {
+                if ([obj isKindOfClass:elmTextClass] && [[obj description] containsString:@"id.comment.content.label"]) {
+                    resultText = obj.attributedText.string;
+                    break;
+                }
             }
         }
 
