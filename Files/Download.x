@@ -886,6 +886,30 @@ static void YouModPresentMenu(YTPlayerViewController *player, NSArray <YouModMen
     [self.progressPill updateProgress:progress title:displayTitle subtitle:nil];
 }
 
+// SABR progress with a speed + size subtitle. When the total is known (the formats'
+// contentLength, in self.totalBytes) the percentage and subtitle track downloaded/total
+// like the direct/server path; otherwise they fall back to the segment fraction + a
+// downloaded-so-far figure. Reuses the "X.X MB/s · Y.Y MB" style.
+- (void)updateSABRProgressTitle:(NSString *)title progress:(float)progress bytesDownloaded:(unsigned long long)bytesDownloaded {
+    NSTimeInterval elapsed = [NSDate timeIntervalSinceReferenceDate] - self.downloadStartTime;
+    double downloadedMB = (double)bytesDownloaded / 1048576.0;
+    double speedMBps = elapsed > 0 ? (downloadedMB / elapsed) : 0;
+
+    NSString *subtitle;
+    if (self.totalBytes > 0) {
+        // Real percentage from bytes; subtitle shows downloaded / total.
+        progress = fminf(fmaxf((float)bytesDownloaded / (float)self.totalBytes, 0.0f), 1.0f);
+        double totalMB = (double)self.totalBytes / 1048576.0;
+        subtitle = [NSString stringWithFormat:@"%.1f MB/s · %.1f / %.1f MB", speedMBps, downloadedMB, totalMB];
+    } else {
+        // Total unknown → segment-fraction % + downloaded-so-far.
+        subtitle = [NSString stringWithFormat:@"%.1f MB/s · %.1f MB", speedMBps, downloadedMB];
+    }
+
+    NSString *displayTitle = [NSString stringWithFormat:@"%@ - %ld%%", title, (long)lrintf(progress * 100.0f)];
+    [self.progressPill updateProgress:progress title:displayTitle subtitle:subtitle];
+}
+
 - (void)cancelWithMessage:(NSString *)message {
     if (![NSThread isMainThread]) {
         dispatch_async(dispatch_get_main_queue(), ^{
@@ -1114,16 +1138,18 @@ static void YouModPresentMenu(YTPlayerViewController *player, NSArray <YouModMen
     self.active = YES;
     self.cancelled = NO;
     self.completedBytes = 0;
-    self.totalBytes = 0;
+    // Known total from the formats' contentLength (present even on 21.29 where the
+    // stream URL is empty) → the pill can show a real % + total size. 0 if unknown.
+    self.totalBytes = videoFormat.contentLength + audioFormat.contentLength;
     [self showProgressWithTitle:LOC(@"DOWNLOADING_VIDEO") presenter:presenter];
 
     unsigned long long durationMs = videoFormat.durationMs ?: audioFormat.durationMs;
     __weak typeof(self) weakSelf = self;
     [YMSABR downloadVideoItag:videoFormat.itag audioItag:audioFormat.itag
-        progress:^(float fraction) {
+        progress:^(float fraction, unsigned long long bytesDownloaded) {
             __strong typeof(weakSelf) self = weakSelf;
             if (!self || self.cancelled) return;
-            [self updateProgressTitle:LOC(@"DOWNLOADING_VIDEO") progress:fraction];
+            [self updateSABRProgressTitle:LOC(@"DOWNLOADING_VIDEO") progress:fraction bytesDownloaded:bytesDownloaded];
         }
         completion:^(NSURL *videoURL, NSURL *audioURL, NSString *err) {
             __strong typeof(weakSelf) self = weakSelf;
@@ -1145,16 +1171,17 @@ static void YouModPresentMenu(YTPlayerViewController *player, NSArray <YouModMen
     self.active = YES;
     self.cancelled = NO;
     self.completedBytes = 0;
-    self.totalBytes = 0;
+    // Known total from the format's contentLength (see video path). 0 if unknown.
+    self.totalBytes = audioFormat.contentLength;
     [self showProgressWithTitle:LOC(@"DOWNLOADING_AUDIO") presenter:presenter];
 
     NSURL *finalURL = YouModUniqueFileURL(fileName, @"m4a");
     __weak typeof(self) weakSelf = self;
     [YMSABR downloadAudioItag:audioFormat.itag
-        progress:^(float fraction) {
+        progress:^(float fraction, unsigned long long bytesDownloaded) {
             __strong typeof(weakSelf) self = weakSelf;
             if (!self || self.cancelled) return;
-            [self updateProgressTitle:LOC(@"DOWNLOADING_AUDIO") progress:fraction];
+            [self updateSABRProgressTitle:LOC(@"DOWNLOADING_AUDIO") progress:fraction bytesDownloaded:bytesDownloaded];
         }
         completion:^(NSURL *audioURL, NSString *err) {
             __strong typeof(weakSelf) self = weakSelf;

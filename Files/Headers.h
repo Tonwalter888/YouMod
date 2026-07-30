@@ -772,10 +772,10 @@ extern UIViewController *YouModTopViewController(UIViewController *root);
 // mp4 + audio m4a) for the existing muxer; progress/completion on the main queue.
 @interface YMSABR : NSObject
 + (void)downloadVideoItag:(int)videoItag audioItag:(int)audioItag
-                 progress:(void (^)(float fraction))progress
+                 progress:(void (^)(float fraction, unsigned long long bytesDownloaded))progress
                completion:(void (^)(NSURL *videoURL, NSURL *audioURL, NSString *err))completion;
 + (void)downloadAudioItag:(int)audioItag
-                 progress:(void (^)(float fraction))progress
+                 progress:(void (^)(float fraction, unsigned long long bytesDownloaded))progress
                completion:(void (^)(NSURL *audioURL, NSString *err))completion;
 + (void)cancelCurrent;
 @end
