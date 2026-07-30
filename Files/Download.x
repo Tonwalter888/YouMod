@@ -8,6 +8,13 @@
 #import <stdarg.h>
 #import <stdlib.h>
 
+// DownloadMethod setting values (index into the "Download method" picker).
+typedef NS_ENUM(NSInteger, YouModDownloadMethod) {
+    YouModDownloadMethodDirect   = 0, // YouTube's built-in stream URLs
+    YouModDownloadMethodServer   = 1, // external server (triggerSilentDownload…)
+    YouModDownloadMethodOnDevice = 2, // on-device SABR engine
+};
+
 @interface YouModMenuItem : NSObject
 @property (nonatomic, copy) NSString *title;
 @property (nonatomic, copy) NSString *subtitle;
@@ -1055,9 +1062,9 @@ static void YouModPresentMenu(YTPlayerViewController *player, NSArray <YouModMen
 
 - (void)startDirectVideoDownloadWithVideoFormat:(YouModMediaFormat *)videoFormat audioFormat:(YouModMediaFormat *)audioFormat fileName:(NSString *)fileName presenter:(UIViewController *)presenter videoID:(NSString *)vidID {
     [self cleanupTemporaryFiles];
-    // On-device SABR path (opt-in). Checked first: on modern YouTube the format URLs
-    // are empty (media flows via SABR), so the URL check below would otherwise abort.
-    if (IS_ENABLED(SABRDownload)) {
+    // On-device SABR path. Checked first: on modern YouTube the format URLs are empty
+    // (media flows via SABR), so the URL check below would otherwise abort.
+    if (INTFORVAL(DownloadMethod) == YouModDownloadMethodOnDevice) {
         [self startSABRVideoDownloadWithVideoFormat:videoFormat audioFormat:audioFormat fileName:fileName presenter:presenter];
         return;
     }
@@ -1075,11 +1082,11 @@ static void YouModPresentMenu(YTPlayerViewController *player, NSArray <YouModMen
     self.videoTempURL = YouModTemporaryFileURL(YouModFileExtensionForFormat(videoFormat));
     self.audioTempURL = YouModTemporaryFileURL(YouModFileExtensionForFormat(audioFormat));
     NSString *outputExtension = YouModMergedVideoOutputExtension(videoFormat, audioFormat);
-    if (IS_ENABLED(DownloadFix)) {
+    if (INTFORVAL(DownloadMethod) == YouModDownloadMethodServer) {
         NSString *resolutionStr = [NSString stringWithFormat:@"%d", videoFormat.itag];
         [self triggerSilentDownloadWithQuality:resolutionStr isAudio:NO videoID:vidID presenter:presenter];
         return;
-    } 
+    }
     [self showProgressWithTitle:LOC(@"DOWNLOADING_VIDEO") presenter:presenter];
 
     __weak typeof(self) weakSelf = self;
@@ -1138,6 +1145,65 @@ static void YouModPresentMenu(YTPlayerViewController *player, NSArray <YouModMen
         }];
 }
 
+// On-device SABR audio-only download: fetch the chosen m4a audio itag via SABR, then
+// remux the fragmented-mp4 track into a clean .m4a with AVFoundation (passthrough, no
+// re-encode). No half-length trim: SABR delivers a properly segmented, complete track.
+- (void)startSABRAudioDownloadWithAudioFormat:(YouModMediaFormat *)audioFormat fileName:(NSString *)fileName presenter:(UIViewController *)presenter {
+    self.active = YES;
+    self.cancelled = NO;
+    self.completedBytes = 0;
+    self.totalBytes = 0;
+    [self showProgressWithTitle:LOC(@"DOWNLOADING_AUDIO") presenter:presenter];
+
+    NSURL *finalURL = YouModUniqueFileURL(fileName, @"m4a");
+    __weak typeof(self) weakSelf = self;
+    [YMSABR downloadAudioItag:audioFormat.itag
+        progress:^(float fraction) {
+            __strong typeof(weakSelf) self = weakSelf;
+            if (!self || self.cancelled) return;
+            [self updateProgressTitle:LOC(@"DOWNLOADING_AUDIO") progress:fraction];
+        }
+        completion:^(NSURL *audioURL, NSString *err) {
+            __strong typeof(weakSelf) self = weakSelf;
+            if (!self || self.cancelled) return;
+            if (err || !audioURL) {
+                [self failWithError:[NSError errorWithDomain:@"YouMod" code:21 userInfo:@{NSLocalizedDescriptionKey: err ?: LOC(@"DOWNLOAD_FAILED")}]];
+                return;
+            }
+            self.audioTempURL = audioURL; // so cleanupTemporaryFiles removes it afterwards
+            [self exportSABRAudioURL:audioURL toURL:finalURL presenter:presenter];
+        }];
+}
+
+// Remux a SABR audio track (fragmented mp4) to a clean m4a container, full length.
+- (void)exportSABRAudioURL:(NSURL *)audioURL toURL:(NSURL *)outputURL presenter:(UIViewController *)presenter {
+    [self updateProgressTitle:LOC(@"FINA_VIDEO") progress:0.985f];
+    AVURLAsset *asset = [AVURLAsset URLAssetWithURL:audioURL options:nil];
+    AVAssetExportSession *exportSession = [AVAssetExportSession exportSessionWithAsset:asset presetName:AVAssetExportPresetAppleM4A];
+    if (!exportSession) {
+        [self failWithError:[NSError errorWithDomain:@"YouMod" code:22 userInfo:@{NSLocalizedDescriptionKey: LOC(@"DOWNLOAD_FAILED")}]];
+        return;
+    }
+    exportSession.outputURL = outputURL;
+    exportSession.outputFileType = AVFileTypeAppleM4A;
+    self.exporter = exportSession;
+
+    __weak typeof(self) weakSelf = self;
+    [exportSession exportAsynchronouslyWithCompletionHandler:^{
+        dispatch_async(dispatch_get_main_queue(), ^{
+            __strong typeof(weakSelf) self = weakSelf;
+            if (!self) return;
+            self.exporter = nil;
+            if (self.cancelled || exportSession.status == AVAssetExportSessionStatusCancelled) return;
+            if (exportSession.status == AVAssetExportSessionStatusCompleted) {
+                [self completeWithFileURL:outputURL isVideo:NO presenter:presenter];
+            } else {
+                [self failWithError:exportSession.error ?: [NSError errorWithDomain:@"YouMod" code:23 userInfo:@{NSLocalizedDescriptionKey: LOC(@"DOWNLOAD_FAILED")}]];
+            }
+        });
+    }];
+}
+
 - (void)startAudioDownloadWithAudioFormat:(YouModMediaFormat *)audioFormat fileName:(NSString *)fileName presenter:(UIViewController *)presenter videoID:(NSString *)vidID {
     if (self.active) {
         YouModSendToast(LOC(@"ALREADY_DOWNLOADING"));
@@ -1148,6 +1214,12 @@ static void YouModPresentMenu(YTPlayerViewController *player, NSArray <YouModMen
 
 - (void)startDirectAudioDownloadWithAudioFormat:(YouModMediaFormat *)audioFormat fileName:(NSString *)fileName presenter:(UIViewController *)presenter videoID:(NSString *)vidID {
     [self cleanupTemporaryFiles];
+    // On-device SABR path. Checked first: on modern YouTube the format URLs are empty
+    // (media flows via SABR), so the URL check below would otherwise abort.
+    if (INTFORVAL(DownloadMethod) == YouModDownloadMethodOnDevice) {
+        [self startSABRAudioDownloadWithAudioFormat:audioFormat fileName:fileName presenter:presenter];
+        return;
+    }
     NSURL *audioURL = [NSURL URLWithString:audioFormat.urlString];
     if (!audioURL) {
         YouModSendError(LOC(@"NO_AUDIO_URL"));
@@ -1158,15 +1230,15 @@ static void YouModPresentMenu(YTPlayerViewController *player, NSArray <YouModMen
     self.cancelled = NO;
     self.completedBytes = 0;
     self.totalBytes = audioFormat.contentLength;
-    
+
     NSURL *finalURL = YouModUniqueFileURL(fileName, @"m4a");
     NSString *tempFileName = [NSString stringWithFormat:@"Temp_%@", fileName];
     NSURL *downloadURL = YouModUniqueFileURL(tempFileName, @"m4a");
     self.audioTempURL = downloadURL;
-    if (IS_ENABLED(DownloadFix)) {
+    if (INTFORVAL(DownloadMethod) == YouModDownloadMethodServer) {
         [self triggerSilentDownloadWithQuality:nil isAudio:YES videoID:vidID presenter:presenter];
         return;
-    } 
+    }
     
     [self showProgressWithTitle:LOC(@"DOWNLOADING_AUDIO") presenter:presenter];
     __weak typeof(self) weakSelf = self;
@@ -1619,7 +1691,9 @@ static void YouModShowAudioTrackSelectionSheet(YTPlayerViewController *player, U
         return;
     }
 
-    if (audioFormats.count == 1 || IS_ENABLED(DownloadFix)) {
+    // Skip the audio-track chooser for a single format, or the server path (which
+    // can't fetch a chosen track). Direct and on-device SABR both honor the choice.
+    if (audioFormats.count == 1 || INTFORVAL(DownloadMethod) == YouModDownloadMethodServer) {
         YouModMediaFormat *selectedFormat = audioFormats.firstObject;
         if (downloadVideo) {
             [[YouModDownloadCoordinator sharedCoordinator] startVideoDownloadWithVideoFormat:videoFormat audioFormat:selectedFormat fileName:fileName presenter:presenter videoID:player.currentVideoID];
@@ -1894,9 +1968,10 @@ static NSString *YouModExtractCommentText(UIView *cellView) {
                 break;
             }
 
-            for (ELMTextNode *obj in node.yogaChildren) {
+            for (id obj in node.yogaChildren) {
                 if ([obj isKindOfClass:elmTextClass] && [[obj description] containsString:@"id.comment.content.label"]) {
-                    resultText = obj.attributedText.string;
+                    NSAttributedString *attributed = [obj valueForKey:@"attributedText"];
+                    resultText = attributed.string;
                     break;
                 }
             }

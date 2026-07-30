@@ -31,6 +31,10 @@ typedef NS_ENUM(NSInteger, YMRowType) {
 @property (nonatomic, assign) float sliderMax;
 @property (nonatomic, assign) float sliderStep;
 @property (nonatomic, assign) float sliderDefault;
+// Optional visibility predicate: when set, the row is shown only while the integer
+// default for `visibilityKey` equals `visibilityValue`. Chained onto any constructor.
+@property (nonatomic, strong) NSString *visibilityKey;
+@property (nonatomic, assign) NSInteger visibilityValue;
 + (instancetype)toggleWithTitle:(NSString *)title subtitle:(NSString *)subtitle key:(NSString *)key;
 + (instancetype)sliderWithTitle:(NSString *)title subtitle:(NSString *)subtitle key:(NSString *)key min:(float)min max:(float)max step:(float)step defaultValue:(float)defaultValue;
 + (instancetype)pickerWithTitle:(NSString *)title subtitle:(NSString *)subtitle key:(NSString *)key options:(NSArray<NSString *> *)options defaultValue:(NSInteger)defaultValue;
@@ -39,6 +43,7 @@ typedef NS_ENUM(NSInteger, YMRowType) {
 + (instancetype)segmentWithTitle:(NSString *)title key:(NSString *)key icons:(NSArray<NSNumber *> *)icons defaultValue:(NSInteger)defaultValue;
 + (instancetype)textSegmentWithTitle:(NSString *)title key:(NSString *)key labels:(NSArray<NSString *> *)labels defaultValue:(NSInteger)defaultValue;
 + (instancetype)imageSegmentWithTitle:(NSString *)title key:(NSString *)key images:(NSArray<UIImage *> *)images defaultValue:(NSInteger)defaultValue;
+- (instancetype)visibleWhenKey:(NSString *)key equals:(NSInteger)value; // chainable
 @end
 
 @implementation YMSettingsItem
@@ -122,6 +127,12 @@ typedef NS_ENUM(NSInteger, YMRowType) {
     return item;
 }
 
+- (instancetype)visibleWhenKey:(NSString *)key equals:(NSInteger)value {
+    self.visibilityKey = key;
+    self.visibilityValue = value;
+    return self;
+}
+
 @end
 
 #pragma mark - YMSubSettingsViewController
@@ -167,13 +178,25 @@ static const void *kYMPageFilterKey = &kYMPageFilterKey;
 
 // The rows to display: all items, or — while a page search is active — only those
 // whose title/subtitle match, with headers dropped (a filtered list has no sections).
+// A row with a visibility predicate is shown only while its key's current integer
+// value matches (lets rows like the server picker appear only for the right method).
+- (BOOL)isItemVisible:(YMSettingsItem *)item {
+    if (!item.visibilityKey) return YES;
+    return [[NSUserDefaults standardUserDefaults] integerForKey:item.visibilityKey] == item.visibilityValue;
+}
+
 - (NSArray<YMSettingsItem *> *)displayedItems {
     NSString *q = self.pageFilter;
-    if (q.length == 0) return self.items;
+    if (q.length == 0) {
+        NSMutableArray<YMSettingsItem *> *visible = [NSMutableArray array];
+        for (YMSettingsItem *item in self.items)
+            if ([self isItemVisible:item]) [visible addObject:item];
+        return visible;
+    }
     NSMutableArray<YMSettingsItem *> *matches = [NSMutableArray array];
     NSStringCompareOptions opts = NSCaseInsensitiveSearch | NSDiacriticInsensitiveSearch;
     for (YMSettingsItem *item in self.items) {
-        if (item.type == YMRowTypeHeader) continue;
+        if (item.type == YMRowTypeHeader || ![self isItemVisible:item]) continue;
         NSString *hay = [NSString stringWithFormat:@"%@ %@", item.title ?: @"", item.subtitle ?: @""];
         if ([hay rangeOfString:q options:opts].location != NSNotFound) [matches addObject:item];
     }

@@ -10,7 +10,9 @@
 
 static const NSInteger TweakSection = 'ytmo';
 
-@class YMSettingsItem;
+@interface YMSettingsItem : NSObject
+- (instancetype)visibleWhenKey:(NSString *)key equals:(NSInteger)value; // show row only while INTFORVAL(key)==value
+@end
 extern void YMPushSubSettings(NSString *title, NSArray<YMSettingsItem *> *items, id settingsVC, id parentResponder);
 extern YMSettingsItem *YMToggle(NSString *title, NSString *subtitle, NSString *key);
 extern YMSettingsItem *YMSlider(NSString *title, NSString *subtitle, NSString *key, float min, float max, float step, float defaultValue);
@@ -183,9 +185,8 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
             YMToggle(YMLOC(@"DOWNLOAD_SAVE_PHOTOS"), YMLOC(@"DOWNLOAD_SAVE_PHOTOS_DESC"), DownloadSaveToPhotos),
             YMTextSegment(YMLOC(@"AUDIO_TRACK"), AudioPreferIndex, (@[YMLOC(@"SHOW_OPTIONS"), YMLOC(@"ORIGINAL"), YMLOC(@"ENGLISH")]), 0),
             YMToggle(YMLOC(@"ADD_SHORTS_DOWNLOAD"), YMLOC(@"ADD_SHORTS_DOWNLOAD_DESC"), AddDownloadToShorts),
-            YMToggle(YMLOC(@"FIX_DOWNLOAD"), YMLOC(@"FIX_DOWNLOAD_DESC"), DownloadFix),
-            YMPicker(YMLOC(@"DOWNLOAD_SERVER"), YMLOC(@"CHOOSE_DOWNLOAD_SERVER"), DownloadServerIndex, (@[YMLOC(@"SERVER_EUROPRE1"), YMLOC(@"SERVER_ASIA1")]), 0),
-            YMToggle(YMLOC(@"SABR_DOWNLOAD"), YMLOC(@"SABR_DOWNLOAD_DESC"), SABRDownload),
+            YMPicker(YMLOC(@"DOWNLOAD_METHOD"), YMLOC(@"DOWNLOAD_METHOD_DESC"), DownloadMethod, (@[YMLOC(@"METHOD_DIRECT"), YMLOC(@"METHOD_SERVER"), YMLOC(@"METHOD_ONDEVICE")]), 0),
+            [YMPicker(YMLOC(@"DOWNLOAD_SERVER"), YMLOC(@"CHOOSE_DOWNLOAD_SERVER"), DownloadServerIndex, (@[YMLOC(@"SERVER_EUROPRE1"), YMLOC(@"SERVER_ASIA1")]), 0) visibleWhenKey:DownloadMethod equals:1],
             YMToggle(YMLOC(@"DOWNLOAD_COMMENT"), YMLOC(@"DOWNLOAD_COMMENT_DESC"), DownloadComment),
             YMToggle(YMLOC(@"DOWNLOAD_POST"), YMLOC(@"DOWNLOAD_POST_DESC"), DownloadPost),
     ];

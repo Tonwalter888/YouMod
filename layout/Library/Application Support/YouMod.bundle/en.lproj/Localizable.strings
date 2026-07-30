@@ -114,6 +114,11 @@
 "FIX_DOWNLOAD_DESC" = "Uses external server to download instead, this doesn't support downloading other audio tracks.";
 "SABR_DOWNLOAD" = "On-device download (SABR)";
 "SABR_DOWNLOAD_DESC" = "Downloads videos entirely on your device with no external server, for versions of YouTube where direct download no longer works. Experimental.";
+"DOWNLOAD_METHOD" = "Download method";
+"DOWNLOAD_METHOD_DESC" = "How videos are downloaded. On-device works on the latest YouTube versions.";
+"METHOD_DIRECT" = "Direct";
+"METHOD_SERVER" = "Server";
+"METHOD_ONDEVICE" = "On-device (SABR)";
 "DOWNLOAD_SERVER" = "Download server";
 "CHOOSE_DOWNLOAD_SERVER" = "Choose download server";
 "DOWNLOAD_COMMENT" = "Save comment information";

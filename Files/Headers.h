@@ -80,6 +80,7 @@
 #define DownloadFix @"YouModDownloadFix"
 #define DownloadServerIndex @"YouModDownloadServerIndex"
 #define SABRDownload @"YouModSABRDownload"
+#define DownloadMethod @"YouModDownloadMethod" // 0 = Direct, 1 = Server, 2 = On-device (SABR)
 
 #define IS_ENABLED(k) [[NSUserDefaults standardUserDefaults] boolForKey:k]
 #define INTFORVAL(v) [[NSUserDefaults standardUserDefaults] integerForKey:v]
@@ -770,5 +771,8 @@ extern UIViewController *YouModTopViewController(UIViewController *root);
 + (void)downloadVideoItag:(int)videoItag audioItag:(int)audioItag
                  progress:(void (^)(float fraction))progress
                completion:(void (^)(NSURL *videoURL, NSURL *audioURL, NSString *err))completion;
++ (void)downloadAudioItag:(int)audioItag
+                 progress:(void (^)(float fraction))progress
+               completion:(void (^)(NSURL *audioURL, NSString *err))completion;
 + (void)cancelCurrent;
 @end
