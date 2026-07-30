@@ -745,7 +745,7 @@ static const CGFloat SBPoiMarkerXOffset = 1.5;
         return;
     }
 
-    if (!self.sbEnabledForVideo) return;
+    if (!IS_ENABLED(SBButtonKey)) return;
 
     for (SBSegment *segment in segments) {
         SBSegmentAction action = [segment configuredAction];

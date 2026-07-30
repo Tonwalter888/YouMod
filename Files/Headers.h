@@ -255,6 +255,7 @@
 #define SBMinDuration @"YouModSBMinDuration"
 #define SBSkipAlertDuration @"YouModSBSkipAlertDuration"
 #define SBUnskipAlertDuration @"YouModSBUnskipAlertDuration"
+#define SBButtonKey @"YouModSBButtonKey"
 
 #define SB_ACTION_KEY(cat) [NSString stringWithFormat:@"YouModSBAction_%@", cat]
 #define SB_COLOR_KEY(cat) [NSString stringWithFormat:@"YouModSBColor_%@", cat]
@@ -729,7 +730,6 @@ extern UIViewController *YouModTopViewController(UIViewController *root);
 @property (nonatomic, strong) NSArray<SBSegment *> *sbSegments;
 @property (nonatomic, strong) NSMutableSet<NSString *> *sbSkippedSegments;
 @property (nonatomic, strong) SBSkipNotificationView *sbNotificationView;
-@property (nonatomic, assign) BOOL sbEnabledForVideo;
 - (void)sbCheckSegmentsAtCurrentTime;
 - (void)sbPerformSkip:(SBSegment *)segment;
 - (void)sbShowAskNotification:(SBSegment *)segment;

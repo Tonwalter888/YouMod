@@ -361,13 +361,11 @@ UIColor *SBColorFromHex(NSString *hexString) {
 %property (nonatomic, strong) NSArray *sbSegments;
 %property (nonatomic, strong) NSMutableSet *sbSkippedSegments;
 %property (nonatomic, strong) SBSkipNotificationView *sbNotificationView;
-%property (nonatomic, assign) BOOL sbEnabledForVideo;
 - (void)playbackController:(id)playbackController didActivateVideo:(id)video withPlaybackData:(id)playbackData {
     %orig;
     if (!IS_ENABLED(SBEnabled) || self.isPlayingAd) return;
     if ([self.parentViewController isKindOfClass:%c(YTShortsPlayerViewController)]) return;
 
-    self.sbEnabledForVideo = YES;
     self.sbSkippedSegments = [NSMutableSet set];
     self.sbSegments = nil;
 
@@ -406,7 +404,7 @@ UIColor *SBColorFromHex(NSString *hexString) {
 // both time-change hooks so the skip logic lives in one place.
 %new
 - (void)sbCheckSegmentsAtCurrentTime {
-    if (!IS_ENABLED(SBEnabled) || !self.sbEnabledForVideo || self.isPlayingAd) return;
+    if (!IS_ENABLED(SBEnabled) || !IS_ENABLED(SBButtonKey) || self.isPlayingAd) return;
     if ([self.parentViewController isKindOfClass:%c(YTShortsPlayerViewController)]) return;
 
     CGFloat currentTime = [self currentVideoMediaTime];
@@ -578,12 +576,12 @@ static UIColor *SBAccentColor() {
         return IS_ENABLED(SBEnabled) && IS_ENABLED(SBShowButton);
     };
     toggle.tintProvider = ^UIColor *(YTPlayerViewController *player) {
-        return (player && player.sbEnabledForVideo) ? SBAccentColor() : [UIColor grayColor];
+        return IS_ENABLED(SBButtonKey) ? SBAccentColor() : [UIColor grayColor];
     };
     toggle.onTap = ^(YTPlayerViewController *player, UIButton *button) {
         if (!player) return;
-        BOOL newState = !player.sbEnabledForVideo;
-        player.sbEnabledForVideo = newState;
+        BOOL newState = !IS_ENABLED(SBButtonKey);
+        [[NSUserDefaults standardUserDefaults] setBool:newState forKey:SBButtonKey];
         button.tintColor = newState ? SBAccentColor() : [UIColor grayColor];
 
         NSArray *segments = newState ? (player.sbSegments ?: @[]) : @[];

@@ -1968,10 +1968,9 @@ static NSString *YouModExtractCommentText(UIView *cellView) {
                 break;
             }
 
-            for (id obj in node.yogaChildren) {
+            for (ELMTextNode *obj in node.yogaChildren) {
                 if ([obj isKindOfClass:elmTextClass] && [[obj description] containsString:@"id.comment.content.label"]) {
-                    NSAttributedString *attributed = [obj valueForKey:@"attributedText"];
-                    resultText = attributed.string;
+                    resultText = obj.attributedText.string;
                     break;
                 }
             }
