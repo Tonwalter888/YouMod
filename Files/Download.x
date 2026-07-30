@@ -762,11 +762,11 @@ static YTPlayerViewController *YouModPlayerFromViewController(UIViewController *
 static NSURL *YouModThumbnailURL(YTPlayerViewController *player) {
     if (!player) return nil;
     YTIVideoDetails *details = YouModVideoDetailsForPlayer(player);
-    YTIThumbnailDetails *thumb = details.thumbnail;
+    YTIThumbnailDetails *thumbmain = details.thumbnail;
     YTIThumbnailDetails_Thumbnail *bestThumbnail = nil;
     NSUInteger maxPixels = 0;
     
-    for (YTIThumbnailDetails_Thumbnail *thumb in thumb.thumbnailsArray) {
+    for (YTIThumbnailDetails_Thumbnail *thumb in thumbmain.thumbnailsArray) {
         NSUInteger pixels = (NSUInteger)thumb.width * (NSUInteger)thumb.height;
         if (pixels > maxPixels) {
             maxPixels = pixels;
