@@ -47,14 +47,14 @@ static void YouModTranslateText(NSString *text, NSString *targetLang, void (^com
 - (void)viewDidLoad {
     [super viewDidLoad];
     
-    self.view.backgroundColor = [UIColor systemBackgroundColor];
+    self.view.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.4];
     
     UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(dismissPicker)];
     tap.delegate = self;
     [self.view addGestureRecognizer:tap];
     
     self.containerView = [[UIView alloc] init];
-    self.containerView.backgroundColor = [UIColor systemBackgroundColor];
+    self.containerView.backgroundColor = [UIColor systemGray6Color];
     self.containerView.layer.cornerRadius = 20.0;
     self.containerView.clipsToBounds = YES;
     self.containerView.translatesAutoresizingMaskIntoConstraints = NO;

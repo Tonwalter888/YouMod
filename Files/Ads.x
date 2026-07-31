@@ -90,9 +90,9 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
 
     NSMutableArray <YTIItemSectionRenderer *> *newArray = [array mutableCopy];
     NSIndexSet *removeIndexes = [newArray indexesOfObjectsPassingTest:^BOOL(YTIItemSectionRenderer *sectionRenderer, NSUInteger idx, BOOL *stop) {
-        NSString *description = [sectionRenderer description];
-        if ([description containsString:@"community-tab-chip-posts-section"]) return NO;
         if ([sectionRenderer isKindOfClass:%c(YTIShelfRenderer)]) {
+            NSString *description = [sectionRenderer description];
+            if ([description containsString:@"community-tab-chip-posts-section"]) return NO;
             if (hideShorts) {
                 if (keepShortsSub && [description containsString:@"subscriptions-shorts-shelf-item"]) return NO;
                 else if ([description containsString:@"shorts_video_cell.eml"]) return YES;
@@ -108,6 +108,8 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
             }];
             [itemsArray removeObjectsAtIndexes:removeItemsArrayIndexes];
         } else if ([sectionRenderer isKindOfClass:%c(YTIItemSectionRenderer)]) {
+            NSString *description = [sectionRenderer description];
+            if ([description containsString:@"community-tab-chip-posts-section"]) return NO;
             if ([description containsString:@"UNLIMITED"] && [description containsString:@"SPunlimited"]) {
                 NSMutableArray <YTIItemSectionSupportedRenderers *> *contentsArray = sectionRenderer.contentsArray;
                 NSMutableIndexSet *indexesToRemove = [NSMutableIndexSet indexSet];

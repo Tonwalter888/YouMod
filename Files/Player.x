@@ -1028,6 +1028,14 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
 // Pause using Two fingers
 %new
 - (void)YouModHandleTapGesture:(UITapGestureRecognizer *)tapGestureRecognizer {
+    YTMainAppVideoPlayerOverlayViewController *ovcon = [self activeVideoPlayerOverlay];
+    YTMainAppVideoPlayerOverlayView *ov = [ovcon videoPlayerOverlayView];
+    YTFullscreenEngagementOverlayView *fullov = [ov valueForKey:@"_fullscreenEngagementOverlayView"];
+    if (fullov) {
+        YTRelatedVideosView *relatedview = [fullov valueForKey:@"_relatedVideosView"];
+        YTRelatedVideosViewController *relatedcon = [relatedview valueForKey:@"_delegate"];
+        if ([relatedcon isExpanded]) return;
+    }
     if (tapGestureRecognizer.state == UIGestureRecognizerStateEnded) {
         if (self.playerState == 3) {
             [self pause];
@@ -1252,6 +1260,14 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
 
 %new
 - (void)YouModHoldToSpeed:(UILongPressGestureRecognizer *)gesture {
+    YTMainAppVideoPlayerOverlayViewController *ovcon = [self activeVideoPlayerOverlay];
+    YTMainAppVideoPlayerOverlayView *ov = [ovcon videoPlayerOverlayView];
+    YTFullscreenEngagementOverlayView *fullov = [ov valueForKey:@"_fullscreenEngagementOverlayView"];
+    if (fullov) {
+        YTRelatedVideosView *relatedview = [fullov valueForKey:@"_relatedVideosView"];
+        YTRelatedVideosViewController *relatedcon = [relatedview valueForKey:@"_delegate"];
+        if ([relatedcon isExpanded]) return;
+    }
     if (self.playerState != 3) return;
     
     NSInteger speedIndex = INTFORVAL(HoldToSpeedIndex);
