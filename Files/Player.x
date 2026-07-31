@@ -817,10 +817,6 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
     }
 
     if (panGestureRecognizer.state == UIGestureRecognizerStateBegan) {
-        currentPanMode = 0;
-        controlType = 0;
-        lastUpdatedSpeed = -1.0f;
-
         CGPoint velocity = [panGestureRecognizer velocityInView:self.view];
         BOOL isHorizontal = fabs(velocity.x) > fabs(velocity.y);
 
@@ -1011,7 +1007,6 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
         }
         currentPanMode = 0;
         controlType = 0;
-        lastUpdatedSpeed = -1.0f;
     }
 }
 
