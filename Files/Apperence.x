@@ -270,7 +270,7 @@
 - (void)traitCollectionDidChange:(UITraitCollection *)previousTraitCollection {
     %orig;
     if ([self.traitCollection hasDifferentColorAppearanceComparedToTraitCollection:previousTraitCollection]) {
-        [self setNeedsLayout];
+        [self.view setNeedsLayout];
     }
 }
 %end
