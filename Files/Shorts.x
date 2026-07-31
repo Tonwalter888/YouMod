@@ -241,7 +241,7 @@ static BOOL isFullscreenEnabled = NO;
         self.YouModExitShortsOnlyGesture = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(YouModTurnOffShortsOnly:)];
         self.YouModExitShortsOnlyGesture.numberOfTouchesRequired = 2;
         self.YouModExitShortsOnlyGesture.minimumPressDuration = 0.5;
-
+        self.YouModExitShortsOnlyGesture.delegate = (id<UIGestureRecognizerDelegate>)self;
         [self addGestureRecognizer:self.YouModExitShortsOnlyGesture];
     }
 }
