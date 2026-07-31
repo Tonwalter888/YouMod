@@ -71,7 +71,7 @@ static const NSInteger YMOverlayButtonBaseTag = 9910;
 // CC/gear row in the top-right corner of the player overlay.
 static const CGFloat YMOverlayButtonSize = 30.0;
 static const CGFloat YMOverlayButtonSpace = 5.0;
-static const CGFloat YMOverlayButtonGap = 3.0;
+static const CGFloat YMOverlayButtonGap = 5.0;
 static const CGFloat YMOverlayButtonTopInset = 52.0; // fallback row top when the gear can't be located
 static const CGFloat YMOverlayButtonEdgePadding = 12.0; // fallback right padding when the gear isn't found
 
