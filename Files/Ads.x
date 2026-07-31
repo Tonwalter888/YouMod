@@ -319,7 +319,7 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
 %end
 
 %hook YTWatchFloatingMiniplayerBadgeView
-- (void)setOverlayBadge:(id)arg {
+- (void)layoutSubviews {
     %orig;
     if (IS_ENABLED(HidePaidPromoOverlay)) {
         UIView *badge = [self valueForKey:@"_overlayBadge"];

@@ -798,7 +798,6 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
                 break;
             }
         }
-        [volumeView removeFromSuperview];
     });
 
     YTMainAppVideoPlayerOverlayViewController *ovcon = [self activeVideoPlayerOverlay];
@@ -1062,16 +1061,12 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
 
 - (void)singleVideo:(YTSingleVideoController *)video currentVideoTimeDidChange:(YTSingleVideoTime *)time {
     %orig;
-    dispatch_async(dispatch_get_main_queue(), ^{
-        YouModAddEndTime(self, video, time);
-    });
+    YouModAddEndTime(self, video, time);
 }
 
 - (void)potentiallyMutatedSingleVideo:(YTSingleVideoController *)video currentVideoTimeDidChange:(YTSingleVideoTime *)time {
     %orig;
-    dispatch_async(dispatch_get_main_queue(), ^{
-        YouModAddEndTime(self, video, time);
-    });
+    YouModAddEndTime(self, video, time);
 }
 
 %new
