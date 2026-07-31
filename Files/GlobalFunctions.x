@@ -89,3 +89,15 @@ UIViewController *YouModTopViewController(UIViewController *root) {
         return YouModTopViewController(((UITabBarController *)root).selectedViewController);
     return root;
 }
+
+// OLEDKeyboard (https://github.com/dayanch96/OledKeyboard)
+BOOL isDarkMode(UIView *view) {
+    if ([view respondsToSelector:@selector(_mapkit_isDarkModeEnabled)]) {
+        return view._mapkit_isDarkModeEnabled;
+    }
+    return view.traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark;
+}
+
+BOOL isPad() {
+    return UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad;
+}

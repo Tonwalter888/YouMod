@@ -10,48 +10,60 @@ static BOOL isProductList(YTICommand *command) {
 }
 
 static NSString *getPostString(NSString *description) {
-    for (NSString *str in @[
-        @"poll_post_root.eml",
-        @"options_post_root.eml",
-        @"images_post_root_slim.eml",
-        @"images_post_responsive_root.eml",
-        @"options_post_responsive_root.eml",
-        @"post_base_wrapper_slim.eml",
-        @"text_post_root_slim.eml",
-        @"text_post_responsive_root.eml",
-        @"videos_post_root.eml"
-    ])
+    static NSArray *postStrings = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        postStrings = @[
+            @"poll_post_root.eml",
+            @"options_post_root.eml",
+            @"images_post_root_slim.eml",
+            @"images_post_responsive_root.eml",
+            @"options_post_responsive_root.eml",
+            @"post_base_wrapper_slim.eml",
+            @"text_post_root_slim.eml",
+            @"text_post_responsive_root.eml",
+            @"videos_post_root.eml"
+        ];
+    });
+    for (NSString *str in postStrings) {
         if ([description containsString:str]) return str;
+    }
     return nil;
 }
 
 static NSString *getAdString(NSString *description) {
-    for (NSString *str in @[
-        @"brand_promo",
-        @"brand_video_shelf",
-        @"brand_video_singleton",
-        @"carousel_footered_layout",
-        @"carousel_headered_layout",
-        @"eml.expandable_metadata",
-        @"feed_ad_metadata",
-        @"full_width_portrait_image_layout",
-        @"full_width_square_image_layout",
-        @"grid_ads_image_layout",
-        @"landscape_image_wide_button_layout",
-        @"post_shelf",
-        @"product_carousel",
-        @"product_engagement_panel",
-        @"product_item",
-        @"shopping_carousel",
-        @"shopping_item_card_list",
-        @"statement_banner",
-        @"square_image_layout",
-        @"text_image_button_layout",
-        @"text_search_ad",
-        @"video_display_full_layout",
-        @"video_display_full_buttoned_layout"
-    ])
+    static NSArray *adStrings = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        adStrings = @[
+            @"brand_promo",
+            @"brand_video_shelf",
+            @"brand_video_singleton",
+            @"carousel_footered_layout",
+            @"carousel_headered_layout",
+            @"eml.expandable_metadata",
+            @"feed_ad_metadata",
+            @"full_width_portrait_image_layout",
+            @"full_width_square_image_layout",
+            @"grid_ads_image_layout",
+            @"landscape_image_wide_button_layout",
+            @"post_shelf",
+            @"product_carousel",
+            @"product_engagement_panel",
+            @"product_item",
+            @"shopping_carousel",
+            @"shopping_item_card_list",
+            @"statement_banner",
+            @"square_image_layout",
+            @"text_image_button_layout",
+            @"text_search_ad",
+            @"video_display_full_layout",
+            @"video_display_full_buttoned_layout"
+        ];
+    });
+    for (NSString *str in adStrings) {
         if ([description containsString:str]) return str;
+    }
     return nil;
 }
 
@@ -61,30 +73,32 @@ static BOOL isAdRenderer(YTIElementRenderer *elementRenderer, int kind) {
     }
     NSString *description = [elementRenderer description];
     NSString *adString = getAdString(description);
-    if (adString) {
-        return YES;
-    }
+    if (adString) return YES;
     return NO;
 }
 
 static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItemSectionRenderer *> *array) {
+    const BOOL hideShorts = IS_ENABLED(HideShortsShelf);
+    const BOOL keepShortsSub = IS_ENABLED(KeepShortsSubscript);
+    const BOOL hideFeedPost = IS_ENABLED(HideFeedPost);
+    const BOOL hidePlayables = IS_ENABLED(HidePlayables);
+    const BOOL hideHoriShelf = IS_ENABLED(HideHoriShelf);
+    const BOOL hideCommuGuide = IS_ENABLED(HideCommuGuide);
+    const BOOL hideGenMusic = IS_ENABLED(HideGenMusicShelf);
+    const BOOL hideSurveys = IS_ENABLED(HideSurveys);
+    const BOOL hideComments = IS_ENABLED(HideCommentsSection);
+
     NSMutableArray <YTIItemSectionRenderer *> *newArray = [array mutableCopy];
     NSIndexSet *removeIndexes = [newArray indexesOfObjectsPassingTest:^BOOL(YTIItemSectionRenderer *sectionRenderer, NSUInteger idx, BOOL *stop) {
-        // Filter shelf renderer items (ads and shorts)
+        NSString *description = [sectionRenderer description];
+        if ([description containsString:@"community-tab-chip-posts-section"]) return NO;
         if ([sectionRenderer isKindOfClass:%c(YTIShelfRenderer)]) {
-            NSString *description = [sectionRenderer description];
-            if ([description containsString:@"community-tab-chip-posts-section"]) return NO;
-            // Filter shorts
-            if (IS_ENABLED(HideShortsShelf)) {
-                if (IS_ENABLED(KeepShortsSubscript) && [description containsString:@"subscriptions-shorts-shelf-item"]) return NO;
-                if ([description containsString:@"shorts_video_cell.eml"]) return YES;
-                if ([description containsString:@"shelf_header.eml"] && [description containsString:@"youtube_shorts_24_cairo"]) return YES;
+            if (hideShorts) {
+                if (keepShortsSub && [description containsString:@"subscriptions-shorts-shelf-item"]) return NO;
+                else if ([description containsString:@"shorts_video_cell.eml"]) return YES;
+                else if ([description containsString:@"shelf_header.eml"] && [description containsString:@"youtube_shorts_24_cairo"]) return YES;
             }
-            // Filter feed posts
-            NSString *filtered = getPostString(description);
-            if (IS_ENABLED(HideFeedPost) && filtered) {
-                return YES;
-            }
+            if (hideFeedPost && getPostString(description) != nil) return YES;
             YTIShelfSupportedRenderers *content = ((YTIShelfRenderer *)sectionRenderer).content;
             YTIHorizontalListRenderer *horizontalListRenderer = content.horizontalListRenderer;
             NSMutableArray <YTIHorizontalListSupportedRenderers *> *itemsArray = horizontalListRenderer.itemsArray;
@@ -93,96 +107,67 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
                 return isAdRenderer(elementRenderer, 4);
             }];
             [itemsArray removeObjectsAtIndexes:removeItemsArrayIndexes];
-        }
-        
-        // Filter item section renderers
-        if (![sectionRenderer isKindOfClass:%c(YTIItemSectionRenderer)]) return NO;
-            
-        NSString *description = [sectionRenderer description];
-        if ([description containsString:@"UNLIMITED"] && [description containsString:@"SPunlimited"]) {
-            NSMutableArray <YTIItemSectionSupportedRenderers *> *contentsArray = sectionRenderer.contentsArray;
-            
-            NSMutableIndexSet *indexesToRemove = [NSMutableIndexSet indexSet];
-            __block NSUInteger lastCellDividerIndex = NSNotFound;
-            
-            [contentsArray enumerateObjectsUsingBlock:^(YTIItemSectionSupportedRenderers *item, NSUInteger idx, BOOL *stop) {
-                NSString *desc = [item description];
+        } else if ([sectionRenderer isKindOfClass:%c(YTIItemSectionRenderer)]) {
+            if ([description containsString:@"UNLIMITED"] && [description containsString:@"SPunlimited"]) {
+                NSMutableArray <YTIItemSectionSupportedRenderers *> *contentsArray = sectionRenderer.contentsArray;
+                NSMutableIndexSet *indexesToRemove = [NSMutableIndexSet indexSet];
+                __block NSUInteger lastCellDividerIndex = NSNotFound;
                 
-                if ([desc containsString:@"cell_divider.eml"]) {
-                    lastCellDividerIndex = idx;
-                }
-                
-                if ([desc containsString:@"UNLIMITED"] && [desc containsString:@"SPunlimited"]) {
-                    [indexesToRemove addIndex:idx];
-                    
-                    if (lastCellDividerIndex != NSNotFound) {
-                        [indexesToRemove addIndex:lastCellDividerIndex];
-                        lastCellDividerIndex = NSNotFound;
+                [contentsArray enumerateObjectsUsingBlock:^(YTIItemSectionSupportedRenderers *item, NSUInteger idx, BOOL *stop) {
+                    NSString *desc = [item description];
+                    if ([desc containsString:@"cell_divider.eml"]) lastCellDividerIndex = idx;
+                    else if ([desc containsString:@"UNLIMITED"] && [desc containsString:@"SPunlimited"]) {
+                        [indexesToRemove addIndex:idx];
+                        if (lastCellDividerIndex != NSNotFound) {
+                            [indexesToRemove addIndex:lastCellDividerIndex];
+                            lastCellDividerIndex = NSNotFound;
+                        }
                     }
-                }
-            }];
+                }];
+                [contentsArray removeObjectsAtIndexes:indexesToRemove];
+                return NO;
+            }
             
-            [contentsArray removeObjectsAtIndexes:indexesToRemove];
-        }
-        if ([description containsString:@"community-tab-chip-posts-section"]) return NO;
-        
-        // Filter shorts shelf
-        BOOL isShortsShelf = [description containsString:@"shorts_shelf.eml"];
-        BOOL isHistory = [description containsString:@"history-shorts-shelf-item"];
-        if (IS_ENABLED(HideShortsShelf) && IS_ENABLED(KeepShortsSubscript)) {
-            if (isShortsShelf && ![description containsString:@"subscriptions-shorts-shelf-item"] && !isHistory) {
+            const BOOL isShortsShelf = [description containsString:@"shorts_shelf.eml"];
+            const BOOL isHistory = [description containsString:@"history-shorts-shelf-item"];
+            const BOOL isShortsOverlay = [description containsString:@"video_lockup_overlay"];
+            if (hideShorts && keepShortsSub) {
+                if (isShortsShelf && ![description containsString:@"subscriptions-shorts-shelf-item"] && !isHistory) return YES;
+                else if (isShortsOverlay) return YES;
+            } else if (hideShorts) {
+                if (isShortsShelf && !isHistory) return YES;
+                else if (isShortsOverlay) return YES;
+            }
+            
+            if ([description containsString:@"horizontal_shelf.eml"]) {
+                if (hidePlayables && [description containsString:@"FEmini_app_destination"]) return YES;
+                if (hideHoriShelf && ![description containsString:@"UCYfdidRxbB8Qhf0Nx7ioOYw"] && ![description containsString:@"FElibrary"] && ![description containsString:@"mini_game_card.eml"] && ![description containsString:@"FEplaylist_aggregation"]) {
+                    return YES;
+                }
+            }
+
+            if (hideCommuGuide && ([description containsString:@"community_guidelines.eml"] || [description containsString:@"channel_guidelines_entry_banner.eml"])) {
                 return YES;
             }
-            if ([description containsString:@"video_lockup_overlay"]) return YES;
-        } else if (IS_ENABLED(HideShortsShelf)) {
-            if (isShortsShelf && !isHistory) {
+            
+            if (hideFeedPost && getPostString(description) != nil) return YES;
+            if (hideGenMusic && [description containsString:@"feed_nudge.eml"]) return YES;
+            if (hideSurveys && [description containsString:@"in_feed_survey.eml"]) return YES;
+            if (hideComments && [description containsString:@"comment-item-section"] && [description containsString:@"comments-entry-point"]) {
                 return YES;
             }
-            if ([description containsString:@"video_lockup_overlay"]) return YES;
-        }
-        
-        // Filter horizontal shelf
-        if ([description containsString:@"horizontal_shelf.eml"]) {
-            if (IS_ENABLED(HidePlayables) && [description containsString:@"FEmini_app_destination"]) return YES;
-            if (IS_ENABLED(HideHoriShelf) && ![description containsString:@"UCYfdidRxbB8Qhf0Nx7ioOYw"] && ![description containsString:@"FElibrary"] && ![description containsString:@"mini_game_card.eml"] && ![description containsString:@"FEplaylist_aggregation"]) {
-                return YES;
+            
+            NSMutableArray <YTIItemSectionSupportedRenderers *> *contentsArray = sectionRenderer.contentsArray;
+            if (contentsArray.count > 1) {
+                NSIndexSet *removeContentsArrayIndexes = [contentsArray indexesOfObjectsPassingTest:^BOOL(YTIItemSectionSupportedRenderers *sectionSupportedRenderers, NSUInteger idx2, BOOL *stop2) {
+                    YTIElementRenderer *elementRenderer = sectionSupportedRenderers.elementRenderer;
+                    return isAdRenderer(elementRenderer, 3);
+                }];
+                [contentsArray removeObjectsAtIndexes:removeContentsArrayIndexes];
             }
-        }
-
-        if (IS_ENABLED(HideCommuGuide) && ([description containsString:@"community_guidelines.eml"] || [description containsString:@"channel_guidelines_entry_banner.eml"])) {
-            return YES;
-        }
-        
-        // Filter feed posts
-        NSString *filtered = getPostString(description);
-        if (IS_ENABLED(HideFeedPost) && filtered) {
-            return YES;
-        }
-
-        if (IS_ENABLED(HideGenMusicShelf) && [description containsString:@"feed_nudge.eml"]) {
-            return YES;
-        }
-
-        if (IS_ENABLED(HideSurveys) && [description containsString:@"in_feed_survey.eml"]) {
-            return YES;
-        }
-
-        if (IS_ENABLED(HideCommentsSection) && [description containsString:@"comment-item-section"] && [description containsString:@"comments-entry-point"]) {
-            return YES;
-        }
-        
-        NSMutableArray <YTIItemSectionSupportedRenderers *> *contentsArray = sectionRenderer.contentsArray;
-        if (contentsArray.count > 1) {
-            NSIndexSet *removeContentsArrayIndexes = [contentsArray indexesOfObjectsPassingTest:^BOOL(YTIItemSectionSupportedRenderers *sectionSupportedRenderers, NSUInteger idx2, BOOL *stop2) {
-                YTIElementRenderer *elementRenderer = sectionSupportedRenderers.elementRenderer;
-                return isAdRenderer(elementRenderer, 3);
-            }];
-            [contentsArray removeObjectsAtIndexes:removeContentsArrayIndexes];
-        }
-        YTIItemSectionSupportedRenderers *firstObject = [contentsArray firstObject];
-        YTIElementRenderer *elementRenderer = firstObject.elementRenderer;
-        if (isAdRenderer(elementRenderer, 2)) {
-            return YES;
+            YTIItemSectionSupportedRenderers *firstObject = [contentsArray firstObject];
+            YTIElementRenderer *elementRenderer = firstObject.elementRenderer;
+            if (isAdRenderer(elementRenderer, 2)) return YES;
         }
         return NO;
     }];

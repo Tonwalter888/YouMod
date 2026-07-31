@@ -1,13 +1,5 @@
 #import "Headers.h"
 
-// OLEDKeyboard (https://github.com/dayanch96/OledKeyboard)
-static BOOL isDarkMode(UIView *view) {
-    if ([view respondsToSelector:@selector(_mapkit_isDarkModeEnabled)]) {
-        return view._mapkit_isDarkModeEnabled;
-    }
-    return view.traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark;
-}
-
 %group OLEDTheme
 %hook YTColor
 + (UIColor *)black0 { return [UIColor blackColor]; }
@@ -255,6 +247,12 @@ static BOOL isDarkMode(UIView *view) {
     %orig;
     self.backgroundColor = isDarkMode(self) ? [UIColor blackColor] : [UIColor clearColor];
 }
+- (void)traitCollectionDidChange:(UITraitCollection *)previousTraitCollection {
+    %orig;
+    if ([self.traitCollection hasDifferentColorAppearanceComparedToTraitCollection:previousTraitCollection]) {
+        [self setNeedsLayout];
+    }
+}
 %end
 
 %hook UIPredictionViewController
@@ -269,12 +267,24 @@ static BOOL isDarkMode(UIView *view) {
     }
     return %orig;
 }
+- (void)traitCollectionDidChange:(UITraitCollection *)previousTraitCollection {
+    %orig;
+    if ([self.traitCollection hasDifferentColorAppearanceComparedToTraitCollection:previousTraitCollection]) {
+        [self setNeedsLayout];
+    }
+}
 %end
 
 %hook UIKeyboardDockView
 - (void)layoutSubviews {
     %orig;
     self.backgroundColor = isDarkMode(self) ? [UIColor blackColor] : [UIColor clearColor];
+}
+- (void)traitCollectionDidChange:(UITraitCollection *)previousTraitCollection {
+    %orig;
+    if ([self.traitCollection hasDifferentColorAppearanceComparedToTraitCollection:previousTraitCollection]) {
+        [self setNeedsLayout];
+    }
 }
 %end
 
@@ -287,6 +297,12 @@ static BOOL isDarkMode(UIView *view) {
         self.backgroundColor = isDarkMode(self) ? [UIColor blackColor] : [UIColor clearColor];
     }
 }
+- (void)traitCollectionDidChange:(UITraitCollection *)previousTraitCollection {
+    %orig;
+    if ([self.traitCollection hasDifferentColorAppearanceComparedToTraitCollection:previousTraitCollection]) {
+        [self setNeedsLayout];
+    }
+}
 %end
 
 %hook UIKBVisualEffectView
@@ -295,6 +311,12 @@ static BOOL isDarkMode(UIView *view) {
     if (isDarkMode(self)) {
         self.backgroundEffects = nil;
         self.backgroundColor = [UIColor blackColor];
+    }
+}
+- (void)traitCollectionDidChange:(UITraitCollection *)previousTraitCollection {
+    %orig;
+    if ([self.traitCollection hasDifferentColorAppearanceComparedToTraitCollection:previousTraitCollection]) {
+        [self setNeedsLayout];
     }
 }
 %end

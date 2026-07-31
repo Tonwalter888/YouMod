@@ -1,10 +1,6 @@
 #import <Photos/Photos.h>
 #import "Headers.h"
 
-static BOOL isPad() {
-    return UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad;
-}
-
 @implementation YouModThumbnailViewController
 
 - (void)viewDidLoad {

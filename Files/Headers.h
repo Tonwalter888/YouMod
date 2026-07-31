@@ -722,6 +722,8 @@ extern UIImage *YouModYTIconImage(NSInteger iconType, BOOL useCustomColor, UICol
 extern NSArray *getAllSystemLanguageTitles();
 extern NSArray *getAllSystemLanguageValues();
 extern UIViewController *YouModTopViewController(UIViewController *root);
+extern BOOL isDarkMode(UIView *view);
+extern BOOL isPad();
 
 #define LOC(x) [YouModBundle() localizedStringForKey:x value:nil table:nil]
 

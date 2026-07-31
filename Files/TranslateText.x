@@ -47,7 +47,7 @@ static void YouModTranslateText(NSString *text, NSString *targetLang, void (^com
 - (void)viewDidLoad {
     [super viewDidLoad];
     
-    self.view.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.4];
+    self.view.backgroundColor = [UIColor systemBackgroundColor];
     
     UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(dismissPicker)];
     tap.delegate = self;

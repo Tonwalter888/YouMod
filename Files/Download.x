@@ -137,7 +137,7 @@ static NSString *YouModYouTubeCookiesString(void) {
 }
 
 static NSString *YouModNativeUserAgent(void) {
-    NSString *device = UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad ? @"iPad" : @"iPhone";
+    NSString *device = isPad() ? @"iPad" : @"iPhone";
     return [NSString stringWithFormat:@"com.google.ios.youtube/21.26.4 (%@; CPU OS 18_7 like Mac OS X)", device];
 }
 
@@ -803,7 +803,7 @@ static void YouModSaveVideoToPhotos(NSURL *fileURL, UIViewController *presenter,
 static void YouModShareFile(NSURL *fileURL, UIViewController *presenter) {
     if (!fileURL || !presenter) return;
     UIActivityViewController *activity = [[UIActivityViewController alloc] initWithActivityItems:@[fileURL] applicationActivities:nil];
-    if (UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad) {
+    if (isPad()) {
         activity.popoverPresentationController.sourceView = presenter.view;
         activity.popoverPresentationController.sourceRect = CGRectMake(presenter.view.bounds.size.width / 2, presenter.view.bounds.size.height, 0, 0);
         activity.popoverPresentationController.permittedArrowDirections = 0;
@@ -2006,7 +2006,7 @@ static NSString *YouModExtractCommentText(UIView *cellView) {
 static UIImage *YouModRenderViewToImage(_ASDisplayView *view) {
     if (!view || view.bounds.size.width <= 0 || view.bounds.size.height <= 0) return nil;
     
-    UIColor *realBgColor = view.keepalive_node.closestViewController.view.backgroundColor;  
+    UIColor *realBgColor = isDarkMode(view) ? [%c(YTColor) black3] : [%c(YTColor) white1];  
     UIGraphicsBeginImageContextWithOptions(view.bounds.size, NO, [UIScreen mainScreen].scale);
     CGContextRef context = UIGraphicsGetCurrentContext();    
     [realBgColor setFill];

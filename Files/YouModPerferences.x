@@ -24,7 +24,7 @@
     picker.modalPresentationStyle = UIModalPresentationFormSheet;
 
     // Ensure it looks right on iPad
-    if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad) {
+    if (isPad()) {
         picker.popoverPresentationController.sourceView = vc.view;
         picker.popoverPresentationController.sourceRect = CGRectMake(vc.view.bounds.size.width/2, vc.view.bounds.size.height/2, 0, 0);
         picker.popoverPresentationController.permittedArrowDirections = 0;
@@ -109,7 +109,7 @@
     UIDocumentPickerViewController *picker = [[UIDocumentPickerViewController alloc] initForExportingURLs:@[fileURL] asCopy:YES];
     picker.modalPresentationStyle = UIModalPresentationFormSheet;
     
-    if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad) {
+    if (isPad()) {
         picker.popoverPresentationController.sourceView = vc.view;
     }
     [vc presentViewController:picker animated:YES completion:nil];

@@ -107,12 +107,10 @@
 "COPY_POST_TEXT" = "Copy post text";
 "SAVE_POST_IMAGE" = "Save post as image";
 "COPY_POST_IMAGE" = "Copy post as image";
-"FIX_DOWNLOAD" = "Fix download errors";
-"FIX_DOWNLOAD_DESC" = "Uses external server to download instead, this doesn't support downloading other audio tracks.";
 "DOWNLOAD_SERVER" = "Download server";
 "CHOOSE_DOWNLOAD_SERVER" = "Choose download server";
 "DOWNLOAD_COMMENT" = "Save comment information";
-"DOWNLOAD_COMMENT_DESC" = "Allows to copy comment text and save comment as image by long tap.";
+"DOWNLOAD_COMMENT_DESC" = "Allows to copy comment text and save comment as image by long tap on the three dots button.";
 "DOWNLOAD_POST" = "Save post information";
 "DOWNLOAD_POST_DESC" = "Allows to copy post text and save post as image by long tap.";
 "TRANSLATE_COMMENT" = "Translate comment";
