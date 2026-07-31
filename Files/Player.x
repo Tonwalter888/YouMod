@@ -1036,6 +1036,27 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
         YTRelatedVideosViewController *relatedcon = [relatedview valueForKey:@"_delegate"];
         if ([relatedcon isExpanded]) return;
     }
+
+    CGPoint startLocation = [tapGestureRecognizer locationInView:self.view];
+    CGFloat fullWidth = self.view.bounds.size.width;
+    YTEngagementPanelContainerView *engagecontainer = [ov valueForKey:@"_engagementPanelContainerView"];
+    if (engagecontainer && engagecontainer.engagementPanelState == 3) {
+        UIView *mainpanel = nil;
+        for (UIView *sub in engagecontainer.subviews) {
+            if ([sub isKindOfClass:%c(UILayoutContainerView)]) {
+                mainpanel = sub;
+                break;
+            }
+        }
+        if (mainpanel) {
+            CGFloat panelWidth = mainpanel.bounds.size.width;
+            if (panelWidth > 0 && panelWidth < fullWidth) {
+                CGFloat remainingWidth = fullWidth - panelWidth;
+                if (startLocation.x > remainingWidth) return;
+            }
+        }
+    }
+
     if (tapGestureRecognizer.state == UIGestureRecognizerStateEnded) {
         if (self.playerState == 3) {
             [self pause];
@@ -1268,6 +1289,27 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
         YTRelatedVideosViewController *relatedcon = [relatedview valueForKey:@"_delegate"];
         if ([relatedcon isExpanded]) return;
     }
+
+    CGPoint touchLocation = [gesture locationInView:self.view];
+    CGFloat fullWidth = self.view.bounds.size.width;
+    YTEngagementPanelContainerView *engagecontainer = [ov valueForKey:@"_engagementPanelContainerView"];
+    if (engagecontainer && engagecontainer.engagementPanelState == 3) {
+        UIView *mainpanel = nil;
+        for (UIView *sub in engagecontainer.subviews) {
+            if ([sub isKindOfClass:%c(UILayoutContainerView)]) {
+                mainpanel = sub;
+                break;
+            }
+        }
+        if (mainpanel) {
+            CGFloat panelWidth = mainpanel.bounds.size.width;
+            if (panelWidth > 0 && panelWidth < fullWidth) {
+                CGFloat remainingWidth = fullWidth - panelWidth;
+                if (touchLocation.x > remainingWidth) return;
+            }
+        }
+    }
+
     if (self.playerState != 3) return;
     
     NSInteger speedIndex = INTFORVAL(HoldToSpeedIndex);
