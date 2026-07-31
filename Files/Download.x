@@ -1610,7 +1610,7 @@ static void YouModShowThumbnailViewer(YTPlayerViewController *player, UIViewCont
             
             YouModThumbnailViewController *viewerVC = [[YouModThumbnailViewController alloc] init];
             viewerVC.thumbnailImage = image;
-            viewerVC.modalPresentationStyle = UIModalPresentationOverFullScreen;
+            viewerVC.modalPresentationStyle = UIModalPresentationFormSheet;
             viewerVC.modalTransitionStyle = UIModalTransitionStyleCoverVertical; 
             
             [presenter presentViewController:viewerVC animated:YES completion:nil];

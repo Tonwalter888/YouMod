@@ -687,6 +687,7 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
         if (!playerViewController.YouModHoldGesture && INTFORVAL(HoldToSpeedIndex) != 0) {
             playerViewController.YouModHoldGesture = [[UILongPressGestureRecognizer alloc] initWithTarget:playerViewController action:@selector(YouModHoldToSpeed:)];
             playerViewController.YouModHoldGesture.minimumPressDuration = 0.4;
+            playerViewController.YouModHoldGesture.delegate = playerViewController;
             [pv addGestureRecognizer:playerViewController.YouModHoldGesture];   
         }
     }
@@ -720,7 +721,7 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
         CGFloat fullWidth = self.view.bounds.size.width;
         CGFloat activeWidth = fullWidth;
 
-        // Also return NO if the startLocation is on the engagement panel
+        // Adjust the gesture view if the engagement panel is on
         YTEngagementPanelContainerView *engagecontainer = [ov valueForKey:@"_engagementPanelContainerView"];
         if (engagecontainer) {
             if (engagecontainer.engagementPanelState == 3) {
@@ -797,6 +798,7 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
                 break;
             }
         }
+        [volumeView removeFromSuperview];
     });
 
     YTMainAppVideoPlayerOverlayViewController *ovcon = [self activeVideoPlayerOverlay];
@@ -815,12 +817,16 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
     }
 
     if (panGestureRecognizer.state == UIGestureRecognizerStateBegan) {
+        currentPanMode = 0;
+        controlType = 0;
+        lastUpdatedSpeed = -1.0f;
+
         CGPoint velocity = [panGestureRecognizer velocityInView:self.view];
         BOOL isHorizontal = fabs(velocity.x) > fabs(velocity.y);
 
         if (isHorizontal && IS_ENABLED(SeekOnOverlay)) {
             currentPanMode = 2;
-        } else {
+        } else if (!isHorizontal && IS_ENABLED(GestureControls)) {
             currentPanMode = 1;
         }
 
@@ -918,7 +924,9 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
 
             if (controlType == 1) {
                 float newBrightness = fmaxf(fminf(initialBrightness + delta, 1.0), 0.0);
-                [[UIScreen mainScreen] setBrightness:newBrightness];
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    [[UIScreen mainScreen] setBrightness:newBrightness];
+                });
                 
                 if (newBrightness <= 0.5f) {
                     symbolName = @"sun.min.fill";
@@ -929,7 +937,9 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
                 percentString = [NSString stringWithFormat:@" %d%%", (int)(newBrightness * 100)];
             } else if (controlType == 2) {
                 float newVolume = fmaxf(fminf(initialVolume + delta, 1.0), 0.0);
-                volumeViewSlider.value = newVolume;
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    volumeViewSlider.value = newVolume;
+                });
                 
                 if (newVolume == 0.0f) {
                     symbolName = @"speaker.slash.fill";
@@ -1000,6 +1010,8 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
             }
         }
         currentPanMode = 0;
+        controlType = 0;
+        lastUpdatedSpeed = -1.0f;
     }
 }
 
@@ -1039,6 +1051,9 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
 
 %new
 - (void)YouModSetAutoSpeed {
+    if (self.YouModHoldGesture && (self.YouModHoldGesture.state == UIGestureRecognizerStateBegan || self.YouModHoldGesture.state == UIGestureRecognizerStateChanged)) {
+        return;
+    }
     if (IS_ENABLED(GlobalSpeedLocked)) {
         NSInteger speedIndex = INTFORVAL(HoldToSpeedIndex);
         CGFloat speed = YouModSpeedForHoldIndex(speedIndex);
@@ -1052,12 +1067,16 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
 
 - (void)singleVideo:(YTSingleVideoController *)video currentVideoTimeDidChange:(YTSingleVideoTime *)time {
     %orig;
-    YouModAddEndTime(self, video, time);
+    dispatch_async(dispatch_get_main_queue(), ^{
+        YouModAddEndTime(self, video, time);
+    });
 }
 
 - (void)potentiallyMutatedSingleVideo:(YTSingleVideoController *)video currentVideoTimeDidChange:(YTSingleVideoTime *)time {
     %orig;
-    YouModAddEndTime(self, video, time);
+    dispatch_async(dispatch_get_main_queue(), ^{
+        YouModAddEndTime(self, video, time);
+    });
 }
 
 %new
@@ -1169,23 +1188,17 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
 - (void)YouModShowSpeedToast:(CGFloat)speed isLocked:(BOOL)isLocked {
     UIColor *themeTextColor = [UIColor labelColor];
     UIColor *toastBgColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
-        if (traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark) {
-            return [UIColor colorWithWhite:0.1 alpha:0.95];
-        } else {
-            return [UIColor colorWithWhite:0.95 alpha:0.95];
-        }
+        return (traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark) ? 
+            [UIColor colorWithWhite:0.1 alpha:0.95] : [UIColor colorWithWhite:0.95 alpha:0.95];
     }];
 
     if (!self.YouModSpeedToastView) {
-        self.YouModSpeedToastView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 160, 44)];
-        self.YouModSpeedToastView.layer.cornerRadius = 22;
+        self.YouModSpeedToastView = [[UIView alloc] init];
         self.YouModSpeedToastView.clipsToBounds = YES;
         self.YouModSpeedToastView.alpha = 0.0;
-        self.YouModSpeedToastView.backgroundColor = toastBgColor;
 
-        self.YouModSpeedToastLabel = [[UILabel alloc] initWithFrame:self.YouModSpeedToastView.bounds];
+        self.YouModSpeedToastLabel = [[UILabel alloc] init];
         self.YouModSpeedToastLabel.textAlignment = NSTextAlignmentCenter;
-        self.YouModSpeedToastLabel.textColor = themeTextColor;
         self.YouModSpeedToastLabel.font = [UIFont systemFontOfSize:13 weight:UIFontWeightMedium];
         self.YouModSpeedToastLabel.numberOfLines = 2;
         [self.YouModSpeedToastView addSubview:self.YouModSpeedToastLabel];
@@ -1195,15 +1208,7 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
     
     self.YouModSpeedToastView.backgroundColor = toastBgColor;
     self.YouModSpeedToastLabel.textColor = themeTextColor;
-    
-    CGRect toastFrame = self.YouModSpeedToastView.frame;
-    toastFrame.origin.y = 18;
-    toastFrame.origin.x = (self.playerView.bounds.size.width - toastFrame.size.width) / 2.0;
-    self.YouModSpeedToastView.frame = toastFrame;
 
-    self.YouModSpeedToastView.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin | UIViewAutoresizingFlexibleBottomMargin;
-    [self.playerView bringSubviewToFront:self.YouModSpeedToastView];
-    
     NSTextAttachment *topAttachment = [[NSTextAttachment alloc] init];
     topAttachment.image = [[UIImage systemImageNamed:@"hare.fill"] imageWithTintColor:themeTextColor];
     topAttachment.bounds = CGRectMake(0, -2, 14, 14);
@@ -1217,6 +1222,7 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
     }
     
     NSMutableAttributedString *attrString = [[NSMutableAttributedString alloc] initWithString:[NSString stringWithFormat:@" %@\n", LOC(@"PLAYBACK_SPEED")]];
+    
     if (topAttachment.image) {
         NSAttributedString *topIconString = [NSAttributedString attributedStringWithAttachment:topAttachment];
         [attrString insertAttributedString:topIconString atIndex:0];
@@ -1232,6 +1238,22 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
     [attrString appendAttributedString:speedText];
     
     self.YouModSpeedToastLabel.attributedText = attrString;
+
+    CGSize maxLabelSize = CGSizeMake(self.playerView.bounds.size.width * 0.8, CGFLOAT_MAX);
+    CGSize textSize = [self.YouModSpeedToastLabel sizeThatFits:maxLabelSize];
+    
+    CGFloat paddingX = 24.0;
+    CGFloat paddingY = 10.0;
+    CGFloat toastWidth = fmaxf(textSize.width + paddingX, 140.0);
+    CGFloat toastHeight = textSize.height + paddingY;
+    
+    self.YouModSpeedToastView.frame = CGRectMake(0, 0, toastWidth, toastHeight);
+    self.YouModSpeedToastView.layer.cornerRadius = toastHeight / 2.0;
+    self.YouModSpeedToastLabel.frame = self.YouModSpeedToastView.bounds;
+
+    self.YouModSpeedToastView.center = CGPointMake(self.playerView.bounds.size.width / 2.0, 36.0);
+    self.YouModSpeedToastView.layer.zPosition = 999;
+    [self.playerView bringSubviewToFront:self.YouModSpeedToastView];
 
     [UIView animateWithDuration:0.2 animations:^{
         self.YouModSpeedToastView.alpha = 1.0;
@@ -1254,7 +1276,7 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
     if (gesture.state == UIGestureRecognizerStateBegan) {
         YTMainAppVideoPlayerOverlayViewController *con = [self activeVideoPlayerOverlay];
         CGFloat currentRate = [con currentPlaybackRate];
-        CGFloat savedNormal = FLOAT_FOR_KEY(GlobalSpeedLocked);
+        CGFloat savedNormal = FLOAT_FOR_KEY(GlobalSavedNormalRate);
         
         if (savedNormal <= 0) {
             savedNormal = (currentRate > 0) ? currentRate : 1.0;

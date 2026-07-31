@@ -242,22 +242,9 @@ static BOOL isDarkMode(UIView *view) {
 - (void)viewDidLoad {
     %orig;
     UIView *mainView = self.view;
-    if (isDarkMode(mainView)) {
-        mainView.backgroundColor = [UIColor blackColor];
-    } else {
-        mainView.backgroundColor = [UIColor whiteColor];
-    }
-}
-- (void)traitCollectionDidChange:(UITraitCollection *)previousTraitCollection {
-    %orig;
-    if ([self.traitCollection hasDifferentColorAppearanceComparedToTraitCollection:previousTraitCollection]) {
-        UIView *mainView = self.view;
-        if (isDarkMode(mainView)) {
-            mainView.backgroundColor = [UIColor blackColor];
-        } else {
-            mainView.backgroundColor = [UIColor whiteColor];
-        }
-    }
+    mainView.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
+        return isDarkMode(mainView) ? [UIColor blackColor] : [UIColor whiteColor];
+    }];
 }
 %end
 %end

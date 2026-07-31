@@ -193,6 +193,8 @@
 #define UseAnotherMiniplayer @"YouModUseAnotherMiniplayer"
 #define SeekOnOverlay @"YouModSeekOnOverlay"
 // Shorts
+#define HideShortsTopbar @"YouModHideShortsTopbar"
+#define HideShortsSubbar @"YouModHideShortsSubbar"
 #define FullScreenShorts @"YouModFullScreenShorts"
 #define RemoveShortsLive @"YouModRemoveShortsLive"
 #define RemoveShortsPosts @"YouModRemoveShortsPosts"
@@ -601,6 +603,12 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 @end
 
 @interface YTStartupAnimationViewController : UIViewController
+@end
+
+@interface YTWatchFloatingMiniplayerBadgeView : UIView
+@end
+
+@interface YTReelTopBarView : UIView
 @end
 
 // SponsorBlock action modes

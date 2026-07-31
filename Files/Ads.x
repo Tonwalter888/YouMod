@@ -318,6 +318,18 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
 }
 %end
 
+%hook YTWatchFloatingMiniplayerBadgeView
+- (void)setOverlayBadge:(id)arg {
+    %orig;
+    if (IS_ENABLED(HidePaidPromoOverlay)) {
+        UIView *badge = [self valueForKey:@"_overlayBadge"];
+        if (badge && badge.superview) {
+            [badge removeFromSuperview];
+        }
+    }
+}
+%end
+
 %hook YTInnerTubeCollectionViewController
 - (void)displaySectionsWithReloadingSectionControllerByRenderer:(id)renderer {
     NSMutableArray *sectionRenderers = [self valueForKey:@"_sectionRenderers"];

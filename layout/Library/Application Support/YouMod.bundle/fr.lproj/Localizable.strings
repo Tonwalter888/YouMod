@@ -128,6 +128,11 @@
 "TRANSLATE_FAILED" = "Failed to translate, please try again.";
 "SAVE_CURRENT_IMAGE" = "Save current image";
 "COPY_CURRENT_IMAGE" = "Copy current image";
+"DOWNLOAD_METHOD" = "Download method";
+"DOWNLOAD_METHOD_DESC" = "How videos are downloaded. On-device works on the latest YouTube versions.";
+"METHOD_DIRECT" = "Direct";
+"METHOD_SERVER" = "Server";
+"METHOD_ONDEVICE" = "On-device (SABR)";
 
 "APPEARANCE" = "Apparence";
 "OLED_THEME" = "Thème OLED";
@@ -328,6 +333,10 @@
 "SEEK_ON_OVERLAY_DESC" = "Allows controlling playback seeking by swiping left and right on the video overlay.";
 
 "SHORTS" = "Shorts";
+"HIDE_SHORTS_TOPBAR" = "Hide topbar";
+"HIDE_SHORTS_TOPBAR_DESC" = "Hide all the topbar view in the player.";
+"HIDE_SHORTS_SUBBAR" = "Hide subbar";
+"HIDE_SHORTS_SUBBAR_DESC" = "Hide the Shorts type bar in the player.";
 "SHORTS_ONLY" = "Shorts only mode";
 "SHORTS_ONLY_DESC" = "Limits YouTube functionality to viewing Shorts only. You can disable Shorts only mode by long pressing with two fingers in the Shorts player.";
 "SHORTS_ONLY_DISABLED" = "Shorts only mode has been turned off";

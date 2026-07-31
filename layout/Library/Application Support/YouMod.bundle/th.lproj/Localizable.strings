@@ -132,6 +132,11 @@
 "TRANSLATE_FAILED" = "แปลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง";
 "SAVE_CURRENT_IMAGE" = "บันทึกรูปปัจจุบัน";
 "COPY_CURRENT_IMAGE" = "คัดลอกรูปปัจจุบัน";
+"DOWNLOAD_METHOD" = "วิธีดาวน์โหลด";
+"DOWNLOAD_METHOD_DESC" = "วิธีการดาวน์โหลดวิดีโอ แบบอุปกรณ์จะใช้งานได้กับ YouTube เวอร์ชันล่าสุด";
+"METHOD_DIRECT" = "โดยตรง";
+"METHOD_SERVER" = "ผ่านเซิร์ฟเวอร์";
+"METHOD_ONDEVICE" = "บนอุปกรณ์ (SABR)";
 
 "APPEARANCE" = "ลักษณะ";
 "OLED_THEME" = "ธีม OLED";
@@ -330,6 +335,10 @@
 "SEEK_ON_OVERLAY_DESC" = "อนุญาตให้ควบคุมการกรอวิดีโอเดินหน้า-ถอยหลัง โดยการปัดไปทางซ้ายและขวาบนโอเวอร์เลย์วิดีโอ";
 
 "SHORTS" = "Shorts";
+"HIDE_SHORTS_TOPBAR" = "ซ่อนแถบด้านบน";
+"HIDE_SHORTS_TOPBAR_DESC" = "ซ่อนแถบด้านบนทั้งหมดในเครื่องเล่นวิดีโอ";
+"HIDE_SHORTS_SUBBAR" = "ซ่อนแถบย่อย";
+"HIDE_SHORTS_SUBBAR_DESC" = "ซ่อนแถบประเภท Shorts ในเครื่องเล่นวิดีโอ";
 "SHORTS_ONLY" = "โหมด Shorts เท่านั้น";
 "SHORTS_ONLY_DESC" = "จำกัดหน้าฟีดให้แสดงเฉพาะ Shorts เท่านั้น คุณสามารถปิดใช้งานโหมด Shorts เท่านั้นได้โดยการกดค้างด้วยสองนิ้วในเครื่องเล่น Shorts";
 "SHORTS_ONLY_DISABLED" = "ปิดใช้งานโหมด Shorts เท่านั้นแล้ว";

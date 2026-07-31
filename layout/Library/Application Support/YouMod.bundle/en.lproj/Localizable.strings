@@ -1,9 +1,6 @@
 "SETTINGS" = "Settings";
 "INTERFACE" = "Interface";
 
-"SEARCH" = "Search";
-"SEARCH_DESC" = "Search all YouMod settings.";
-
 "LOOP_DISABLED" = "Loop disabled";
 "LOOP_ENABLED" = "Loop enabled";
 
@@ -112,13 +109,6 @@
 "COPY_POST_IMAGE" = "Copy post as image";
 "FIX_DOWNLOAD" = "Fix download errors";
 "FIX_DOWNLOAD_DESC" = "Uses external server to download instead, this doesn't support downloading other audio tracks.";
-"SABR_DOWNLOAD" = "On-device download (SABR)";
-"SABR_DOWNLOAD_DESC" = "Downloads videos entirely on your device with no external server, for versions of YouTube where direct download no longer works. Experimental.";
-"DOWNLOAD_METHOD" = "Download method";
-"DOWNLOAD_METHOD_DESC" = "How videos are downloaded. On-device works on the latest YouTube versions.";
-"METHOD_DIRECT" = "Direct";
-"METHOD_SERVER" = "Server";
-"METHOD_ONDEVICE" = "On-device (SABR)";
 "DOWNLOAD_SERVER" = "Download server";
 "CHOOSE_DOWNLOAD_SERVER" = "Choose download server";
 "DOWNLOAD_COMMENT" = "Save comment information";
@@ -138,6 +128,11 @@
 "TRANSLATE_FAILED" = "Failed to translate, please try again.";
 "SAVE_CURRENT_IMAGE" = "Save current image";
 "COPY_CURRENT_IMAGE" = "Copy current image";
+"DOWNLOAD_METHOD" = "Download method";
+"DOWNLOAD_METHOD_DESC" = "How videos are downloaded. On-device works on the latest YouTube versions.";
+"METHOD_DIRECT" = "Direct";
+"METHOD_SERVER" = "Server";
+"METHOD_ONDEVICE" = "On-device (SABR)";
 
 "APPEARANCE" = "Appearance";
 "OLED_THEME" = "OLED dark mode";
@@ -336,6 +331,10 @@
 "SEEK_ON_OVERLAY_DESC" = "Allows controlling playback seeking by swiping left and right on the video overlay.";
 
 "SHORTS" = "Shorts";
+"HIDE_SHORTS_TOPBAR" = "Hide topbar";
+"HIDE_SHORTS_TOPBAR_DESC" = "Hide all the topbar view in the player.";
+"HIDE_SHORTS_SUBBAR" = "Hide subbar";
+"HIDE_SHORTS_SUBBAR_DESC" = "Hide the Shorts type bar in the player.";
 "SHORTS_ONLY" = "Shorts only mode";
 "SHORTS_ONLY_DESC" = "Limits YouTube functionality to viewing Shorts only. You can disable Shorts only mode by long pressing with two fingers in the Shorts player.";
 "SHORTS_ONLY_DISABLED" = "Shorts only mode has been turned off";

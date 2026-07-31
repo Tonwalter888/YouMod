@@ -8,15 +8,11 @@
 - (BOOL)iosEnableShortsPlayerVideoQuality { return IS_ENABLED(EnablesShortsQuality) ? YES : %orig; }
 - (BOOL)iosEnableShortsPlayerVideoQualityRestartVideo { return IS_ENABLED(EnablesShortsQuality) ? YES : %orig; }
 - (BOOL)iosEnableSimplerTitleInShortsVideoQualityPicker { return IS_ENABLED(EnablesShortsQuality) ? YES : %orig; }
+- (BOOL)enablePlayerBarForVerticalVideoWhenControlsHiddenInFullscreen { return IS_ENABLED(ShowShortsSeekbar) ? YES : %orig; }
 %end
 
 // Always show Shorts seekbar
 %hook YTShortsPlayerViewController
-- (BOOL)shouldAlwaysEnablePlayerBar { return IS_ENABLED(ShowShortsSeekbar) ? YES : %orig; }
-- (BOOL)shouldEnablePlayerBarOnlyOnPause { return IS_ENABLED(ShowShortsSeekbar) ? NO : %orig; }
-%end
-
-%hook YTReelPlayerViewController
 - (BOOL)shouldAlwaysEnablePlayerBar { return IS_ENABLED(ShowShortsSeekbar) ? YES : %orig; }
 - (BOOL)shouldEnablePlayerBarOnlyOnPause { return IS_ENABLED(ShowShortsSeekbar) ? NO : %orig; }
 %end
@@ -29,10 +25,6 @@
 %hook YTColdConfig
 - (BOOL)iosEnableVideoPlayerScrubber { return IS_ENABLED(ShowShortsSeekbar) ? YES : %orig; }
 - (BOOL)mobileShortsTablnlinedExpandWatchOnDismiss { return IS_ENABLED(ShowShortsSeekbar) ? YES : %orig; }
-%end
-
-%hook YTHotConfig
-- (BOOL)enablePlayerBarForVerticalVideoWhenControlsHiddenInFullscreen { return IS_ENABLED(ShowShortsSeekbar) ? YES : %orig; }
 %end
 
 static void YouModMakeAShortsAction(YTReelPlayerViewController *self, YTSingleVideoController *video, YTSingleVideoTime *time) {
@@ -50,6 +42,8 @@ static void YouModMakeAShortsAction(YTReelPlayerViewController *self, YTSingleVi
 static BOOL isShortsOnlyOn = YES;
 
 %hook YTReelPlayerViewController
+- (BOOL)shouldAlwaysEnablePlayerBar { return IS_ENABLED(ShowShortsSeekbar) ? YES : %orig; }
+- (BOOL)shouldEnablePlayerBarOnlyOnPause { return IS_ENABLED(ShowShortsSeekbar) ? NO : %orig; }
 - (void)singleVideo:(YTSingleVideoController *)video currentVideoTimeDidChange:(YTSingleVideoTime *)time {
     %orig;
     YouModMakeAShortsAction(self, video, time);
@@ -121,6 +115,22 @@ static BOOL isShortsOnlyOn = YES;
 }
 %end
 
+%hook YTReelTopBarView
+- (void)layoutSubviews {
+    %orig;
+    if (IS_ENABLED(HideShortsTopbar)) {
+        if (self.superview) {
+            [self removeFromSuperview];
+        }
+    } else if (IS_ENABLED(HideShortsSubbar)) {
+        UIView *subbar = [self valueForKey:@"_pausedStateCarouselView"];
+        if (subbar && subbar.superview) {
+            [subbar removeFromSuperview];
+        }
+    }
+}
+%end
+
 extern void YouModConfigureDownloadButton(_ASDisplayView *view);
 
 // _ASDisplayView filters
@@ -163,7 +173,6 @@ static BOOL isFullscreenEnabled = NO;
     if (!self.YouModFullscreenGesture) {
         self.YouModFullscreenGesture = [[UIPinchGestureRecognizer alloc] initWithTarget:self action:@selector(YouModFullscrrenGestureHandler:)];
         self.YouModFullscreenGesture.delegate = (id<UIGestureRecognizerDelegate>)self;
-
         [self.superview addGestureRecognizer:self.YouModFullscreenGesture];
     }
 }
