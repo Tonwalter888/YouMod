@@ -1,7 +1,6 @@
-# YouMod
-
 <p align=center>
 <img src="https://github.com/grohit1810/YouMod/blob/feature/add-sponsorblock/Icon.jpeg" width="200" height="200"/>
+<h1 align="center">YouMod</h1>
 </p>
 <p align=center>
 <img src="https://img.shields.io/badge/Platform-iOS%20%7C%20iPadOS%2014.0%2B-blue" alt="Badge"/>
