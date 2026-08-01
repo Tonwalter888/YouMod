@@ -54,7 +54,6 @@ This project uses GPLv3 license. See [LICENSE](https://github.com/Tonwalter888/Y
 - [YTLite](https://github.com/dayanch96/YTLite) - dayanch96
 - [YTMusicUltimate](https://github.com/dayanch96/YTMusicUltimate) - dayanch96
 - [OLEDKeyboard](https://github.com/dayanch96/OLEDKeyboard) - dayanch96
-- [YTKACE](https://github.com/Epic0001/YTKACE) - itzzace
 - [YTLitePlus](https://github.com/YTLitePlus/YTLitePlus)
 - [uYouEnhanced](https://github.com/arichornlover/uYouEnhanced) - arichornlover
 - [YTweaks](https://github.com/fosterbarnes/YTweaks) - fosterbarnes

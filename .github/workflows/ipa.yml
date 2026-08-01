@@ -140,7 +140,7 @@ jobs:
           echo "YT_VERSION=$(grep -A 1 '<key>CFBundleVersion</key>' ytextracted/Payload/YouTube.app/Info.plist | grep '<string>' | awk -F'[><]' '{print $3}')" >> $GITHUB_ENV
 
       - name: Install Dependencies
-        run: brew install make ldid
+        run: brew install make ldid meson ninja
 
       - name: Set PATH Environment Variables
         run: |
@@ -290,6 +290,7 @@ jobs:
         if: ${{ inputs.ytuhd }}
         run: |
           cd YTUHD
+          make libvpx dav1d
           make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless SIDELOAD=1
           mv packages/*.deb ${{ github.workspace }}/ytuhd.deb
 
