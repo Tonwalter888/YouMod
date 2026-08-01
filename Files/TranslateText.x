@@ -56,6 +56,8 @@ static void YouModTranslateText(NSString *text, NSString *targetLang, void (^com
     self.containerView = [[UIView alloc] init];
     self.containerView.backgroundColor = [UIColor systemGray6Color];
     self.containerView.layer.cornerRadius = 20.0;
+    self.containerView.layer.borderWidth = 1.0;
+    self.containerView.layer.borderColor = [UIColor separatorColor].CGColor;
     self.containerView.clipsToBounds = YES;
     self.containerView.translatesAutoresizingMaskIntoConstraints = NO;
     [self.view addSubview:self.containerView];

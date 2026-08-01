@@ -343,12 +343,17 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 @property (nonatomic, strong) YTQTMButton *playbackRouteButton;
 @end
 
+@interface YTQTMButton (YouMod)
+- (void)enableNewTouchFeedback;
+@end
+
 @interface YTHeaderView : UIView
 - (void)setStickyNavHeaderEnabled:(BOOL)arg;
 @end
 
 @interface YTNavigationBarTitleView : UIView
 - (void)alignCustomViewToCenterOfWindow;
+- (void)setShouldCenterNavBarTitleView:(BOOL)arg;
 @end
 
 @interface YTSearchViewController : UIViewController

@@ -75,9 +75,10 @@
         self.subviews[1].hidden = YES;
     }
 }
-- (void)setShouldCenterNavBarTitleView:(BOOL)arg {
-    %orig(YES);
+- (BOOL)shouldCenterNavBarTitleView {
+    [self setShouldCenterNavBarTitleView:YES];
     [self alignCustomViewToCenterOfWindow];
+    return YES;
 }
 %end
 
@@ -85,9 +86,5 @@
 - (BOOL)stickyNavHeaderEnabled { 
     if (IS_ENABLED(StickyNavBar)) [self setStickyNavHeaderEnabled:YES];
     return IS_ENABLED(StickyNavBar) ? YES : %orig;
-}
-- (void)setStickyNavHeaderEnabled:(BOOL)arg { 
-    BOOL temp = IS_ENABLED(StickyNavBar) ? YES : arg;
-    %orig(temp);
 }
 %end
