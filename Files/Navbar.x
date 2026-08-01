@@ -75,10 +75,9 @@
         self.subviews[1].hidden = YES;
     }
 }
-- (BOOL)shouldCenterNavBarTitleView {
-    [self setShouldCenterNavBarTitleView:YES];
-    [self alignCustomViewToCenterOfWindow];
-    return YES;
+- (void)setShouldCenterNavBarTitleView:(BOOL)arg {
+    %orig(YES);
+    [self setNeedsLayout];
 }
 %end
 

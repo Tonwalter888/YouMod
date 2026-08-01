@@ -352,8 +352,6 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 @end
 
 @interface YTNavigationBarTitleView : UIView
-- (void)alignCustomViewToCenterOfWindow;
-- (void)setShouldCenterNavBarTitleView:(BOOL)arg;
 @end
 
 @interface YTSearchViewController : UIViewController
