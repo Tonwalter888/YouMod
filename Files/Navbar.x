@@ -75,10 +75,6 @@
         self.subviews[1].hidden = YES;
     }
 }
-- (void)setShouldCenterNavBarTitleView:(BOOL)arg {
-    %orig(YES);
-    [self setNeedsLayout];
-}
 %end
 
 %hook YTHeaderView
