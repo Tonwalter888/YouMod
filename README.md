@@ -1,5 +1,5 @@
 <p align=center>
-<img src="https://github.com/grohit1810/YouMod/blob/feature/add-sponsorblock/Icon.jpeg" width="200" height="200"/>
+<img src="https://github.com/grohit1810/YouMod/blob/feature/add-sponsorblock/Icon.png" width="200" height="200"/>
 <h1 align="center">YouMod</h1>
 </p>
 <p align=center>
