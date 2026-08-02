@@ -54,7 +54,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: theos
-          key: YouMod-18.6-SDK-${{ env.THEOS_COMMIT }}
+          key: YouMod-26.5-SDK-${{ env.THEOS_COMMIT }}
 
       - name: Setup Theos
         if: ${{ steps.cache-theos.outputs.cache-hit != 'true' }}
@@ -62,7 +62,7 @@ jobs:
             git clone --quiet --depth=1 --recurse-submodules https://github.com/roothide/theos.git
             git clone --quiet --depth=1 -n --filter=tree:0 https://github.com/Tonwalter888/iOS-SDKs.git
             cd iOS-SDKs
-            git sparse-checkout set --no-cone iPhoneOS18.6.sdk
+            git sparse-checkout set --no-cone iPhoneOS26.5.sdk
             git checkout --quiet
             mv *.sdk "$THEOS/sdks"
             
