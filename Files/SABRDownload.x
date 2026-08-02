@@ -600,7 +600,7 @@ static YMSABRTrack *SABRMakeTrack(YMSABRFormat *fmt, NSString *ext) {
 // Pass videoItag == 0 for an audio-only download (videoURL is then nil).
 // NB: named SABRRunDownload, not SABRDownload — the latter is a settings-key macro.
 static void SABRRunDownload(uint64_t videoItag, uint64_t audioItag,
-                            void (^progress)(float fraction, unsigned long long bytesDownloaded),
+                            void (^progress)(float fraction, unsigned long long bytesDownloaded, BOOL isAudio),
                             void (^completion)(NSURL *videoURL, NSURL *audioURL, NSString *err)) {
     dispatch_async(SABRQueue(), ^{
         if (!gCapURL || !gCapPlainBody.length) {
@@ -695,7 +695,8 @@ static void SABRRunDownload(uint64_t videoItag, uint64_t audioItag,
                         fracSum += t.endTimeMs ? MIN(1.0f, (float)t.downloadedMs / (float)t.endTimeMs) : 0;
                         bytesTotal += t.bytesWritten;
                     }
-                    if (progress) progress(fracSum / (float)trackList.count, bytesTotal);
+                    BOOL isAudio = (videoTrack != nil && videoTrack.complete && audioTrack != nil && !audioTrack.complete);
+                    if (progress) progress(fracSum / (float)trackList.count, bytesTotal, isAudio);
                     if (allDone) { finish(nil); return; }
                     // Stall guard keys off SEQUENCE advancement, not raw bytes: a request
                     // that can't make progress still returns the same segment (nonzero
@@ -722,10 +723,10 @@ static void SABRRunDownload(uint64_t videoItag, uint64_t audioItag,
 // the main queue. The caller hands the two files to its existing muxer.
 @implementation YMSABR
 + (void)downloadVideoItag:(int)videoItag audioItag:(int)audioItag
-                 progress:(void (^)(float fraction, unsigned long long bytesDownloaded))progress
+                 progress:(void (^)(float fraction, unsigned long long bytesDownloaded, BOOL isAudio))progress
                completion:(void (^)(NSURL *videoURL, NSURL *audioURL, NSString *err))completion {
     SABRRunDownload((uint64_t)videoItag, (uint64_t)audioItag,
-        ^(float f, unsigned long long bytes) { if (progress) dispatch_async(dispatch_get_main_queue(), ^{ progress(f, bytes); }); },
+        ^(float f, unsigned long long bytes, BOOL isAudio) { if (progress) dispatch_async(dispatch_get_main_queue(), ^{ progress(f, bytes, isAudio); }); },
         completion); // SABRRunDownload already delivers completion on the main queue
 }
 + (void)downloadAudioItag:(int)audioItag
@@ -733,7 +734,7 @@ static void SABRRunDownload(uint64_t videoItag, uint64_t audioItag,
                completion:(void (^)(NSURL *audioURL, NSString *err))completion {
     // videoItag 0 → audio-only; deliver just the audio file.
     SABRRunDownload(0, (uint64_t)audioItag,
-        ^(float f, unsigned long long bytes) { if (progress) dispatch_async(dispatch_get_main_queue(), ^{ progress(f, bytes); }); },
+        ^(float f, unsigned long long bytes, BOOL isAudio) { if (progress) dispatch_async(dispatch_get_main_queue(), ^{ progress(f, bytes); }); },
         ^(NSURL *videoURL, NSURL *audioURL, NSString *err) { completion(audioURL, err); });
 }
 + (void)cancelCurrent {

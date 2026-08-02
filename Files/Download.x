@@ -1146,10 +1146,11 @@ static void YouModPresentMenu(YTPlayerViewController *player, NSArray <YouModMen
     unsigned long long durationMs = videoFormat.durationMs ?: audioFormat.durationMs;
     __weak typeof(self) weakSelf = self;
     [YMSABR downloadVideoItag:videoFormat.itag audioItag:audioFormat.itag
-        progress:^(float fraction, unsigned long long bytesDownloaded) {
+        progress:^(float fraction, unsigned long long bytesDownloaded, BOOL isAudio) {
             __strong typeof(weakSelf) self = weakSelf;
             if (!self || self.cancelled) return;
-            [self updateSABRProgressTitle:LOC(@"DOWNLOADING_VIDEO") progress:fraction bytesDownloaded:bytesDownloaded];
+            NSString *title = isAudio ? LOC(@"DOWNLOADING_AUDIO") : LOC(@"DOWNLOADING_VIDEO");
+            [self updateSABRProgressTitle:title progress:fraction bytesDownloaded:bytesDownloaded];
         }
         completion:^(NSURL *videoURL, NSURL *audioURL, NSString *err) {
             __strong typeof(weakSelf) self = weakSelf;

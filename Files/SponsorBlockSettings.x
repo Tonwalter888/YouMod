@@ -276,7 +276,7 @@ static const void *kSBAllFlatRowsKey = &kSBAllFlatRowsKey;
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
     if (self.isFiltering) return self.filteredFlatRows.count;
     if (section == 0) return sbToggleRows().count;  // toggles
-    if (section == 1) return 2;  // sliders
+    if (section == 1) return 3;  // sliders (skip alert, unskip alert, min duration)
     return sbAllCategories().count * 2;  // action + color per category
 }
 
@@ -362,6 +362,7 @@ static const void *kSBAllFlatRowsKey = &kSBAllFlatRowsKey;
     if (sender.tag < 0 || sender.tag >= (NSInteger)rows.count) return;
     NSString *key = rows[sender.tag].key;
     [[NSUserDefaults standardUserDefaults] setBool:sender.on forKey:key];
+    [self.tableView reloadData];
 }
 
 #pragma mark - Slider Cells (Section 1)
@@ -371,10 +372,29 @@ static const void *kSBAllFlatRowsKey = &kSBAllFlatRowsKey;
     cell.backgroundColor = [UIColor clearColor];
     cell.selectionStyle = UITableViewCellSelectionStyleNone;
 
-    NSString *title = (row == 0) ? LOC(@"SB_SKIP_ALERT_DURATION") : LOC(@"SB_UNSKIP_ALERT_DURATION");
-    NSString *key = (row == 0) ? SBSkipAlertDuration : SBUnskipAlertDuration;
-    float currentVal = [[NSUserDefaults standardUserDefaults] floatForKey:key];
-    if (currentVal <= 0) currentVal = SBAlertDurationDefault;
+    NSString *title;
+    NSString *key;
+    float minVal = SBAlertDurationMin;
+    float maxVal = SBAlertDurationMax;
+    float currentVal = 0;
+
+    if (row == 0) {
+        title = LOC(@"SB_SKIP_ALERT_DURATION");
+        key = SBSkipAlertDuration;
+        currentVal = [[NSUserDefaults standardUserDefaults] floatForKey:key];
+        if (currentVal <= 0) currentVal = SBAlertDurationDefault;
+    } else if (row == 1) {
+        title = LOC(@"SB_UNSKIP_ALERT_DURATION");
+        key = SBUnskipAlertDuration;
+        currentVal = [[NSUserDefaults standardUserDefaults] floatForKey:key];
+        if (currentVal <= 0) currentVal = SBAlertDurationDefault;
+    } else {
+        title = LOC(@"SB_MIN_DURATION_SLIDER");
+        key = SBMinDuration;
+        minVal = 0.0;
+        maxVal = 60.0;
+        currentVal = [[NSUserDefaults standardUserDefaults] floatForKey:key];
+    }
 
     UILabel *titleLabel = [[UILabel alloc] init];
     titleLabel.text = title;
@@ -383,8 +403,8 @@ static const void *kSBAllFlatRowsKey = &kSBAllFlatRowsKey;
     titleLabel.translatesAutoresizingMaskIntoConstraints = NO;
 
     UISlider *slider = [[UISlider alloc] init];
-    slider.minimumValue = SBAlertDurationMin;
-    slider.maximumValue = SBAlertDurationMax;
+    slider.minimumValue = minVal;
+    slider.maximumValue = maxVal;
     slider.value = currentVal;
     slider.minimumTrackTintColor = SBControlTintColor();
     slider.maximumTrackTintColor = [UIColor colorWithWhite:0.3 alpha:1.0];
@@ -426,7 +446,11 @@ static const void *kSBAllFlatRowsKey = &kSBAllFlatRowsKey;
 }
 
 - (void)sliderChanged:(UISlider *)sender {
-    NSString *key = (sender.tag == 0) ? SBSkipAlertDuration : SBUnskipAlertDuration;
+    NSString *key;
+    if (sender.tag == 0) key = SBSkipAlertDuration;
+    else if (sender.tag == 1) key = SBUnskipAlertDuration;
+    else key = SBMinDuration;
+
     int rounded = (int)roundf(sender.value);
     sender.value = rounded;
     [[NSUserDefaults standardUserDefaults] setFloat:(float)rounded forKey:key];
@@ -483,7 +507,7 @@ static const void *kSBAllFlatRowsKey = &kSBAllFlatRowsKey;
     // duplication — each action's label is resolved through SBActionLocKey.
     NSArray<NSNumber *> *actionOptions;
     if (isHighlight) {
-        actionOptions = @[@(SBSegmentActionDisable), @(SBSegmentActionAsk), @(SBSegmentActionDisplay)];
+        actionOptions = @[@(SBSegmentActionDisable), @(SBSegmentActionAutoSkip), @(SBSegmentActionAsk), @(SBSegmentActionDisplay)];
     } else {
         actionOptions = @[@(SBSegmentActionDisable), @(SBSegmentActionAutoSkip), @(SBSegmentActionAsk), @(SBSegmentActionDisplay)];
     }
@@ -632,10 +656,12 @@ NSArray<YMSearchRow *> *sbFlatRowsWithRenderer(SBSettingsViewController *rendere
         [rows addObject:row];
     }
 
-    // Section 1 — the two alert-duration sliders.
-    for (NSInteger i = 0; i < 2; i++) {
+    // Section 1 — the alert-duration sliders & min duration slider.
+    for (NSInteger i = 0; i < 3; i++) {
         YMSearchRow *row = [YMSearchRow new];
-        row.searchText = (i == 0) ? LOC(@"SB_SKIP_ALERT_DURATION") : LOC(@"SB_UNSKIP_ALERT_DURATION");
+        if (i == 0) row.searchText = LOC(@"SB_SKIP_ALERT_DURATION");
+        else if (i == 1) row.searchText = LOC(@"SB_UNSKIP_ALERT_DURATION");
+        else row.searchText = LOC(@"SB_MIN_DURATION_SLIDER");
         row.cellHeight = 70;
         row.makeCell = ^UITableViewCell *(UITableView *tv) { return [renderer_w sliderCellForRow:i tableView:tv]; };
         [rows addObject:row];

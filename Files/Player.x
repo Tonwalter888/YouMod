@@ -705,6 +705,9 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
 %new
 - (BOOL)gestureRecognizerShouldBegin:(UIGestureRecognizer *)gestureRecognizer {
     if (gestureRecognizer == self.YouModPanGesture) {
+        if (self.YouModHoldGesture && (self.YouModHoldGesture.state == UIGestureRecognizerStateBegan || self.YouModHoldGesture.state == UIGestureRecognizerStateChanged)) {
+            return NO;
+        }
         // Return NO if user is choosing other videos in fullscreen
         YTMainAppVideoPlayerOverlayViewController *ovcon = [self activeVideoPlayerOverlay];
         YTMainAppVideoPlayerOverlayView *ov = [ovcon videoPlayerOverlayView];
@@ -1014,6 +1017,9 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
     if (gestureRecognizer == self.YouModPanGesture && [otherGestureRecognizer isKindOfClass:[UIPanGestureRecognizer class]]) {
         return YES;
     }
+    if (gestureRecognizer == self.YouModHoldGesture) {
+        return YES;
+    }
     return NO;
 }
 
@@ -1021,6 +1027,9 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
     if (gestureRecognizer == self.YouModPanGesture) {
         return NO; 
+    }
+    if (gestureRecognizer == self.YouModHoldGesture || otherGestureRecognizer == self.YouModHoldGesture) {
+        return NO;
     }
     return YES;
 }
@@ -1355,10 +1364,10 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
         
         BOOL stateChanged = NO;
         
-        if (!isPendingToggle && dragDistanceY > 50.0) {
+        if (!isPendingToggle && dragDistanceY > 40.0) {
             isPendingToggle = YES;
             stateChanged = YES;
-        } else if (isPendingToggle && dragDistanceY < 30.0) {
+        } else if (isPendingToggle && dragDistanceY < 20.0) {
             isPendingToggle = NO;
             stateChanged = YES;
         }
@@ -1388,7 +1397,7 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
                gesture.state == UIGestureRecognizerStateFailed) {
 
         BOOL finalLockState = initialLockState;
-        if (gesture.state == UIGestureRecognizerStateEnded) {
+        if (gesture.state == UIGestureRecognizerStateEnded || (gesture.state == UIGestureRecognizerStateCancelled && isPendingToggle)) {
             if (IS_ENABLED(LockSpeed) && isPendingToggle) {
                 finalLockState = !initialLockState;
                 [defaults setBool:finalLockState forKey:GlobalSpeedLocked];

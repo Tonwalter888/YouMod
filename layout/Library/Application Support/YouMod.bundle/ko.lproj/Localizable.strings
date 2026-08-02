@@ -400,8 +400,6 @@
 "BACKGROUND_PLAYBACK_DESC" = "유튜브 앱을 닫거나 스마트폰 화면을 꺼도 소리가 계속 끊기지 않고 나오게 해줍니다.";
 "DISABLES_SHORTS_PIP" = "Shorts PIP 모드 끄기";
 "DISABLES_SHORTS_PIP_DESC" = "Shorts PIP 화면을 작은 팝업창으로 띄우는 기능을 끕니다. (완벽하게 꺼지지 않을 수도 있습니다.)";
-"DISABLE_HINTS" = "도움말 힌트 끄기";
-"DISABLE_HINTS_DESC" = "앱 사용법을 알려주는 튜토리얼 힌트나 팝업창을 안 보이게 막습니다.";
 "BLOCK_UPGRADE_DIALOGS" = "업데이트 강요 알림 차단";
 "BLOCK_UPGRADE_DIALOGS_DESC" = "유튜브 앱을 새 버전으로 업데이트하라고 귀찮게 뜨는 팝업창을 막아줍니다.";
 "ARE_YOU_THERE_DIALOG" = "'계속 시청하시겠어요?' 팝업 숨기기";
@@ -525,3 +523,4 @@
 "SB_SECTION_MAIN" = "Main";
 "SB_SKIP_ALERT_DURATION" = "Skip alert duration";
 "SB_UNSKIP_ALERT_DURATION" = "Unskip alert duration";
+"SB_MIN_DURATION_SLIDER" = "Minimum segment duration to skip";

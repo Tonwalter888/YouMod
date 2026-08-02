@@ -12,6 +12,9 @@ static const NSInteger TweakSection = 'ytmo';
 
 @interface YMSettingsItem : NSObject
 - (instancetype)visibleWhenKey:(NSString *)key equals:(NSInteger)value; // show row only while INTFORVAL(key)==value
+- (instancetype)visibleWhenBoolKey:(NSString *)key equals:(BOOL)value;
+- (instancetype)visibleWhenBoolKey:(NSString *)key;
+- (instancetype)visibleWhenKey:(NSString *)key isGreaterThan:(NSInteger)value;
 @end
 extern void YMPushSubSettings(NSString *title, NSArray<YMSettingsItem *> *items, id settingsVC, id parentResponder);
 extern YMSettingsItem *YMToggle(NSString *title, NSString *subtitle, NSString *key);
@@ -273,7 +276,7 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
             [YMToggle(YMLOC(@"DISABLES_CAPTION_TRACK"), YMLOC(@"DISABLES_CAPTION_TRACK_DESC"), DisablesCaptionTrack) visibleWhenKey:CaptionTrack equals:2],
             YMHeader(@""),
             YMPicker(YMLOC(@"HOLD_TO_SPEED"), YMLOC(@"HOLD_TO_SPEED_DESC"), HoldToSpeedIndex, (@[YMLOC(@"DEFAULT"), @"0.25x", @"0.5x", @"0.75x", @"1x", @"1.25x", @"1.5x", @"1.75x", @"2x", @"3x", @"4x", @"5x"]), 0),
-            YMToggle(YMLOC(@"LOCK_SPEED"), YMLOC(@"LOCK_SPEED_DESC"), LockSpeed),
+            [YMToggle(YMLOC(@"LOCK_SPEED"), YMLOC(@"LOCK_SPEED_DESC"), LockSpeed) visibleWhenKey:HoldToSpeedIndex isGreaterThan:0],
             YMHeader(YMLOC(@"INTERFACE")),
             YMToggle(YMLOC(@"MUTE_BUTTON"), YMLOC(@"MUTE_BUTTON_DESC"), MuteButton),
             YMToggle(YMLOC(@"SPEED_BUTTON"), YMLOC(@"SPEED_BUTTON_DESC"), SpeedButton),
@@ -286,7 +289,7 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
             YMToggle(YMLOC(@"HIDE_CAPTIONS_BUTTON"), YMLOC(@"HIDE_CAPTIONS_BUTTON_DESC"), HideCaptionsButton),
             YMToggle(YMLOC(@"HIDE_CAST_BUTTON_PLAYER"), YMLOC(@"HIDE_CAST_BUTTON_PLAYER_DESC"), HideCastButtonPlayer),
             YMToggle(YMLOC(@"HIDE_NEXT_AND_PREV_BUTTON"), YMLOC(@"HIDE_NEXT_AND_PREV_BUTTON_DESC"), HideNextAndPrevButtons),
-            [YMToggle(YMLOC(@"REPLACE_PREVNEXT_BUTTONS"), YMLOC(@"REPLACE_PREVNEXT_BUTTONS_DESC"), ReplacePrevNextButtons) visibleWhenKey:HideNextAndPrevButtons equals:0],
+            [YMToggle(YMLOC(@"REPLACE_PREVNEXT_BUTTONS"), YMLOC(@"REPLACE_PREVNEXT_BUTTONS_DESC"), ReplacePrevNextButtons) visibleWhenBoolKey:HideNextAndPrevButtons equals:NO],
             YMToggle(YMLOC(@"REMOVE_AMBIANT"), YMLOC(@"REMOVE_AMBIANT_DESC"), RemoveAmbiant),
             YMToggle(YMLOC(@"REMOVE_DARK_OVERLAY"), YMLOC(@"REMOVE_DARK_OVERLAY_DESC"), RemoveDarkOverlay),
             YMToggle(YMLOC(@"HIDE_END_SCREEN"), YMLOC(@"HIDE_END_SCREEN_DESC"), HideEndScreenCards),
@@ -298,7 +301,7 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
             YMToggle(YMLOC(@"DISABLES_SHOW_REMAINING"), YMLOC(@"DISABLES_SHOW_REMAINING_DESC"), DisablesShowRemaining),
             YMToggle(YMLOC(@"ALWAYS_SHOW_REMAINING"), YMLOC(@"ALWAYS_SHOW_REMAINING_DESC"), AlwaysShowRemaining),
             YMToggle(YMLOC(@"SHOW_REMAINING_EXTRA"), YMLOC(@"SHOW_REMAINING_EXTRA_DESC"), ShowExtraTimeRemaining),
-            [YMToggle(YMLOC(@"USES_24_HOURS_TIME"), YMLOC(@"USES_24_HOURS_TIME_DESC"), Uses24HoursTime) visibleWhenKey:ShowExtraTimeRemaining equals:1], 
+            [YMToggle(YMLOC(@"USES_24_HOURS_TIME"), YMLOC(@"USES_24_HOURS_TIME_DESC"), Uses24HoursTime) visibleWhenBoolKey:ShowExtraTimeRemaining], 
             YMToggle(YMLOC(@"OLD_QUALITY_PICKER"), YMLOC(@"OLD_QUALITY_PICKER_DESC"), OldQualityPicker),
             YMToggle(YMLOC(@"EXTRA_SPEED"), YMLOC(@"EXTRA_SPEED_DESC"), ExtraSpeed),
             // YMToggle(YMLOC(@"USE_ANOTHER_MINIPLAYER"), YMLOC(@"USE_ANOTHER_MINIPLAYER_DESC"), UseAnotherMiniplayer),
@@ -308,9 +311,9 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
             YMToggle(YMLOC(@"HIDE_COMMENTS_PREVIEW"), YMLOC(@"HIDE_COMMENTS_PREVIEW_DESC"), HideCommentsPreview),
             YMHeader(YMLOC(@"CONTROL_CENTER")),
             YMToggle(YMLOC(@"SKIP_BACKWARD"), YMLOC(@"SKIP_BACKWARD_DESC"), SkipBackwardEnabled),
-            [YMSlider(YMLOC(@"REWIND_SECONDS"), nil, RewindSeconds, 5, 60, 5, 10) visibleWhenKey:SkipBackwardEnabled equals:1],
+            [YMSlider(YMLOC(@"REWIND_SECONDS"), nil, RewindSeconds, 5, 60, 5, 10) visibleWhenBoolKey:SkipBackwardEnabled],
             YMToggle(YMLOC(@"SKIP_FORWARD"), YMLOC(@"SKIP_FORWARD_DESC"), SkipForwardEnabled),
-            [YMSlider(YMLOC(@"FORWARD_SECONDS"), nil, ForwardSeconds, 5, 60, 5, 10) visibleWhenKey:SkipForwardEnabled equals:1],
+            [YMSlider(YMLOC(@"FORWARD_SECONDS"), nil, ForwardSeconds, 5, 60, 5, 10) visibleWhenBoolKey:SkipForwardEnabled],
             YMHeader(YMLOC(@"PLAYER_ACTIONS")),
             YMPicker(YMLOC(@"DEFAULT_SPEED"), YMLOC(@"DEFAULT_SPEED_DESC"), AutoSpeedIndex, (@[YMLOC(@"DISABLED"), @"0.25x", @"0.5x", @"0.75x", @"1x", @"1.25x", @"1.5x", @"1.75x", @"2x", @"3x", @"4x", @"5x"]), 0),
             YMToggle(YMLOC(@"FORCE_MINIPLAYER"), YMLOC(@"FORCE_MINIPLAYER_DESC"), ForceMiniPlayer),
@@ -320,12 +323,12 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
             YMToggle(YMLOC(@"AUTO_EXIT_FULLSCREEN"), YMLOC(@"AUTO_EXIT_FULLSCREEN_DESC"), AutoExitFullScreen),
             YMHeader(YMLOC(@"GESTURE_HEADER")),
             YMToggle(YMLOC(@"GESTURES"), YMLOC(@"GESTURES_DESC"), GestureControls),
-            [YMPicker(YMLOC(@"GESTURE_AREA"), YMLOC(@"GESTURE_AREA_DESC"), GestureActivationArea, (@[@"10%", @"15%", @"20%", @"25%", @"30%", @"35%", @"40%", @"45%", @"50%"]), 1) visibleWhenKey:GestureControls equals:1],
-            [YMPicker(YMLOC(@"LEFT_SIDE_GESTURE"), nil, LeftSideGesture, (@[YMLOC(@"GESTURE_NONE"), YMLOC(@"GESTURE_BRIGHTNESS"), YMLOC(@"GESTURE_VOLUME"), YMLOC(@"GESTURE_SPEED")]), 1) visibleWhenKey:GestureControls equals:1],
-            [YMPicker(YMLOC(@"RIGHT_SIDE_GESTURE"), nil, RightSideGesture, (@[YMLOC(@"GESTURE_NONE"), YMLOC(@"GESTURE_BRIGHTNESS"), YMLOC(@"GESTURE_VOLUME"), YMLOC(@"GESTURE_SPEED")]), 2) visibleWhenKey:GestureControls equals:1],
-            [YMToggle(YMLOC(@"GESTURE_HUD"), YMLOC(@"GESTURE_HUD_DESC"), GestureHUD) visibleWhenKey:GestureControls equals:1],
-            [YMPicker(YMLOC(@"GESTURE_HUD_SIZE"), YMLOC(@"GESTURE_HUD_SIZE_DESC"), GestureHUDSize, (@[YMLOC(@"SMALL"), YMLOC(@"NORMAL"), YMLOC(@"LARGE"), YMLOC(@"EXTRALARGE"), YMLOC(@"MAX")]), 1) visibleWhenKey:GestureHUD equals:1],
-            [YMPicker(YMLOC(@"GESTURE_HUD_POSITION"), YMLOC(@"GESTURE_HUD_POSITION_DESC"), GestureHUDPosition, (@[YMLOC(@"TOP"), YMLOC(@"MIDDLE"), YMLOC(@"BOTTOM")]), 0) visibleWhenKey:GestureHUD equals:1], 
+            [YMPicker(YMLOC(@"GESTURE_AREA"), YMLOC(@"GESTURE_AREA_DESC"), GestureActivationArea, (@[@"10%", @"15%", @"20%", @"25%", @"30%", @"35%", @"40%", @"45%", @"50%"]), 1) visibleWhenBoolKey:GestureControls],
+            [YMPicker(YMLOC(@"LEFT_SIDE_GESTURE"), nil, LeftSideGesture, (@[YMLOC(@"GESTURE_NONE"), YMLOC(@"GESTURE_BRIGHTNESS"), YMLOC(@"GESTURE_VOLUME"), YMLOC(@"GESTURE_SPEED")]), 1) visibleWhenBoolKey:GestureControls],
+            [YMPicker(YMLOC(@"RIGHT_SIDE_GESTURE"), nil, RightSideGesture, (@[YMLOC(@"GESTURE_NONE"), YMLOC(@"GESTURE_BRIGHTNESS"), YMLOC(@"GESTURE_VOLUME"), YMLOC(@"GESTURE_SPEED")]), 2) visibleWhenBoolKey:GestureControls],
+            [YMToggle(YMLOC(@"GESTURE_HUD"), YMLOC(@"GESTURE_HUD_DESC"), GestureHUD) visibleWhenBoolKey:GestureControls],
+            [YMPicker(YMLOC(@"GESTURE_HUD_SIZE"), YMLOC(@"GESTURE_HUD_SIZE_DESC"), GestureHUDSize, (@[YMLOC(@"SMALL"), YMLOC(@"NORMAL"), YMLOC(@"LARGE"), YMLOC(@"EXTRALARGE"), YMLOC(@"MAX")]), 1) visibleWhenBoolKey:GestureHUD],
+            [YMPicker(YMLOC(@"GESTURE_HUD_POSITION"), YMLOC(@"GESTURE_HUD_POSITION_DESC"), GestureHUDPosition, (@[YMLOC(@"TOP"), YMLOC(@"MIDDLE"), YMLOC(@"BOTTOM")]), 0) visibleWhenBoolKey:GestureHUD], 
             YMHeader(@""),
             YMToggle(YMLOC(@"TAP_TO_SEEK"), YMLOC(@"TAP_TO_SEEK_DESC"), TapToSeek),
             YMToggle(YMLOC(@"SEEK_ON_OVERLAY"), YMLOC(@"SEEK_ON_OVERLAY_DESC"), SeekOnOverlay),

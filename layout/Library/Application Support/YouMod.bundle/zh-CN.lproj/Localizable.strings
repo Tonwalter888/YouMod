@@ -523,3 +523,4 @@
 "SB_SECTION_MAIN" = "Main";
 "SB_SKIP_ALERT_DURATION" = "Skip alert duration";
 "SB_UNSKIP_ALERT_DURATION" = "Unskip alert duration";
+"SB_MIN_DURATION_SLIDER" = "Minimum segment duration to skip";

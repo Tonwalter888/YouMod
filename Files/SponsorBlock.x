@@ -416,14 +416,18 @@ UIColor *SBColorFromHex(NSString *hexString) {
         if (action == SBSegmentActionSkipTo) continue;
 
         float duration = segment.endTime - segment.startTime;
-        if (duration < minDuration) continue;
+        if (minDuration > 0 && duration < minDuration) continue;
 
         if (currentTime >= segment.startTime && currentTime < segment.endTime - SBSegmentEndGuardSeconds) {
             NSString *segID = segment.UUID;
             if ([self.sbSkippedSegments containsObject:segID]) continue;
 
             if (action == SBSegmentActionAutoSkip) {
-                [self sbPerformSkip:segment];
+                if ([segment.category isEqualToString:@"poi_highlight"]) {
+                    [self sbSkipToHighlight];
+                } else {
+                    [self sbPerformSkip:segment];
+                }
             } else if (action == SBSegmentActionAsk) {
                 [self sbShowAskNotification:segment];
             }

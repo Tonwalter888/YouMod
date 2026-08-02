@@ -790,7 +790,7 @@ extern BOOL isPad();
 // mp4 + audio m4a) for the existing muxer; progress/completion on the main queue.
 @interface YMSABR : NSObject
 + (void)downloadVideoItag:(int)videoItag audioItag:(int)audioItag
-                 progress:(void (^)(float fraction, unsigned long long bytesDownloaded))progress
+                 progress:(void (^)(float fraction, unsigned long long bytesDownloaded, BOOL isAudio))progress
                completion:(void (^)(NSURL *videoURL, NSURL *audioURL, NSString *err))completion;
 + (void)downloadAudioItag:(int)audioItag
                  progress:(void (^)(float fraction, unsigned long long bytesDownloaded))progress

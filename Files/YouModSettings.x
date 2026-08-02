@@ -31,10 +31,18 @@ typedef NS_ENUM(NSInteger, YMRowType) {
 @property (nonatomic, assign) float sliderMax;
 @property (nonatomic, assign) float sliderStep;
 @property (nonatomic, assign) float sliderDefault;
-// Optional visibility predicate: when set, the row is shown only while the integer
-// default for `visibilityKey` equals `visibilityValue`. Chained onto any constructor.
+typedef NS_ENUM(NSInteger, YMVisibilityConditionType) {
+    YMVisibilityConditionNone = 0,
+    YMVisibilityConditionIntEquals,
+    YMVisibilityConditionBoolEquals,
+    YMVisibilityConditionIntGreaterThan
+};
+
+// Optional visibility predicate: when set, the row is shown only while the condition evaluates to true.
+@property (nonatomic, assign) YMVisibilityConditionType visibilityCondition;
 @property (nonatomic, strong) NSString *visibilityKey;
 @property (nonatomic, assign) NSInteger visibilityValue;
+@property (nonatomic, assign) BOOL visibilityBoolValue;
 + (instancetype)toggleWithTitle:(NSString *)title subtitle:(NSString *)subtitle key:(NSString *)key;
 + (instancetype)sliderWithTitle:(NSString *)title subtitle:(NSString *)subtitle key:(NSString *)key min:(float)min max:(float)max step:(float)step defaultValue:(float)defaultValue;
 + (instancetype)pickerWithTitle:(NSString *)title subtitle:(NSString *)subtitle key:(NSString *)key options:(NSArray<NSString *> *)options defaultValue:(NSInteger)defaultValue;
@@ -44,6 +52,9 @@ typedef NS_ENUM(NSInteger, YMRowType) {
 + (instancetype)textSegmentWithTitle:(NSString *)title key:(NSString *)key labels:(NSArray<NSString *> *)labels defaultValue:(NSInteger)defaultValue;
 + (instancetype)imageSegmentWithTitle:(NSString *)title key:(NSString *)key images:(NSArray<UIImage *> *)images defaultValue:(NSInteger)defaultValue;
 - (instancetype)visibleWhenKey:(NSString *)key equals:(NSInteger)value; // chainable
+- (instancetype)visibleWhenBoolKey:(NSString *)key equals:(BOOL)value; // chainable
+- (instancetype)visibleWhenBoolKey:(NSString *)key; // chainable
+- (instancetype)visibleWhenKey:(NSString *)key isGreaterThan:(NSInteger)value; // chainable
 @end
 
 @implementation YMSettingsItem
@@ -130,6 +141,25 @@ typedef NS_ENUM(NSInteger, YMRowType) {
 - (instancetype)visibleWhenKey:(NSString *)key equals:(NSInteger)value {
     self.visibilityKey = key;
     self.visibilityValue = value;
+    self.visibilityCondition = YMVisibilityConditionIntEquals;
+    return self;
+}
+
+- (instancetype)visibleWhenBoolKey:(NSString *)key equals:(BOOL)value {
+    self.visibilityKey = key;
+    self.visibilityBoolValue = value;
+    self.visibilityCondition = YMVisibilityConditionBoolEquals;
+    return self;
+}
+
+- (instancetype)visibleWhenBoolKey:(NSString *)key {
+    return [self visibleWhenBoolKey:key equals:YES];
+}
+
+- (instancetype)visibleWhenKey:(NSString *)key isGreaterThan:(NSInteger)value {
+    self.visibilityKey = key;
+    self.visibilityValue = value;
+    self.visibilityCondition = YMVisibilityConditionIntGreaterThan;
     return self;
 }
 
@@ -181,8 +211,18 @@ static const void *kYMPageFilterKey = &kYMPageFilterKey;
 // A row with a visibility predicate is shown only while its key's current integer
 // value matches (lets rows like the server picker appear only for the right method).
 - (BOOL)isItemVisible:(YMSettingsItem *)item {
-    if (!item.visibilityKey) return YES;
-    return [[NSUserDefaults standardUserDefaults] integerForKey:item.visibilityKey] == item.visibilityValue;
+    if (!item.visibilityKey || item.visibilityCondition == YMVisibilityConditionNone) return YES;
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    switch (item.visibilityCondition) {
+        case YMVisibilityConditionIntEquals:
+            return [defaults integerForKey:item.visibilityKey] == item.visibilityValue;
+        case YMVisibilityConditionBoolEquals:
+            return [defaults boolForKey:item.visibilityKey] == item.visibilityBoolValue;
+        case YMVisibilityConditionIntGreaterThan:
+            return [defaults integerForKey:item.visibilityKey] > item.visibilityValue;
+        default:
+            return YES;
+    }
 }
 
 - (NSArray<YMSettingsItem *> *)displayedItems {
@@ -388,6 +428,7 @@ static const void *kYMPageFilterKey = &kYMPageFilterKey;
     NSString *key = objc_getAssociatedObject(sender, kYMSwitchKeyAssoc);
     if (key) {
         [[NSUserDefaults standardUserDefaults] setBool:sender.on forKey:key];
+        [self.tableView reloadData];
     }
 }
 
@@ -564,6 +605,7 @@ static const void *kYMPageFilterKey = &kYMPageFilterKey;
     NSString *key = objc_getAssociatedObject(sender, kYMSwitchKeyAssoc);
     if (key) {
         [[NSUserDefaults standardUserDefaults] setInteger:sender.selectedSegmentIndex forKey:key];
+        [self.tableView reloadData];
     }
 }
 

@@ -34,6 +34,7 @@
 
     self.imageView = [[UIImageView alloc] initWithImage:self.thumbnailImage];
     self.imageView.contentMode = UIViewContentModeScaleAspectFit;
+    self.imageView.clipsToBounds = YES;
     self.imageView.translatesAutoresizingMaskIntoConstraints = NO;
     [self.scrollView addSubview:self.imageView];
 
@@ -97,7 +98,7 @@
             [closeBtn.topAnchor constraintEqualToAnchor:bgContainer.safeAreaLayoutGuide.topAnchor constant:12],
             [closeBtn.leadingAnchor constraintEqualToAnchor:bgContainer.safeAreaLayoutGuide.leadingAnchor constant:12],
             [moreBtn.topAnchor constraintEqualToAnchor:bgContainer.safeAreaLayoutGuide.topAnchor constant:12],
-            [moreBtn.trailingAnchor constraintEqualToAnchor:bgContainer.safeAreaLayoutGuide.trailingAnchor constant:-12],
+            [moreBtn.trailingAnchor constraintEqualToAnchor:bgContainer.trailingAnchor constant:-12],
         ]];
     }
 
