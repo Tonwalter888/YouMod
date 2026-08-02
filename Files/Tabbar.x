@@ -326,6 +326,9 @@ static BOOL isTabSelected = NO;
         UIViewController *topVC = YouModTopViewController(nil);
         YMOpenLinkFromClipboard(topVC, NO);
     }
+    if (IS_ENABLED(HideSubbar)) {
+        [[NSNotificationCenter defaultCenter] postNotificationName:@"YouModReloadHeaderBar" object:nil];
+    }
 }
 %end
 

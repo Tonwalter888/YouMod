@@ -7,6 +7,13 @@
     int temp = IS_ENABLED(HideSubbar) ? 0 : arg1;
     %orig(temp);
 }
+- (id)initWithChildView:(id)arg1 headerView:(id)arg2 {
+    self = %orig;
+    if (self && IS_ENABLED(HideSubbar)) {
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(setNeedsLayout) name:@"YouModReloadHeaderBar" object:nil];
+    }
+    return self;
+}
 %end
 
 // Hide voice search button
