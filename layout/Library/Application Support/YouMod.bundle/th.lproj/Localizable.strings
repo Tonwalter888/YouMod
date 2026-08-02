@@ -521,7 +521,7 @@
 "SB_JUMPED_TO_HIGHLIGHT" = "ข้ามไปยังไฮไลท์แล้ว";
 "SB_JUMP_TO_HIGHLIGHT" = "พบช่วงไฮไลท์ ต้องการข้ามไปดูเลยหรือไม่?";
 "SB_SEGMENT_COLOR_SUFFIX" = "สีประจำช่วง";
-"SB_SECTION_MAIN" = "หลัก";
+"SB_SECTION_MAIN" = "ตั้งค่าหลัก";
 "SB_SKIP_ALERT_DURATION" = "ระยะเวลาแสดงการแจ้งเตือนเมื่อข้าม";
 "SB_UNSKIP_ALERT_DURATION" = "ระยะเวลาแสดงการแจ้งเตือนเมื่อยกเลิกการข้าม";
 "SB_MIN_DURATION_SLIDER" = "ความยาวขั้นต่ำของช่วงวิดีโอที่จะให้ข้าม";
