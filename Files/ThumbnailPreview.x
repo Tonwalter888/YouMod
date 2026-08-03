@@ -6,10 +6,14 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
 
+    self.preferredContentSize = CGSizeMake(650, 650);
+    self.view.backgroundColor = [UIColor colorWithWhite:0.0 alpha:0.85];
+
     UIView *bgContainer = [[UIView alloc] init];
     bgContainer.translatesAutoresizingMaskIntoConstraints = NO;
     bgContainer.clipsToBounds = YES;
     bgContainer.backgroundColor = [UIColor clearColor];
+    bgContainer.layer.cornerRadius = 0;
     [self.view addSubview:bgContainer];
 
     UIImageView *bgImageView = [[UIImageView alloc] initWithImage:self.thumbnailImage];
@@ -63,44 +67,19 @@
 
     NSMutableArray *constraints = [NSMutableArray array];
 
-    if (isPad()) {
-        self.view.backgroundColor = [UIColor colorWithWhite:0.0 alpha:0.5];
-        bgContainer.layer.cornerRadius = 16;
-        
-        [constraints addObject:[bgContainer.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor]];
-        [constraints addObject:[bgContainer.centerYAnchor constraintEqualToAnchor:self.view.centerYAnchor]];
-        [constraints addObject:[bgContainer.widthAnchor constraintEqualToAnchor:bgContainer.heightAnchor]];
-        [constraints addObject:[bgContainer.widthAnchor constraintLessThanOrEqualToAnchor:self.view.safeAreaLayoutGuide.widthAnchor multiplier:0.9]];
-        [constraints addObject:[bgContainer.heightAnchor constraintLessThanOrEqualToAnchor:self.view.safeAreaLayoutGuide.heightAnchor multiplier:0.9]];
-        
-        NSLayoutConstraint *expandBox = [bgContainer.widthAnchor constraintEqualToConstant:2000];
-        expandBox.priority = UILayoutPriorityDefaultHigh; 
-        [constraints addObject:expandBox];
+    [constraints addObjectsFromArray:@[
+        [bgContainer.topAnchor constraintEqualToAnchor:self.view.topAnchor],
+        [bgContainer.bottomAnchor constraintEqualToAnchor:self.view.bottomAnchor],
+        [bgContainer.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor],
+        [bgContainer.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor]
+    ]];
 
-        [constraints addObjectsFromArray:@[
-            [closeBtn.topAnchor constraintEqualToAnchor:bgContainer.topAnchor constant:12],
-            [closeBtn.leadingAnchor constraintEqualToAnchor:bgContainer.leadingAnchor constant:12],
-            [moreBtn.topAnchor constraintEqualToAnchor:bgContainer.topAnchor constant:12],
-            [moreBtn.trailingAnchor constraintEqualToAnchor:bgContainer.trailingAnchor constant:-12],
-        ]];
-    } else {
-        self.view.backgroundColor = [UIColor clearColor];
-        bgContainer.layer.cornerRadius = 0;
-        
-        [constraints addObjectsFromArray:@[
-            [bgContainer.topAnchor constraintEqualToAnchor:self.view.topAnchor],
-            [bgContainer.bottomAnchor constraintEqualToAnchor:self.view.bottomAnchor],
-            [bgContainer.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor],
-            [bgContainer.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor]
-        ]];
-
-        [constraints addObjectsFromArray:@[
-            [closeBtn.topAnchor constraintEqualToAnchor:bgContainer.safeAreaLayoutGuide.topAnchor constant:12],
-            [closeBtn.leadingAnchor constraintEqualToAnchor:bgContainer.safeAreaLayoutGuide.leadingAnchor constant:12],
-            [moreBtn.topAnchor constraintEqualToAnchor:bgContainer.safeAreaLayoutGuide.topAnchor constant:12],
-            [moreBtn.trailingAnchor constraintEqualToAnchor:bgContainer.trailingAnchor constant:-12],
-        ]];
-    }
+    [constraints addObjectsFromArray:@[
+        [closeBtn.topAnchor constraintEqualToAnchor:bgContainer.safeAreaLayoutGuide.topAnchor constant:12],
+        [closeBtn.leadingAnchor constraintEqualToAnchor:bgContainer.safeAreaLayoutGuide.leadingAnchor constant:12],
+        [moreBtn.topAnchor constraintEqualToAnchor:bgContainer.safeAreaLayoutGuide.topAnchor constant:12],
+        [moreBtn.trailingAnchor constraintEqualToAnchor:bgContainer.trailingAnchor constant:-12],
+    ]];
 
     [constraints addObjectsFromArray:@[
         [bgImageView.topAnchor constraintEqualToAnchor:bgContainer.topAnchor],
@@ -175,10 +154,8 @@
     if (gesture.state == UIGestureRecognizerStateChanged) {
         if (translation.y > 0) {
             self.view.transform = CGAffineTransformMakeTranslation(0, translation.y);
-            if (isPad()) {
-                CGFloat alpha = MAX(0.0, 0.5 - (translation.y / self.view.bounds.size.height));
-                self.view.backgroundColor = [UIColor colorWithWhite:0.0 alpha:alpha];
-            }
+            CGFloat alpha = MAX(0.0, 0.85 - (translation.y / self.view.bounds.size.height));
+            self.view.backgroundColor = [UIColor colorWithWhite:0.0 alpha:alpha];
         } else {
             self.view.transform = CGAffineTransformMakeTranslation(0, translation.y * 0.1);
         }
@@ -188,7 +165,7 @@
         } else {
             [UIView animateWithDuration:0.3 delay:0 usingSpringWithDamping:0.8 initialSpringVelocity:velocity.y / 1000.0 options:UIViewAnimationOptionCurveEaseOut animations:^{
                 self.view.transform = CGAffineTransformIdentity;
-                if (isPad()) self.view.backgroundColor = [UIColor colorWithWhite:0.0 alpha:0.5];
+                self.view.backgroundColor = [UIColor colorWithWhite:0.0 alpha:0.85];
             } completion:nil];
         }
     }

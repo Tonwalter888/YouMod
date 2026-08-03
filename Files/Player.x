@@ -356,7 +356,10 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
 // Disable Double Tap To Seek
 - (BOOL)allowDoubleTapToSeekGestureRecognizer { return IS_ENABLED(DisablesDoubleTap) ? NO : %orig; }
 // Disable long hold
-- (BOOL)allowLongPressGestureRecognizerInView:(id)arg { return IS_ENABLED(DisablesLongHold) ? NO : %orig; }
+- (BOOL)allowLongPressGestureRecognizerInView:(id)arg { 
+    if (IS_ENABLED(DisablesLongHold) || INTFORVAL(HoldToSpeedIndex) != 0) return NO;
+    return %orig;
+}
 // Copy timestamp on pause
 - (void)didPressPause:(id)arg {
     %orig;
@@ -1331,8 +1334,6 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
         }
     }
 
-    if (self.playerState != 3) return;
-    
     NSInteger speedIndex = INTFORVAL(HoldToSpeedIndex);
     CGFloat speed = YouModSpeedForHoldIndex(speedIndex);
     
@@ -1343,6 +1344,7 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 
     if (gesture.state == UIGestureRecognizerStateBegan) {
+        if (self.playerState != 3) return;
         YTMainAppVideoPlayerOverlayViewController *con = [self activeVideoPlayerOverlay];
         CGFloat currentRate = [con currentPlaybackRate];
         CGFloat savedNormal = FLOAT_FOR_KEY(GlobalSavedNormalRate);
