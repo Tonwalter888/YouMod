@@ -1151,7 +1151,7 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
     if (!matchedTrack && IS_ENABLED(NoDubbedAudioTrack)) {
         for (YTIAudioTrack *track in availableTracks) {
             if ([track.id_p hasSuffix:@".4"]) {
-                track = matchedTrack;
+                matchedTrack = track;
                 break;
             }
         }
@@ -1160,12 +1160,12 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
     // If found, change to it
     if (matchedTrack) {
         if ([switchcon isKindOfClass:%c(YTAudioTrackSwitchControllerImpl)]) {
-            YTAudioTrackSwitchControllerImpl *con = switchcon;
+            YTAudioTrackSwitchControllerImpl *con = (YTAudioTrackSwitchControllerImpl *)switchcon;
             [con notifyObserversAudioTrackWillChange:matchedTrack source:0];
             [con switchToAudioTrack:matchedTrack source:0];
             [con notifyObserversAudioTrackDidChange:matchedTrack source:0];
         } else {
-            YTAudioTrackSwitchController *con = switchcon;
+            YTAudioTrackSwitchController *con = (YTAudioTrackSwitchController *)switchcon;
             [con notifyObserversAudioTrackWillChange:matchedTrack source:0];
             [con switchToAudioTrack:matchedTrack source:0];
             [con notifyObserversAudioTrackDidChange:matchedTrack source:0];
