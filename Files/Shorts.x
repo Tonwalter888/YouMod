@@ -101,15 +101,27 @@ static BOOL isShortsOnlyOn = YES;
         }
     }
 
-    // If found, change to it
-    if (matchedTrack) {
-        [pv setAudioTrack:matchedTrack source:0];
-    } else if (!matchedTrack && IS_ENABLED(NoDubbedAudioTrack)) {
+    if (!matchedTrack && IS_ENABLED(NoDubbedAudioTrack)) {
         for (YTIAudioTrack *track in availableTracks) {
             if ([track.id_p hasSuffix:@".4"]) {
-                [pv setAudioTrack:track source:0];
+                matchedTrack = track;
                 break;
             }
+        }
+    }
+
+    // If found, change to it
+    if (matchedTrack) {
+        if ([switchcon isKindOfClass:%c(YTAudioTrackSwitchControllerImpl)]) {
+            YTAudioTrackSwitchControllerImpl *con = (YTAudioTrackSwitchControllerImpl *)switchcon;
+            [con notifyObserversAudioTrackWillChange:matchedTrack source:0];
+            [con switchToAudioTrack:matchedTrack source:0];
+            [con notifyObserversAudioTrackDidChange:matchedTrack source:0];
+        } else {
+            YTAudioTrackSwitchController *con = (YTAudioTrackSwitchController *)switchcon;
+            [con notifyObserversAudioTrackWillChange:matchedTrack source:0];
+            [con switchToAudioTrack:matchedTrack source:0];
+            [con notifyObserversAudioTrackDidChange:matchedTrack source:0];
         }
     }
 }
