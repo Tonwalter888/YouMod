@@ -1148,15 +1148,27 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
         }
     }
 
-    // If found, change to it
-    if (matchedTrack) {
-        [self setAudioTrack:matchedTrack source:0];
-    } else if (!matchedTrack && IS_ENABLED(NoDubbedAudioTrack)) {
+    if (!matchedTrack && IS_ENABLED(NoDubbedAudioTrack)) {
         for (YTIAudioTrack *track in availableTracks) {
             if ([track.id_p hasSuffix:@".4"]) {
-                [self setAudioTrack:track source:0];
+                track = matchedTrack;
                 break;
             }
+        }
+    }
+
+    // If found, change to it
+    if (matchedTrack) {
+        if ([switchcon isKindOfClass:%c(YTAudioTrackSwitchControllerImpl)]) {
+            YTAudioTrackSwitchControllerImpl *con = switchcon;
+            [con notifyObserversAudioTrackWillChange:matchedTrack source:0];
+            [con switchToAudioTrack:matchedTrack source:0];
+            [con notifyObserversAudioTrackDidChange:matchedTrack source:0];
+        } else {
+            YTAudioTrackSwitchController *con = switchcon;
+            [con notifyObserversAudioTrackWillChange:matchedTrack source:0];
+            [con switchToAudioTrack:matchedTrack source:0];
+            [con notifyObserversAudioTrackDidChange:matchedTrack source:0];
         }
     }
 }
