@@ -45,7 +45,7 @@
 
 // Hide Navigation Bar Buttons
 %hook YTRightNavigationButtons
-- (void)layoutSubviews {
+- (void)didMoveToWindow {
     %orig;
     if (IS_ENABLED(HideNoti)) self.notificationButton.hidden = YES;
     if (IS_ENABLED(HideSearch)) self.searchButton.hidden = YES;
@@ -69,10 +69,15 @@
 %end
 
 %hook YTNavigationBarTitleView
-- (void)layoutSubviews {
+- (void)didMoveToWindow {
     %orig;
-    if (self.subviews.count > 1 && [self.subviews[1].accessibilityIdentifier isEqualToString:@"id.youtube.logo"] && IS_ENABLED(HideYTLogo)) {
-        self.subviews[1].hidden = YES;
+    if (IS_ENABLED(HideYTLogo)) {
+        for (UIView *sub in self.subviews) {
+            if ([sub.accessibilityIdentifier isEqualToString:@"id.yoodle.logo"] || [sub.accessibilityIdentifier isEqualToString:@"id.youtube.logo"]) {
+                [sub removeFromSuperview];
+                break;
+            }
+        }
     }
 }
 %end

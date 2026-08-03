@@ -128,7 +128,7 @@ static BOOL isShortsOnlyOn = YES;
 %end
 
 %hook YTReelTopBarView
-- (void)layoutSubviews {
+- (void)didMoveToWindow {
     %orig;
     if (IS_ENABLED(HideShortsTopbar)) {
         if (self.superview) {

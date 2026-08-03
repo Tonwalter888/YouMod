@@ -547,7 +547,7 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
     BOOL temp = IS_ENABLED(HideWaterMark) ? NO : arg;
     %orig(temp);
 }
-- (void)layoutSubviews {
+- (void)didMoveToWindow {
     %orig;
     if (IS_ENABLED(HideCastButtonPlayer)) self.playbackRouteButton.hidden = YES;
 }

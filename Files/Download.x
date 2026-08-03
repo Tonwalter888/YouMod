@@ -2058,7 +2058,7 @@ static UIImage *YouModExtractPostImage(UIView *cellView) {
 
 %hook _ASDisplayView
 
-- (void)layoutSubviews {
+- (void)didMoveToWindow {
     %orig;
     if ([self.accessibilityIdentifier isEqualToString:@"id.ui.comment_cell"] && IS_ENABLED(DownloadComment)) {
         BOOL hasGesture = NO;
