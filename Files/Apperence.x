@@ -41,7 +41,7 @@
 %end
 
 %hook _ASDisplayView
-- (void)layoutSubviews {
+- (void)didMoveToWindow {
     %orig;
     NSSet *blackViews = [NSSet setWithObjects:
         @"id.elements.components.comment_composer",
@@ -101,7 +101,7 @@
 %end
 
 %hook ASCollectionView
-- (void)layoutSubviews {
+- (void)didMoveToWindow {
     %orig;
     NSSet *blackViews = [NSSet setWithObjects:
         @"eml.chip_bar_collection",
@@ -125,22 +125,20 @@
 }
 %end
 
-%hook YTContextualSheetView
-- (void)layoutSubviews {
+%hook YTContextualWrapView
+- (void)didMoveToWindow {
     %orig;
-    for (UIView *subview in self.subviews) {
-        if ([subview isKindOfClass:%c(YTContextualWrapView)]) {
-            subview.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
-                return isDarkMode(self) ? [UIColor blackColor] : [UIColor whiteColor];
-            }];
-            break;
-        }
+    UIView *sup = self.superview;
+    if ([sup isKindOfClass:%c(YTContextualSheetView)]) {
+        self.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
+            return isDarkMode(self) ? [UIColor blackColor] : [UIColor whiteColor];
+        }];
     }
 }
 %end
 
 %hook YTEngagementPanelView
-- (void)layoutSubviews {
+- (void)didMoveToWindow {
     %orig;
     UIView *foot = self.footerView;
     if (foot) {
@@ -152,16 +150,14 @@
 }
 %end
 
-%hook YTMenuItemMDCButton
-- (void)layoutSubviews {
+%hook MDCInkView
+- (void)didMoveToWindow {
     %orig;
-    for (UIView *sub in self.subviews) {
-        if ([sub isKindOfClass:%c(MDCInkView)]) {
-            sub.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
-                return isDarkMode(self) ? [UIColor blackColor] : [UIColor clearColor];
-            }];
-            break;
-        }
+    UIView *sup = self.superview;
+    if ([sup isKindOfClass:%c(YTMenuItemMDCButton)] || [sup isKindOfClass:%c(GOODialogActionMDCButton)]) {
+        self.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
+            return isDarkMode(self) ? [UIColor blackColor] : [UIColor clearColor];
+        }];
     }
 }
 %end

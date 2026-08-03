@@ -270,7 +270,7 @@
 #define YT_BUNDLE_ID @"com.google.ios.youtube"
 #define YT_NAME @"YouTube"
 
-@interface YTMenuItemMDCButton : UIButton
+@interface MDCInkView : UIView
 @end
 
 @interface YTPageHeaderViewController : UIViewController
@@ -316,7 +316,7 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 @interface YTPivotBarItemView (YouMod) <UIContextMenuInteractionDelegate>
 @end
 
-@interface YTContextualSheetView : UIView
+@interface YTContextualWrapView : UIView
 @end
 
 @interface YTShortsAdsPlayerViewController : YTReelPlayerViewController

@@ -404,11 +404,11 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
     YTPlayerViewController *playerviewController = [playerview valueForKey:@"_playerViewDelegate"];
     YouModDownloadSetCurrentPlayer(playerviewController);
     YouModConfigureRemoteSkipCommands();
+    if (INTFORVAL(AudioTrack) != 0) [playerviewController YouModAutoAudioTrack];
     if (IS_ENABLED(MuteButton)) [playerviewController YouModAutoMute];
     if (IS_ENABLED(AutoFullScreen)) [playerviewController performSelector:@selector(YouModAutoFullscreen) withObject:nil afterDelay:0.5];
     if (INTFORVAL(CaptionTrack) != 0) [playerviewController performSelector:@selector(YouModAutoCaptions) withObject:nil afterDelay:0.5];
     if (INTFORVAL(AutoSpeedIndex) != 0) [playerviewController performSelector:@selector(YouModSetAutoSpeed) withObject:nil afterDelay:0.5];
-    if (INTFORVAL(AudioTrack) != 0) [playerviewController performSelector:@selector(YouModAutoAudioTrack) withObject:nil afterDelay:0.5];
 }
 %end
 
