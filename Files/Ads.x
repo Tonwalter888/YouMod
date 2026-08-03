@@ -389,6 +389,7 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
 // "Try new features" in settings
 %hook YTSettingsSectionItemManager
 - (void)updatePremiumEarlyAccessSectionWithEntry:(id)arg1 {}
+- (void)updateUnlimitedSectionWithEntry:(id)arg {}
 %end
 
 // Survey
