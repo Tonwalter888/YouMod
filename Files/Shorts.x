@@ -224,9 +224,7 @@ static BOOL isFullscreenEnabled = NO;
     UIView *parent = sbGetNotificationParent();
     [SBSkipNotificationView showSuccessInView:parent message:LOC(@"SHORTS_ONLY_DISABLED") duration:3.0];
 
-    YTReelContainerViewController *reelcon = [self valueForKey:@"_parentResponder"];
-    YTAppReelWatchRootViewController *watchroot = [reelcon valueForKey:@"_delegate"];
-    [[watchroot valueForKey:@"_pivotBarProvider"] performSelector:@selector(showPivotBar)];
+    [[[[self valueForKey:@"_parentResponder"] valueForKey:@"_delegate"] valueForKey:@"_pivotBarProvider"] performSelector:@selector(showPivotBar)];
     [UIView animateWithDuration:0.3 animations:^{
         self.playbackOverlay.alpha = 1;
     }];

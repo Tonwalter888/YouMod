@@ -304,12 +304,6 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 @interface YTInlineScrubGestureView : UIView
 @end
 
-@interface YTReelContainerViewController : UIViewController
-@end
-
-@interface YTAppReelWatchRootViewController : UIViewController
-@end
-
 @interface YTPivotBarView : UIView
 @end
 
