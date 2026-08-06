@@ -40,6 +40,7 @@ static void YouModMakeAShortsAction(YTReelPlayerViewController *self, YTSingleVi
 }
 
 static BOOL isShortsOnlyOn = YES;
+static BOOL isFullscreenEnabled = NO;
 
 %hook YTReelPlayerViewController
 - (BOOL)shouldAlwaysEnablePlayerBar { return IS_ENABLED(ShowShortsSeekbar) ? YES : %orig; }
@@ -147,8 +148,6 @@ extern void YouModConfigureDownloadButton(_ASDisplayView *view);
     if ([elements[self.accessibilityIdentifier] boolValue]) [self removeFromSuperview]; 
 }
 %end
-
-static BOOL isFullscreenEnabled = NO;
 
 %hook YTAppDelegate
 - (void)appDidBecomeActive {
