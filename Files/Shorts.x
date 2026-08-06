@@ -50,7 +50,7 @@ static BOOL isShortsOnlyOn = YES;
 }
 - (void)loadPlayerBar {
     %orig;
-    if (isShortsOnlyOn && IS_ENABLED(ShortsOnly)) [[self valueForKey:@"_pivotBarProvider"] performSelector:@selector(hidePivotBar)];
+    if (isShortsOnlyOn && IS_ENABLED(ShortsOnly) || (isFullscreenEnabled && IS_ENABLED(FullScreenShorts))) [[self valueForKey:@"_pivotBarProvider"] performSelector:@selector(hidePivotBar)];
     YTPlayerViewController *main = self.player;
     if (INTFORVAL(CaptionTrack) != 0) [main performSelector:@selector(YouModAutoCaptions) withObject:nil afterDelay:0.5];
     if (INTFORVAL(AutoSpeedIndex) != 0) [main performSelector:@selector(YouModSetAutoSpeed) withObject:nil afterDelay:0.5];
