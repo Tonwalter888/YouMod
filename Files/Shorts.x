@@ -41,6 +41,13 @@ static void YouModMakeAShortsAction(YTReelPlayerViewController *self, YTSingleVi
 
 static BOOL isShortsOnlyOn = YES;
 
+%hook YTPlayerViewController
+- (void)prepareToLoadWithPlayerTransition:(id)arg1 expectedLayout:(id)arg2 {
+    %orig;
+    if (isShortsOnlyOn && IS_ENABLED(ShortsOnly)) [[[self valueForKey:@"_parentResponder"] valueForKey:@"_pivotBarProvider"] performSelector:@selector(hidePivotBar)];
+}
+%end
+
 %hook YTReelPlayerViewController
 - (BOOL)shouldAlwaysEnablePlayerBar { return IS_ENABLED(ShowShortsSeekbar) ? YES : %orig; }
 - (BOOL)shouldEnablePlayerBarOnlyOnPause { return IS_ENABLED(ShowShortsSeekbar) ? NO : %orig; }
@@ -50,16 +57,10 @@ static BOOL isShortsOnlyOn = YES;
 }
 - (void)loadPlayerBar {
     %orig;
-    if (isShortsOnlyOn && IS_ENABLED(ShortsOnly)) [self YouModOnlyShorts];
     YTPlayerViewController *main = self.player;
     if (INTFORVAL(CaptionTrack) != 0) [main performSelector:@selector(YouModAutoCaptions) withObject:nil afterDelay:0.5];
     if (INTFORVAL(AutoSpeedIndex) != 0) [main performSelector:@selector(YouModSetAutoSpeed) withObject:nil afterDelay:0.5];
     if (INTFORVAL(AudioTrack) != 0) [self performSelector:@selector(YouModAutoAudioTrack:) withObject:main afterDelay:0.5];
-}
-%new
-- (void)YouModOnlyShorts {
-    UIViewController *appVC = [self valueForKey:@"_pivotBarProvider"];
-    [appVC performSelector:@selector(hidePivotBar)];
 }
 %new
 - (void)YouModAutoAudioTrack:(YTPlayerViewController *)pv {
@@ -154,8 +155,7 @@ static BOOL isFullscreenEnabled = NO;
 - (void)appDidBecomeActive {
     %orig;
     if ((isFullscreenEnabled && IS_ENABLED(FullScreenShorts)) || (isShortsOnlyOn && IS_ENABLED(ShortsOnly))) {
-        UIViewController *appVC = [self valueForKey:@"_appViewController"];
-        [appVC performSelector:@selector(hidePivotBar)];
+        [[self valueForKey:@"_appViewController"] performSelector:@selector(hidePivotBar)];
     }
 }
 %end
@@ -226,8 +226,7 @@ static BOOL isFullscreenEnabled = NO;
 
     YTReelContainerViewController *reelcon = [self valueForKey:@"_parentResponder"];
     YTAppReelWatchRootViewController *watchroot = [reelcon valueForKey:@"_delegate"];
-    UIViewController *appVC = [watchroot valueForKey:@"_pivotBarProvider"];
-    [appVC performSelector:@selector(showPivotBar)];
+    [[watchroot valueForKey:@"_pivotBarProvider"] performSelector:@selector(showPivotBar)];
     [UIView animateWithDuration:0.3 animations:^{
         self.playbackOverlay.alpha = 1;
     }];
