@@ -1488,7 +1488,7 @@ static void ymRegisterStyledSubclass(Class sourceClass, const char *name) {
     if ([self.accessibilityIdentifier isEqualToString:@"id.ui.title.tab.button"]) {
         UIColor *customTitle = [self valueForKey:@"_desiredCustomTitleColor"];
 
-        if (self.traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark) {
+        if (isDarkMode(self)) {
             self.titleLabel.textColor = [UIColor whiteColor];
             if (customTitle) {
                 [self setValue:[UIColor whiteColor] forKey:@"_desiredCustomTitleColor"];
@@ -1500,7 +1500,7 @@ static void ymRegisterStyledSubclass(Class sourceClass, const char *name) {
             }
         }
     } else if ([self.accessibilityIdentifier isEqualToString:@"id.ui.browse.back.button"]) {
-        if (self.traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark) {
+        if (isDarkMode(self)) {
             self.tintColor = [UIColor whiteColor];
         } else {
             self.tintColor = [UIColor blackColor];

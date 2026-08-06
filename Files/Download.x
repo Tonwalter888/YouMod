@@ -2224,6 +2224,7 @@ static UIImage *YouModExtractPostImage(UIView *cellView) {
         downloadBtn.tag = 1501;
         
         [downloadBtn addTarget:self action:@selector(didTapYouModShortsDownload:) forControlEvents:UIControlEventTouchUpInside];
+        [downloadBtn enableNewTouchFeedback];
         [self addSubview:downloadBtn];
     }
     
