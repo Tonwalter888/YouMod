@@ -45,7 +45,7 @@
 
 // Hide Navigation Bar Buttons
 %hook YTRightNavigationButtons
-- (void)didMoveToWindow {
+- (void)layoutSubviews {
     %orig;
     if (IS_ENABLED(HideNoti)) self.notificationButton.hidden = YES;
     if (IS_ENABLED(HideSearch)) self.searchButton.hidden = YES;
