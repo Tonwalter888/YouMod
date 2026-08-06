@@ -370,22 +370,6 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 - (void)YouModReloadTabBar:(id)arg;
 @end
 
-@interface YTAppViewController (YouMod)
-@property (nonatomic, assign, readonly) YTPivotBarViewController *pivotBarViewController;
-- (void)hidePivotBar;
-- (void)showPivotBar;
-- (void)refreshPivotBarWithTriggedByNotification:(BOOL)arg;
-- (BOOL)isPivotBarHidden;
-@end
-
-@interface YTAppViewControllerImpl (YouMod)
-@property (nonatomic, assign, readonly) YTPivotBarViewController *pivotBarViewController;
-- (void)hidePivotBar;
-- (void)showPivotBar;
-- (void)refreshPivotBarWithTriggedByNotification:(BOOL)arg;
-- (BOOL)isPivotBarHidden;
-@end
-
 @interface YTReelWatchPlaybackOverlayView : UIView <UIGestureRecognizerDelegate>
 @property (nonatomic, retain) UIPinchGestureRecognizer *YouModFullscreenGesture;
 @end
@@ -436,18 +420,6 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 - (id)audioTrackController;
 - (void)YouModHideSpeedToast;
 - (void)YouModShowSpeedToast:(CGFloat)speed isLocked:(BOOL)isLocked;
-@end
-
-@interface YTAudioTrackSwitchController : NSObject
-- (void)switchToAudioTrack:(YTIAudioTrack *)arg1 source:(NSInteger)arg2;
-- (void)notifyObserversAudioTrackWillChange:(YTIAudioTrack *)arg1 source:(NSInteger)arg2;
-- (void)notifyObserversAudioTrackDidChange:(YTIAudioTrack *)arg1 source:(NSInteger)arg2;
-@end
-
-@interface YTAudioTrackSwitchControllerImpl : NSObject
-- (void)switchToAudioTrack:(YTIAudioTrack *)arg1 source:(NSInteger)arg2;
-- (void)notifyObserversAudioTrackWillChange:(YTIAudioTrack *)arg1 source:(NSInteger)arg2;
-- (void)notifyObserversAudioTrackDidChange:(YTIAudioTrack *)arg1 source:(NSInteger)arg2;
 @end
 
 @interface YTPlayerBarController (YouMod)

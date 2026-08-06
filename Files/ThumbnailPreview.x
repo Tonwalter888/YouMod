@@ -57,7 +57,7 @@
     [bgContainer addSubview:closeBtn];
 
     UIButton *moreBtn = [UIButton buttonWithType:UIButtonTypeCustom];
-    [moreBtn setImage:[UIImage systemImageNamed:@"ellipsis" withConfiguration:iconConfig] forState:UIControlStateNormal];
+    [moreBtn setImage:[UIImage systemImageNamed:@"square.and.arrow.up" withConfiguration:iconConfig] forState:UIControlStateNormal];
     moreBtn.tintColor = [UIColor whiteColor];
     moreBtn.backgroundColor = [UIColor colorWithWhite:0.0 alpha:0.4];
     moreBtn.layer.cornerRadius = 25;

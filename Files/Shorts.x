@@ -58,14 +58,8 @@ static BOOL isShortsOnlyOn = YES;
 }
 %new
 - (void)YouModOnlyShorts {
-    id appconmain = [self valueForKey:@"_pivotBarProvider"];
-    if ([appconmain isKindOfClass:%c(YTAppViewControllerImpl)]) {
-        YTAppViewControllerImpl *appcon = (YTAppViewControllerImpl *)appconmain;
-        [appcon hidePivotBar];
-    } else {
-        YTAppViewController *appcon = (YTAppViewController *)appconmain;
-        [appcon hidePivotBar];
-    }
+    UIViewController *appVC = [self valueForKey:@"_pivotBarProvider"];
+    [appVC performSelector:@selector(hidePivotBar)];
 }
 %new
 - (void)YouModAutoAudioTrack:(YTPlayerViewController *)pv {
@@ -112,16 +106,11 @@ static BOOL isShortsOnlyOn = YES;
 
     // If found, change to it
     if (matchedTrack) {
-        if ([switchcon isKindOfClass:%c(YTAudioTrackSwitchControllerImpl)]) {
-            YTAudioTrackSwitchControllerImpl *con = (YTAudioTrackSwitchControllerImpl *)switchcon;
-            [con notifyObserversAudioTrackWillChange:matchedTrack source:0];
-            [con switchToAudioTrack:matchedTrack source:0];
-            [con notifyObserversAudioTrackDidChange:matchedTrack source:0];
-        } else {
-            YTAudioTrackSwitchController *con = (YTAudioTrackSwitchController *)switchcon;
-            [con notifyObserversAudioTrackWillChange:matchedTrack source:0];
-            [con switchToAudioTrack:matchedTrack source:0];
-            [con notifyObserversAudioTrackDidChange:matchedTrack source:0];
+        if (matchedTrack) {
+            void (*sendTrackChangeMsg)(id, SEL, id, NSInteger) = (void (*)(id, SEL, id, NSInteger))objc_msgSend;
+            sendTrackChangeMsg(switchcon, @selector(notifyObserversAudioTrackWillChange:source:), matchedTrack, 0);
+            sendTrackChangeMsg(switchcon, @selector(switchToAudioTrack:source:), matchedTrack, 0);
+            sendTrackChangeMsg(switchcon, @selector(notifyObserversAudioTrackDidChange:source:), matchedTrack, 0);
         }
     }
 }
@@ -165,14 +154,8 @@ static BOOL isFullscreenEnabled = NO;
 - (void)appDidBecomeActive {
     %orig;
     if ((isFullscreenEnabled && IS_ENABLED(FullScreenShorts)) || (isShortsOnlyOn && IS_ENABLED(ShortsOnly))) {
-        id appviewcon = [self valueForKey:@"_appViewController"];
-        if ([appviewcon isKindOfClass:%c(YTAppViewControllerImpl)]) {
-            YTAppViewControllerImpl *con = (YTAppViewControllerImpl *)appviewcon;
-            [con hidePivotBar];
-        } else {
-            YTAppViewController *con = (YTAppViewController *)appviewcon;
-            [con hidePivotBar];
-        }
+        UIViewController *appVC = [self valueForKey:@"_appViewController"];
+        [appVC performSelector:@selector(hidePivotBar)];
     }
 }
 %end
@@ -191,46 +174,23 @@ static BOOL isFullscreenEnabled = NO;
 %new
 - (void)YouModFullscrrenGestureHandler:(UIPinchGestureRecognizer *)gesture {
     if (gesture.state != UIGestureRecognizerStateBegan || (isShortsOnlyOn && IS_ENABLED(ShortsOnly))) return;
-    id appconmain = [self valueForKey:@"_pivotBarProvider"];
-    if ([appconmain isKindOfClass:%c(YTAppViewControllerImpl)]) {
-        YTAppViewControllerImpl *appcon = (YTAppViewControllerImpl *)appconmain;
-        BOOL isTabBarHidden = [appcon isPivotBarHidden];
-        if (gesture.scale > 1.0) {
-            if (!isTabBarHidden) {
-                [appcon hidePivotBar];
-                [UIView animateWithDuration:0.3 animations:^{
-                    self.alpha = 0;
-                }];
-                isFullscreenEnabled = YES;
-            }
-        } else if (gesture.scale < 1.0) {
-            if (isTabBarHidden) {
-                [appcon showPivotBar];
-                [UIView animateWithDuration:0.3 animations:^{
-                    self.alpha = 1;
-                }];
-                isFullscreenEnabled = NO;
-            }
+    UIViewController *appVC = [self valueForKey:@"_pivotBarProvider"];
+    BOOL isTabBarHidden = [appVC performSelector:@selector(isPivotBarHidden)];
+    if (gesture.scale > 1.0) {
+        if (!isTabBarHidden) {
+            [appVC performSelector:@selector(hidePivotBar)];
+            [UIView animateWithDuration:0.3 animations:^{
+                self.alpha = 0;
+            }];
+            isFullscreenEnabled = YES;
         }
-    } else {
-        YTAppViewController *appcon = (YTAppViewController *)appconmain;
-        BOOL isTabBarHidden = [appcon isPivotBarHidden];
-        if (gesture.scale > 1.0) {
-            if (!isTabBarHidden) {
-                [appcon hidePivotBar];
-                [UIView animateWithDuration:0.3 animations:^{
-                    self.alpha = 0;
-                }];
-                isFullscreenEnabled = YES;
-            }
-        } else if (gesture.scale < 1.0) {
-            if (isTabBarHidden) {
-                [appcon showPivotBar];
-                [UIView animateWithDuration:0.3 animations:^{
-                    self.alpha = 1;
-                }];
-                isFullscreenEnabled = NO;
-            }
+    } else if (gesture.scale < 1.0) {
+        if (isTabBarHidden) {
+            [appVC performSelector:@selector(showPivotBar)];
+            [UIView animateWithDuration:0.3 animations:^{
+                self.alpha = 1;
+            }];
+            isFullscreenEnabled = NO;
         }
     }
 }
@@ -266,20 +226,11 @@ static BOOL isFullscreenEnabled = NO;
 
     YTReelContainerViewController *reelcon = [self valueForKey:@"_parentResponder"];
     YTAppReelWatchRootViewController *watchroot = [reelcon valueForKey:@"_delegate"];
-    id appconmain = [watchroot valueForKey:@"_pivotBarProvider"];
-    if ([appconmain isKindOfClass:%c(YTAppViewControllerImpl)]) {
-        YTAppViewControllerImpl *appcon = (YTAppViewControllerImpl *)appconmain;
-        [appcon showPivotBar];
-        [UIView animateWithDuration:0.3 animations:^{
-            self.playbackOverlay.alpha = 1;
-        }];
-    } else {
-        YTAppViewController *appcon = (YTAppViewController *)appconmain;
-        [appcon showPivotBar];
-        [UIView animateWithDuration:0.3 animations:^{
-            self.playbackOverlay.alpha = 1;
-        }];
-    }
+    UIViewController *appVC = [watchroot valueForKey:@"_pivotBarProvider"];
+    [appVC performSelector:@selector(showPivotBar)];
+    [UIView animateWithDuration:0.3 animations:^{
+        self.playbackOverlay.alpha = 1;
+    }];
 }
 %new
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldBeRequiredToFailByGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {

@@ -1520,13 +1520,8 @@ static void ymRegisterStyledSubclass(Class sourceClass, const char *name) {
 }
 %new
 - (void)YouModReloadTabBar:(id)arg {
-    if ([self.parentViewController isKindOfClass:%c(YTAppViewControllerImpl)]) {
-        YTAppViewControllerImpl *appcon = (YTAppViewControllerImpl *)self.parentViewController;
-        [appcon refreshPivotBarWithTriggedByNotification:YES];
-    } else {
-        YTAppViewController *appcon = (YTAppViewController *)self.parentViewController;
-        [appcon refreshPivotBarWithTriggedByNotification:YES];
-    }
+    UIViewController *appVC = self.parentViewController;
+    [appcon performSelector:@selector(refreshPivotBarWithTriggedByNotification:) withObject:@YES];
 }
 %end
 

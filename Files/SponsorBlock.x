@@ -74,15 +74,9 @@ void sbUpdateOverlayInsetForPivotBar() {
             break;
         }
     }
-    YTAppViewController *appVC = (YTAppViewController *)ytWindow.rootViewController;
-    YTAppViewControllerImpl *appVC2 = (YTAppViewControllerImpl *)ytWindow.rootViewController;
-    YTPivotBarViewController *pivotVC;
-    @try {
-        pivotVC = (YTPivotBarViewController *)appVC.pivotBarViewController;
-    } @catch (id ex) {
-        pivotVC = (YTPivotBarViewController *)appVC2.pivotBarViewController;
-    }
-    YTPivotBarView *pivot = (YTPivotBarView *)pivotVC.viewIfLoaded;
+    UIViewController *appVC = ytWindow.rootViewController;
+    YTPivotBarViewController *pivotVC = (YTPivotBarViewController *)[appVC performSelector:@selector(pivotBarViewController)];
+    YTPivotBarView *pivot = (YTPivotBarView *)pivotVC.view;
 
     // Measure the pivot bar's visible top edge in our overlay window's coords
     // and convert it into the inset our pills need above the device safe area.

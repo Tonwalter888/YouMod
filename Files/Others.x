@@ -198,5 +198,5 @@
 %end
 
 %hook UIKeyboardImpl
-+ (BOOL)isFloating { return IS_ENABLED(FloatingKeyboard) ? YES : %orig; }
++ (BOOL)isFloating { return IS_ENABLED(FloatingKeyboard) && isPad() ? YES : %orig; }
 %end
