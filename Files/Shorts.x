@@ -85,17 +85,14 @@ static BOOL isFullscreenEnabled = NO;
         }
 
         // Check if it's dubbed
-        if (matchedTrack && [matchedTrack isAutoDubbed] && IS_ENABLED(NoDubbedAudioTrack)) {
-            matchedTrack = nil;
-            return;
-        }
-    }
+        if (matchedTrack && [matchedTrack isAutoDubbed] && IS_ENABLED(NoDubbedAudioTrack)) matchedTrack = nil;
 
-    if (!matchedTrack && IS_ENABLED(NoDubbedAudioTrack)) {
-        for (YTIAudioTrack *track in availableTracks) {
-            if ([track.id_p hasSuffix:@".4"]) {
-                matchedTrack = track;
-                break;
+        if (!matchedTrack && IS_ENABLED(NoDubbedAudioTrack)) {
+            for (YTIAudioTrack *track in availableTracks) {
+                if ([track.id_p hasSuffix:@".4"]) {
+                    matchedTrack = track;
+                    break;
+                }
             }
         }
     }
