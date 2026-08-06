@@ -100,12 +100,10 @@ static BOOL isShortsOnlyOn = YES;
 
     // If found, change to it
     if (matchedTrack) {
-        if (matchedTrack) {
-            void (*sendTrackChangeMsg)(id, SEL, id, NSInteger) = (void (*)(id, SEL, id, NSInteger))objc_msgSend;
-            sendTrackChangeMsg(switchcon, @selector(notifyObserversAudioTrackWillChange:source:), matchedTrack, 0);
-            sendTrackChangeMsg(switchcon, @selector(switchToAudioTrack:source:), matchedTrack, 0);
-            sendTrackChangeMsg(switchcon, @selector(notifyObserversAudioTrackDidChange:source:), matchedTrack, 0);
-        }
+        void (*sendTrackChangeMsg)(id, SEL, id, NSInteger) = (void (*)(id, SEL, id, NSInteger))objc_msgSend;
+        sendTrackChangeMsg(switchcon, @selector(notifyObserversAudioTrackWillChange:source:), matchedTrack, 0);
+        sendTrackChangeMsg(switchcon, @selector(switchToAudioTrack:source:), matchedTrack, 0);
+        sendTrackChangeMsg(switchcon, @selector(notifyObserversAudioTrackDidChange:source:), matchedTrack, 0);
     }
 }
 %end
