@@ -416,18 +416,6 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 - (void)YouModShowSpeedToast:(CGFloat)speed isLocked:(BOOL)isLocked;
 @end
 
-@interface YTAudioTrackSwitchController : NSObject
-- (void)switchToAudioTrack:(YTIAudioTrack *)arg1 source:(NSInteger)arg2;
-- (void)notifyObserversAudioTrackWillChange:(YTIAudioTrack *)arg1 source:(NSInteger)arg2;
-- (void)notifyObserversAudioTrackDidChange:(YTIAudioTrack *)arg1 source:(NSInteger)arg2;
-@end
-
-@interface YTAudioTrackSwitchControllerImpl : NSObject
-- (void)switchToAudioTrack:(YTIAudioTrack *)arg1 source:(NSInteger)arg2;
-- (void)notifyObserversAudioTrackWillChange:(YTIAudioTrack *)arg1 source:(NSInteger)arg2;
-- (void)notifyObserversAudioTrackDidChange:(YTIAudioTrack *)arg1 source:(NSInteger)arg2;
-@end
-
 @interface YTPlayerBarController (YouMod)
 - (void)didScrub:(UIPanGestureRecognizer *)gesture;
 @end
