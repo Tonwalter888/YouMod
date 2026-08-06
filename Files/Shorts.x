@@ -41,13 +41,6 @@ static void YouModMakeAShortsAction(YTReelPlayerViewController *self, YTSingleVi
 
 static BOOL isShortsOnlyOn = YES;
 
-%hook YTPlayerViewController
-- (void)prepareToLoadWithPlayerTransition:(id)arg1 expectedLayout:(id)arg2 {
-    %orig;
-    if (isShortsOnlyOn && IS_ENABLED(ShortsOnly)) [[[self valueForKey:@"_parentResponder"] valueForKey:@"_pivotBarProvider"] performSelector:@selector(hidePivotBar)];
-}
-%end
-
 %hook YTReelPlayerViewController
 - (BOOL)shouldAlwaysEnablePlayerBar { return IS_ENABLED(ShowShortsSeekbar) ? YES : %orig; }
 - (BOOL)shouldEnablePlayerBarOnlyOnPause { return IS_ENABLED(ShowShortsSeekbar) ? NO : %orig; }
