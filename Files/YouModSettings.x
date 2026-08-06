@@ -1521,7 +1521,7 @@ static void ymRegisterStyledSubclass(Class sourceClass, const char *name) {
 %new
 - (void)YouModReloadTabBar:(id)arg {
     UIViewController *appVC = self.parentViewController;
-    [appcon performSelector:@selector(refreshPivotBarWithTriggedByNotification:) withObject:@YES];
+    [appVC performSelector:@selector(refreshPivotBarWithTriggedByNotification:) withObject:@YES];
 }
 %end
 
