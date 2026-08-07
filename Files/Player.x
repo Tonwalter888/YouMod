@@ -1365,11 +1365,9 @@ static CGFloat remainingOverlayWidth(YTPlayerViewController *pvc, CGFloat fullWi
 }
 %new
 - (void)YouModAutoDRCAudio {
-    BOOL value;
+    BOOL value = NO;
     if (INTFORVAL(AutoDRCAudioIndex) == 1) {
         value = YES;
-    } else if (INTFORVAL(AutoDRCAudioIndex) == 2) {
-        value = NO;
     }
     [self setAudioDRCEnabled:value];
 }
