@@ -23,32 +23,13 @@
 - (UIColor *)backgroundColor:(NSInteger)pageStyle { return pageStyle == 1 ? [UIColor blackColor] : %orig; }
 %end
 
-%hook UITableViewCell
-- (void)_layoutSystemBackgroundView {
-    %orig;
-    UIView *systemBackgroundView = [self valueForKey:@"_systemBackgroundView"];
-    NSString *backgroundViewKey = class_getInstanceVariable(systemBackgroundView.class, "_colorView") ? @"_colorView" : @"_backgroundView";
-    ((UIView *)[systemBackgroundView valueForKey:backgroundViewKey]).backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
-        return isDarkMode(self) ? [UIColor blackColor] : [UIColor whiteColor];
-    }];
-}
-- (void)_layoutSystemBackgroundView:(BOOL)arg1 {
-    %orig;
-    ((UIView *)[[self valueForKey:@"_systemBackgroundView"] valueForKey:@"_colorView"]).backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
-        return isDarkMode(self) ? [UIColor blackColor] : [UIColor whiteColor];
-    }];
-}
-%end
-
 %hook _ASDisplayView
 - (void)didMoveToWindow {
     %orig;
     NSSet *blackViews = [NSSet setWithObjects:
         @"id.elements.components.comment_composer",
-        // @"eml.cvr",
         @"id.subs.subscriptions_channel_bar",
         @"PAmedia_hub_device_picker.engagement_panel_header", nil
-        // @"eml.vwc", nil
     ];  
     if ([blackViews containsObject:self.accessibilityIdentifier]) {
         self.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {

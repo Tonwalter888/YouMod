@@ -114,7 +114,10 @@
 
 %hook YTHeaderView
 - (BOOL)stickyNavHeaderEnabled { 
-    if (IS_ENABLED(StickyNavBar)) [self setStickyNavHeaderEnabled:YES];
-    return IS_ENABLED(StickyNavBar) ? YES : %orig;
+    if (IS_ENABLED(StickyNavBar)) {
+        [self setStickyNavHeaderEnabled:YES];
+        return YES;
+    }
+    return %orig;
 }
 %end

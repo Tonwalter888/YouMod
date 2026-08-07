@@ -332,9 +332,17 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 @property (nonatomic, strong) YTQTMButton *searchButton;
 @end
 
+@interface YTVideoFreeZoomOverlayController : NSObject
+- (NSUInteger)state;
+@end
+
+@interface YTVideoFreeZoomOverlayView : UIView
+@end
+
 @interface YTMainAppVideoPlayerOverlayView (YouMod)
 @property (nonatomic, weak, readwrite) YTMainAppVideoPlayerOverlayViewController *delegate;
 @property (nonatomic, strong) YTQTMButton *playbackRouteButton;
+- (YTVideoFreeZoomOverlayView *)videoFreeZoomOverlayView;
 @end
 
 @interface YTQTMButton (YouMod)

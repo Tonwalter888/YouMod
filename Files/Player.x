@@ -366,10 +366,19 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
     if (!IS_ENABLED(CopyWithTimestampOnPause)) return;
     CGFloat mediaTimeIn = self.mediaTime;
     NSString *vidID = self.videoID;
-    if (vidID.length)
+    if (vidID.length) {
         UIPasteboard.generalPasteboard.string = [NSString stringWithFormat:@"https://www.youtube.com/watch?v=%@&t=%lds", vidID, (long)mediaTimeIn];
+    }
 }
-- (BOOL)isZoomEnabled { return IS_ENABLED(DisablesFreeZoom) ? NO : %orig; }
+- (BOOL)isZoomEnabled { 
+    if (IS_ENABLED(DisablesFreeZoom)) {
+        YTMainAppVideoPlayerOverlayView *mainov = [self videoPlayerOverlayView];
+        YTVideoFreeZoomOverlayView *vidfreeov = [mainov videoFreeZoomOverlayView];
+        vidfreeov.hidden = YES; // See if this is enough to hide the indicator
+        return NO;
+    }
+    return %orig; 
+}
 - (void)setPaidContentWithPlayerData:(id)data { if (!IS_ENABLED(HidePaidPromoOverlay)) %orig; }
 %end
 
@@ -739,6 +748,13 @@ static CGFloat remainingOverlayWidth(YTPlayerViewController *pvc, CGFloat fullWi
     return fullWidth;
 }
 
+static BOOL isInZoom(YTPlayerViewController *pvc) {
+    YTMainAppVideoPlayerOverlayView *ov = getMainVideoOverlay(pvc);
+    YTVideoFreeZoomOverlayView *vidfreeov = ov.videoFreeZoomOverlayView;
+    YTVideoFreeZoomOverlayController *vidfreecon = [vidfreeov valueForKey:@"_delegate"];
+    return vidfreecon.state == 4;
+}
+
 %hook YTPlayerViewController
 %property (nonatomic, retain) UIPanGestureRecognizer *YouModPanGesture;
 %property (nonatomic, retain) UITapGestureRecognizer *YouModTapGesture;
@@ -765,7 +781,7 @@ static CGFloat remainingOverlayWidth(YTPlayerViewController *pvc, CGFloat fullWi
         BOOL isHorizontal = fabs(velocity.x) > fabs(velocity.y);
 
         if (isHorizontal) {
-            return IS_ENABLED(SeekOnOverlay);
+            return IS_ENABLED(SeekOnOverlay) && !isInZoom(pvc);
         } else {
             if (!IS_ENABLED(GestureControls)) return NO;
 
