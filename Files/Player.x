@@ -748,13 +748,6 @@ static CGFloat remainingOverlayWidth(YTPlayerViewController *pvc, CGFloat fullWi
     return fullWidth;
 }
 
-static BOOL isInZoom(YTPlayerViewController *pvc) {
-    YTMainAppVideoPlayerOverlayView *ov = getMainVideoOverlay(pvc);
-    YTVideoFreeZoomOverlayView *vidfreeov = ov.videoFreeZoomOverlayView;
-    YTVideoFreeZoomOverlayController *vidfreecon = [vidfreeov valueForKey:@"_delegate"];
-    return vidfreecon.state == 4;
-}
-
 %hook YTPlayerViewController
 %property (nonatomic, retain) UIPanGestureRecognizer *YouModPanGesture;
 %property (nonatomic, retain) UITapGestureRecognizer *YouModTapGesture;
@@ -781,7 +774,10 @@ static BOOL isInZoom(YTPlayerViewController *pvc) {
         BOOL isHorizontal = fabs(velocity.x) > fabs(velocity.y);
 
         if (isHorizontal) {
-            return IS_ENABLED(SeekOnOverlay) && !isInZoom(self);
+            YTMainAppVideoPlayerOverlayView *ov = getMainVideoOverlay(self);
+            YTVideoFreeZoomOverlayView *vidfreeov = ov.videoFreeZoomOverlayView;
+            YTVideoFreeZoomOverlayController *vidfreecon = [vidfreeov valueForKey:@"_delegate"];
+            return IS_ENABLED(SeekOnOverlay) && vidfreecon.state != 4;
         } else {
             if (!IS_ENABLED(GestureControls)) return NO;
 
@@ -1256,7 +1252,8 @@ static BOOL isInZoom(YTPlayerViewController *pvc) {
     
     self.YouModSpeedToastLabel.attributedText = attrString;
 
-    CGSize maxLabelSize = CGSizeMake(self.playerView.bounds.size.width * 0.8, CGFLOAT_MAX);
+    CGFloat activeWidth = remainingOverlayWidth(self, self.playerView.bounds.size.width);
+    CGSize maxLabelSize = CGSizeMake(activeWidth * 0.8, CGFLOAT_MAX);
     CGSize textSize = [self.YouModSpeedToastLabel sizeThatFits:maxLabelSize];
     
     CGFloat paddingX = 24.0;
@@ -1268,7 +1265,7 @@ static BOOL isInZoom(YTPlayerViewController *pvc) {
     self.YouModSpeedToastView.layer.cornerRadius = toastHeight / 2.0;
     self.YouModSpeedToastLabel.frame = self.YouModSpeedToastView.bounds;
 
-    self.YouModSpeedToastView.center = CGPointMake(self.playerView.bounds.size.width / 2.0, 36.0);
+    self.YouModSpeedToastView.center = CGPointMake(activeWidth / 2.0, 36.0);
     self.YouModSpeedToastView.layer.zPosition = 999;
     [self.playerView bringSubviewToFront:self.YouModSpeedToastView];
 
