@@ -390,7 +390,7 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
 // Remove Watermarks
 %hook YTAnnotationsViewController
 - (void)loadFeaturedChannelWatermark { if (!IS_ENABLED(HideWaterMark)) %orig; }
-- (void)setWatermarkImage:(id)arg1 height:(unsigned long long)arg2 { if (!IS_ENABLED(HideWaterMark)) %orig; }
+- (void)setWatermarkImage:(id)arg1 height:(NSUInteger)arg2 { if (!IS_ENABLED(HideWaterMark)) %orig; }
 %end
 
 // Exit Fullscreen on Finish
