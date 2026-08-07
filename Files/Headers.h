@@ -752,6 +752,12 @@ extern BOOL isPad();
 @property (nonatomic, strong) UIImageView *imageView;
 @end
 
+typedef NS_ENUM(NSInteger, YouModTranslationState) {
+    YouModTranslationStateLoading = 0,
+    YouModTranslationStateSuccess = 1,
+    YouModTranslationStateFailed = 2
+};
+
 @interface YouModTranslationViewController : UIViewController
 @property (nonatomic, copy) NSString *originalText;
 @property (nonatomic, strong) UILabel *langValueLabel;
@@ -761,6 +767,7 @@ extern BOOL isPad();
 @property (nonatomic, copy) NSString *selectedLangName;
 @property (nonatomic, strong) NSArray<NSString *> *languageTitles;
 @property (nonatomic, strong) NSArray<NSString *> *languageCodes;
+@property (nonatomic, assign) YouModTranslationState translationState;
 - (void)performTranslation;
 @end
 

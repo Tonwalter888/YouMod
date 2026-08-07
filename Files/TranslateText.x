@@ -362,7 +362,7 @@ static void YouModTranslateText(NSString *text, NSString *targetLang, void (^com
 }
 
 - (void)copyTapped {
-    if (self.resultTextView.text.length > 0 && ![self.resultTextView.text isEqualToString:LOC(@"TRANSLATING")] && ![self.resultTextView.text isEqualToString:LOC(@"TRANSLATE_FAILED")]) {
+    if (self.translationState == YouModTranslationStateSuccess && self.resultTextView.text.length > 0) {
         [UIPasteboard generalPasteboard].string = self.resultTextView.text;
         
         UIImpactFeedbackGenerator *feedback = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleLight];
@@ -374,7 +374,7 @@ static void YouModTranslateText(NSString *text, NSString *targetLang, void (^com
 }
 
 - (void)shareTapped:(id)sender {
-    if (self.resultTextView.text.length == 0 || [self.resultTextView.text isEqualToString:LOC(@"TRANSLATING")] || [self.resultTextView.text isEqualToString:LOC(@"TRANSLATE_FAILED")]) return;
+    if (self.translationState != YouModTranslationStateSuccess || self.resultTextView.text.length == 0) return;
     
     UIActivityViewController *activityVC = [[UIActivityViewController alloc] initWithActivityItems:@[self.resultTextView.text] applicationActivities:nil];
     if (activityVC.popoverPresentationController) {
@@ -412,6 +412,7 @@ static void YouModTranslateText(NSString *text, NSString *targetLang, void (^com
 }
 
 - (void)performTranslation {
+    self.translationState = YouModTranslationStateLoading;
     self.reloadButton.hidden = YES;
     self.resultTextView.text = LOC(@"TRANSLATING");
     self.resultTextView.textColor = [UIColor systemPurpleColor];
@@ -422,10 +423,12 @@ static void YouModTranslateText(NSString *text, NSString *targetLang, void (^com
         if (!strongSelf) return;
         
         if (translatedText && translatedText.length > 0) {
+            strongSelf.translationState = YouModTranslationStateSuccess;
             strongSelf.resultTextView.text = translatedText;
             strongSelf.resultTextView.textColor = [UIColor labelColor];
             strongSelf.reloadButton.hidden = YES;
         } else {
+            strongSelf.translationState = YouModTranslationStateFailed;
             strongSelf.resultTextView.text = LOC(@"TRANSLATE_FAILED");
             strongSelf.resultTextView.textColor = [UIColor systemRedColor];
             strongSelf.reloadButton.hidden = NO;
