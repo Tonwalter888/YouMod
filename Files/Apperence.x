@@ -134,8 +134,12 @@
 %hook MDCInkView
 - (void)didMoveToWindow {
     %orig;
-    UIView *sup = self.superview;
-    if ([sup isKindOfClass:%c(YTMenuItemMDCButton)] || [sup isKindOfClass:%c(GOODialogActionMDCButton)]) {
+    if ([self.superview isKindOfClass:%c(GOODialogActionMDCButton)]) {
+        UIResponder *responder = self.nextResponder;
+        while (responder != nil) {
+            if ([responder isKindOfClass:%c(YTBottomSheetController)]) return;
+            responder = responder.nextResponder;
+        }
         self.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
             return isDarkMode(self) ? [UIColor blackColor] : [UIColor clearColor];
         }];
