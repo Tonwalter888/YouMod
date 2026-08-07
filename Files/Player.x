@@ -1232,6 +1232,10 @@ static CGFloat remainingOverlayWidth(YTPlayerViewController *pvc, CGFloat fullWi
         lockAttachment.bounds = CGRectMake(0, -1, 12, 12);
     }
     
+    NSMutableParagraphStyle *paragraphStyle = [[NSMutableParagraphStyle alloc] init];
+    paragraphStyle.alignment = NSTextAlignmentCenter;
+    paragraphStyle.lineSpacing = 3.0;
+
     NSMutableAttributedString *attrString = [[NSMutableAttributedString alloc] initWithString:[NSString stringWithFormat:@" %@\n", LOC(@"PLAYBACK_SPEED")]];
     
     if (topAttachment.image) {
@@ -1247,17 +1251,27 @@ static CGFloat remainingOverlayWidth(YTPlayerViewController *pvc, CGFloat fullWi
     
     NSAttributedString *speedText = [[NSAttributedString alloc] initWithString:[NSString stringWithFormat:@"%gx", speed]];
     [attrString appendAttributedString:speedText];
+    [attrString addAttribute:NSParagraphStyleAttributeName value:paragraphStyle range:NSMakeRange(0, attrString.length)];
     
     self.YouModSpeedToastLabel.attributedText = attrString;
 
     CGFloat activeWidth = remainingOverlayWidth(self, self.playerView.bounds.size.width);
-    CGSize maxLabelSize = CGSizeMake(activeWidth * 0.8, CGFLOAT_MAX);
-    CGSize textSize = [self.YouModSpeedToastLabel sizeThatFits:maxLabelSize];
+    CGFloat maxAvailableWidth = activeWidth * 0.8;
+    CGSize maxLabelSize = CGSizeMake(maxAvailableWidth, CGFLOAT_MAX);
     
-    CGFloat paddingX = 24.0;
-    CGFloat paddingY = 10.0;
-    CGFloat toastWidth = fmaxf(textSize.width + paddingX, 140.0);
+    CGRect boundingBox = [attrString boundingRectWithSize:maxLabelSize 
+                                                  options:(NSStringDrawingUsesLineFragmentOrigin | NSStringDrawingUsesFontLeading) 
+                                                  context:nil];
+    CGSize textSize = CGSizeMake(ceilf(boundingBox.size.width), ceilf(boundingBox.size.height));
+    
+    CGFloat paddingY = 16.0;
     CGFloat toastHeight = textSize.height + paddingY;
+    
+    // Dynamic horizontal padding based on capsule corner geometry (radius = toastHeight / 2.0)
+    // Ensures text in any language sits comfortably inside the flat region of the pill container
+    CGFloat paddingX = toastHeight + 24.0;
+    CGFloat calculatedWidth = textSize.width + paddingX;
+    CGFloat toastWidth = fminf(fmaxf(calculatedWidth, toastHeight * 2.2), maxAvailableWidth + 24.0);
     
     self.YouModSpeedToastView.frame = CGRectMake(0, 0, toastWidth, toastHeight);
     self.YouModSpeedToastView.layer.cornerRadius = toastHeight / 2.0;

@@ -605,6 +605,7 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
 %ctor {
     [[NSUserDefaults standardUserDefaults] registerDefaults:@{
         AutoClearCache: @YES,
+        DownloadMethod: @2,
         YTLogoIndex: @1,
         HideCastButtonNav: @YES,
         HideCastButtonPlayer: @YES,
