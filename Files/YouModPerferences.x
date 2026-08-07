@@ -125,7 +125,6 @@
             }
         }
         [defaults setBool:YES forKey:AutoClearCache];
-        [defaults setBool:YES forKey:YTPremiumLogo];
         [defaults setBool:YES forKey:HideCastButtonNav];
         [defaults setBool:YES forKey:HideCastButtonPlayer];
         [defaults setBool:YES forKey:BackgroundPlayback];
@@ -134,6 +133,7 @@
         [defaults setInteger:1 forKey:LeftSideGesture];
         [defaults setInteger:2 forKey:RightSideGesture];
         [defaults setInteger:1 forKey:GestureHUDSize];
+        [defaults setInteger:1 forKey:YTLogoIndex];
         [defaults synchronize];
         [[UIApplication sharedApplication] performSelector:@selector(suspend)];
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.3 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
