@@ -99,10 +99,7 @@ static BOOL isFullscreenEnabled = NO;
 
     // If found, change to it
     if (matchedTrack) {
-        void (*sendTrackChangeMsg)(id, SEL, id, NSInteger) = (void (*)(id, SEL, id, NSInteger))objc_msgSend;
-        sendTrackChangeMsg(switchcon, @selector(notifyObserversAudioTrackWillChange:source:), matchedTrack, 0);
-        sendTrackChangeMsg(switchcon, @selector(switchToAudioTrack:source:), matchedTrack, 0);
-        sendTrackChangeMsg(switchcon, @selector(notifyObserversAudioTrackDidChange:source:), matchedTrack, 0);
+        [pv setAudioTrack:matchedTrack source:0];
     }
 }
 %end

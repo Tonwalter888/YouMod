@@ -163,7 +163,7 @@
 %end
 
 %hook YTStartupAnimationViewController
-- (void)viewDidLoad {
+- (void)viewDidAppear:(BOOL)animated {
     %orig;
     UIView *mainView = self.view;
     mainView.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {

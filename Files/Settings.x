@@ -222,12 +222,11 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
     // Navigation bar
     NSArray<YMSettingsItem *> *navbarItems = @[
             YMToggle(YMLOC(@"STICKY_NAVBAR"), YMLOC(@"STICKY_NAVBAR_DESC"), StickyNavBar),
-            YMToggle(YMLOC(@"HIDE_YT_LOGO"), YMLOC(@"HIDE_YT_LOGO_DESC"), HideYTLogo),
-            YMToggle(YMLOC(@"PREMIUM_LOGO"), YMLOC(@"PREMIUM_LOGO_DESC"), YTPremiumLogo),
             YMToggle(YMLOC(@"HIDE_NOTIFICATION_BUTTON"), YMLOC(@"HIDE_NOTIFICATION_BUTTON_DESC"), HideNoti),
             YMToggle(YMLOC(@"HIDE_SEARCH_BUTTON"), YMLOC(@"HIDE_SEARCH_BUTTON_DESC"), HideSearch),
             YMToggle(YMLOC(@"HIDE_VOICE_SEARCH_BUTTON"), YMLOC(@"HIDE_VOICE_SEARCH_BUTTON_DESC"), HideVoiceSearch),
             YMToggle(YMLOC(@"HIDE_CAST_BUTTON_NAVBAR"), YMLOC(@"HIDE_CAST_BUTTON_NAVBAR_DESC"), HideCastButtonNav),
+            YMPicker(YMLOC(@"NAVIGATION_ICON"), YMLOC(@"NAVIGATION_ICON_DESC"), YTLogoIndex, (@[YMLOC(@"DEFAULT"), YMLOC(@"PREMIUM"), YMLOC(@"YOUTUBE"), YMLOC(@"REMOVE_YTLOGO")]), 0),
     ];
     YMRegisterSettingsGroup(YMLOC(@"NAVBAR"), navbarItems);
     YTSettingsSectionItem *navbargroup = [YTSettingsSectionItemClass itemWithTitle:YMLOC(@"NAVBAR") accessibilityIdentifier:nil detailTextBlock:nil selectBlock:^BOOL (YTSettingsCell *cell, NSUInteger arg1) {
@@ -309,6 +308,7 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
             YMToggle(YMLOC(@"HIDE_RELATED_VIDEOS"), YMLOC(@"HIDE_RELATED_VIDEOS_DESC"), HideRelatedVideos),
             YMToggle(YMLOC(@"HIDE_COMMENTS_SECTION"), YMLOC(@"HIDE_COMMENTS_SECTION_DESC"), HideCommentsSection),
             YMToggle(YMLOC(@"HIDE_COMMENTS_PREVIEW"), YMLOC(@"HIDE_COMMENTS_PREVIEW_DESC"), HideCommentsPreview),
+            YMPicker(YMLOC(@"DRC_AUDIO_OPTIONS"), YMLOC(@"DRC_AUDIO_OPTIONS_DESC"), AutoDRCAudioIndex, (@[YMLOC(@"DEFAULT"), YMLOC(@"ENABLED"), YMLOC(@"DISABLED")]), 0),
             YMHeader(YMLOC(@"CONTROL_CENTER")),
             YMToggle(YMLOC(@"SKIP_BACKWARD"), YMLOC(@"SKIP_BACKWARD_DESC"), SkipBackwardEnabled),
             [YMSlider(YMLOC(@"REWIND_SECONDS"), nil, RewindSeconds, 5, 60, 5, 10) visibleWhenBoolKey:SkipBackwardEnabled],

@@ -111,8 +111,7 @@
 #define OLEDTheme @"YouModEnablesOLEDTheme"
 #define OLEDKeyboard @"YouModEnablesOLEDKeyboard"
 // Navigation bar
-#define HideYTLogo @"YouModHideYTLogo"
-#define YTPremiumLogo @"YouModYTPremiumLogo"
+#define YTLogoIndex @"YouModYTLogoIndex"
 #define StickyNavBar @"YouModStickyNavBar"
 #define HideNoti @"YouModHideNotificationButton"
 #define HideSearch @"YouModHideSearchButton"
@@ -192,6 +191,7 @@
 #define LockSpeed @"YouModLockSpeed"
 #define UseAnotherMiniplayer @"YouModUseAnotherMiniplayer"
 #define SeekOnOverlay @"YouModSeekOnOverlay"
+#define AutoDRCAudioIndex @"YouModAutoDRCAudioIndex"
 // Shorts
 #define HideShortsTopbar @"YouModHideShortsTopbar"
 #define HideShortsSubbar @"YouModHideShortsSubbar"
@@ -414,6 +414,9 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 - (id)audioTrackController;
 - (void)YouModHideSpeedToast;
 - (void)YouModShowSpeedToast:(CGFloat)speed isLocked:(BOOL)isLocked;
+- (void)YouModAutoDRCAudio;
+- (void)setAudioTrack:(YTIAudioTrack *)arg1 source:(NSInteger)arg2;
+- (void)setAudioDRCEnabled:(BOOL)arg;
 @end
 
 @interface YTPlayerBarController (YouMod)

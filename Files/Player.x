@@ -407,6 +407,7 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
     YTPlayerViewController *playerviewController = [playerview valueForKey:@"_playerViewDelegate"];
     YouModDownloadSetCurrentPlayer(playerviewController);
     YouModConfigureRemoteSkipCommands();
+    if (INTFORVAL(AutoDRCAudioIndex) != 0) [playerviewController YouModAutoDRCAudio];
     if (INTFORVAL(AudioTrack) != 0) [playerviewController YouModAutoAudioTrack];
     if (IS_ENABLED(MuteButton)) [playerviewController YouModAutoMute];
     if (IS_ENABLED(AutoFullScreen)) [playerviewController performSelector:@selector(YouModAutoFullscreen) withObject:nil afterDelay:0.5];
@@ -696,7 +697,46 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
     }
     %orig;
 }
-%end
+
+static YTMainAppVideoPlayerOverlayView *getMainVideoOverlay(YTPlayerViewController *pvc) {
+    YTMainAppVideoPlayerOverlayViewController *ovcon = [pvc activeVideoPlayerOverlay];
+    return [ovcon videoPlayerOverlayView];
+}
+
+static BOOL isRelatedVideosPanelEnabled(YTPlayerViewController *pvc) {
+    YTMainAppVideoPlayerOverlayView *ov = getMainVideoOverlay(pvc);
+    YTFullscreenEngagementOverlayView *fullov = [ov valueForKey:@"_fullscreenEngagementOverlayView"];
+    if (fullov) {
+        YTRelatedVideosView *relatedview = [fullov valueForKey:@"_relatedVideosView"];
+        YTRelatedVideosViewController *relatedcon = [relatedview valueForKey:@"_delegate"];
+        return [relatedcon isExpanded];
+    }    
+    return NO;
+}
+
+static CGFloat remainingOverlayWidth(YTPlayerViewController *pvc, CGFloat fullWidth) {
+    YTMainAppVideoPlayerOverlayView *ov = getMainVideoOverlay(pvc);
+    YTEngagementPanelContainerView *engagecontainer = [ov valueForKey:@"_engagementPanelContainerView"];
+    if (engagecontainer) {
+        if (engagecontainer.engagementPanelState == 3) {
+            UIView *mainpanel = nil;
+            for (UIView *sub in engagecontainer.subviews) {
+                if ([sub isKindOfClass:%c(UILayoutContainerView)]) {
+                    mainpanel = sub;
+                    break;
+                }
+            }
+            if (mainpanel) {
+                CGFloat panelWidth = mainpanel.bounds.size.width;
+                if (panelWidth > 0 && panelWidth < fullWidth) {
+                    CGFloat remainingWidth = fullWidth - panelWidth;
+                    return remainingWidth;
+                }
+            }
+        }
+    }
+    return fullWidth;
+}
 
 %hook YTPlayerViewController
 %property (nonatomic, retain) UIPanGestureRecognizer *YouModPanGesture;
@@ -711,43 +751,15 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
         if (self.YouModHoldGesture && (self.YouModHoldGesture.state == UIGestureRecognizerStateBegan || self.YouModHoldGesture.state == UIGestureRecognizerStateChanged)) {
             return NO;
         }
-        // Return NO if user is choosing other videos in fullscreen
-        YTMainAppVideoPlayerOverlayViewController *ovcon = [self activeVideoPlayerOverlay];
-        YTMainAppVideoPlayerOverlayView *ov = [ovcon videoPlayerOverlayView];
-        YTFullscreenEngagementOverlayView *fullov = [ov valueForKey:@"_fullscreenEngagementOverlayView"];
-        if (fullov) {
-            YTRelatedVideosView *relatedview = [fullov valueForKey:@"_relatedVideosView"];
-            YTRelatedVideosViewController *relatedcon = [relatedview valueForKey:@"_delegate"];
-            if ([relatedcon isExpanded]) return NO;
-        }           
+
+        if (isRelatedVideosPanelEnabled(self)) return NO;          
 
         UIPanGestureRecognizer *panGesture = (UIPanGestureRecognizer *)gestureRecognizer;
         CGPoint startLocation = [panGesture locationInView:self.view];
         CGPoint velocity = [panGesture velocityInView:self.view];
-        CGFloat fullWidth = self.view.bounds.size.width;
-        CGFloat activeWidth = fullWidth;
-
-        // Adjust the gesture view if the engagement panel is on
-        YTEngagementPanelContainerView *engagecontainer = [ov valueForKey:@"_engagementPanelContainerView"];
-        if (engagecontainer) {
-            if (engagecontainer.engagementPanelState == 3) {
-                UIView *mainpanel = nil;
-                for (UIView *sub in engagecontainer.subviews) {
-                    if ([sub isKindOfClass:%c(UILayoutContainerView)]) {
-                        mainpanel = sub;
-                        break;
-                    }
-                }
-                if (mainpanel) {
-                    CGFloat panelWidth = mainpanel.bounds.size.width;
-                    if (panelWidth > 0 && panelWidth < fullWidth) {
-                        CGFloat remainingWidth = fullWidth - panelWidth;
-                        if (startLocation.x > remainingWidth) return NO;
-                        activeWidth = remainingWidth;
-                    }
-                }
-            }
-        }
+        CGFloat activeWidth = remainingOverlayWidth(self, self.view.bounds.size.width);
+        
+        if (startLocation.x > remainingWidth) return NO;
 
         BOOL isHorizontal = fabs(velocity.x) > fabs(velocity.y);
 
@@ -838,26 +850,7 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
             [playerbarcon didScrub:panGestureRecognizer];
         } else if (currentPanMode == 1) {
             CGPoint startLocation = [panGestureRecognizer locationInView:self.view];
-            CGFloat fullWidth = self.view.bounds.size.width;
-            CGFloat activeWidth = fullWidth;
-
-            YTMainAppVideoPlayerOverlayView *ov = [ovcon videoPlayerOverlayView];
-            YTEngagementPanelContainerView *engagecontainer = [ov valueForKey:@"_engagementPanelContainerView"];
-            if (engagecontainer && engagecontainer.engagementPanelState == 3) {
-                UIView *mainpanel = nil;
-                for (UIView *sub in engagecontainer.subviews) {
-                    if ([sub isKindOfClass:%c(UILayoutContainerView)]) {
-                        mainpanel = sub;
-                        break;
-                    }
-                }
-                if (mainpanel) {
-                    CGFloat panelWidth = mainpanel.bounds.size.width;
-                    if (panelWidth > 0 && panelWidth < fullWidth) {
-                        activeWidth = fullWidth - panelWidth;
-                    }
-                }
-            }
+            CGFloat activeWidth = remainingOverlayWidth(self, self.view.bounds.size.width);
 
             float areaPercent = 0.15;
             int areaSetting = INTFORVAL(GestureActivationArea);
@@ -1040,34 +1033,11 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
 // Pause using Two fingers
 %new
 - (void)YouModHandleTapGesture:(UITapGestureRecognizer *)tapGestureRecognizer {
-    YTMainAppVideoPlayerOverlayViewController *ovcon = [self activeVideoPlayerOverlay];
-    YTMainAppVideoPlayerOverlayView *ov = [ovcon videoPlayerOverlayView];
-    YTFullscreenEngagementOverlayView *fullov = [ov valueForKey:@"_fullscreenEngagementOverlayView"];
-    if (fullov) {
-        YTRelatedVideosView *relatedview = [fullov valueForKey:@"_relatedVideosView"];
-        YTRelatedVideosViewController *relatedcon = [relatedview valueForKey:@"_delegate"];
-        if ([relatedcon isExpanded]) return;
-    }
+    if (isRelatedVideosPanelEnabled(self)) return;  
 
     CGPoint startLocation = [tapGestureRecognizer locationInView:self.view];
-    CGFloat fullWidth = self.view.bounds.size.width;
-    YTEngagementPanelContainerView *engagecontainer = [ov valueForKey:@"_engagementPanelContainerView"];
-    if (engagecontainer && engagecontainer.engagementPanelState == 3) {
-        UIView *mainpanel = nil;
-        for (UIView *sub in engagecontainer.subviews) {
-            if ([sub isKindOfClass:%c(UILayoutContainerView)]) {
-                mainpanel = sub;
-                break;
-            }
-        }
-        if (mainpanel) {
-            CGFloat panelWidth = mainpanel.bounds.size.width;
-            if (panelWidth > 0 && panelWidth < fullWidth) {
-                CGFloat remainingWidth = fullWidth - panelWidth;
-                if (startLocation.x > remainingWidth) return;
-            }
-        }
-    }
+    CGFloat remainingWidth = remainingOverlayWidth(self, self.view.bounds.size.width);
+    if (startLocation.x > remainingWidth) return;
 
     if (tapGestureRecognizer.state == UIGestureRecognizerStateEnded) {
         if (self.playerState == 3) {
@@ -1159,10 +1129,7 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
 
     // If found, change to it
     if (matchedTrack) {
-        void (*sendTrackChangeMsg)(id, SEL, id, NSInteger) = (void (*)(id, SEL, id, NSInteger))objc_msgSend;
-        sendTrackChangeMsg(switchcon, @selector(notifyObserversAudioTrackWillChange:source:), matchedTrack, 0);
-        sendTrackChangeMsg(switchcon, @selector(switchToAudioTrack:source:), matchedTrack, 0);
-        sendTrackChangeMsg(switchcon, @selector(notifyObserversAudioTrackDidChange:source:), matchedTrack, 0);
+        [self setAudioTrack:matchedTrack source:0];
     }
 }
 
@@ -1295,34 +1262,11 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
 
 %new
 - (void)YouModHoldToSpeed:(UILongPressGestureRecognizer *)gesture {
-    YTMainAppVideoPlayerOverlayViewController *ovcon = [self activeVideoPlayerOverlay];
-    YTMainAppVideoPlayerOverlayView *ov = [ovcon videoPlayerOverlayView];
-    YTFullscreenEngagementOverlayView *fullov = [ov valueForKey:@"_fullscreenEngagementOverlayView"];
-    if (fullov) {
-        YTRelatedVideosView *relatedview = [fullov valueForKey:@"_relatedVideosView"];
-        YTRelatedVideosViewController *relatedcon = [relatedview valueForKey:@"_delegate"];
-        if ([relatedcon isExpanded]) return;
-    }
+    if (isRelatedVideosPanelEnabled(self)) return;
 
     CGPoint touchLocation = [gesture locationInView:self.view];
-    CGFloat fullWidth = self.view.bounds.size.width;
-    YTEngagementPanelContainerView *engagecontainer = [ov valueForKey:@"_engagementPanelContainerView"];
-    if (engagecontainer && engagecontainer.engagementPanelState == 3) {
-        UIView *mainpanel = nil;
-        for (UIView *sub in engagecontainer.subviews) {
-            if ([sub isKindOfClass:%c(UILayoutContainerView)]) {
-                mainpanel = sub;
-                break;
-            }
-        }
-        if (mainpanel) {
-            CGFloat panelWidth = mainpanel.bounds.size.width;
-            if (panelWidth > 0 && panelWidth < fullWidth) {
-                CGFloat remainingWidth = fullWidth - panelWidth;
-                if (touchLocation.x > remainingWidth) return;
-            }
-        }
-    }
+    CGFloat activeWidth = remainingOverlayWidth(self. self.view.bounds.size.width);
+    if (touchLocation.x > remainingWidth) return;
 
     NSInteger speedIndex = INTFORVAL(HoldToSpeedIndex);
     CGFloat speed = YouModSpeedForHoldIndex(speedIndex);
@@ -1417,6 +1361,16 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
         isPendingToggle = NO;
         [self YouModHideSpeedToast];
     }
+}
+%new
+- (void)YouModAutoDRCAudio {
+    BOOL value;
+    if (INTFORVAL(AutoDRCAudioIndex) == 1) {
+        value = YES;
+    } else if (INTFORVAL(AutoDRCAudioIndex) == 2) {
+        value = NO;
+    }
+    [self setAudioDRCEnabled:value];
 }
 %end
 

@@ -3,44 +3,74 @@
 // YouTube Premium logo
 %hook YTHeaderLogoController
 - (void)setTopbarLogoRenderer:(YTITopbarLogoRenderer *)renderer {
-    if (!IS_ENABLED(YTPremiumLogo)) {
+    if (INTFORVAL(YTLogoIndex) == 0) {
         %orig;
         return;
     }
     // Modify the type of the icon before setting the renderer
     YTIIcon *icon = renderer.iconImage;
     if (icon) {
-        icon.iconType = 537;
+        if (INTFORVAL(YTLogoIndex) == 1) {
+            icon.iconType = 537;
+        } else if (INTFORVAL(YTLogoIndex) == 2) {
+            icon.iconType = 158;
+        }
     }
     %orig(renderer);
 }
 // For when spoofing before 18.34.5
 - (void)setPremiumLogo:(BOOL)arg { 
-    BOOL temp = IS_ENABLED(YTPremiumLogo) ? YES : arg;
-    %orig(temp);
+    if (INTFORVAL(YTLogoIndex) == 1) {
+        arg = YES;
+    } else if (INTFORVAL(YTLogoIndex) == 2) {
+        arg = NO;
+    }
+    %orig(arg);
 }
-- (BOOL)isPremiumLogo { return IS_ENABLED(YTPremiumLogo) ? YES : %orig; }
+- (BOOL)isPremiumLogo { 
+    if (INTFORVAL(YTLogoIndex) == 1) {
+        return YES;
+    } else if (INTFORVAL(YTLogoIndex) == 2) {
+        return NO;
+    }
+    return %orig;
+}
 %end
 
 %hook YTHeaderLogoControllerImpl
 - (void)setTopbarLogoRenderer:(YTITopbarLogoRenderer *)renderer {
-    if (!IS_ENABLED(YTPremiumLogo)) {
+    if (INTFORVAL(YTLogoIndex) == 0) {
         %orig;
         return;
     }
     // Modify the type of the icon before setting the renderer
     YTIIcon *icon = renderer.iconImage;
     if (icon) {
-        icon.iconType = 537;
+        if (INTFORVAL(YTLogoIndex) == 1) {
+            icon.iconType = 537;
+        } else if (INTFORVAL(YTLogoIndex) == 2) {
+            icon.iconType = 158;
+        }
     }
     %orig(renderer);
 }
 // For when spoofing before 18.34.5
 - (void)setPremiumLogo:(BOOL)arg { 
-    BOOL temp = IS_ENABLED(YTPremiumLogo) ? YES : arg;
-    %orig(temp);
+    if (INTFORVAL(YTLogoIndex) == 1) {
+        arg = YES;
+    } else if (INTFORVAL(YTLogoIndex) == 2) {
+        arg = NO;
+    }
+    %orig(arg);
 }
-- (BOOL)isPremiumLogo { return IS_ENABLED(YTPremiumLogo) ? YES : %orig; }
+- (BOOL)isPremiumLogo { 
+    if (INTFORVAL(YTLogoIndex) == 1) {
+        return YES;
+    } else if (INTFORVAL(YTLogoIndex) == 2) {
+        return NO;
+    }
+    return %orig;
+}
 %end
 
 // Hide Navigation Bar Buttons
@@ -58,20 +88,20 @@
 
 %hook YTHeaderLogoController
 - (id)init {
-    return IS_ENABLED(HideYTLogo) ? nil : %orig;
+    return INTFORVAL(YTLogoIndex) == 3 ? nil : %orig;
 }
 %end
 
 %hook YTHeaderLogoControllerImpl
 - (id)init {
-    return IS_ENABLED(HideYTLogo) ? nil : %orig;
+    return INTFORVAL(YTLogoIndex) == 3 ? nil : %orig;
 }
 %end
 
 %hook YTNavigationBarTitleView
 - (void)didMoveToWindow {
     %orig;
-    if (IS_ENABLED(HideYTLogo)) {
+    if (INTFORVAL(YTLogoIndex) == 3) {
         for (UIView *sub in self.subviews) {
             if ([sub.accessibilityIdentifier isEqualToString:@"id.yoodle.logo"] || [sub.accessibilityIdentifier isEqualToString:@"id.youtube.logo"]) {
                 [sub removeFromSuperview];
