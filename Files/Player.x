@@ -760,7 +760,7 @@ static CGFloat remainingOverlayWidth(YTPlayerViewController *pvc, CGFloat fullWi
         CGPoint velocity = [panGesture velocityInView:self.view];
         CGFloat activeWidth = remainingOverlayWidth(self, self.view.bounds.size.width);
         
-        if (startLocation.x > remainingWidth) return NO;
+        if (startLocation.x > activeWidth) return NO;
 
         BOOL isHorizontal = fabs(velocity.x) > fabs(velocity.y);
 
@@ -1266,8 +1266,8 @@ static CGFloat remainingOverlayWidth(YTPlayerViewController *pvc, CGFloat fullWi
     if (isRelatedVideosPanelEnabled(self)) return;
 
     CGPoint touchLocation = [gesture locationInView:self.view];
-    CGFloat activeWidth = remainingOverlayWidth(self. self.view.bounds.size.width);
-    if (touchLocation.x > remainingWidth) return;
+    CGFloat activeWidth = remainingOverlayWidth(self, self.view.bounds.size.width);
+    if (touchLocation.x > activeWidth) return;
 
     NSInteger speedIndex = INTFORVAL(HoldToSpeedIndex);
     CGFloat speed = YouModSpeedForHoldIndex(speedIndex);
