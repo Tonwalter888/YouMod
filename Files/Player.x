@@ -697,6 +697,7 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
     }
     %orig;
 }
+%end
 
 static YTMainAppVideoPlayerOverlayView *getMainVideoOverlay(YTPlayerViewController *pvc) {
     YTMainAppVideoPlayerOverlayViewController *ovcon = [pvc activeVideoPlayerOverlay];
