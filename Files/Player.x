@@ -781,7 +781,7 @@ static BOOL isInZoom(YTPlayerViewController *pvc) {
         BOOL isHorizontal = fabs(velocity.x) > fabs(velocity.y);
 
         if (isHorizontal) {
-            return IS_ENABLED(SeekOnOverlay) && !isInZoom(pvc);
+            return IS_ENABLED(SeekOnOverlay) && !isInZoom(self);
         } else {
             if (!IS_ENABLED(GestureControls)) return NO;
 
