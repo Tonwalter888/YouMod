@@ -1,6 +1,9 @@
 "SETTINGS" = "การตั้งค่า";
 "INTERFACE" = "ลักษณะ";
 
+"SEARCH" = "ค้นหา";
+"SEARCH_DESC" = "ค้นหาการตั้งค่า YouMod";
+
 "URL_COPIED" = "คัดลอกลิงก์วิดีโอแล้ว";
 "COPY_URL" = "คัดลอกลิงก์วิดีโอ";
 "COPY_URL_TIMESTAMP" = "คัดลอกลิงก์วิดีโอพร้อมเวลา";
@@ -143,10 +146,11 @@
 "NAVBAR" = "แถบนำทาง";
 "STICKY_NAVBAR" = "ยึดแถบนำทาง";
 "STICKY_NAVBAR_DESC" = "ล็อกแถบนำทางให้คงเห็นอยู่เมื่อเลื่อนลง";
-"HIDE_YT_LOGO" = "ซ่อนโลโก้ YouTube";
-"HIDE_YT_LOGO_DESC" = "ซ่อนโลโก้ YouTube ในแถบนำทาง";
-"PREMIUM_LOGO" = "ใช้โลโก้ YouTube Premium";
-"PREMIUM_LOGO_DESC" = "ใช้โลโก้ YouTube Premium แทนโลโก้ปกติ";
+"NAVIGATION_ICON" = "ไอคอนแถบนำทาง";
+"NAVIGATION_ICON_DESC" = "เปลี่ยนโลโก้ YouTube ในแถบนำทาง";
+"PREMIUM" = "พรีเมียม";
+"REMOVE_YTLOGO" = "ลบโลโก้";
+"YOUTUBE" = "YouTube";
 "HIDE_NOTIFICATION_BUTTON" = "ซ่อนปุ่มแจ้งเตือน";
 "HIDE_NOTIFICATION_BUTTON_DESC" = "ซ่อนปุ่มแจ้งเตือนในแถบนำทาง";
 "HIDE_SEARCH_BUTTON" = "ซ่อนปุ่มค้นหา";
@@ -329,6 +333,8 @@
 "LOCK_SPEED_DESC" = "ล็อคตามความเร็วที่เลือกไว้โดยการเลื่อนลง";
 "SEEK_ON_OVERLAY" = "กรอวิดีโอบนโอเวอร์เลย์";
 "SEEK_ON_OVERLAY_DESC" = "อนุญาตให้ควบคุมการกรอวิดีโอเดินหน้า-ถอยหลัง โดยการปัดไปทางซ้ายและขวาบนโอเวอร์เลย์วิดีโอ";
+"DRC_AUDIO_OPTIONS" = "การเปิด/ปิด DRC อัตโนมัติ";
+"DRC_AUDIO_OPTIONS_DESC" = "ตั้งค่าเลือกเปิดหรือปิด DRC (Dynamic Range Compression) โดยอัตโนมัติ";
 
 "SHORTS" = "Shorts";
 "HIDE_SHORTS_TOPBAR" = "ซ่อนแถบด้านบน";

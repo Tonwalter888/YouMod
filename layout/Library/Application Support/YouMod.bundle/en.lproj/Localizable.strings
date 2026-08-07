@@ -523,3 +523,15 @@
 "SB_SKIP_ALERT_DURATION" = "Skip alert duration";
 "SB_UNSKIP_ALERT_DURATION" = "Unskip alert duration";
 "SB_MIN_DURATION_SLIDER" = "Minimum segment duration to skip";
+
+"SEARCH" = "Search";
+"SEARCH_DESC" = "Search YouMod settings.";
+"NAVIGATION_ICON" = "Navigation icon";
+"NAVIGATION_ICON_DESC" = "Change YouTube logo in the navigation bar.";
+"PREMIUM" = "Premium";
+"YOUTUBE" = "YouTube";
+"REMOVE_YTLOGO" = "Remove logo";
+"DRC_AUDIO_OPTIONS" = "Auto DRC audio";
+"DRC_AUDIO_OPTIONS_DESC" = "Automatically chooses whether to enable or disable DRC.";
+
+"AUDIO_SAVED" = "Audio saved";
