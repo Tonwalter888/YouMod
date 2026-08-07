@@ -531,7 +531,7 @@
 "PREMIUM" = "Premium";
 "YOUTUBE" = "YouTube";
 "REMOVE_YTLOGO" = "Remove logo";
-"DRC_AUDIO_OPTIONS" = "Auto DRC audio";
-"DRC_AUDIO_OPTIONS_DESC" = "Automatically chooses whether to enable or disable DRC.";
+"DRC_AUDIO_OPTIONS" = "Auto Stable volume";
+"DRC_AUDIO_OPTIONS_DESC" = "Automatically chooses whether to enable or disable Stable volume.";
 
 "AUDIO_SAVED" = "Audio saved";
