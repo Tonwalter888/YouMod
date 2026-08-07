@@ -431,10 +431,8 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
 %end
 
 // Disable Ambiant mode (Hide the lights)
-%hook YTCinematicContainerView
-- (void)layoutSubviews { if (!IS_ENABLED(RemoveAmbiant)) %orig; }
-- (void)loadWithModel:(id)arg { if (!IS_ENABLED(RemoveAmbiant)) %orig; }
-- (id)initWithFrame:(CGRect)arg { return IS_ENABLED(RemoveAmbiant) ? nil : %orig; }
+%hook YTWatchView
+- (void)setCinematicContainerView:(id)arg { if (!IS_ENABLED(RemoveAmbiant)) %orig; }
 %end
 
 // Disable Autoplay 
@@ -456,7 +454,7 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
 
 // Portrait Fullscreen
 %hook YTWatchViewController
-- (unsigned long long)allowedFullScreenOrientations { return IS_ENABLED(PortFull) ? UIInterfaceOrientationMaskAllButUpsideDown : %orig; }
+- (NSUInteger)allowedFullScreenOrientations { return IS_ENABLED(PortFull) ? UIInterfaceOrientationMaskAllButUpsideDown : %orig; }
 %end
 
 %group ForceMiniPlayer
