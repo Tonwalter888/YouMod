@@ -54,6 +54,12 @@ on:
         required: false
         type: boolean
 
+      youquality:
+        description: "Integrate YouQuality"
+        default: false
+        required: false
+        type: boolean
+
       demc:
         description: "Integrate DontEatMyContent"
         default: true
@@ -105,7 +111,7 @@ jobs:
       - name: Hide Sensitive Inputs
         uses: levibostian/action-hide-sensitive-inputs@v1
         with:
-          exclude_inputs: bundle_id,display_name,youpip,ytuhd,ryd,abconfig,ytweaks,youslider,gonerino,demc,volboost
+          exclude_inputs: bundle_id,display_name,youpip,ytuhd,ryd,abconfig,ytweaks,youslider,gonerino,demc,volboost,repo,branch,youquality
           
       - name: Install MEGA downloader
         if: ${{ startsWith(inputs.ipa_url, 'https://mega.nz/') }}
@@ -235,7 +241,7 @@ jobs:
         run: git clone --quiet --depth=1 https://github.com/PoomSmart/YouGroupSettings.git
            
       - name: Clone YTVideoOverlay
-        if: ${{ inputs.youpip || inputs.ytuhd }}
+        if: ${{ inputs.youpip || inputs.ytuhd || inputs.youquality }}
         run: git clone --quiet --depth=1 https://github.com/PoomSmart/YTVideoOverlay.git
           
       - name: Clone YTABConfig
@@ -270,6 +276,10 @@ jobs:
       - name: Clone VolumeBoostYT
         if: ${{ inputs.volboost }}
         run: git clone --quiet --depth=1 https://github.com/VasirakCalgux/VolumeBoostYT.git
+
+      - name: Clone YouQuality
+        if: ${{ inputs.youquality }}
+        run: git clone --quiet --depth=1 https://github.com/PoomSmart/YouQuality.git
 
       - name: Build YouMod
         run: |
@@ -308,7 +318,7 @@ jobs:
           mv packages/*.deb ${{ github.workspace }}/ygs.deb
 
       - name: Build YTVideoOverlay
-        if: ${{ inputs.youpip || inputs.ytuhd }}
+        if: ${{ inputs.youpip || inputs.ytuhd || inputs.youquality }}
         run: |
           cd YTVideoOverlay
           make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
@@ -369,6 +379,13 @@ jobs:
           cd VolumeBoostYT
           make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless ARCHS=arm64
           mv packages/*.deb ${{ github.workspace }}/volboostyt.deb
+
+      - name: Build YouQuality
+        if: ${{ inputs.youquality }}
+        run: |
+          cd YouQuality
+          make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
+          mv packages/*.deb ${{ github.workspace }}/youquality.deb
           
       - name: Inject Tweaks Into IPA
         run: |
