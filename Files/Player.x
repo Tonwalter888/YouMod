@@ -698,6 +698,7 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
         if (!playerViewController.YouModHoldGesture && INTFORVAL(HoldToSpeedIndex) != 0) {
             playerViewController.YouModHoldGesture = [[UILongPressGestureRecognizer alloc] initWithTarget:playerViewController action:@selector(YouModHoldToSpeed:)];
             playerViewController.YouModHoldGesture.minimumPressDuration = 0.4;
+            playerViewController.YouModHoldGesture.cancelsTouchesInView = YES;
             playerViewController.YouModHoldGesture.delegate = playerViewController;
             [pv addGestureRecognizer:playerViewController.YouModHoldGesture];   
         }
@@ -799,6 +800,15 @@ static CGFloat remainingOverlayWidth(YTPlayerViewController *pvc, CGFloat fullWi
 
             return YES;
         }
+    }
+    if (gestureRecognizer == self.YouModHoldGesture) {
+        if (self.YouModPanGesture && (self.YouModPanGesture.state == UIGestureRecognizerStateBegan || self.YouModPanGesture.state == UIGestureRecognizerStateChanged)) {
+            return NO;
+        }
+        if (isRelatedVideosPanelEnabled(self)) return NO;
+        CGPoint touchLocation = [gestureRecognizer locationInView:self.view];
+        CGFloat activeWidth = remainingOverlayWidth(self, self.view.bounds.size.width);
+        if (touchLocation.x > activeWidth) return NO;
     }
     return YES;
 }
@@ -1024,7 +1034,7 @@ static CGFloat remainingOverlayWidth(YTPlayerViewController *pvc, CGFloat fullWi
     if (gestureRecognizer == self.YouModPanGesture && [otherGestureRecognizer isKindOfClass:[UIPanGestureRecognizer class]]) {
         return YES;
     }
-    if (gestureRecognizer == self.YouModHoldGesture) {
+    if (gestureRecognizer == self.YouModHoldGesture && ![otherGestureRecognizer isKindOfClass:[UIPanGestureRecognizer class]]) {
         return YES;
     }
     return NO;
@@ -1036,7 +1046,10 @@ static CGFloat remainingOverlayWidth(YTPlayerViewController *pvc, CGFloat fullWi
         return NO; 
     }
     if (gestureRecognizer == self.YouModHoldGesture || otherGestureRecognizer == self.YouModHoldGesture) {
-        return NO;
+        if ([gestureRecognizer isKindOfClass:[UIPanGestureRecognizer class]] || [otherGestureRecognizer isKindOfClass:[UIPanGestureRecognizer class]]) {
+            return NO;
+        }
+        return YES;
     }
     return YES;
 }
