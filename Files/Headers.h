@@ -66,7 +66,6 @@
 #import <YouTubeHeader/YTWatchNextResultsViewController.h>
 #import <YouTubeHeader/YTIThumbnailDetails.h>
 #import <YouTubeHeader/YTIThumbnailDetails_Thumbnail.h>
-#import <YouTubeHeader/YTLocalPlaybackController.h>
 
 // For Settings.x and SponsorBlockSettings.x
 #import <PSHeader/Misc.h>
