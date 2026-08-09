@@ -2232,7 +2232,7 @@ static UIImage *YouModExtractPostImage(UIView *cellView) {
     CGFloat btnHeight = 60.0;
     
     CGFloat pX = likeButtonView.frame.origin.x;
-    CGFloat pY = likeButtonView.frame.origin.y + 85.0;
+    CGFloat pY = likeButtonView.frame.origin.y + 65.0;
     
     downloadBtn.frame = CGRectMake(pX, pY, btnWidth, btnHeight);
     

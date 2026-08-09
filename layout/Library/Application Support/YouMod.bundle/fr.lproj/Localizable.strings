@@ -337,9 +337,9 @@
 "SHORTS_ONLY_DESC" = "Limits YouTube functionality to viewing Shorts only. You can disable Shorts only mode by long pressing with two fingers in the Shorts player.";
 "SHORTS_ONLY_DISABLED" = "Shorts only mode has been turned off";
 "SHORTS_ACTION" = "Shorts action after the video ends";
-"LOOP" = "Loop video";
-"SKIP_TO_NEXT_SHORTS" = "Skip to next video";
-"PAUSE_SHORTS" = "Stop video";
+"LOOP" = "Loop";
+"SKIP_TO_NEXT_SHORTS" = "Skip to next";
+"PAUSE_SHORTS" = "Stop";
 "REMOVE_LIVE_SHORTS" = "Remove live videos";
 "REMOVE_LIVE_SHORTS_DESC" = "Removes live videos from the feed.";
 "HIDE_SHORTS_PRODUCT" = "Hide products";

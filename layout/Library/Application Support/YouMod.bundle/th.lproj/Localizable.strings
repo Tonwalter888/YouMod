@@ -345,9 +345,9 @@
 "SHORTS_ONLY_DESC" = "จำกัดหน้าฟีดให้แสดงเฉพาะ Shorts เท่านั้น คุณสามารถปิดใช้งานโหมด Shorts เท่านั้นได้โดยการกดค้างด้วยสองนิ้วในเครื่องเล่น Shorts";
 "SHORTS_ONLY_DISABLED" = "ปิดใช้งานโหมด Shorts เท่านั้นแล้ว";
 "SHORTS_ACTION" = "การกระทำของ Shorts เมื่อจบวิดีโอ";
-"LOOP" = "ลูปวิดีโอ";
-"SKIP_TO_NEXT_SHORTS" = "ข้ามไปยังวิดีโอถัดไป";
-"PAUSE_SHORTS" = "หยุดวิดีโอ";
+"LOOP" = "ลูป";
+"SKIP_TO_NEXT_SHORTS" = "ข้ามไปยังถัดไป";
+"PAUSE_SHORTS" = "หยุด";
 "REMOVE_LIVE_SHORTS" = "ลบวิดีโอสด";
 "REMOVE_LIVE_SHORTS_DESC" = "นำวิดีโอสดออกจากฟีด";
 "HIDE_SHORTS_PRODUCT" = "ซ่อนสินค้า";

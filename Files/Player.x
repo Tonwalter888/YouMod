@@ -417,11 +417,11 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
     YouModDownloadSetCurrentPlayer(playerviewController);
     YouModConfigureRemoteSkipCommands();
     if (INTFORVAL(AutoDRCAudioIndex) != 0) [playerviewController YouModAutoDRCAudio];
-    if (INTFORVAL(AudioTrack) != 0) [playerviewController YouModAutoAudioTrack];
+    if (INTFORVAL(AudioTrack) != 0) [playerviewController performSelector:@selector(YouModAutoAudioTrack) withObject:nil afterDelay:0.1];
     if (IS_ENABLED(MuteButton)) [playerviewController YouModAutoMute];
-    if (IS_ENABLED(AutoFullScreen)) [playerviewController performSelector:@selector(YouModAutoFullscreen) withObject:nil afterDelay:0.5];
-    if (INTFORVAL(CaptionTrack) != 0) [playerviewController performSelector:@selector(YouModAutoCaptions) withObject:nil afterDelay:0.5];
-    if (INTFORVAL(AutoSpeedIndex) != 0) [playerviewController performSelector:@selector(YouModSetAutoSpeed) withObject:nil afterDelay:0.5];
+    if (IS_ENABLED(AutoFullScreen)) [playerviewController performSelector:@selector(YouModAutoFullscreen) withObject:nil afterDelay:0.4];
+    if (INTFORVAL(CaptionTrack) != 0) [playerviewController YouModAutoCaptions];
+    if (INTFORVAL(AutoSpeedIndex) != 0) [playerviewController YouModSetAutoSpeed];
 }
 %end
 
@@ -590,7 +590,7 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
         }
     }
 
-    NSArray *qualityLabels = @[@"Default", bestQualityLabel, @"2160p60", @"2160p", @"1440p60", @"1440p", @"1080p60", @"1080p", @"720p60", @"720p", @"480p", @"360p", @"240p", @"144p"];
+    NSArray *qualityLabels = @[@"Default", bestQualityLabel, @"2160p", @"1440p", @"1080p", @"720p", @"480p", @"360p", @"240p", @"144p"];
     NSString *qualityLabel = qualityLabels[kQualityIndex];
 
     if (![qualityLabel isEqualToString:bestQualityLabel]) {

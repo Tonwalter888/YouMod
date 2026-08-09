@@ -264,9 +264,9 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
     // Section 5
     // Player
     NSArray<YMSettingsItem *> *playerItems = @[
-            YMPicker(YMLOC(@"QUALITY_WIFI"), YMLOC(@"QUALITY_WIFI_DESC"), WifiQualityIndex, (@[YMLOC(@"DEFAULT"), YMLOC(@"BEST"), @"2160p60", @"2160p", @"1440p60", @"1440p", @"1080p60", @"1080p", @"720p60", @"720p", @"480p", @"360p", @"240p", @"144p"]), 0),
-            YMPicker(YMLOC(@"QUALITY_CELLULAR"), YMLOC(@"QUALITY_CELLULAR_DESC"), CellQualityIndex, (@[YMLOC(@"DEFAULT"), YMLOC(@"BEST"), @"2160p60", @"2160p", @"1440p60", @"1440p", @"1080p60", @"1080p", @"720p60", @"720p", @"480p", @"360p", @"240p", @"144p"]), 0),
-            YMPicker(YMLOC(@"QUALITY_LOW_POWER"), YMLOC(@"QUALITY_LOW_POWER_DESC"), LowPowerQualityIndex, (@[YMLOC(@"DEFAULT"), YMLOC(@"BEST"), @"2160p60", @"2160p", @"1440p60", @"1440p", @"1080p60", @"1080p", @"720p60", @"720p", @"480p", @"360p", @"240p", @"144p"]), 0),
+            YMPicker(YMLOC(@"QUALITY_WIFI"), YMLOC(@"QUALITY_WIFI_DESC"), WifiQualityIndex, (@[YMLOC(@"DEFAULT"), YMLOC(@"BEST"), @"2160p", @"1440p", @"1080p", @"720p", @"480p", @"360p", @"240p", @"144p"]), 0),
+            YMPicker(YMLOC(@"QUALITY_CELLULAR"), YMLOC(@"QUALITY_CELLULAR_DESC"), CellQualityIndex, (@[YMLOC(@"DEFAULT"), YMLOC(@"BEST"), @"2160p", @"1440p", @"1080p", @"720p", @"480p", @"360p", @"240p", @"144p"]), 0),
+            YMPicker(YMLOC(@"QUALITY_LOW_POWER"), YMLOC(@"QUALITY_LOW_POWER_DESC"), LowPowerQualityIndex, (@[YMLOC(@"DEFAULT"), YMLOC(@"BEST"), @"2160p", @"1440p", @"1080p", @"720p", @"480p", @"360p", @"240p", @"144p"]), 0),
             YMTextSegment(YMLOC(@"AUDIO_TRACK"), AudioTrack, (@[YMLOC(@"DEFAULT"), YMLOC(@"ORIGINAL"), YMLOC(@"SELECT_MANUALLY")]), 0),
             [YMPicker(YMLOC(@"AUDIO_TRACK_SELECT"), YMLOC(@"AUDIO_TRACK_SELECT_DESC"), AudioTrackLangIndex, getAllSystemLanguageTitles(), 0) visibleWhenKey:AudioTrack equals:2],
             [YMToggle(YMLOC(@"NO_AUTO_DUBBED"), YMLOC(@"NO_AUTO_DUBBED_DESC"), NoDubbedAudioTrack) visibleWhenKey:AudioTrack equals:2],
