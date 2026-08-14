@@ -207,6 +207,7 @@
 #define RemoveShortsLikeButton @"YouModRemoveShortsLikeButton"
 #define RemoveShortsCommentButton @"YouModRemoveShortsCommentButton"
 #define RemoveShortsShareButton @"YouModRemoveShortsShareButton"
+#define RemoveShortsRemixButton @"YouModRemoveShortsRemixButton"
 #define RemoveShortsSoundMetadataButton @"YouModRemoveShortsSoundMetadataButton"
 // Tab bar
 #define DefaultTab @"YouModDefaultStartupTab"
