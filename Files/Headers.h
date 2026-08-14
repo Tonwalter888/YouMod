@@ -204,6 +204,10 @@
 #define ShowShortsSeekbar @"YouModShowShortsSeekbar"
 #define ShortsActionIndex @"YouModMakeAShortsAction"
 #define ShortsOnly @"YouModShortsOnly"
+#define RemoveShortsLikeButton @"YouModRemoveShortsLikeButton"
+#define RemoveShortsCommentButton @"YouModRemoveShortsCommentButton"
+#define RemoveShortsShareButton @"YouModRemoveShortsShareButton"
+#define RemoveShortsSoundMetadataButton @"YouModRemoveShortsSoundMetadataButton"
 // Tab bar
 #define DefaultTab @"YouModDefaultStartupTab"
 #define TabOrder @"YouModTabOrder"
@@ -457,6 +461,10 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 @end
 
 @interface SSOConfiguration : NSObject
+@end
+
+@interface ASDisplayNode (YouMod)
+- (void)removeYogaChild:(id)arg;
 @end
 
 @interface YTIMySubsFilterHeaderRenderer : GPBMessage

@@ -366,6 +366,10 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
             YMToggle(YMLOC(@"HIDE_SHORTS_SUBBAR"), YMLOC(@"HIDE_SHORTS_SUBBAR_DESC"), HideShortsSubbar),
             YMToggle(YMLOC(@"HIDE_SHORTS_PRODUCT"), YMLOC(@"HIDE_SHORTS_PRODUCT_DESC"), HideShortsProducts),
             YMToggle(YMLOC(@"HIDE_SHORTS_RECBAR"), YMLOC(@"HIDE_SHORTS_RECBAR_DESC"), HideShortsRecbar),
+            YMToggle(YMLOC(@"REMOVE_SHORTS_LIKE_BUTTON"), YMLOC(@"REMOVE_SHORTS_LIKE_BUTTON_DESC"), RemoveShortsLikeButton),
+            YMToggle(YMLOC(@"REMOVE_SHORTS_COMMENT_BUTTON"), YMLOC(@"REMOVE_SHORTS_COMMENT_BUTTON_DESC"), RemoveShortsCommentButton),
+            YMToggle(YMLOC(@"REMOVE_SHORTS_REMIX_BUTTON"), YMLOC(@"REMOVE_SHORTS_REMIX_BUTTON_DESC"), RemoveShortsShareButton),
+            YMToggle(YMLOC(@"REMOVE_SHORTS_SOUNDMETADATA_BUTTON"), YMLOC(@"REMOVE_SHORTS_SOUNDMETADATA_BUTTON_DESC"), RemoveShortsSoundMetadataButton),
     ];
     YMRegisterSettingsGroup(YMLOC(@"SHORTS"), shortsItems);
     YTSettingsSectionItem *shortsgroup = [YTSettingsSectionItemClass itemWithTitle:YMLOC(@"SHORTS") accessibilityIdentifier:nil detailTextBlock:nil selectBlock:^BOOL (YTSettingsCell *cell, NSUInteger arg1) {
