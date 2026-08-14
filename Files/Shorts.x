@@ -122,6 +122,24 @@ static BOOL isFullscreenEnabled = NO;
 
 extern void YouModConfigureDownloadButton(_ASDisplayView *view);
 
+@interface ASDisplayNode (YouMod)
+- (void)removeYogaChild:(id)arg;
+@end
+
+static void YouModFilterShortsButtons(_ASDisplayView *self) {
+    if ([self.accessibilityIdentifier isEqualToString:@"id.reel_remix_button"]) {
+        _ASDisplayView *mainView = self.superview;
+        ASDisplayNode *node = mainView.keepalive_node;
+        for (_ASDisplayView *view in node.yogaChildren) {
+            if ([[view description] containsString:@"id.reel_remix_button"]) {
+                [node removeYogaChild:view];
+                [self removeFromSuperview];
+                break;
+            }
+        }
+    }
+}
+
 // _ASDisplayView filters
 %hook _ASDisplayView
 - (void)didMoveToWindow {
@@ -132,7 +150,8 @@ extern void YouModConfigureDownloadButton(_ASDisplayView *view);
         @"product_sticker.secondary_target": @(IS_ENABLED(HideShortsProducts)),
         @"id.elements.components.suggested_action": @(IS_ENABLED(HideShortsRecbar))
     };
-    if ([elements[self.accessibilityIdentifier] boolValue]) [self removeFromSuperview]; 
+    if ([elements[self.accessibilityIdentifier] boolValue]) [self removeFromSuperview];
+    YouModFilterShortsButtons(self);
 }
 %end
 
