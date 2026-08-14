@@ -128,7 +128,7 @@ extern void YouModConfigureDownloadButton(_ASDisplayView *view);
 
 static void YouModFilterShortsButtons(_ASDisplayView *self) {
     if ([self.accessibilityIdentifier isEqualToString:@"id.reel_remix_button"]) {
-        _ASDisplayView *mainView = self.superview;
+        _ASDisplayView *mainView = (_ASDisplayView *)self.superview;
         ASDisplayNode *node = mainView.keepalive_node;
         for (_ASDisplayView *view in node.yogaChildren) {
             if ([[view description] containsString:@"id.reel_remix_button"]) {
