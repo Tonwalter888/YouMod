@@ -577,6 +577,10 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 - (NSMutableArray *)captionTracksArray;
 @end
 
+@interface _ASDisplayView (YouMod)
+- (UIViewController *)_mapkit_findNearestViewController;
+@end
+
 @interface YTICaptionsSupportedRenderers : GPBMessage
 - (YTIPlayerCaptionsTrackListRenderer *)playerCaptionsTracklistRenderer;
 @end

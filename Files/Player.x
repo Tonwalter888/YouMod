@@ -1430,7 +1430,7 @@ static void YouModFilterVideoButtons(_ASDisplayView *view, NSString *iden) {
         if ([iden isEqualToString:button] && [buttonsList[button] boolValue]) {
             _ASCollectionViewCell *actualMainView = (_ASCollectionViewCell *)view.superview;
             while (![actualMainView isKindOfClass:%c(_ASCollectionViewCell)]) {
-                actualMainView = actualMainView.superview;
+                actualMainView = (_ASCollectionViewCell *)actualMainView.superview;
             }
             ASCellNode *node = actualMainView.node;
             [node removeYogaChild:node.yogaChildren[0]];
