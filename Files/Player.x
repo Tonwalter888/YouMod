@@ -1413,7 +1413,8 @@ static CGFloat remainingOverlayWidth(YTPlayerViewController *pvc, CGFloat fullWi
 
 // Video buttons filtering
 static void YouModFilterVideoButtons(_ASDisplayView *view, NSString *iden) {
-    if ([view._mapkit_findNearestViewController isKindOfClass:%c(YTELMViewController)]) return;
+    if ([view._viewControllerForAncestor isKindOfClass:%c(YTELMViewController)]) return;
+    static BOOL isNewActionBar = NO;
     NSDictionary *buttonsList = @{
         @"id.video.share.button": @(IS_ENABLED(RemoveVideoShareButton)),
         @"id.video.add_to.button" : @(IS_ENABLED(RemoveVideoSaveButton)),
@@ -1425,16 +1426,37 @@ static void YouModFilterVideoButtons(_ASDisplayView *view, NSString *iden) {
         @"id.video.like.button": @(IS_ENABLED(RemoveVideoLikeButton)),
         @"id.video.dislike.button": @(IS_ENABLED(RemoveVideoDislikeButton))
     };
+    UIView *test = view.superview;
+    while (![test.accessibilityIdentifier isEqualToString:@"id.video.non_scrollable_action_bar"]) {
+        test = test.superview;
+    }
+    if ([test.accessibilityIdentifier isEqualToString:@"id.video.non_scrollable_action_bar"]) {
+        isNewActionBar = YES;
+    }
     for (NSString *button in buttonsList) {
         // For other buttons
         if ([iden isEqualToString:button] && [buttonsList[button] boolValue]) {
-            _ASCollectionViewCell *actualMainView = (_ASCollectionViewCell *)view.superview;
-            while (![actualMainView isKindOfClass:%c(_ASCollectionViewCell)]) {
-                actualMainView = (_ASCollectionViewCell *)actualMainView.superview;
+            if (isNewActionBar) {
+                _ASDisplayView *dpView = (_ASDisplayView *)test;
+                ASDisplayNode *node = test.keepalive_node;
+                for (UIView *child in node.yogaChildren) {
+                    if ([[child description] containsString:button]) {
+                        [node removeYogaChild:child];
+                        [view removeFromSuperview];
+                        break;
+                    }
+                }
+            } else {
+                _ASCollectionViewCell *actualMainView = (_ASCollectionViewCell *)view.superview;
+                while (![actualMainView isKindOfClass:%c(_ASCollectionViewCell)]) {
+                    actualMainView = (_ASCollectionViewCell *)actualMainView.superview;
+                }
+                ASCellNode *node = actualMainView.node;
+                for (UIView *child in node.yogaChildren) {
+                    [node removeYogaChild:child];
+                }
+                [actualMainView removeFromSuperview];
             }
-            ASCellNode *node = actualMainView.node;
-            [node removeYogaChild:node.yogaChildren[0]];
-            [actualMainView removeFromSuperview];
         }
     }
     for (NSString *button in spButtonsList) {

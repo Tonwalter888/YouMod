@@ -578,7 +578,7 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 @end
 
 @interface _ASDisplayView (YouMod)
-- (UIViewController *)_mapkit_findNearestViewController;
+- (UIViewController *)_viewControllerForAncestor;
 @end
 
 @interface YTICaptionsSupportedRenderers : GPBMessage
