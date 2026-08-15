@@ -19,13 +19,8 @@ NSBundle *YouModBundle() {
 UIImage *YouModYTIconImage(NSInteger iconType, BOOL useCustomColor, UIColor *customColor) {
     YTIIcon *icon = [%c(YTIIcon) new];
     icon.iconType = iconType;
-    UIImage *image = nil;
-    if (useCustomColor) {
-        image = [icon iconImageWithColor:customColor];
-    } else {
-        image = [icon iconImageWithColor:[UIColor labelColor]];
-    }
-    return [image imageWithRenderingMode:UIImageRenderingModeAlwaysOriginal];
+    UIColor *targetColor = (useCustomColor && customColor) ? customColor : [UIColor labelColor];
+    return [icon iconImageWithColor:targetColor];
 }
 
 // Language list

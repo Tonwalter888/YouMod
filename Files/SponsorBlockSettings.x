@@ -122,15 +122,18 @@ static NSString *SBHexFromColor(UIColor *color) {
 
 #pragma mark - SBSettingsViewController
 
-@interface SBSettingsViewController : UIViewController <UITableViewDelegate, UITableViewDataSource, UIColorPickerViewControllerDelegate, UISearchResultsUpdating>
+@interface SBSettingsViewController : UIViewController <UITableViewDelegate, UITableViewDataSource, UIColorPickerViewControllerDelegate, UISearchBarDelegate>
 - (UITableView *)tableView;
 - (void)setTableView:(UITableView *)tv;
+- (UISearchBar *)searchBar;
+- (void)setSearchBar:(UISearchBar *)sb;
 - (NSString *)activeColorKey;
 - (void)setActiveColorKey:(NSString *)key;
 - (NSIndexPath *)activeColorIndexPath;
 - (void)setActiveColorIndexPath:(NSIndexPath *)ip;
 - (UIColor *)sbTextColor;
 - (UIColor *)sbSecondaryTextColor;
+- (void)updateSearchBarTheme;
 // Cell builders, also reused by the global settings search (sbSearchRows).
 - (UITableViewCell *)toggleCellForRow:(NSInteger)row tableView:(UITableView *)tableView;
 - (UITableViewCell *)sliderCellForRow:(NSInteger)row tableView:(UITableView *)tableView;
@@ -143,6 +146,7 @@ static NSString *SBHexFromColor(UIColor *color) {
 extern NSArray<YMSearchRow *> *sbFlatRowsWithRenderer(SBSettingsViewController *renderer);
 
 static const void *kSBTableViewKey = &kSBTableViewKey;
+static const void *kSBSearchBarKey = &kSBSearchBarKey;
 static const void *kSBColorKeyKey = &kSBColorKeyKey;
 static const void *kSBColorIndexPathKey = &kSBColorIndexPathKey;
 static const void *kSBPageFilterKey = &kSBPageFilterKey;
@@ -152,6 +156,8 @@ static const void *kSBAllFlatRowsKey = &kSBAllFlatRowsKey;
 
 - (UITableView *)tableView { return objc_getAssociatedObject(self, kSBTableViewKey); }
 - (void)setTableView:(UITableView *)tv { objc_setAssociatedObject(self, kSBTableViewKey, tv, OBJC_ASSOCIATION_RETAIN_NONATOMIC); }
+- (UISearchBar *)searchBar { return objc_getAssociatedObject(self, kSBSearchBarKey); }
+- (void)setSearchBar:(UISearchBar *)sb { objc_setAssociatedObject(self, kSBSearchBarKey, sb, OBJC_ASSOCIATION_RETAIN_NONATOMIC); }
 - (NSString *)activeColorKey { return objc_getAssociatedObject(self, kSBColorKeyKey); }
 - (void)setActiveColorKey:(NSString *)key { objc_setAssociatedObject(self, kSBColorKeyKey, key, OBJC_ASSOCIATION_RETAIN_NONATOMIC); }
 - (NSIndexPath *)activeColorIndexPath { return objc_getAssociatedObject(self, kSBColorIndexPathKey); }
@@ -177,9 +183,24 @@ static const void *kSBAllFlatRowsKey = &kSBAllFlatRowsKey;
     return matches;
 }
 
-- (void)updateSearchResultsForSearchController:(UISearchController *)searchController {
-    self.pageFilter = [searchController.searchBar.text stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
-    [self.tableView reloadData];
+- (void)updateSearchBarTheme {
+    UISearchBar *sb = self.searchBar;
+    if (!sb) return;
+    UIColor *bgColor = (self.traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark)
+        ? [%c(YTColor) black3]
+        : [UIColor systemBackgroundColor];
+    sb.backgroundColor = bgColor;
+    sb.barTintColor = bgColor;
+    if ([sb respondsToSelector:@selector(searchTextField)]) {
+        UITextField *tf = sb.searchTextField;
+        if (self.traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark) {
+            tf.textColor = [UIColor whiteColor];
+            tf.backgroundColor = [UIColor colorWithWhite:0.15 alpha:1.0];
+        } else {
+            tf.textColor = [UIColor labelColor];
+            tf.backgroundColor = [UIColor colorWithWhite:0.94 alpha:1.0];
+        }
+    }
 }
 
 - (void)viewDidLoad {
@@ -189,19 +210,21 @@ static const void *kSBAllFlatRowsKey = &kSBAllFlatRowsKey;
 
     self.title = @"SponsorBlock";
 
-    self.tableView = [[UITableView alloc] initWithFrame:self.view.bounds style:UITableViewStyleGrouped];
-    self.tableView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+    UIColor *bgColor = (self.traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark)
+        ? [%c(YTColor) black3]
+        : [UIColor systemBackgroundColor];
+
+    self.view.backgroundColor = bgColor;
+
+    self.tableView = [[UITableView alloc] initWithFrame:CGRectZero style:UITableViewStyleGrouped];
+    self.tableView.translatesAutoresizingMaskIntoConstraints = NO;
     self.tableView.delegate = self;
     self.tableView.dataSource = self;
     self.tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
     self.tableView.estimatedRowHeight = 60;
     self.tableView.rowHeight = UITableViewAutomaticDimension;
-
-    if (self.traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark) {
-        self.tableView.backgroundColor = [%c(YTColor) black3];
-    } else {
-        self.tableView.backgroundColor = [UIColor systemBackgroundColor];
-    }
+    self.tableView.keyboardDismissMode = UIScrollViewKeyboardDismissModeOnDrag;
+    self.tableView.backgroundColor = bgColor;
 
     [self.view addSubview:self.tableView];
 
@@ -209,24 +232,66 @@ static const void *kSBAllFlatRowsKey = &kSBAllFlatRowsKey;
     // list is built once with self as the renderer (its cells write straight to
     // NSUserDefaults, so reusing the live VC is safe).
     self.allFlatRows = sbFlatRowsWithRenderer(self);
-    UISearchController *sc = [[UISearchController alloc] initWithSearchResultsController:nil];
-    sc.searchResultsUpdater = self;
-    sc.obscuresBackgroundDuringPresentation = NO;
-    sc.searchBar.placeholder = LOC(@"SEARCH");
-    sc.searchBar.tintColor = SBControlTintColor();
-    self.navigationItem.searchController = sc;
-    self.navigationItem.hidesSearchBarWhenScrolling = NO;
-    self.definesPresentationContext = YES;
+    UISearchBar *sb = [[UISearchBar alloc] initWithFrame:CGRectZero];
+    sb.translatesAutoresizingMaskIntoConstraints = NO;
+    sb.placeholder = LOC(@"SEARCH");
+    sb.searchBarStyle = UISearchBarStyleMinimal;
+    sb.tintColor = SBControlTintColor();
+    sb.delegate = self;
+    sb.backgroundImage = [[UIImage alloc] init];
+    [self.view addSubview:sb];
+    self.searchBar = sb;
+    [self updateSearchBarTheme];
+
+    [NSLayoutConstraint activateConstraints:@[
+        [sb.topAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.topAnchor],
+        [sb.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor],
+        [sb.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor],
+
+        [self.tableView.topAnchor constraintEqualToAnchor:sb.bottomAnchor],
+        [self.tableView.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor],
+        [self.tableView.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor],
+        [self.tableView.bottomAnchor constraintEqualToAnchor:self.view.bottomAnchor]
+    ]];
 }
 
 - (void)traitCollectionDidChange:(UITraitCollection *)previousTraitCollection {
     [super traitCollectionDidChange:previousTraitCollection];
     if (previousTraitCollection.userInterfaceStyle != self.traitCollection.userInterfaceStyle) {
-        self.tableView.backgroundColor = (self.traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark)
+        UIColor *bgColor = (self.traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark)
             ? [%c(YTColor) black3]
             : [UIColor systemBackgroundColor];
+        self.view.backgroundColor = bgColor;
+        self.tableView.backgroundColor = bgColor;
+        [self updateSearchBarTheme];
         [self.tableView reloadData];
     }
+}
+
+#pragma mark - UISearchBarDelegate
+
+- (void)searchBar:(UISearchBar *)searchBar textDidChange:(NSString *)searchText {
+    self.pageFilter = [searchText stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+    [self.tableView reloadData];
+}
+
+- (void)searchBarTextDidBeginEditing:(UISearchBar *)searchBar {
+    [searchBar setShowsCancelButton:YES animated:YES];
+}
+
+- (void)searchBarTextDidEndEditing:(UISearchBar *)searchBar {
+    [searchBar setShowsCancelButton:NO animated:YES];
+}
+
+- (void)searchBarSearchButtonClicked:(UISearchBar *)searchBar {
+    [searchBar resignFirstResponder];
+}
+
+- (void)searchBarCancelButtonClicked:(UISearchBar *)searchBar {
+    searchBar.text = @"";
+    self.pageFilter = @"";
+    [searchBar resignFirstResponder];
+    [self.tableView reloadData];
 }
 
 - (void)viewWillAppear:(BOOL)animated {

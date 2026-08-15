@@ -380,6 +380,7 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
     return %orig; 
 }
 - (void)setPaidContentWithPlayerData:(id)data { if (!IS_ENABLED(HidePaidPromoOverlay)) %orig; }
+- (BOOL)isFullscreenActionsEnabled { return IS_ENABLED(HideFullAction) ? NO : %orig; }
 %end
 
 // YTNoPaidPromo (https://github.com/PoomSmart/YTNoPaidPromo)
@@ -559,7 +560,6 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
     %orig;
     if (IS_ENABLED(HideCastButtonPlayer)) self.playbackRouteButton.hidden = YES;
 }
-- (BOOL)isFullscreenActionsVisible { return IS_ENABLED(HideFullAction) ? NO : %orig; }
 %end
 
 %hook YTSingleVideoController
@@ -698,8 +698,6 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
         if (!playerViewController.YouModHoldGesture && INTFORVAL(HoldToSpeedIndex) != 0) {
             playerViewController.YouModHoldGesture = [[UILongPressGestureRecognizer alloc] initWithTarget:playerViewController action:@selector(YouModHoldToSpeed:)];
             playerViewController.YouModHoldGesture.minimumPressDuration = 0.4;
-            playerViewController.YouModHoldGesture.cancelsTouchesInView = YES;
-            playerViewController.YouModHoldGesture.delegate = playerViewController;
             [pv addGestureRecognizer:playerViewController.YouModHoldGesture];   
         }
     }

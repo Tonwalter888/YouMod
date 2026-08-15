@@ -550,6 +550,10 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 @interface YTCaptionTrackSwitchController : NSObject
 @end
 
+@interface ASScrollView : UIScrollView
+- (id)scrollNode;
+@end
+
 // Player Gestures - @bhackel (YTLitePlus)
 @interface YTMainAppVideoPlayerOverlayViewController (YouMod)
 @property (nonatomic, assign) YTPlayerViewController *parentViewController;

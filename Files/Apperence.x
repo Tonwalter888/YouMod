@@ -118,16 +118,20 @@
 }
 %end
 
-%hook YTEngagementPanelView
+%hook ASScrollView
 - (void)didMoveToWindow {
     %orig;
-    UIView *foot = self.footerView;
-    if (foot) {
-        UIView *sub = foot.subviews.firstObject;
-        sub.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
-            return isDarkMode(self) ? [UIColor blackColor] : [UIColor clearColor];
-        }];
-    }
+    ASDisplayNode *node = self.scrollNode;
+    if (node) {
+        for (UIView *child in node.yogaChildren) {
+            if ([[child description] containsString:@"id.elements.components.report_form_reason_select_page.container"]) {
+                self.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
+                    return isDarkMode(self) ? [UIColor blackColor] : [UIColor clearColor];
+                }];
+                break;
+            }
+        }
+    } 
 }
 %end
 
