@@ -66,6 +66,7 @@
 #import <YouTubeHeader/YTWatchNextResultsViewController.h>
 #import <YouTubeHeader/YTIThumbnailDetails.h>
 #import <YouTubeHeader/YTIThumbnailDetails_Thumbnail.h>
+#import <YouTubeHeader/_ASCollectionViewCell.h>
 
 // For Settings.x and SponsorBlockSettings.x
 #import <PSHeader/Misc.h>
@@ -192,6 +193,13 @@
 #define UseAnotherMiniplayer @"YouModUseAnotherMiniplayer"
 #define SeekOnOverlay @"YouModSeekOnOverlay"
 #define AutoDRCAudioIndex @"YouModAutoDRCAudioIndex"
+#define RemoveVideoLikeButton @"YouModRemoveVideoLikeButton"
+#define RemoveVideoDislikeButton @"YouModRemoveVideoDislikeButton"
+#define RemoveVideoShareButton @"YouModRemoveVideoShareButton"
+#define RemoveVideoSaveButton @"YouModRemoveVideoSaveButton"
+#define RemoveVideoDownloadButton @"YouModRemoveVideoDownloadButton"
+#define RemoveVideoClipButton @"YouModRemoveVideoClipButton"
+#define RemoveVideoRemixButton @"YouModRemoveVideoRemixButton"
 // Shorts
 #define HideShortsTopbar @"YouModHideShortsTopbar"
 #define HideShortsSubbar @"YouModHideShortsSubbar"
