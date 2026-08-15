@@ -447,6 +447,12 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 @interface YTFullscreenEngagementOverlayView : UIView
 @end
 
+@interface YTFullscreenActionsView : UIView
+@end
+
+@interface YTAnnotationsViewController : UIViewController
+@end
+
 @interface YTRelatedVideosView : UIView
 @end
 

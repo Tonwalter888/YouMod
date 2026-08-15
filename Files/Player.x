@@ -380,7 +380,6 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
     return %orig; 
 }
 - (void)setPaidContentWithPlayerData:(id)data { if (!IS_ENABLED(HidePaidPromoOverlay)) %orig; }
-- (BOOL)isFullscreenActionsEnabled { return IS_ENABLED(HideFullAction) ? NO : %orig; }
 %end
 
 // YTNoPaidPromo (https://github.com/PoomSmart/YTNoPaidPromo)
@@ -390,8 +389,18 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
 
 // Remove Watermarks
 %hook YTAnnotationsViewController
-- (void)loadFeaturedChannelWatermark { if (!IS_ENABLED(HideWaterMark)) %orig; }
-- (void)setWatermarkImage:(id)arg1 height:(NSUInteger)arg2 { if (!IS_ENABLED(HideWaterMark)) %orig; }
+- (void)loadFeaturedChannelWatermark { 
+    if (IS_ENABLED(HideWaterMark)) {
+        [self setValue:nil forKey:@"_watermarkView"];
+        return;
+    } else {
+        %orig;
+    }
+}
+- (void)setWatermarkImage:(id)arg1 height:(NSUInteger)arg2 { 
+    [self setValue:nil forKey:@"_watermarkView"];
+    IS_ENABLED(HideWaterMark) ? %orig(nil, 0) : %orig;
+}
 %end
 
 // Exit Fullscreen on Finish
@@ -428,7 +437,10 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
 
 // Disable Fullscreen Actions
 %hook YTFullscreenActionsView
-- (CGSize)sizeThatFits:(CGSize)size { return IS_ENABLED(HideFullAction) ? CGSizeMake(1, 35) : %orig; }
+- (CGSize)sizeThatFits:(CGSize)size { 
+    self.hidden = YES;
+    return IS_ENABLED(HideFullAction) ? CGSizeMake(1, 35) : %orig;
+}
 %end
 
 // Disable Ambiant mode (Hide the lights)

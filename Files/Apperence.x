@@ -124,7 +124,8 @@
     ASDisplayNode *node = self.scrollNode;
     if (node) {
         for (UIView *child in node.yogaChildren) {
-            if ([[child description] containsString:@"id.elements.components.report_form_reason_select_page.container"]) {
+            NSString *desc = [child description];
+            if ([desc containsString:@"id.elements.components.report_form_reason_select_page.container"] || [desc containsString:@"id.elements.components.report_form_sign_in_page.container"]) {
                 self.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
                     return isDarkMode(self) ? [UIColor blackColor] : [UIColor clearColor];
                 }];
@@ -158,6 +159,19 @@
     mainView.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
         return isDarkMode(mainView) ? [UIColor blackColor] : [UIColor whiteColor];
     }];
+}
+%end
+
+%hook YTEngagementPanelView
+- (void)didMoveToWindow {
+    %orig;
+    UIView *foot = self.footerView;
+    if (foot) {
+        UIView *sub = foot.subviews.firstObject;
+        sub.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
+            return isDarkMode(self) ? [UIColor blackColor] : [UIColor clearColor];
+        }];
+    }
 }
 %end
 %end
