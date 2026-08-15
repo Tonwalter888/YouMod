@@ -163,11 +163,10 @@
 %end
 
 %hook YTEngagementPanelView
-- (void)didMoveToWindow {
+- (void)setFooterView:(UIView *)view {
     %orig;
-    UIView *foot = self.footerView;
-    if (foot) {
-        UIView *sub = foot.subviews.firstObject;
+    if (view) {
+        UIView *sub = view.subviews.firstObject;
         sub.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
             return isDarkMode(self) ? [UIColor blackColor] : [UIColor clearColor];
         }];
