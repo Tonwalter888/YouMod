@@ -1449,8 +1449,9 @@ static void YouModFilterVideoButtons(_ASDisplayView *view, NSString *iden) {
                 while (!isFounded) {
                     if ([dpView.superview.accessibilityIdentifier isEqualToString:@"id.video.non_scrollable_action_bar"]) {
                         isFounded = YES;
+                    } else {
+                        dpView = (_ASDisplayView *)dpView.superview;
                     }
-                    dpView = (_ASDisplayView *)dpView.superview;
                 }
                 ASDisplayNode *node = dpView.keepalive_node;
                 for (UIView *child in node.yogaChildren) {
@@ -1493,8 +1494,9 @@ static void YouModFilterVideoButtons(_ASDisplayView *view, NSString *iden) {
                 while (!isFounded) {
                     if ([dpView.superview.accessibilityIdentifier isEqualToString:@"id.video.non_scrollable_action_bar"]) {
                         isFounded = YES;
+                    } else {
+                        dpView = (_ASDisplayView *)dpView.superview;
                     }
-                    dpView = (_ASDisplayView *)dpView.superview;
                 }
                 ASDisplayNode *node = dpView.keepalive_node;
                 for (UIView *child in node.yogaChildren) {
