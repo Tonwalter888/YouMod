@@ -1437,7 +1437,7 @@ static void YouModFilterVideoButtons(_ASDisplayView *view, NSString *iden) {
         // For other buttons
         if ([iden isEqualToString:button] && [buttonsList[button] boolValue]) {
             if (isNewActionBar) {
-                _ASDisplayView *dpView = (_ASDisplayView *)test;
+                _ASDisplayView *dpView = (_ASDisplayView *)view.superview;
                 ASDisplayNode *node = test.keepalive_node;
                 for (UIView *child in node.yogaChildren) {
                     if ([[child description] containsString:button]) {
