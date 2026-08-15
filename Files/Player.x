@@ -1415,6 +1415,13 @@ static CGFloat remainingOverlayWidth(YTPlayerViewController *pvc, CGFloat fullWi
 static void YouModFilterVideoButtons(_ASDisplayView *view, NSString *iden) {
     if ([view._viewControllerForAncestor isKindOfClass:%c(YTELMViewController)]) return;
     static BOOL isNewActionBar = NO;
+    UIView *test = view.superview;
+    while (!isNewActionBar) {
+        test = test.superview;
+        if ([test.accessibilityIdentifier isEqualToString:@"id.video.non_scrollable_action_bar"]) {
+            isNewActionBar = YES;
+        }
+    }
     NSDictionary *buttonsList = @{
         @"id.video.share.button": @(IS_ENABLED(RemoveVideoShareButton)),
         @"id.video.add_to.button" : @(IS_ENABLED(RemoveVideoSaveButton)),
@@ -1426,13 +1433,6 @@ static void YouModFilterVideoButtons(_ASDisplayView *view, NSString *iden) {
         @"id.video.like.button": @(IS_ENABLED(RemoveVideoLikeButton)),
         @"id.video.dislike.button": @(IS_ENABLED(RemoveVideoDislikeButton))
     };
-    UIView *test = view.superview;
-    while (!isNewActionBar) {
-        test = test.superview;
-        if ([test.accessibilityIdentifier isEqualToString:@"id.video.non_scrollable_action_bar"]) {
-            isNewActionBar = YES;
-        }
-    }
     for (NSString *button in buttonsList) {
         // For other buttons
         if ([iden isEqualToString:button] && [buttonsList[button] boolValue]) {
@@ -1511,7 +1511,21 @@ static void YouModFilterVideoButtons(_ASDisplayView *view, NSString *iden) {
 %hook _ASDisplayView
 - (void)didMoveToWindow {
     %orig;
-    YouModFilterVideoButtons(self, self.accessibilityIdentifier);
+    NSString *iden = self.accessibilityIdentifier;
+    NSDictionary *buttonsList = @{
+        @"id.video.share.button": @(IS_ENABLED(RemoveVideoShareButton)),
+        @"id.video.add_to.button" : @(IS_ENABLED(RemoveVideoSaveButton)),
+        @"id.ui.add_to.offline.button": @(IS_ENABLED(RemoveVideoDownloadButton)),
+        @"clip_button.eml": @(IS_ENABLED(RemoveVideoClipButton)),
+        @"id.video.remix.button": @(IS_ENABLED(RemoveVideoRemixButton)),
+        @"id.video.like.button": @(IS_ENABLED(RemoveVideoLikeButton)),
+        @"id.video.dislike.button": @(IS_ENABLED(RemoveVideoDislikeButton))
+    };
+    for (NSString *button in buttonsList) {
+        if ([iden isEqualToString:button] && [buttonsList[button] boolValue]) {
+            YouModFilterVideoButtons(self, iden);
+        }
+    }
 }
 %end
 
