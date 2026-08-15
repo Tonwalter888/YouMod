@@ -1414,58 +1414,61 @@ static CGFloat remainingOverlayWidth(YTPlayerViewController *pvc, CGFloat fullWi
 // Video buttons filtering
 static void YouModFilterVideoButtons(_ASDisplayView *view, NSString *iden) {
     if ([view._viewControllerForAncestor isKindOfClass:%c(YTELMViewController)]) return;
-    static BOOL isNewActionBar = NO;
+    
+    BOOL isNewActionBar = NO;
     UIView *test = view.superview;
-    while (!isNewActionBar) {
-        test = test.superview;
+    while (test != nil) {
         if ([test.accessibilityIdentifier isEqualToString:@"id.video.non_scrollable_action_bar"]) {
             isNewActionBar = YES;
+            break;
         }
+        test = test.superview;
     }
-    NSDictionary *buttonsList = @{
-        @"id.video.share.button": @(IS_ENABLED(RemoveVideoShareButton)),
-        @"id.video.add_to.button" : @(IS_ENABLED(RemoveVideoSaveButton)),
-        @"id.ui.add_to.offline.button": @(IS_ENABLED(RemoveVideoDownloadButton)),
-        @"clip_button.eml": @(IS_ENABLED(RemoveVideoClipButton)),
-        @"id.video.remix.button": @(IS_ENABLED(RemoveVideoRemixButton))
-    };
-    NSDictionary *spButtonsList = @{
-        @"id.video.like.button": @(IS_ENABLED(RemoveVideoLikeButton)),
-        @"id.video.dislike.button": @(IS_ENABLED(RemoveVideoDislikeButton))
-    };
-    for (NSString *button in buttonsList) {
-        // For other buttons
-        if ([iden isEqualToString:button] && [buttonsList[button] boolValue]) {
-            if (isNewActionBar) {
-                _ASDisplayView *dpView = (_ASDisplayView *)view.superview;
-                ASDisplayNode *node = dpView.keepalive_node;
-                for (UIView *child in node.yogaChildren) {
-                    if ([[child description] containsString:button]) {
-                        [node removeYogaChild:child];
-                        break;
-                    }
+    
+    BOOL isSpecialButton = ([iden isEqualToString:@"id.video.like.button"] || [iden isEqualToString:@"id.video.dislike.button"]);
+    
+    if (!isSpecialButton) {
+        if (isNewActionBar) {
+            _ASDisplayView *dpView = (_ASDisplayView *)view.superview;
+            
+            ASDisplayNode *node = dpView.keepalive_node;
+            NSArray *children = [node.yogaChildren copy];
+            for (UIView *child in children) {
+                if ([[child description] containsString:iden]) {
+                    [node removeYogaChild:child];
+                    break;
                 }
-                static BOOL isFounded = NO;
-                while (!isFounded) {
-                    if ([dpView.superview.accessibilityIdentifier isEqualToString:@"id.video.non_scrollable_action_bar"]) {
-                        isFounded = YES;
-                    } else {
-                        dpView = (_ASDisplayView *)dpView.superview;
-                    }
+            }
+            
+            BOOL isFounded = NO;
+            _ASDisplayView *targetDpView = dpView;
+            while (targetDpView != nil && targetDpView.superview != nil) {
+                if ([targetDpView.superview.accessibilityIdentifier isEqualToString:@"id.video.non_scrollable_action_bar"]) {
+                    isFounded = YES;
+                    break;
                 }
-                ASDisplayNode *node2 = dpView.keepalive_node;
-                for (UIView *child in node2.yogaChildren) {
+                targetDpView = (_ASDisplayView *)targetDpView.superview;
+            }
+            
+            if (isFounded && targetDpView) {
+                ASDisplayNode *node2 = targetDpView.keepalive_node;
+                NSArray *children2 = [node2.yogaChildren copy];
+                for (UIView *child in children2) {
                     [node2 removeYogaChild:child];
                 }
-                [dpView removeFromSuperview];
-            } else {
-                _ASCollectionViewCell *actualMainView = (_ASCollectionViewCell *)view.superview;
-                while (![actualMainView isKindOfClass:%c(_ASCollectionViewCell)]) {
-                    actualMainView = (_ASCollectionViewCell *)actualMainView.superview;
-                }
-                ASCellNode *node = actualMainView.node;
-                for (UIView *child in node.yogaChildren) {
-                    if ([[child description] containsString:button]) {
+                [targetDpView removeFromSuperview];
+            }
+        } else {
+            UIView *actualMainView = view.superview;
+            while (actualMainView != nil && ![actualMainView isKindOfClass:%c(_ASCollectionViewCell)]) {
+                actualMainView = actualMainView.superview;
+            }
+            
+            if (actualMainView) {
+                ASCellNode *node = ((_ASCollectionViewCell *)actualMainView).node;
+                NSArray *children = [node.yogaChildren copy];
+                for (UIView *child in children) {
+                    if ([[child description] containsString:iden]) {
                         [node removeYogaChild:child];
                         [actualMainView removeFromSuperview];
                         break;
@@ -1473,36 +1476,40 @@ static void YouModFilterVideoButtons(_ASDisplayView *view, NSString *iden) {
                 }
             }
         }
-    }
-    for (NSString *button in spButtonsList) {
-        // For like and dislike buttons
-        if ([iden isEqualToString:button] && [spButtonsList[button] boolValue]) {
-            _ASDisplayView *dpView = (_ASDisplayView *)view.superview;
+    } else {
+        _ASDisplayView *dpView = (_ASDisplayView *)view.superview;
+        if (dpView) {
             ASDisplayNode *node = dpView.keepalive_node;
-            for (UIView *child in node.yogaChildren) {
+            NSArray *children = [node.yogaChildren copy];
+            for (UIView *child in children) {
                 NSString *desc = [child description];
-                if ([desc containsString:button]) {
+                if ([desc containsString:iden]) {
                     [node removeYogaChild:child];
                     [view removeFromSuperview];
                 } else if (![desc containsString:@"id.video.like.button"] && ![desc containsString:@"id.video.dislike.button"]) {
                     [node removeYogaChild:child];
-                    // [view removeFromSuperview];
                 }
             }
+            
             if (isNewActionBar) {
-                static BOOL isFounded = NO;
-                while (!isFounded) {
-                    if ([dpView.superview.accessibilityIdentifier isEqualToString:@"id.video.non_scrollable_action_bar"]) {
+                BOOL isFounded = NO;
+                _ASDisplayView *targetDpView = dpView;
+                while (targetDpView != nil && targetDpView.superview != nil) {
+                    if ([targetDpView.superview.accessibilityIdentifier isEqualToString:@"id.video.non_scrollable_action_bar"]) {
                         isFounded = YES;
-                    } else {
-                        dpView = (_ASDisplayView *)dpView.superview;
+                        break;
                     }
+                    targetDpView = (_ASDisplayView *)targetDpView.superview;
                 }
-                ASDisplayNode *node = dpView.keepalive_node;
-                for (UIView *child in node.yogaChildren) {
-                    [node removeYogaChild:child];
+                
+                if (isFounded && targetDpView) {
+                    ASDisplayNode *node2 = targetDpView.keepalive_node;
+                    NSArray *children2 = [node2.yogaChildren copy];
+                    for (UIView *child in children2) {
+                        [node2 removeYogaChild:child];
+                    }
+                    [targetDpView removeFromSuperview];
                 }
-                [dpView removeFromSuperview];
             }
         }
     }
@@ -1512,19 +1519,25 @@ static void YouModFilterVideoButtons(_ASDisplayView *view, NSString *iden) {
 - (void)didMoveToWindow {
     %orig;
     NSString *iden = self.accessibilityIdentifier;
-    NSDictionary *buttonsList = @{
-        @"id.video.share.button": @(IS_ENABLED(RemoveVideoShareButton)),
-        @"id.video.add_to.button" : @(IS_ENABLED(RemoveVideoSaveButton)),
-        @"id.ui.add_to.offline.button": @(IS_ENABLED(RemoveVideoDownloadButton)),
-        @"clip_button.eml": @(IS_ENABLED(RemoveVideoClipButton)),
-        @"id.video.remix.button": @(IS_ENABLED(RemoveVideoRemixButton)),
-        @"id.video.like.button": @(IS_ENABLED(RemoveVideoLikeButton)),
-        @"id.video.dislike.button": @(IS_ENABLED(RemoveVideoDislikeButton))
-    };
-    for (NSString *button in buttonsList) {
-        if ([iden isEqualToString:button] && [buttonsList[button] boolValue]) {
-            YouModFilterVideoButtons(self, iden);
-        }
+    if (!iden || iden.length == 0) return;
+    BOOL shouldFilter = NO;
+    if ([iden isEqualToString:@"id.video.share.button"] && IS_ENABLED(RemoveVideoShareButton)) {
+        shouldFilter = YES;
+    } else if ([iden isEqualToString:@"id.video.add_to.button"] && IS_ENABLED(RemoveVideoSaveButton)) {
+        shouldFilter = YES;
+    } else if ([iden isEqualToString:@"id.ui.add_to.offline.button"] && IS_ENABLED(RemoveVideoDownloadButton)) {
+        shouldFilter = YES;
+    } else if ([iden isEqualToString:@"clip_button.eml"] && IS_ENABLED(RemoveVideoClipButton)) {
+        shouldFilter = YES;
+    } else if ([iden isEqualToString:@"id.video.remix.button"] && IS_ENABLED(RemoveVideoRemixButton)) {
+        shouldFilter = YES;
+    } else if ([iden isEqualToString:@"id.video.like.button"] && IS_ENABLED(RemoveVideoLikeButton)) {
+        shouldFilter = YES;
+    } else if ([iden isEqualToString:@"id.video.dislike.button"] && IS_ENABLED(RemoveVideoDislikeButton)) {
+        shouldFilter = YES;
+    }
+    if (shouldFilter) {
+        YouModFilterVideoButtons(self, iden);
     }
 }
 %end
