@@ -1438,7 +1438,7 @@ static void YouModFilterVideoButtons(_ASDisplayView *view, NSString *iden) {
         if ([iden isEqualToString:button] && [buttonsList[button] boolValue]) {
             if (isNewActionBar) {
                 _ASDisplayView *dpView = (_ASDisplayView *)view.superview;
-                ASDisplayNode *node = test.keepalive_node;
+                ASDisplayNode *node = dpView.keepalive_node;
                 for (UIView *child in node.yogaChildren) {
                     if ([[child description] containsString:button]) {
                         [node removeYogaChild:child];
@@ -1453,9 +1453,9 @@ static void YouModFilterVideoButtons(_ASDisplayView *view, NSString *iden) {
                         dpView = (_ASDisplayView *)dpView.superview;
                     }
                 }
-                ASDisplayNode *node = dpView.keepalive_node;
-                for (UIView *child in node.yogaChildren) {
-                    [node removeYogaChild:child];
+                ASDisplayNode *node2 = dpView.keepalive_node;
+                for (UIView *child in node2.yogaChildren) {
+                    [node2 removeYogaChild:child];
                 }
                 [dpView removeFromSuperview];
             } else {
