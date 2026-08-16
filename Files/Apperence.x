@@ -37,40 +37,35 @@
         }];
         return;
     }     
-    // Action dialog
-    UIResponder *responder = self.nextResponder;
-    while (responder != nil) {
-        if ([responder isKindOfClass:%c(YTActionSheetDialogViewController)] || [responder isKindOfClass:%c(YTBottomSheetController)]) {
-            if ([self.superview.accessibilityIdentifier isEqualToString:@"eml.animated_subscribe_button"]) break;
+    UIViewController *controller = self._viewControllerForAncestor;
+    if ([controller isKindOfClass:%c(YTActionSheetDialogViewController)] || [controller isKindOfClass:%c(YTBottomSheetController)]) {
+        if ([self.superview.accessibilityIdentifier isEqualToString:@"eml.animated_subscribe_button"]) return;
+        self.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
+            return isDarkMode(self) ? [UIColor blackColor] : [UIColor clearColor];
+        }];
+        return;
+    } else if ([self.accessibilityIdentifier isEqualToString:@"eml.live_chat_text_message"] && [controller isKindOfClass:%c(YCHAsyncLiveChatCollectionViewController)]) {
+        YCHAsyncLiveChatCollectionViewController *con = (YCHAsyncLiveChatCollectionViewController *)controller;
+        if ([con.view isKindOfClass:%c(YCHAsyncLiveChatImmersiveCollectionView)]) return;
+        self.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
+            return isDarkMode(self) ? [UIColor blackColor] : [UIColor whiteColor];
+        }];
+        return;
+    } else if ([controller isKindOfClass:%c(YTELMViewController)]) {
+        YTELMViewController *con = (YTELMViewController *)controller;
+        YTIElementRenderer *renderer = [con valueForKey:@"_renderer"];
+        NSString *desc = [renderer description];
+        if ([self.accessibilityIdentifier isEqualToString:@"id.elements.components.text_field"] && [desc containsString:@"timeline_search_input_form_id"] && [desc containsString:@"search_input.eml"]) {
+            self.superview.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
+                return isDarkMode(self) ? [UIColor blackColor] : [UIColor clearColor];
+            }];
+        } else if ([desc containsString:@"transcript_panel.eml"]) {
             self.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
                 return isDarkMode(self) ? [UIColor blackColor] : [UIColor clearColor];
             }];
-            break;
-        } else if ([self.accessibilityIdentifier isEqualToString:@"eml.live_chat_text_message"] && [responder isKindOfClass:%c(YCHAsyncLiveChatCollectionViewController)]) {
-            YCHAsyncLiveChatCollectionViewController *con = (YCHAsyncLiveChatCollectionViewController *)responder;
-            if ([con.view isKindOfClass:%c(YCHAsyncLiveChatImmersiveCollectionView)]) break;
-            self.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
-                return isDarkMode(self) ? [UIColor blackColor] : [UIColor whiteColor];
-            }];
-            break;
-        } else if ([responder isKindOfClass:%c(YTELMViewController)]) {
-            YTELMViewController *con = (YTELMViewController *)responder;
-            YTIElementRenderer *renderer = [con valueForKey:@"_renderer"];
-            NSString *desc = [renderer description];
-            if ([self.accessibilityIdentifier isEqualToString:@"id.elements.components.text_field"] && [desc containsString:@"timeline_search_input_form_id"] && [desc containsString:@"search_input.eml"]) {
-                self.superview.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
-                    return isDarkMode(self) ? [UIColor blackColor] : [UIColor clearColor];
-                }];
-            } else if ([desc containsString:@"transcript_panel.eml"]) {
-                self.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
-                    return isDarkMode(self) ? [UIColor blackColor] : [UIColor clearColor];
-                }];
-            }
-            break;
         }
-        responder = responder.nextResponder;
-    }
-    if ([self.accessibilityIdentifier isEqualToString:@"id.elements.components.filter_chip_bar"]) {
+        return;
+    } else if ([self.accessibilityIdentifier isEqualToString:@"id.elements.components.filter_chip_bar"]) {
         UIColor *dynamicColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
             return isDarkMode(self) ? [UIColor blackColor] : [UIColor clearColor];
         }];
@@ -140,11 +135,8 @@
 - (void)didMoveToWindow {
     %orig;
     if ([self.superview isKindOfClass:%c(GOODialogActionMDCButton)]) {
-        UIResponder *responder = self.nextResponder;
-        while (responder != nil) {
-            if ([responder isKindOfClass:%c(YTBottomSheetController)]) return;
-            responder = responder.nextResponder;
-        }
+        UIViewController *controller = self._viewControllerForAncestor;
+        if ([controller isKindOfClass:%c(YTBottomSheetController)] || [controller isKindOfClass:%c(GOOModalWindowViewController)]) return;
         self.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
             return isDarkMode(self) ? [UIColor blackColor] : [UIColor clearColor];
         }];

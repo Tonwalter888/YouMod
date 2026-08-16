@@ -129,6 +129,8 @@
 #define HideSearchHis @"YouModHideSearchHistoryAndSuggestions"
 #define HideSurveys @"YouModHideSurveys"
 #define HideRelatedVideos @"YouModHideRelatedVideos"
+#define RemoveChannelCommunityButton @"YouModRemoveChannelCommunityButton"
+#define RemoveChannelSponsorAll @"YouModRemoveChannelSponsorAll"
 // Player
 #define WifiQualityIndex @"YouModWifiQualityIndex"
 #define CellQualityIndex @"YouModCellQualityIndex"
@@ -190,7 +192,6 @@
 #define HideCommentsSection @"YouModHideCommentsSection"
 #define HideCommentsPreview @"YouModHideCommentsPreview"
 #define LockSpeed @"YouModLockSpeed"
-#define UseAnotherMiniplayer @"YouModUseAnotherMiniplayer"
 #define SeekOnOverlay @"YouModSeekOnOverlay"
 #define AutoDRCAudioIndex @"YouModAutoDRCAudioIndex"
 #define RemoveVideoLikeButton @"YouModRemoveVideoLikeButton"
@@ -217,6 +218,10 @@
 #define RemoveShortsShareButton @"YouModRemoveShortsShareButton"
 #define RemoveShortsRemixButton @"YouModRemoveShortsRemixButton"
 #define RemoveShortsSoundMetadataButton @"YouModRemoveShortsSoundMetadataButton"
+#define RemoveShortsPausedSubButton @"YouModRemoveShortsPausedSubButton"
+#define RemoveShortsPausedLiveButton @"YouModRemoveShortsPausedLiveButton"
+#define RemoveShortsPausedLensButton @"YouModRemoveShortsPausedLensButton"
+#define RemoveShortsPausedTrendsButton @"YouModRemoveShortsPausedTrendsButton"
 // Tab bar
 #define DefaultTab @"YouModDefaultStartupTab"
 #define TabOrder @"YouModTabOrder"
@@ -489,7 +494,6 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 @end
 
 @interface YTEngagementPanelView : UIView
-- (UIView *)footerView;
 @end
 
 @interface YTEngagementPanelContainerView : UIView
@@ -508,7 +512,7 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 @property (retain, nonatomic) YTVideoQualitySwitchRedesignedController *redesignedController;
 @end
 
-@interface UIView (Private)
+@interface UIView (YouMod)
 @property (nonatomic, assign, readonly) BOOL _mapkit_isDarkModeEnabled;
 - (UIViewController *)_viewControllerForAncestor;
 @end
@@ -585,10 +589,6 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 
 @interface YTIPlayerCaptionsTrackListRenderer : GPBMessage
 - (NSMutableArray *)captionTracksArray;
-@end
-
-@interface _ASDisplayView (YouMod)
-- (UIViewController *)_viewControllerForAncestor;
 @end
 
 @interface YTICaptionsSupportedRenderers : GPBMessage

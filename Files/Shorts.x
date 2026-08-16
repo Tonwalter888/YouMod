@@ -141,6 +141,30 @@ static void YouModFilterShortsButtons(_ASDisplayView *self, NSString *iden) {
                     break;
                 }
             }
+            break;
+        }
+    }
+}
+
+static void YouModFilterShortsPausedHeader(_ASDisplayView *self, NSString *iden) {
+    NSDictionary *buttonsList = @{
+        @"id.ui.shorts_paused_state.subscriptions_button": @(IS_ENABLED(RemoveShortsPausedSubButton)),
+        @"id.ui.shorts_paused_state.live_button": @(IS_ENABLED(RemoveShortsPausedLiveButton)),
+        @"id.ui.shorts_paused_state.lens_button": @(IS_ENABLED(RemoveShortsPausedLensButton)),
+        @"id.ui.shorts_paused_state.trends_button" : @(IS_ENABLED(RemoveShortsPausedTrendsButton))
+    };
+    for (NSString *button in buttonsList) {
+        if ([iden isEqualToString:button] && [buttonsList[button] boolValue]) {
+            ASScrollView *mainView = (ASScrollView *)self.superview;
+            ASDisplayNode *node = mainView.scrollNode;
+            for (_ASDisplayView *view in node.yogaChildren) {
+                if ([[view description] containsString:button]) {
+                    [node removeYogaChild:view];
+                    [self removeFromSuperview];
+                    break;
+                }
+            }
+            break;
         }
     }
 }
@@ -151,6 +175,7 @@ static void YouModFilterShortsButtons(_ASDisplayView *self, NSString *iden) {
     %orig;
     YouModConfigureDownloadButton(self);
     NSString *iden = self.accessibilityIdentifier;
+    if (!iden || iden.length == 0) return;
     NSDictionary *elements = @{
         @"product_sticker.main_target": @(IS_ENABLED(HideShortsProducts)),
         @"product_sticker.secondary_target": @(IS_ENABLED(HideShortsProducts)),
@@ -160,7 +185,12 @@ static void YouModFilterShortsButtons(_ASDisplayView *self, NSString *iden) {
         [self removeFromSuperview];
         return;
     }
+    if ([iden isEqualToString:@"eml.reel_sponsor_button"] && IS_ENABLED(RemoveChannelSponsorAll)) {
+        [self.superview removeFromSuperview];
+        return;
+    }
     YouModFilterShortsButtons(self, iden);
+    YouModFilterShortsPausedHeader(self, iden);
 }
 %end
 

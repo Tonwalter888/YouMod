@@ -43,3 +43,45 @@
     %orig(value);
 }
 %end
+
+static void YouModFilterChannelButtons(_ASDisplayView *self, NSString *iden) {
+    UIView *sup = self.superview;
+    if ([sup isKindOfClass:%c(ASScrollView)]) {
+        ASScrollView *scroll = (ASScrollView *)sup;
+        ASDisplayNode *node = scroll.scrollNode;
+        for (_ASDisplayView *view in node.yogaChildren) {
+            if ([[view description] containsString:iden]) {
+                [node removeYogaChild:view];
+                [self removeFromSuperview];
+                break;
+            }
+        }
+    } else {
+        _ASDisplayView *dpv = (_ASDisplayView *)sup;
+        ASDisplayNode *node = dpv.keepalive_node;
+        for (_ASDisplayView *view in node.yogaChildren) {
+            if ([[view description] containsString:iden]) {
+                [node removeYogaChild:view];
+                [dpv removeFromSuperview];
+                break;
+            }
+        }
+    }
+}
+
+%hook _ASDisplayView
+- (void)didMoveToWindow {
+    %orig;
+    NSString *iden = self.accessibilityIdentifier;
+    if (!iden || iden.length == 0) return;
+    BOOL remove = NO;
+    if ([iden isEqualToString:@"eml.header_community_button"] && IS_ENABLED(RemoveChannelCommunityButton)) {
+        remove = YES;
+    } else if ([iden isEqualToString:@"id.sponsor_button"] && IS_ENABLED(RemoveChannelSponsorAll)) {
+        remove = YES;
+    }
+    if (remove) {
+        YouModFilterChannelButtons(self, iden);
+    }
+}
+%end

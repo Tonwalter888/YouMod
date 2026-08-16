@@ -240,19 +240,12 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
                 if (percentage < 0.0) percentage = 0.0;
                 if (percentage > 1.0) percentage = 1.0;
             }
-            
-            UIResponder *responder = self.nextResponder;
-            while (responder && ![responder isKindOfClass:%c(YTMainAppVideoPlayerOverlayViewController)]) {
-                responder = responder.nextResponder;
-            }
-  
-            if (responder) {
-                YTMainAppVideoPlayerOverlayViewController *controller = (YTMainAppVideoPlayerOverlayViewController *)responder;
-                YTPlayerViewController *controller2 = controller.parentViewController;
-                CGFloat totalDuration = [controller2 currentVideoTotalMediaTime];
-                CGFloat targetTime = totalDuration * percentage;    
-                [controller2 seekToTime:targetTime];
-            }
+
+            YTMainAppVideoPlayerOverlayViewController *controller = (YTMainAppVideoPlayerOverlayViewController *)self._viewControllerForAncestor;
+            YTPlayerViewController *controller2 = controller.parentViewController;
+            CGFloat totalDuration = [controller2 currentVideoTotalMediaTime];
+            CGFloat targetTime = totalDuration * percentage;    
+            [controller2 seekToTime:targetTime];
         }
     }
 }
@@ -315,11 +308,6 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
     BOOL temp = IS_ENABLED(HideSuggestedVideo) ? NO : arg;
     %orig(temp);
 }
-%end
-
-// YTAnotherMiniplayer (https://github.com/PoomSmart/YTAnotherMiniplayer)
-%hook YTWatchMiniplayerConstants
-+ (NSInteger)miniplayerVariant { return IS_ENABLED(UseAnotherMiniplayer) ? 2 : %orig; }
 %end
 
 %hook YTSettings
@@ -393,13 +381,16 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
     if (IS_ENABLED(HideWaterMark)) {
         [self setValue:nil forKey:@"_watermarkView"];
         return;
-    } else {
-        %orig;
     }
+    %orig;
 }
 - (void)setWatermarkImage:(id)arg1 height:(NSUInteger)arg2 { 
-    [self setValue:nil forKey:@"_watermarkView"];
-    IS_ENABLED(HideWaterMark) ? %orig(nil, 0) : %orig;
+    if (IS_ENABLED(HideWaterMark)) {
+        arg1 = nil;
+        arg2 = 0;
+        [self setValue:nil forKey:@"_watermarkView"];
+    }
+    %orig(arg1, arg2);
 }
 %end
 
@@ -438,7 +429,9 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
 // Disable Fullscreen Actions
 %hook YTFullscreenActionsView
 - (CGSize)sizeThatFits:(CGSize)size { 
-    self.hidden = YES;
+    if (IS_ENABLED(HideFullAction)) {
+        self.hidden = YES;
+    }
     return IS_ENABLED(HideFullAction) ? CGSizeMake(1, 35) : %orig;
 }
 %end

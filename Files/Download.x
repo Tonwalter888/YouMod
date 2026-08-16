@@ -1714,7 +1714,7 @@ static void YouModShowAudioTrackSelectionSheet(YTPlayerViewController *player, U
 
     // Skip the audio-track chooser for a single format, or the server path (which
     // can't fetch a chosen track). Direct and on-device SABR both honor the choice.
-    if (audioFormats.count == 1 || INTFORVAL(DownloadMethod) == DownloadMethodServer) {
+    if (audioFormats.count == 1 || INTFORVAL(DownloadMethod) == DownloadMethodServer || INTFORVAL(DownloadMethod) == DownloadMethodOnDevice) {
         YouModMediaFormat *selectedFormat = audioFormats.firstObject;
         if (downloadVideo) {
             [[YouModDownloadCoordinator sharedCoordinator] startVideoDownloadWithVideoFormat:videoFormat audioFormat:selectedFormat fileName:fileName presenter:presenter videoID:player.currentVideoID];
@@ -2241,16 +2241,10 @@ static UIImage *YouModExtractPostImage(UIView *cellView) {
 
 %new
 - (void)didTapYouModShortsDownload:(YTQTMButton *)button {
-    UIResponder *responder = self.nextResponder;
-    while (responder && ![responder isKindOfClass:%c(YTShortsPlayerViewController)]) {
-        responder = responder.nextResponder;
-    }
-    if (responder) {
-        YTShortsPlayerViewController *shortsPlayerView = (YTShortsPlayerViewController *)responder;
-        YTPlayerViewController *player = (YTPlayerViewController *)shortsPlayerView.childViewControllers[0];
-        UIViewController *presenter = YouModPresenterForSender(button, player);
-        YouModShowDownloadManager(player, presenter, button, YES);
-    }
+    YTShortsPlayerViewController *shortsPlayerView = (YTShortsPlayerViewController *)self._viewControllerForAncestor;
+    YTPlayerViewController *player = (YTPlayerViewController *)shortsPlayerView.childViewControllers[0];
+    UIViewController *presenter = YouModPresenterForSender(button, player);
+    YouModShowDownloadManager(player, presenter, button, YES);
 }
 
 %end

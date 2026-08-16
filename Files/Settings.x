@@ -151,9 +151,6 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
         settingItemId:0];
     [sectionItems addObject:fixPlaybackissues];
 
-    // TODO: Center YT logo (not yet implemented)
-    // [sectionItems addObject: YMToggle(YMLOC(@"CENTER_YT_LOGO"), YMLOC(@"CENTER_YT_LOGO_DESC"), CenterYTLogo)];
-
     // Settings
     YTSettingsSectionItem *settings = [YTSettingsSectionItemClass itemWithTitle:nil
         titleDescription:YMLOC(@"SETTINGS")
@@ -250,6 +247,8 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
             YMToggle(YMLOC(@"HIDE_SHORTS_SHELF"), YMLOC(@"HIDE_SHORTS_SHELF_DESC"), HideShortsShelf),
             YMToggle(YMLOC(@"KEEP_SHORTS_SUBSCRIPT"), YMLOC(@"KEEP_SHORTS_SUBSCRIPT_DESC"), KeepShortsSubscript),
             YMToggle(YMLOC(@"HIDE_SEARCH_HISTORY"), YMLOC(@"HIDE_SEARCH_HISTORY_DESC"), HideSearchHis),
+            YMToggle(YMLOC(@"REMOVE_CHANNEL_COMMUNITY_BUTTON"), YMLOC(@"REMOVE_CHANNEL_COMMUNITY_BUTTON_DESC"), RemoveChannelCommunityButton),
+            YMToggle(YMLOC(@"REMOVE_CHANNEL_SPONSOR_BUTTON"), YMLOC(@"REMOVE_CHANNEL_SPONSOR_BUTTON_DESC"), RemoveChannelSponsorAll),
     ];
     YMRegisterSettingsGroup(YMLOC(@"FEED"), feedItems);
     YTSettingsSectionItem *feedgroup = [YTSettingsSectionItemClass itemWithTitle:YMLOC(@"FEED") accessibilityIdentifier:nil detailTextBlock:nil selectBlock:^BOOL (YTSettingsCell *cell, NSUInteger arg1) {
@@ -303,7 +302,6 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
             [YMToggle(YMLOC(@"USES_24_HOURS_TIME"), YMLOC(@"USES_24_HOURS_TIME_DESC"), Uses24HoursTime) visibleWhenBoolKey:ShowExtraTimeRemaining], 
             YMToggle(YMLOC(@"OLD_QUALITY_PICKER"), YMLOC(@"OLD_QUALITY_PICKER_DESC"), OldQualityPicker),
             YMToggle(YMLOC(@"EXTRA_SPEED"), YMLOC(@"EXTRA_SPEED_DESC"), ExtraSpeed),
-            // YMToggle(YMLOC(@"USE_ANOTHER_MINIPLAYER"), YMLOC(@"USE_ANOTHER_MINIPLAYER_DESC"), UseAnotherMiniplayer),
             YMToggle(YMLOC(@"PORTRAIT_FULLSCREEN"), YMLOC(@"PORTRAIT_FULLSCREEN_DESC"), PortFull),
             YMToggle(YMLOC(@"HIDE_RELATED_VIDEOS"), YMLOC(@"HIDE_RELATED_VIDEOS_DESC"), HideRelatedVideos),
             YMToggle(YMLOC(@"HIDE_COMMENTS_SECTION"), YMLOC(@"HIDE_COMMENTS_SECTION_DESC"), HideCommentsSection),
@@ -378,6 +376,10 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
             YMToggle(YMLOC(@"REMOVE_SHORTS_SHARE_BUTTON"), YMLOC(@"REMOVE_SHORTS_SHARE_BUTTON_DESC"), RemoveShortsShareButton),
             YMToggle(YMLOC(@"REMOVE_SHORTS_REMIX_BUTTON"), YMLOC(@"REMOVE_SHORTS_REMIX_BUTTON_DESC"), RemoveShortsRemixButton),
             YMToggle(YMLOC(@"REMOVE_SHORTS_SOUNDMETADATA_BUTTON"), YMLOC(@"REMOVE_SHORTS_SOUNDMETADATA_BUTTON_DESC"), RemoveShortsSoundMetadataButton),
+            YMToggle(YMLOC(@"REMOVE_SHORTS_PAUSED_SUB_BUTTON"), YMLOC(@"REMOVE_SHORTS_PAUSED_SUB_BUTTON_DESC"), RemoveShortsPausedSubButton),
+            YMToggle(YMLOC(@"REMOVE_SHORTS_PAUSED_LIVE_BUTTON"), YMLOC(@"REMOVE_SHORTS_PAUSED_LIVE_BUTTON_DESC"), RemoveShortsPausedLiveButton),
+            YMToggle(YMLOC(@"REMOVE_SHORTS_PAUSED_LENS_BUTTON"), YMLOC(@"REMOVE_SHORTS_PAUSED_LENS_BUTTON_DESC"), RemoveShortsPausedLensButton),
+            YMToggle(YMLOC(@"REMOVE_SHORTS_PAUSED_TRENDS_BUTTON"), YMLOC(@"REMOVE_SHORTS_PAUSED_TRENDS_BUTTON_DESC"), RemoveShortsPausedTrendsButton),
     ];
     YMRegisterSettingsGroup(YMLOC(@"SHORTS"), shortsItems);
     YTSettingsSectionItem *shortsgroup = [YTSettingsSectionItemClass itemWithTitle:YMLOC(@"SHORTS") accessibilityIdentifier:nil detailTextBlock:nil selectBlock:^BOOL (YTSettingsCell *cell, NSUInteger arg1) {
@@ -462,7 +464,7 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
             YMToggle(YMLOC(@"FLOATING_KEYBOARD"), YMLOC(@"FLOATING_KEYBOARD_DESC"), FloatingKeyboard),
             YMToggle(YMLOC(@"DISABLES_RTL"), YMLOC(@"DISABLES_RTL_DESC"), DisablesRTL),
             YMHeader(@""),
-            YMTextSegment(YMLOC(@"DEVICE_UI"), DeviceUIIndex, (@[YMLOC(@"DEFAULT"), YMLOC(@"iPad"), YMLOC(@"iPhone")]), 0),
+            YMTextSegment(YMLOC(@"DEVICE_UI"), DeviceUIIndex, (@[YMLOC(@"DEFAULT"), @"iPad", @"iPhone"]), 0),
             YMToggle(YMLOC(@"AUTO_OPEN_LINK"), YMLOC(@"AUTO_OPEN_LINK_DESC"), AutoOpenLink),
             YMHeader(YMLOC(@"FLYOUT_MENU")),
             YMToggle(YMLOC(@"REMOVE_PLAY_IN_NEXT_QUEUE_OPTION"), YMLOC(@"REMOVE_PLAY_IN_NEXT_QUEUE_OPTION_DESC"), RemovePlayInNextQueueOption),

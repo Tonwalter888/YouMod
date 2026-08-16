@@ -176,7 +176,11 @@
 "KEEP_SHORTS_SUBSCRIPT" = "แสดง Shorts ในหน้าการติดตาม";
 "KEEP_SHORTS_SUBSCRIPT_DESC" = "ป้องกันไม่ให้วิดีโอ Shorts ถูกลบออกจากแท็บการติดตาม";
 "HIDE_SEARCH_HISTORY" = "ซ่อนประวัติการค้นหา";
-"HIDE_SEARCH_HISTORY_DESC" = "ซ่อนประวัติและคำแนะนำการค้นหา\nหมายเหตุ: ประวัติการค้นหายังสามารถเข้าถึงได้ในอุปกรณ์อื่น";
+"HIDE_SEARCH_HISTORY_DESC" = "ซ่อนประวัติและคำแนะนำการค้นหา\\nหมายเหตุ: ประวัติการค้นหายังสามารถเข้าถึงได้ในอุปกรณ์อื่น";
+"REMOVE_CHANNEL_COMMUNITY_BUTTON" = "ลบปุ่มชุมชน";
+"REMOVE_CHANNEL_COMMUNITY_BUTTON_DESC" = "ลบปุ่มชุมชนในแถบส่วนหัวของช่อง";
+"REMOVE_CHANNEL_SPONSOR_BUTTON" = "ลบปุ่มสมัครสมาชิกช่อง";
+"REMOVE_CHANNEL_SPONSOR_BUTTON_DESC" = "ลบปุ่มสนับสนุน / สมัครสมาชิกช่องในฟีด หน้าช่อง และ Shorts";
 "HIDE_PLAYABLES" = "ซ่อนมินิเกม";
 "HIDE_PLAYABLES_DESC" = "ซ่อนมินิเกมออกจากหน้าฟีด";
 "HIDE_RELATED_VIDEOS" = "ซ่อนวิดีโอที่เกี่ยวข้อง";
@@ -327,14 +331,26 @@
 "HIDE_COMMENTS_SECTION_DESC" = "ซ่อนกล่องคอมเมนต์ทั้งหมด";
 "HIDE_COMMENTS_PREVIEW" = "ซ่อนตัวอย่างคอมเมนต์";
 "HIDE_COMMENTS_PREVIEW_DESC" = "ซ่อนตัวอย่างคอมเมนต์ยอดนิยม แต่ยังคงสามารถกดเปิดดูคอมเมนต์ทั้งหมดได้";
-"USE_ANOTHER_MINIPLAYER" = "ใช้เครื่องเล่นขนาดเล็กอีกรูปแบบหนึ่ง";
-"USE_ANOTHER_MINIPLAYER_DESC" = "ใช้เครื่องเล่นขนาดเล็กรูปแบบที่ได้รับการออกแบบใหม่จาก YouTube เวอร์ชันเก่า";
 "LOCK_SPEED" = "ล็อคความเร็ว";
 "LOCK_SPEED_DESC" = "ล็อคตามความเร็วที่เลือกไว้โดยการเลื่อนลง";
 "SEEK_ON_OVERLAY" = "กรอวิดีโอบนโอเวอร์เลย์";
 "SEEK_ON_OVERLAY_DESC" = "อนุญาตให้ควบคุมการกรอวิดีโอเดินหน้า-ถอยหลัง โดยการปัดไปทางซ้ายและขวาบนโอเวอร์เลย์วิดีโอ";
 "DRC_AUDIO_OPTIONS" = "เปิด/ปิดระดับเสียงคงที่อัตโนมัติ";
 "DRC_AUDIO_OPTIONS_DESC" = "ตั้งค่าเลือกเปิดหรือปิดระบบระดับเสียงคงที่โดยอัตโนมัติ";
+"REMOVE_VIDEO_LIKE_BUTTON" = "ลบปุ่มถูกใจ";
+"REMOVE_VIDEO_LIKE_BUTTON_DESC" = "ลบปุ่มถูกใจที่อยู่ใต้วิดีโอ";
+"REMOVE_VIDEO_DISLIKE_BUTTON" = "ลบปุ่มไม่ชอบ";
+"REMOVE_VIDEO_DISLIKE_BUTTON_DESC" = "ลบปุ่มไม่ชอบที่อยู่ใต้วิดีโอ";
+"REMOVE_VIDEO_SHARE_BUTTON" = "ลบปุ่มแชร์";
+"REMOVE_VIDEO_SHARE_BUTTON_DESC" = "ลบปุ่มแชร์ที่อยู่ใต้วิดีโอ";
+"REMOVE_VIDEO_SAVE_BUTTON" = "ลบปุ่มบันทึก";
+"REMOVE_VIDEO_SAVE_BUTTON_DESC" = "ลบปุ่มบันทึกลงในเพลย์ลิสต์ที่อยู่ใต้วิดีโอ";
+"REMOVE_VIDEO_DOWNLOAD_BUTTON" = "ลบปุ่มดาวน์โหลด";
+"REMOVE_VIDEO_DOWNLOAD_BUTTON_DESC" = "ลบปุ่มดาวน์โหลดที่อยู่ใต้วิดีโอ";
+"REMOVE_VIDEO_CLIP_BUTTON" = "ลบปุ่มคลิป";
+"REMOVE_VIDEO_CLIP_BUTTON_DESC" = "ลบปุ่มสร้างคลิปที่อยู่ใต้วิดีโอ";
+"REMOVE_VIDEO_REMIX_BUTTON" = "ลบปุ่มรีมิกซ์";
+"REMOVE_VIDEO_REMIX_BUTTON_DESC" = "ลบปุ่มรีมิกซ์ที่อยู่ใต้วิดีโอ";
 
 "SHORTS" = "Shorts";
 "HIDE_SHORTS_TOPBAR" = "ซ่อนแถบด้านบน";
@@ -354,6 +370,24 @@
 "HIDE_SHORTS_PRODUCT_DESC" = "ซ่อนสินค้าและลิงค์สินค้าในโอเวอร์เลย์ Shorts";
 "HIDE_SHORTS_RECBAR" = "ซ่อนแถบแนะนำ";
 "HIDE_SHORTS_RECBAR_DESC" = "ซ่อนแถบแนะนำในโอเวอร์เลย์ Shorts";
+"REMOVE_SHORTS_LIKE_BUTTON" = "ลบปุ่มถูกใจ";
+"REMOVE_SHORTS_LIKE_BUTTON_DESC" = "ลบปุ่มถูกใจออกจากวิดีโอ Shorts";
+"REMOVE_SHORTS_COMMENT_BUTTON" = "ลบปุ่มความคิดเห็น";
+"REMOVE_SHORTS_COMMENT_BUTTON_DESC" = "ลบปุ่มความคิดเห็นออกจากวิดีโอ Shorts";
+"REMOVE_SHORTS_SHARE_BUTTON" = "ลบปุ่มแชร์";
+"REMOVE_SHORTS_SHARE_BUTTON_DESC" = "ลบปุ่มแชร์ออกจากวิดีโอ Shorts";
+"REMOVE_SHORTS_REMIX_BUTTON" = "ลบปุ่มรีมิกซ์";
+"REMOVE_SHORTS_REMIX_BUTTON_DESC" = "ลบปุ่มรีมิกซ์ออกจากวิดีโอ Shorts";
+"REMOVE_SHORTS_SOUNDMETADATA_BUTTON" = "ลบปุ่มข้อมูลเสียง";
+"REMOVE_SHORTS_SOUNDMETADATA_BUTTON_DESC" = "ลบปุ่มข้อมูลเสียง/เพลงออกจากวิดีโอ Shorts";
+"REMOVE_SHORTS_PAUSED_SUB_BUTTON" = "ลบปุ่มการติดตาม";
+"REMOVE_SHORTS_PAUSED_SUB_BUTTON_DESC" = "ลบปุ่มการติดตามในแถบด้านบนเมื่อหยุดวิดีโอ Shorts ชั่วคราว";
+"REMOVE_SHORTS_PAUSED_LIVE_BUTTON" = "ลบปุ่มไลฟ์สด";
+"REMOVE_SHORTS_PAUSED_LIVE_BUTTON_DESC" = "ลบปุ่มไลฟ์สดในแถบด้านบนเมื่อหยุดวิดีโอ Shorts ชั่วคราว";
+"REMOVE_SHORTS_PAUSED_LENS_BUTTON" = "ลบปุ่ม Lens";
+"REMOVE_SHORTS_PAUSED_LENS_BUTTON_DESC" = "ลบปุ่ม Lens ในแถบด้านบนเมื่อหยุดวิดีโอ Shorts ชั่วคราว";
+"REMOVE_SHORTS_PAUSED_TRENDS_BUTTON" = "ลบปุ่มเทรนด์";
+"REMOVE_SHORTS_PAUSED_TRENDS_BUTTON_DESC" = "ลบปุ่มเทรนด์ในแถบด้านบนเมื่อหยุดวิดีโอ Shorts ชั่วคราว";
 "ENABLES_SHORTS_QUALITY" = "เปิดใช้งานตัวเลือกคุณภาพ Shorts";
 "ENABLES_SHORTS_QUALITY_DESC" = "สามารถเลือกคุณภาพ Shorts ได้";
 "SHOW_SHORTS_SEEKBAR" = "แสดงแถบเลื่อนเสมอ";
@@ -395,7 +429,7 @@
 "LEARNING_TAB" = "การเรียนรู้";
 "MANAGE_TABS" = "จัดการแท็บ";
 "MANAGE_TABS_DESC" = "จัดเรียงและเปิด/ปิดใช้งานแท็บ";
-"TAB_REORDER_HINT" = "ลากเพื่อจัดเรียงใหม่ เปิด/ปิดเพื่อแสดง/ซ่อน\nนอกจากนี้ การตั้งค่าแท็บยังสามารถเข้าถึงได้โดยการแตะแท็บแรกค้างไว้";
+"TAB_REORDER_HINT" = "ลากเพื่อจัดเรียงใหม่ เปิด/ปิดเพื่อแสดง/ซ่อน\\nนอกจากนี้ การตั้งค่าแท็บยังสามารถเข้าถึงได้โดยการแตะแท็บแรกค้างไว้";
 "TAB_LIMIT" = "จำกัดแท็บ";
 "TAB_LIMIT_DESC" = "สามารถมีแท็บได้สูงสุด 6 แท็บ";
 "ZERO_TAB_DESC" = "ต้องเปิดใช้งานอย่างน้อย 1 แท็บ";
@@ -469,9 +503,9 @@
 "DEVICE_UI" = "รูปแบบอุปกรณ์";
 "OPEN_LINK" = "เปิดลิงก์";
 "FLOATING_KEYBOARD" = "แป้นพิมพ์แบบลอย";
-"FLOATING_KEYBOARD_DESC" = "บังคับเปิดใช้งานแป้นพิมพ์แบบลอย มีประโยชน์สำหรับ iPhone ที่ใช้การปลอมแปลงสไตล์ iPad\nหมายเหตุ: ทำงานเฉพาะเมื่อเลือกสไตล์ iPad เท่านั้น";
+"FLOATING_KEYBOARD_DESC" = "บังคับเปิดใช้งานแป้นพิมพ์แบบลอย มีประโยชน์สำหรับ iPhone ที่ใช้การปลอมแปลงสไตล์ iPad\\nหมายเหตุ: ทำงานเฉพาะเมื่อเลือกสไตล์ iPad เท่านั้น";
 "AUTO_OPEN_LINK" = "ตรวจจับคลิปบอร์ดอัตโนมัติ";
-"AUTO_OPEN_LINK_DESC" = "ตรวจสอบคลิปบอร์ดหาลิงก์ที่เกี่ยวข้องกับ YouTube ทุกครั้งที่เปิดแอป\nเพื่อให้ทำงานได้อย่างถูกต้อง ให้ไปที่การตั้งค่า iOS → YouTube → วางจากแอปอื่น แล้วเลือก 'อนุญาต'";
+"AUTO_OPEN_LINK_DESC" = "ตรวจสอบคลิปบอร์ดหาลิงก์ที่เกี่ยวข้องกับ YouTube ทุกครั้งที่เปิดแอป\\nเพื่อให้ทำงานได้อย่างถูกต้อง ให้ไปที่การตั้งค่า iOS → YouTube → วางจากแอปอื่น แล้วเลือก 'อนุญาต'";
 
 "SB_DESCRIPTION" = "ข้ามช่วงสปอนเซอร์โดยอัตโนมัติด้วยข้อมูลจากชุมชน";
 "SB_ENABLE" = "เปิดใช้งาน SponsorBlock";
@@ -521,7 +555,7 @@
 "SB_CAT_filler_DESC" = "เนื้อหาที่ออกนอกเรื่อง มุกตลก หรือส่วนเติมที่ไม่ได้เกี่ยวข้องกับหัวข้อหลัก";
 
 "SB_SKIPPED" = "ข้ามช่วง %@ แล้ว";
-"SB_DETECTED" = "ตรวจพบช่วง %@\nคุณต้องการข้ามช่วงนี้หรือไม่?";
+"SB_DETECTED" = "ตรวจพบช่วง %@\\nคุณต้องการข้ามช่วงนี้หรือไม่?";
 "SB_SKIP_NOW" = "ข้าม";
 "SB_UNSKIP" = "ยกเลิกการข้าม";
 "SB_JUMPED_TO_HIGHLIGHT" = "ข้ามไปยังไฮไลท์แล้ว";
