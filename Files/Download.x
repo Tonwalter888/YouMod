@@ -2218,8 +2218,25 @@ static UIImage *YouModExtractPostImage(UIView *cellView) {
     }
     CGFloat btnWidth = 64.0;
     CGFloat btnHeight = 60.0;
-    YTReelElementAsyncComponentView *actionBar = [self valueForKey:@"_actionBarComponentView"];
-    downloadBtn.frame = CGRectMake(actionBar.frame.origin.x, actionBar.frame.origin.y - 60, btnWidth, btnHeight);
+    UIView *likeButtonView = nil;
+    for (UIView *subview in self.subviews) {
+        if ([subview isKindOfClass:%c(YTReelPlayerButton)]) {
+            likeButtonView = subview;
+            break;
+        }
+    }
+    CGFloat X = 0.0;
+    CGFloat Y = 0.0;
+    // For older YT versions, the X and Y axis is 0. So we will calculate from the action bar.
+    if (likeButtonView.frame.origin.y == 0.0 && likeButtonView.frame.origin.x == 0.0) {
+        YTReelElementAsyncComponentView *actionBar = [self valueForKey:@"_actionBarComponentView"];
+        X = actionBar.frame.origin.x;
+        Y = actionBar.frame.origin.y - 60.0;
+    } else {
+        X = likeButtonView.frame.origin.x;
+        Y = likeButtonView.frame.origin.y + 65.0;
+    }
+    downloadBtn.frame = CGRectMake(X, Y, btnWidth, btnHeight);
     [self bringSubviewToFront:downloadBtn];
 }
 
