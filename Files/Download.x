@@ -2203,16 +2203,6 @@ static UIImage *YouModExtractPostImage(UIView *cellView) {
 - (void)layoutSubviews {
     %orig;
     if (!IS_ENABLED(DownloadManager) || !IS_ENABLED(AddDownloadToShorts)) return;
-    UIView *likeButtonView = nil;
-    for (UIView *subview in self.subviews) {
-        if ([subview isKindOfClass:%c(YTReelPlayerButton)]) {
-            likeButtonView = subview;
-            break;
-        }
-    }
-    
-    if (!likeButtonView) return;
-    
     YTQTMButton *downloadBtn = (YTQTMButton *)[self viewWithTag:1501];
     if (!downloadBtn) {
         UIImageSymbolConfiguration *config = [UIImageSymbolConfiguration configurationWithPointSize:20 weight:UIImageSymbolWeightMedium];
@@ -2222,20 +2212,15 @@ static UIImage *YouModExtractPostImage(UIView *cellView) {
         downloadBtn.tintColor = [UIColor whiteColor];
         downloadBtn.exclusiveTouch = YES;
         downloadBtn.tag = 1501;
-        
+            
         [downloadBtn addTarget:self action:@selector(didTapYouModShortsDownload:) forControlEvents:UIControlEventTouchUpInside];
         [downloadBtn enableNewTouchFeedback];
         [self addSubview:downloadBtn];
     }
-    
     CGFloat btnWidth = 64.0;
     CGFloat btnHeight = 60.0;
-    
-    CGFloat pX = likeButtonView.frame.origin.x;
-    CGFloat pY = likeButtonView.frame.origin.y + 65.0;
-    
-    downloadBtn.frame = CGRectMake(pX, pY, btnWidth, btnHeight);
-    
+    YTReelElementAsyncComponentView *actionBar = [self valueForKey:@"_actionBarComponentView"];
+    downloadBtn.frame = CGRectMake(actionBar.frame.origin.x, actionBar.frame.origin.y - 60, btnWidth, btnHeight);
     [self bringSubviewToFront:downloadBtn];
 }
 

@@ -232,15 +232,30 @@ static void YouModTranslateText(NSString *text, NSString *targetLang, void (^com
     self.languageTitles = getAllSystemLanguageTitles();
     self.languageCodes = getAllSystemLanguageValues();
     
-    self.selectedLangCode = @"en";
-    self.selectedLangName = @"English";
+    NSString *preferredLang = [NSLocale preferredLanguages].firstObject;
+    NSDictionary *components = preferredLang ? [NSLocale componentsFromLocaleIdentifier:preferredLang] : nil;
+    NSString *deviceLangCode = components[NSLocaleLanguageCode] ?: [[NSLocale currentLocale] objectForKey:NSLocaleLanguageCode] ?: @"en";
     
-    NSUInteger defaultIndex = [self.languageCodes indexOfObject:self.selectedLangCode];
+    NSUInteger defaultIndex = [self.languageCodes indexOfObject:deviceLangCode];
+    if (defaultIndex == NSNotFound && preferredLang) {
+        defaultIndex = [self.languageCodes indexOfObject:preferredLang];
+    }
+    
     if (defaultIndex != NSNotFound && defaultIndex < self.languageTitles.count) {
+        self.selectedLangCode = self.languageCodes[defaultIndex];
         self.selectedLangName = self.languageTitles[defaultIndex];
-    } else if (self.languageTitles.count > 0 && self.languageCodes.count > 0) {
-        self.selectedLangCode = self.languageCodes.firstObject;
-        self.selectedLangName = self.languageTitles.firstObject;
+    } else {
+        NSUInteger enIndex = [self.languageCodes indexOfObject:@"en"];
+        if (enIndex != NSNotFound && enIndex < self.languageTitles.count) {
+            self.selectedLangCode = @"en";
+            self.selectedLangName = self.languageTitles[enIndex];
+        } else if (self.languageTitles.count > 0 && self.languageCodes.count > 0) {
+            self.selectedLangCode = self.languageCodes.firstObject;
+            self.selectedLangName = self.languageTitles.firstObject;
+        } else {
+            self.selectedLangCode = @"en";
+            self.selectedLangName = @"English";
+        }
     }
 
     UIView *langRowView = [[UIView alloc] init];

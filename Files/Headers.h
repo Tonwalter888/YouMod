@@ -67,6 +67,7 @@
 #import <YouTubeHeader/YTIThumbnailDetails.h>
 #import <YouTubeHeader/YTIThumbnailDetails_Thumbnail.h>
 #import <YouTubeHeader/_ASCollectionViewCell.h>
+#import <YouTubeHeader/YTReelElementAsyncComponentView.h>
 
 // For Settings.x and SponsorBlockSettings.x
 #import <PSHeader/Misc.h>
