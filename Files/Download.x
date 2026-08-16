@@ -2231,7 +2231,8 @@ static UIImage *YouModExtractPostImage(UIView *cellView) {
     if (likeButtonView.frame.origin.y == 0.0 && likeButtonView.frame.origin.x == 0.0) {
         YTReelElementAsyncComponentView *actionBar = [self valueForKey:@"_actionBarComponentView"];
         X = actionBar.frame.origin.x;
-        Y = actionBar.frame.origin.y - 60.0;
+        Y = actionBar.frame.origin.y - 76.0;
+        btnHeight = btnHeight + 16.0;
     } else {
         X = likeButtonView.frame.origin.x;
         Y = likeButtonView.frame.origin.y + 65.0;
