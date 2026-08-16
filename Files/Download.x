@@ -2212,7 +2212,6 @@ static UIImage *YouModExtractPostImage(UIView *cellView) {
         downloadBtn.tintColor = [UIColor whiteColor];
         downloadBtn.exclusiveTouch = YES;
         downloadBtn.tag = 1501;
-            
         [downloadBtn addTarget:self action:@selector(didTapYouModShortsDownload:) forControlEvents:UIControlEventTouchUpInside];
         [downloadBtn enableNewTouchFeedback];
         [self addSubview:downloadBtn];

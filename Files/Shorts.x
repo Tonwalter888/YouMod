@@ -185,6 +185,10 @@ static void YouModFilterShortsPausedHeader(_ASDisplayView *self, NSString *iden)
         [self removeFromSuperview];
         return;
     }
+    if ([iden isEqualToString:@"eml.reel_sponsor_button"] && IS_ENABLED(RemoveChannelSponsorAll)) {
+        [self.superview removeFromSuperview];
+        return;
+    }
     YouModFilterShortsButtons(self, iden);
     YouModFilterShortsPausedHeader(self, iden);
 }
