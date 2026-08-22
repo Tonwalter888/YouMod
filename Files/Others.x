@@ -102,7 +102,8 @@
 // Remove "Play next in queue" from the menu @PoomSmart (https://github.com/qnblackcat/uYouPlus/issues/1138#issuecomment-1606415080)
 %hook YTMenuItemVisibilityHandler
 - (BOOL)shouldShowServiceItemRenderer:(YTIMenuConditionalServiceItemRenderer *)renderer {
-    if (renderer.icon.iconType == 251 && IS_ENABLED(RemovePlayInNextQueueOption)) {
+    int iconnum = renderer.icon.iconType;
+    if (iconnum == 251 && IS_ENABLED(RemovePlayInNextQueueOption)) {
         return NO;
     }
     if (iconnum == 895 && IS_ENABLED(RemoveAddToLastQueueOption)) {
