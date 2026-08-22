@@ -11,10 +11,25 @@
 static const NSInteger TweakSection = 'ytmo';
 
 @interface YMSettingsItem : NSObject
-- (instancetype)visibleWhenKey:(NSString *)key equals:(NSInteger)value; // show row only while INTFORVAL(key)==value
+- (BOOL)isVisible;
+- (BOOL)isVisibleWithDefaults:(NSUserDefaults *)defaults;
+- (instancetype)visibleWhenKey:(NSString *)key equals:(NSInteger)value;
+- (instancetype)visibleWhenKey:(NSString *)key isNotEqualTo:(NSInteger)value;
+- (instancetype)visibleWhenKey:(NSString *)key isGreaterThan:(NSInteger)value;
+- (instancetype)visibleWhenKey:(NSString *)key isGreaterThanOrEqualTo:(NSInteger)value;
+- (instancetype)visibleWhenKey:(NSString *)key isLessThan:(NSInteger)value;
+- (instancetype)visibleWhenKey:(NSString *)key isLessThanOrEqualTo:(NSInteger)value;
+- (instancetype)visibleWhenKey:(NSString *)key inValues:(NSArray<NSNumber *> *)values;
+- (instancetype)visibleWhenKey:(NSString *)key notInValues:(NSArray<NSNumber *> *)values;
+- (instancetype)visibleWhenKeyDictionary:(NSDictionary<NSString *, NSNumber *> *)keyValues;
 - (instancetype)visibleWhenBoolKey:(NSString *)key equals:(BOOL)value;
 - (instancetype)visibleWhenBoolKey:(NSString *)key;
-- (instancetype)visibleWhenKey:(NSString *)key isGreaterThan:(NSInteger)value;
+- (instancetype)visibleWhenBoolKeys:(NSArray<NSString *> *)keys;
+- (instancetype)visibleWhenBoolKeys:(NSArray<NSString *> *)keys allEqualTo:(BOOL)value;
+- (instancetype)visibleWhenAnyBoolKey:(NSArray<NSString *> *)keys;
+- (instancetype)visibleWhenBoolDictionary:(NSDictionary<NSString *, NSNumber *> *)keyValues;
+- (instancetype)visibleWhen:(BOOL (^)(NSUserDefaults *defaults))block;
+- (instancetype)requireAnyCondition;
 @end
 extern void YMPushSubSettings(NSString *title, NSArray<YMSettingsItem *> *items, id settingsVC, id parentResponder);
 extern YMSettingsItem *YMToggle(NSString *title, NSString *subtitle, NSString *key);
@@ -181,11 +196,11 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
     // Downloading
     NSArray<YMSettingsItem *> *downloadingItems = @[
             YMToggle(YMLOC(@"DOWNLOAD_MANAGER"), YMLOC(@"DOWNLOAD_MANAGER_DESC"), DownloadManager),
-            YMToggle(YMLOC(@"DOWNLOAD_SAVE_PHOTOS"), YMLOC(@"DOWNLOAD_SAVE_PHOTOS_DESC"), DownloadSaveToPhotos),
-            YMTextSegment(YMLOC(@"AUDIO_TRACK"), AudioPreferIndex, (@[YMLOC(@"SHOW_OPTIONS"), YMLOC(@"ORIGINAL"), YMLOC(@"ENGLISH")]), 0),
             YMToggle(YMLOC(@"ADD_SHORTS_DOWNLOAD"), YMLOC(@"ADD_SHORTS_DOWNLOAD_DESC"), AddDownloadToShorts),
-            YMPicker(YMLOC(@"DOWNLOAD_METHOD"), YMLOC(@"DOWNLOAD_METHOD_DESC"), DownloadMethod, (@[YMLOC(@"METHOD_DIRECT"), YMLOC(@"METHOD_SERVER"), YMLOC(@"METHOD_ONDEVICE")]), 0),
-            [YMPicker(YMLOC(@"DOWNLOAD_SERVER"), YMLOC(@"CHOOSE_DOWNLOAD_SERVER"), DownloadServerIndex, (@[YMLOC(@"SERVER_EUROPRE1"), YMLOC(@"SERVER_ASIA1")]), 0) visibleWhenKey:DownloadMethod equals:1],
+            [YMTextSegment(YMLOC(@"POST_DOWNLOAD_ACTION"), PostDownloadAction, (@[YMLOC(@"POST_ACTION_SAVE_PHOTOS"), YMLOC(@"POST_ACTION_SHARE"), YMLOC(@"POST_ACTION_ASK")]), 0) visibleWhenAnyBoolKey:@[DownloadManager, AddDownloadToShorts, DownloadComment, DownloadPost]],
+            [[YMTextSegment(YMLOC(@"AUDIO_TRACK"), AudioPreferIndex, (@[YMLOC(@"SHOW_OPTIONS"), YMLOC(@"ORIGINAL"), YMLOC(@"ENGLISH")]), 0) visibleWhenKey:DownloadMethod equals:0] visibleWhenAnyBoolKey:@[DownloadManager, AddDownloadToShorts]],
+            [YMPicker(YMLOC(@"DOWNLOAD_METHOD"), YMLOC(@"DOWNLOAD_METHOD_DESC"), DownloadMethod, (@[YMLOC(@"METHOD_DIRECT"), YMLOC(@"METHOD_SERVER"), YMLOC(@"METHOD_ONDEVICE")]), 0) visibleWhenAnyBoolKey:@[DownloadManager, AddDownloadToShorts]],
+            [[YMPicker(YMLOC(@"DOWNLOAD_SERVER"), YMLOC(@"CHOOSE_DOWNLOAD_SERVER"), DownloadServerIndex, (@[YMLOC(@"SERVER_EUROPRE1"), YMLOC(@"SERVER_ASIA1")]), 0) visibleWhenKey:DownloadMethod equals:1] visibleWhenAnyBoolKey:@[DownloadManager, AddDownloadToShorts]],
             YMToggle(YMLOC(@"DOWNLOAD_COMMENT"), YMLOC(@"DOWNLOAD_COMMENT_DESC"), DownloadComment),
             YMToggle(YMLOC(@"DOWNLOAD_POST"), YMLOC(@"DOWNLOAD_POST_DESC"), DownloadPost),
     ];
@@ -314,6 +329,7 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
             YMToggle(YMLOC(@"REMOVE_VIDEO_DOWNLOAD_BUTTON"), YMLOC(@"REMOVE_VIDEO_DOWNLOAD_BUTTON_DESC"), RemoveVideoDownloadButton),
             YMToggle(YMLOC(@"REMOVE_VIDEO_CLIP_BUTTON"), YMLOC(@"REMOVE_VIDEO_CLIP_BUTTON_DESC"), RemoveVideoClipButton),
             YMToggle(YMLOC(@"REMOVE_VIDEO_REMIX_BUTTON"), YMLOC(@"REMOVE_VIDEO_REMIX_BUTTON_DESC"), RemoveVideoRemixButton),
+            YMToggle(YMLOC(@"REMOVE_VIDEO_LIVE_CHAT_BUTTON"), YMLOC(@"REMOVE_VIDEO_LIVE_CHAT_BUTTON_DESC"), RemoveVideoLiveChatButton),
             YMHeader(YMLOC(@"CONTROL_CENTER")),
             YMToggle(YMLOC(@"SKIP_BACKWARD"), YMLOC(@"SKIP_BACKWARD_DESC"), SkipBackwardEnabled),
             [YMSlider(YMLOC(@"REWIND_SECONDS"), nil, RewindSeconds, 5, 60, 5, 10) visibleWhenBoolKey:SkipBackwardEnabled],
@@ -326,14 +342,15 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
             YMToggle(YMLOC(@"STOP_AUTOPLAY_VIDEO"), YMLOC(@"STOP_AUTOPLAY_VIDEO_DESC"), StopAutoplayVideo),
             YMToggle(YMLOC(@"AUTO_FULLSCREEN"), YMLOC(@"AUTO_FULLSCREEN_DESC"), AutoFullScreen),
             YMToggle(YMLOC(@"AUTO_EXIT_FULLSCREEN"), YMLOC(@"AUTO_EXIT_FULLSCREEN_DESC"), AutoExitFullScreen),
+            YMToggle(YMLOC(@"AUTO_FEED_MUTE"), YMLOC(@"AUTO_FEED_MUTE_DESC"), AutoFeedMute),
             YMHeader(YMLOC(@"GESTURE_HEADER")),
             YMToggle(YMLOC(@"GESTURES"), YMLOC(@"GESTURES_DESC"), GestureControls),
             [YMPicker(YMLOC(@"GESTURE_AREA"), YMLOC(@"GESTURE_AREA_DESC"), GestureActivationArea, (@[@"10%", @"15%", @"20%", @"25%", @"30%", @"35%", @"40%", @"45%", @"50%"]), 1) visibleWhenBoolKey:GestureControls],
             [YMPicker(YMLOC(@"LEFT_SIDE_GESTURE"), nil, LeftSideGesture, (@[YMLOC(@"GESTURE_NONE"), YMLOC(@"GESTURE_BRIGHTNESS"), YMLOC(@"GESTURE_VOLUME"), YMLOC(@"GESTURE_SPEED")]), 1) visibleWhenBoolKey:GestureControls],
             [YMPicker(YMLOC(@"RIGHT_SIDE_GESTURE"), nil, RightSideGesture, (@[YMLOC(@"GESTURE_NONE"), YMLOC(@"GESTURE_BRIGHTNESS"), YMLOC(@"GESTURE_VOLUME"), YMLOC(@"GESTURE_SPEED")]), 2) visibleWhenBoolKey:GestureControls],
             [YMToggle(YMLOC(@"GESTURE_HUD"), YMLOC(@"GESTURE_HUD_DESC"), GestureHUD) visibleWhenBoolKey:GestureControls],
-            [YMPicker(YMLOC(@"GESTURE_HUD_SIZE"), YMLOC(@"GESTURE_HUD_SIZE_DESC"), GestureHUDSize, (@[YMLOC(@"SMALL"), YMLOC(@"NORMAL"), YMLOC(@"LARGE"), YMLOC(@"EXTRALARGE"), YMLOC(@"MAX")]), 1) visibleWhenBoolKey:GestureHUD],
-            [YMPicker(YMLOC(@"GESTURE_HUD_POSITION"), YMLOC(@"GESTURE_HUD_POSITION_DESC"), GestureHUDPosition, (@[YMLOC(@"TOP"), YMLOC(@"MIDDLE"), YMLOC(@"BOTTOM")]), 0) visibleWhenBoolKey:GestureHUD], 
+            [[YMPicker(YMLOC(@"GESTURE_HUD_SIZE"), YMLOC(@"GESTURE_HUD_SIZE_DESC"), GestureHUDSize, (@[YMLOC(@"SMALL"), YMLOC(@"NORMAL"), YMLOC(@"LARGE"), YMLOC(@"EXTRALARGE"), YMLOC(@"MAX")]), 1) visibleWhenBoolKey:GestureControls] visibleWhenBoolKey:GestureHUD],
+            [[YMPicker(YMLOC(@"GESTURE_HUD_POSITION"), YMLOC(@"GESTURE_HUD_POSITION_DESC"), GestureHUDPosition, (@[YMLOC(@"TOP"), YMLOC(@"MIDDLE"), YMLOC(@"BOTTOM")]), 0) visibleWhenBoolKey:GestureControls] visibleWhenBoolKey:GestureHUD], 
             YMHeader(@""),
             YMToggle(YMLOC(@"TAP_TO_SEEK"), YMLOC(@"TAP_TO_SEEK_DESC"), TapToSeek),
             YMToggle(YMLOC(@"SEEK_ON_OVERLAY"), YMLOC(@"SEEK_ON_OVERLAY_DESC"), SeekOnOverlay),
@@ -371,6 +388,7 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
             YMToggle(YMLOC(@"HIDE_SHORTS_SUBBAR"), YMLOC(@"HIDE_SHORTS_SUBBAR_DESC"), HideShortsSubbar),
             YMToggle(YMLOC(@"HIDE_SHORTS_PRODUCT"), YMLOC(@"HIDE_SHORTS_PRODUCT_DESC"), HideShortsProducts),
             YMToggle(YMLOC(@"HIDE_SHORTS_RECBAR"), YMLOC(@"HIDE_SHORTS_RECBAR_DESC"), HideShortsRecbar),
+            YMToggle(YMLOC(@"HIDE_SHORTS_DISCLOSURE"), YMLOC(@"HIDE_SHORTS_DISCLOSURE_DESC"), RemoveShortsDisclosure),
             YMToggle(YMLOC(@"REMOVE_SHORTS_LIKE_BUTTON"), YMLOC(@"REMOVE_SHORTS_LIKE_BUTTON_DESC"), RemoveShortsLikeButton),
             YMToggle(YMLOC(@"REMOVE_SHORTS_COMMENT_BUTTON"), YMLOC(@"REMOVE_SHORTS_COMMENT_BUTTON_DESC"), RemoveShortsCommentButton),
             YMToggle(YMLOC(@"REMOVE_SHORTS_SHARE_BUTTON"), YMLOC(@"REMOVE_SHORTS_SHARE_BUTTON_DESC"), RemoveShortsShareButton),
@@ -468,6 +486,7 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
             YMToggle(YMLOC(@"AUTO_OPEN_LINK"), YMLOC(@"AUTO_OPEN_LINK_DESC"), AutoOpenLink),
             YMHeader(YMLOC(@"FLYOUT_MENU")),
             YMToggle(YMLOC(@"REMOVE_PLAY_IN_NEXT_QUEUE_OPTION"), YMLOC(@"REMOVE_PLAY_IN_NEXT_QUEUE_OPTION_DESC"), RemovePlayInNextQueueOption),
+            YMToggle(YMLOC(@"REMOVE_PLAY_IN_LAST_QUEUE_OPTION"), YMLOC(@"REMOVE_PLAY_IN_LAST_QUEUE_OPTION_DESC"), RemoveAddToLastQueueOption),
             YMToggle(YMLOC(@"REMOVE_DOWNLOAD_OPTION"), YMLOC(@"REMOVE_DOWNLOAD_OPTION_DESC"), RemoveDownloadOption),
             YMToggle(YMLOC(@"REMOVE_WATCH_LATER_OPTION"), YMLOC(@"REMOVE_WATCH_LATER_OPTION_DESC"), RemoveWatchLaterOption),
             YMToggle(YMLOC(@"REMOVE_SAVE_OPTION"), YMLOC(@"REMOVE_SAVE_OPTION_DESC"), RemoveSaveOption),
@@ -520,6 +539,7 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
                 } actionTitle:YMLOC(@"YES")];
                 alertView.title = YMLOC(@"WARNING");
                 alertView.subtitle = YMLOC(@"OVERRIDE");
+                alertView.shouldDismissOnBackgroundTap = YES;
                 [alertView show];
             }),
             YMAction(YMLOC(@"EXPORT"), YMLOC(@"EXPORT_DESC"), ^(UIViewController *vc) {
@@ -621,11 +641,8 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
         AutoClearCache: @YES,
         DownloadMethod: @2,
         YTLogoIndex: @1,
-        HideCastButtonNav: @YES,
-        HideCastButtonPlayer: @YES,
         BackgroundPlayback: @YES,
         DownloadManager: @YES,
-        DownloadSaveToPhotos: @YES,
         SBButtonKey: @YES,
         DisableHints: @YES,
         RewindSeconds: @10.0,

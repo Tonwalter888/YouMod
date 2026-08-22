@@ -427,7 +427,6 @@ static const void *kSBAllFlatRowsKey = &kSBAllFlatRowsKey;
     if (sender.tag < 0 || sender.tag >= (NSInteger)rows.count) return;
     NSString *key = rows[sender.tag].key;
     [[NSUserDefaults standardUserDefaults] setBool:sender.on forKey:key];
-    [self.tableView reloadData];
 }
 
 #pragma mark - Slider Cells (Section 1)
@@ -546,54 +545,92 @@ static const void *kSBAllFlatRowsKey = &kSBAllFlatRowsKey;
     }
 }
 
-- (UITableViewCell *)actionCellForCategory:(NSString *)category name:(NSString *)catName tableView:(UITableView *)tableView {
-    UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:nil];
-    cell.backgroundColor = [UIColor clearColor];
-    cell.selectionStyle = UITableViewCellSelectionStyleNone;
-    cell.textLabel.text = catName;
-    cell.textLabel.textColor = [self sbTextColor];
-    cell.textLabel.font = [UIFont systemFontOfSize:16 weight:UIFontWeightMedium];
-
+- (void)updateSBActionButton:(UIButton *)menuButton category:(NSString *)category catName:(NSString *)catName {
     BOOL isHighlight = [category isEqualToString:@"poi_highlight"];
     NSString *actionKey = SB_ACTION_KEY(category);
-
-    UIButton *menuButton = [UIButton buttonWithType:UIButtonTypeSystem];
     NSInteger currentAction = [[NSUserDefaults standardUserDefaults] integerForKey:actionKey];
-    [menuButton setTitle:SBActionName(currentAction) forState:UIControlStateNormal];
-    [menuButton setTitleColor:[self sbSecondaryTextColor] forState:UIControlStateNormal];
-    menuButton.titleLabel.font = [UIFont systemFontOfSize:15];
-    [menuButton setImage:[UIImage systemImageNamed:@"chevron.up.chevron.down"] forState:UIControlStateNormal];
-    menuButton.tintColor = [self sbSecondaryTextColor];
+    NSString *currentTitle = SBActionName(currentAction);
 
-    NSMutableArray *menuActions = [NSMutableArray array];
-    // Which actions a category may take differs by kind: a highlight can only be
-    // disabled, skipped-to, or displayed, while a regular segment offers
-    // auto-skip / ask instead of skip-to. These are separate option sets, not
-    // duplication — each action's label is resolved through SBActionLocKey.
+    if (@available(iOS 15.0, *)) {
+        UIButtonConfiguration *config = [UIButtonConfiguration plainButtonConfiguration];
+        config.title = currentTitle;
+        config.image = [UIImage systemImageNamed:@"chevron.up.chevron.down" withConfiguration:[UIImageSymbolConfiguration configurationWithPointSize:11 weight:UIImageSymbolWeightMedium]];
+        config.imagePlacement = NSDirectionalRectEdgeTrailing;
+        config.imagePadding = 6.0;
+        config.baseForegroundColor = [self sbSecondaryTextColor];
+        config.contentInsets = NSDirectionalEdgeInsetsMake(6, 8, 6, 8);
+        menuButton.configuration = config;
+    } else {
+        [menuButton setTitle:currentTitle forState:UIControlStateNormal];
+        [menuButton setTitleColor:[self sbSecondaryTextColor] forState:UIControlStateNormal];
+        menuButton.titleLabel.font = [UIFont systemFontOfSize:15];
+        [menuButton setImage:[UIImage systemImageNamed:@"chevron.up.chevron.down"] forState:UIControlStateNormal];
+        menuButton.tintColor = [self sbSecondaryTextColor];
+        menuButton.semanticContentAttribute = UISemanticContentAttributeForceRightToLeft;
+        menuButton.imageEdgeInsets = UIEdgeInsetsMake(0, 6, 0, -6);
+    }
+
     NSArray<NSNumber *> *actionOptions;
     if (isHighlight) {
-        actionOptions = @[@(SBSegmentActionDisable), @(SBSegmentActionAutoSkip), @(SBSegmentActionAsk), @(SBSegmentActionDisplay)];
+        actionOptions = @[@(SBSegmentActionDisable), @(SBSegmentActionSkipTo), @(SBSegmentActionAsk), @(SBSegmentActionDisplay)];
     } else {
         actionOptions = @[@(SBSegmentActionDisable), @(SBSegmentActionAutoSkip), @(SBSegmentActionAsk), @(SBSegmentActionDisplay)];
     }
 
+    NSMutableArray<UIMenuElement *> *menuActions = [NSMutableArray array];
     NSBundle *bundle = YouModBundle();
+    __weak typeof(self) weakSelf = self;
+    __weak typeof(menuButton) weakButton = menuButton;
     for (NSNumber *option in actionOptions) {
         NSInteger actionVal = [option integerValue];
         NSString *actionTitle = [bundle localizedStringForKey:SBActionLocKey((SBSegmentAction)actionVal) value:nil table:nil];
 
         UIAction *action = [UIAction actionWithTitle:actionTitle image:nil identifier:nil handler:^(__kindof UIAction *a) {
             [[NSUserDefaults standardUserDefaults] setInteger:actionVal forKey:actionKey];
-            [self.tableView reloadData];
+            if (weakButton) {
+                [weakSelf updateSBActionButton:weakButton category:category catName:catName];
+            }
         }];
-        if (actionVal == currentAction) action.state = UIMenuElementStateOn;
+        action.state = (actionVal == currentAction) ? UIMenuElementStateOn : UIMenuElementStateOff;
         [menuActions addObject:action];
     }
 
-    menuButton.menu = [UIMenu menuWithTitle:catName children:menuActions];
+    menuButton.menu = [UIMenu menuWithTitle:catName ?: @"" children:menuActions];
+}
+
+- (UITableViewCell *)actionCellForCategory:(NSString *)category name:(NSString *)catName tableView:(UITableView *)tableView {
+    UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:nil];
+    cell.backgroundColor = [UIColor clearColor];
+    cell.selectionStyle = UITableViewCellSelectionStyleNone;
+
+    UILabel *titleLabel = [[UILabel alloc] init];
+    titleLabel.text = catName;
+    titleLabel.textColor = [self sbTextColor];
+    titleLabel.font = [UIFont systemFontOfSize:16 weight:UIFontWeightMedium];
+    titleLabel.translatesAutoresizingMaskIntoConstraints = NO;
+    [cell.contentView addSubview:titleLabel];
+
+    UIButton *menuButton = [UIButton buttonWithType:UIButtonTypeSystem];
+    menuButton.translatesAutoresizingMaskIntoConstraints = NO;
     menuButton.showsMenuAsPrimaryAction = YES;
-    [menuButton sizeToFit];
-    cell.accessoryView = menuButton;
+    [menuButton setContentHuggingPriority:UILayoutPriorityRequired forAxis:UILayoutConstraintAxisHorizontal];
+    [menuButton setContentCompressionResistancePriority:UILayoutPriorityRequired forAxis:UILayoutConstraintAxisHorizontal];
+    [cell.contentView addSubview:menuButton];
+
+    [self updateSBActionButton:menuButton category:category catName:catName];
+
+    [NSLayoutConstraint activateConstraints:@[
+        [titleLabel.leadingAnchor constraintEqualToAnchor:cell.contentView.leadingAnchor constant:16],
+        [titleLabel.centerYAnchor constraintEqualToAnchor:cell.contentView.centerYAnchor],
+        [titleLabel.topAnchor constraintGreaterThanOrEqualToAnchor:cell.contentView.topAnchor constant:12],
+        [titleLabel.bottomAnchor constraintLessThanOrEqualToAnchor:cell.contentView.bottomAnchor constant:-12],
+
+        [menuButton.leadingAnchor constraintGreaterThanOrEqualToAnchor:titleLabel.trailingAnchor constant:12],
+        [menuButton.trailingAnchor constraintEqualToAnchor:cell.contentView.trailingAnchor constant:-16],
+        [menuButton.centerYAnchor constraintEqualToAnchor:cell.contentView.centerYAnchor],
+        [menuButton.topAnchor constraintGreaterThanOrEqualToAnchor:cell.contentView.topAnchor constant:8],
+        [menuButton.bottomAnchor constraintLessThanOrEqualToAnchor:cell.contentView.bottomAnchor constant:-8]
+    ]];
 
     return cell;
 }
@@ -653,14 +690,14 @@ static const void *kSBAllFlatRowsKey = &kSBAllFlatRowsKey;
     UIColor *color = viewController.selectedColor;
     NSString *hex = SBHexFromColor(color);
     [[NSUserDefaults standardUserDefaults] setObject:hex forKey:self.activeColorKey];
-    [self.tableView reloadRowsAtIndexPaths:@[self.activeColorIndexPath] withRowAnimation:UITableViewRowAnimationNone];
+    [self.tableView reloadRowsAtIndexPaths:@[self.activeColorIndexPath] withRowAnimation:UITableViewRowAnimationFade];
 }
 
 - (void)colorPickerViewController:(UIColorPickerViewController *)viewController didSelectColor:(UIColor *)color continuously:(BOOL)continuously {
     if (!continuously) {
         NSString *hex = SBHexFromColor(color);
         [[NSUserDefaults standardUserDefaults] setObject:hex forKey:self.activeColorKey];
-        [self.tableView reloadRowsAtIndexPaths:@[self.activeColorIndexPath] withRowAnimation:UITableViewRowAnimationNone];
+        [self.tableView reloadRowsAtIndexPaths:@[self.activeColorIndexPath] withRowAnimation:UITableViewRowAnimationFade];
     }
 }
 

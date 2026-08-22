@@ -102,7 +102,10 @@
 #define GlobalSavedNormalRate @"YouModGlobalSavedNormalRate"
 // Downloading
 #define DownloadManager @"YouModDownloadManager"
-#define DownloadSaveToPhotos @"YouModDownloadSaveToPhotos"
+#define PostDownloadAction @"YouModPostDownloadAction"
+#define PostDownloadActionSaveToPhotos 0
+#define PostDownloadActionShare 1
+#define PostDownloadActionAsk 2
 #define AddDownloadToShorts @"YouModAddDownloadToShorts"
 #define AudioPreferIndex @"YouModAudioPreferIndex"
 #define DownloadComment @"YouModDownloadComment"
@@ -202,6 +205,8 @@
 #define RemoveVideoDownloadButton @"YouModRemoveVideoDownloadButton"
 #define RemoveVideoClipButton @"YouModRemoveVideoClipButton"
 #define RemoveVideoRemixButton @"YouModRemoveVideoRemixButton"
+#define RemoveVideoLiveChatButton @"YouModRemoveVideoLiveChatButton"
+#define AutoFeedMute @"YouModAutoFeedMute"
 // Shorts
 #define HideShortsTopbar @"YouModHideShortsTopbar"
 #define HideShortsSubbar @"YouModHideShortsSubbar"
@@ -223,6 +228,7 @@
 #define RemoveShortsPausedLiveButton @"YouModRemoveShortsPausedLiveButton"
 #define RemoveShortsPausedLensButton @"YouModRemoveShortsPausedLensButton"
 #define RemoveShortsPausedTrendsButton @"YouModRemoveShortsPausedTrendsButton"
+#define RemoveShortsDisclosure @"YouModRemoveShortsDisclosure"
 // Tab bar
 #define DefaultTab @"YouModDefaultStartupTab"
 #define TabOrder @"YouModTabOrder"
@@ -267,6 +273,7 @@
 #define RemoveHelpOption @"YouModRemoveHelpOption"
 #define RemoveNotifyOption @"YouModRemoveNotifyOption"
 #define RemoveClearScreenOption @"YouModRemoveClearScreenOption"
+#define RemoveAddToLastQueueOption @"YouModRemoveAddToLastQueueOption"
 // SponsorBlock
 #define SBEnabled @"YouModSBEnabled"
 #define SBShowButton @"YouModSBShowButton"
@@ -315,6 +322,10 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 
 @interface YTWatchController (YouMod)
 - (void)reload;
+@end
+
+@interface YTPlayerOverlayProvider (YouMod)
+- (void)removePlayerOverlayWithIdentifier:(NSString *)identifier;
 @end
 
 @interface YTELMViewController : UIViewController
@@ -635,6 +646,9 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 @interface YTWatchFloatingMiniplayerBadgeView : UIView
 @end
 
+@interface YTInlineMutedPlaybackScrubberViewController : UIViewController
+@end
+
 @interface YTReelTopBarView : UIView
 @end
 
@@ -673,6 +687,7 @@ typedef NS_ENUM(NSInteger, SBSegmentAction) {
 @property (nonatomic, assign) BOOL isHighlightPill;
 @property (nonatomic, strong) NSDate *backgroundDate;
 + (instancetype)showInView:(UIView *)parentView message:(NSString *)message buttonTitle:(NSString *)buttonTitle action:(void (^)(void))action duration:(NSTimeInterval)duration;
++ (instancetype)showDownloadCompleteDialogInView:(UIView *)parentView message:(NSString *)message saveHandler:(void (^)(void))saveHandler shareHandler:(void (^)(void))shareHandler duration:(NSTimeInterval)duration;
 + (instancetype)showSuccessInView:(UIView *)parentView message:(NSString *)message duration:(NSTimeInterval)duration;
 + (instancetype)showErrorInView:(UIView *)parentView message:(NSString *)message duration:(NSTimeInterval)duration;
 - (void)dismiss;

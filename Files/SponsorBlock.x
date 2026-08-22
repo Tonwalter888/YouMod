@@ -382,13 +382,13 @@ UIColor *SBColorFromHex(NSString *hexString) {
     }];
 }
 
-- (void)singleVideo:(id)video currentVideoTimeDidChange:(id)time {
+- (void)singleVideo:(YTSingleVideoController *)video currentVideoTimeDidChange:(YTSingleVideoTime *)time {
     %orig;
     [self sbCheckSegmentsAtCurrentTime];
 }
 
 // Time-change hook for YouTube versions that use the renamed selector.
-- (void)potentiallyMutatedSingleVideo:(id)video currentVideoTimeDidChange:(id)time {
+- (void)potentiallyMutatedSingleVideo:(YTSingleVideoController *)video currentVideoTimeDidChange:(YTSingleVideoTime *)time {
     %orig;
     [self sbCheckSegmentsAtCurrentTime];
 }
@@ -407,6 +407,21 @@ UIColor *SBColorFromHex(NSString *hexString) {
     for (SBSegment *segment in self.sbSegments) {
         SBSegmentAction action = [segment configuredAction];
         if (action == SBSegmentActionDisable || action == SBSegmentActionDisplay) continue;
+
+        BOOL isPoi = [segment.category isEqualToString:@"poi_highlight"];
+
+        if (isPoi) {
+            if (action == SBSegmentActionSkipTo) {
+                NSString *segID = segment.UUID;
+                if (![self.sbSkippedSegments containsObject:segID] && currentTime < segment.startTime) {
+                    [self.sbSkippedSegments addObject:segID];
+                    [self sbSkipToHighlight];
+                    break;
+                }
+            }
+            continue;
+        }
+
         if (action == SBSegmentActionSkipTo) continue;
 
         float duration = segment.endTime - segment.startTime;
@@ -417,11 +432,7 @@ UIColor *SBColorFromHex(NSString *hexString) {
             if ([self.sbSkippedSegments containsObject:segID]) continue;
 
             if (action == SBSegmentActionAutoSkip) {
-                if ([segment.category isEqualToString:@"poi_highlight"]) {
-                    [self sbSkipToHighlight];
-                } else {
-                    [self sbPerformSkip:segment];
-                }
+                [self sbPerformSkip:segment];
             } else if (action == SBSegmentActionAsk) {
                 [self sbShowAskNotification:segment];
             }
@@ -492,26 +503,41 @@ UIColor *SBColorFromHex(NSString *hexString) {
 
 %new
 - (void)sbShowHighlightBannerIfNeeded:(NSArray<SBSegment *> *)segments {
+    if (!IS_ENABLED(SBEnabled) || !IS_ENABLED(SBButtonKey) || self.isPlayingAd) return;
+    if ([self.parentViewController isKindOfClass:%c(YTShortsPlayerViewController)]) return;
+
     for (SBSegment *seg in segments) {
-        if ([seg.category isEqualToString:@"poi_highlight"] && [seg configuredAction] == SBSegmentActionAsk) {
-            useBackwardIconForButton = NO;
-            NSBundle *bundle = YouModBundle();
-            NSString *message = [bundle localizedStringForKey:@"SB_JUMP_TO_HIGHLIGHT" value:@"Highlight available. Jump to the point?" table:nil];
-            NSString *skipTitle = [bundle localizedStringForKey:@"SB_SKIP_NOW" value:@"Skip" table:nil];
+        if ([seg.category isEqualToString:@"poi_highlight"]) {
+            SBSegmentAction action = [seg configuredAction];
+            CGFloat currentTime = [self currentVideoMediaTime];
+            if (action == SBSegmentActionSkipTo) {
+                if (currentTime < seg.startTime) {
+                    [self.sbSkippedSegments addObject:seg.UUID];
+                    [self sbSkipToHighlight];
+                }
+                break;
+            } else if (action == SBSegmentActionAsk) {
+                if (currentTime < seg.startTime) {
+                    useBackwardIconForButton = NO;
+                    NSBundle *bundle = YouModBundle();
+                    NSString *message = [bundle localizedStringForKey:@"SB_JUMP_TO_HIGHLIGHT" value:@"Highlight available. Jump to the point?" table:nil];
+                    NSString *skipTitle = [bundle localizedStringForKey:@"SB_SKIP_NOW" value:@"Skip" table:nil];
 
-            float alertDuration = SBClampedAlertDuration(SBSkipAlertDuration);
+                    float alertDuration = SBClampedAlertDuration(SBSkipAlertDuration);
 
-            UIView *parentView = sbGetNotificationParent();
-            SBSkipNotificationView *pill = [SBSkipNotificationView showInView:parentView
-                message:message
-                buttonTitle:skipTitle
-                action:^{ [self sbSkipToHighlight]; }
-                duration:alertDuration];
-            if (pill) {
-                pill.isHighlightPill = YES;
-                self.sbNotificationView = pill;
+                    UIView *parentView = sbGetNotificationParent();
+                    SBSkipNotificationView *pill = [SBSkipNotificationView showInView:parentView
+                        message:message
+                        buttonTitle:skipTitle
+                        action:^{ [self sbSkipToHighlight]; }
+                        duration:alertDuration];
+                    if (pill) {
+                        pill.isHighlightPill = YES;
+                        self.sbNotificationView = pill;
+                    }
+                }
+                break;
             }
-            break;
         }
     }
 }

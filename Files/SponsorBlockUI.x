@@ -337,6 +337,129 @@ static const CGFloat SBPoiMarkerXOffset = 1.5;
     return view;
 }
 
++ (instancetype)showDownloadCompleteDialogInView:(UIView *)parentView message:(NSString *)message saveHandler:(void (^)(void))saveHandler shareHandler:(void (^)(void))shareHandler duration:(NSTimeInterval)duration {
+    if (!parentView) return nil;
+
+    for (UIView *sub in [parentView.subviews copy]) {
+        if ([sub isKindOfClass:[SBSkipNotificationView class]]) {
+            SBSkipNotificationView *existing = (SBSkipNotificationView *)sub;
+            if (existing.isHighlightPill) return nil;
+            [existing dismiss];
+        }
+    }
+
+    SBSkipNotificationView *view = [[SBSkipNotificationView alloc] initWithFrame:CGRectZero];
+    view.translatesAutoresizingMaskIntoConstraints = NO;
+    view.clipsToBounds = YES;
+    view.layer.cornerRadius = 22.0;
+    view.totalDuration = duration;
+    view.remainingDuration = duration;
+    view.isPaused = NO;
+
+    // Base layer (revealed as progress depletes)
+    view.backgroundColor = [UIColor colorWithWhite:0.08 alpha:1.0];
+
+    // Progress overlay (shrinks from right to left)
+    UIView *progressOverlay = [[UIView alloc] initWithFrame:CGRectZero];
+    progressOverlay.translatesAutoresizingMaskIntoConstraints = YES;
+    progressOverlay.backgroundColor = [UIColor colorWithWhite:0.18 alpha:1.0];
+    progressOverlay.userInteractionEnabled = NO;
+    progressOverlay.layer.anchorPoint = CGPointMake(0, 0.5);
+    progressOverlay.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+    view.progressOverlay = progressOverlay;
+    [view addSubview:progressOverlay];
+
+    // Message label
+    UILabel *label = [[UILabel alloc] initWithFrame:CGRectZero];
+    label.translatesAutoresizingMaskIntoConstraints = NO;
+    label.text = message;
+    label.textColor = [UIColor whiteColor];
+    label.font = [UIFont systemFontOfSize:14.0 weight:UIFontWeightMedium];
+    label.numberOfLines = 1;
+    label.lineBreakMode = NSLineBreakByTruncatingTail;
+    view.messageLabel = label;
+    [view addSubview:label];
+
+    UIImageSymbolConfiguration *config = [UIImageSymbolConfiguration configurationWithPointSize:14 weight:UIImageSymbolWeightMedium];
+
+    // Save button (left of share button)
+    UIButton *saveButton = [UIButton buttonWithType:UIButtonTypeCustom];
+    saveButton.translatesAutoresizingMaskIntoConstraints = NO;
+    UIImage *saveIcon = [UIImage systemImageNamed:@"square.and.arrow.down" withConfiguration:config];
+    [saveButton setImage:saveIcon forState:UIControlStateNormal];
+    saveButton.tintColor = [UIColor whiteColor];
+    saveButton.backgroundColor = [UIColor colorWithWhite:1.0 alpha:0.15];
+    saveButton.layer.cornerRadius = 16.0;
+    saveButton.clipsToBounds = YES;
+    __weak typeof(view) weakView = view;
+    [saveButton addAction:[UIAction actionWithHandler:^(__kindof UIAction * _Nonnull action) {
+        if (saveHandler) saveHandler();
+        [weakView dismiss];
+    }] forControlEvents:UIControlEventTouchUpInside];
+    [view addSubview:saveButton];
+
+    // Share button (rightmost) - Using arrowshape.turn.up.right
+    UIButton *shareButton = [UIButton buttonWithType:UIButtonTypeCustom];
+    shareButton.translatesAutoresizingMaskIntoConstraints = NO;
+    UIImage *shareIcon = [UIImage systemImageNamed:@"arrowshape.turn.up.right" withConfiguration:config];
+    [shareButton setImage:shareIcon forState:UIControlStateNormal];
+    shareButton.tintColor = [UIColor whiteColor];
+    shareButton.backgroundColor = [UIColor colorWithWhite:1.0 alpha:0.15];
+    shareButton.layer.cornerRadius = 16.0;
+    shareButton.clipsToBounds = YES;
+    [shareButton addAction:[UIAction actionWithHandler:^(__kindof UIAction * _Nonnull action) {
+        if (shareHandler) shareHandler();
+        [weakView dismiss];
+    }] forControlEvents:UIControlEventTouchUpInside];
+    [view addSubview:shareButton];
+
+    [parentView addSubview:view];
+
+    // Layout: centered horizontally, anchored above tab bar via safe area
+    NSLayoutConstraint *maxWidth = [view.widthAnchor constraintLessThanOrEqualToAnchor:parentView.widthAnchor multiplier:0.88];
+    [NSLayoutConstraint activateConstraints:@[
+        [view.centerXAnchor constraintEqualToAnchor:parentView.centerXAnchor],
+        [view.bottomAnchor constraintEqualToAnchor:parentView.safeAreaLayoutGuide.bottomAnchor constant:-60.0],
+        [view.heightAnchor constraintEqualToConstant:44.0],
+        maxWidth
+    ]];
+
+    // Internal layout
+    [NSLayoutConstraint activateConstraints:@[
+        [label.leadingAnchor constraintEqualToAnchor:view.leadingAnchor constant:16.0],
+        [label.centerYAnchor constraintEqualToAnchor:view.centerYAnchor],
+        [label.trailingAnchor constraintEqualToAnchor:saveButton.leadingAnchor constant:-10.0],
+
+        [saveButton.trailingAnchor constraintEqualToAnchor:shareButton.leadingAnchor constant:-8.0],
+        [saveButton.centerYAnchor constraintEqualToAnchor:view.centerYAnchor],
+        [saveButton.widthAnchor constraintEqualToConstant:32.0],
+        [saveButton.heightAnchor constraintEqualToConstant:32.0],
+
+        [shareButton.trailingAnchor constraintEqualToAnchor:view.trailingAnchor constant:-8.0],
+        [shareButton.centerYAnchor constraintEqualToAnchor:view.centerYAnchor],
+        [shareButton.widthAnchor constraintEqualToConstant:32.0],
+        [shareButton.heightAnchor constraintEqualToConstant:32.0]
+    ]];
+
+    // Pan gesture for interactive dismissal
+    UIPanGestureRecognizer *pan = [[UIPanGestureRecognizer alloc] initWithTarget:view action:@selector(handlePan:)];
+    [view addGestureRecognizer:pan];
+
+    // Slide up from below
+    view.transform = CGAffineTransformMakeTranslation(0, 60);
+    view.alpha = 0.0;
+    [UIView animateWithDuration:0.4 delay:0 usingSpringWithDamping:0.85 initialSpringVelocity:0.5 options:UIViewAnimationOptionCurveEaseOut animations:^{
+        view.alpha = 1.0;
+        view.transform = CGAffineTransformIdentity;
+    } completion:^(BOOL finished) {
+        if (finished && duration > 0) {
+            [view startProgressAnimation];
+        }
+    }];
+
+    return view;
+}
+
 @end
 
 #pragma mark - YMDownloadProgressView

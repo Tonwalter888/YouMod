@@ -105,13 +105,20 @@
     if (renderer.icon.iconType == 251 && IS_ENABLED(RemovePlayInNextQueueOption)) {
         return NO;
     }
+    if (iconnum == 895 && IS_ENABLED(RemoveAddToLastQueueOption)) {
+        return NO;
+    }
     return %orig;
 }
 %end
 
 %hook YTMenuItemVisibilityHandlerImpl
 - (BOOL)shouldShowServiceItemRenderer:(YTIMenuConditionalServiceItemRenderer *)renderer {
-    if (renderer.icon.iconType == 251 && IS_ENABLED(RemovePlayInNextQueueOption)) {
+    int iconnum = renderer.icon.iconType;
+    if (iconnum == 251 && IS_ENABLED(RemovePlayInNextQueueOption)) {
+        return NO;
+    }
+    if (iconnum == 895 && IS_ENABLED(RemoveAddToLastQueueOption)) {
         return NO;
     }
     return %orig;

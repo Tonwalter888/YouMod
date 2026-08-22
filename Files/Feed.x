@@ -59,13 +59,10 @@ static void YouModFilterChannelButtons(_ASDisplayView *self, NSString *iden) {
     } else {
         _ASDisplayView *dpv = (_ASDisplayView *)sup;
         ASDisplayNode *node = dpv.keepalive_node;
-        for (_ASDisplayView *view in node.yogaChildren) {
-            if ([[view description] containsString:iden]) {
-                [node removeYogaChild:view];
-                [dpv removeFromSuperview];
-                break;
-            }
-        }
+        _ASDisplayView *maindpv = (_ASDisplayView *)dpv.superview;
+        ASDisplayNode *mainNode = maindpv.keepalive_node;
+        [mainNode removeYogaChild:node];
+        [dpv removeFromSuperview];
     }
 }
 

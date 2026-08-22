@@ -16,6 +16,117 @@ typedef NS_ENUM(NSInteger, YMRowType) {
     YMRowTypeSlider
 };
 
+typedef NS_ENUM(NSInteger, YMVisibilityOperator) {
+    YMVisibilityOperatorBoolEquals = 0,
+    YMVisibilityOperatorIntEquals,
+    YMVisibilityOperatorIntNotEquals,
+    YMVisibilityOperatorIntGreaterThan,
+    YMVisibilityOperatorIntGreaterThanOrEqual,
+    YMVisibilityOperatorIntLessThan,
+    YMVisibilityOperatorIntLessThanOrEqual,
+    YMVisibilityOperatorIntInValues,
+    YMVisibilityOperatorIntNotInValues,
+    YMVisibilityOperatorCustomBlock
+};
+
+@interface YMVisibilityCondition : NSObject
+@property (nonatomic, copy) NSString *key;
+@property (nonatomic, assign) YMVisibilityOperator op;
+@property (nonatomic, assign) BOOL boolValue;
+@property (nonatomic, assign) NSInteger intValue;
+@property (nonatomic, strong) NSArray<NSNumber *> *intValues;
+@property (nonatomic, copy) BOOL (^customBlock)(NSUserDefaults *defaults);
+
++ (instancetype)conditionWithBoolKey:(NSString *)key equals:(BOOL)value;
++ (instancetype)conditionWithKey:(NSString *)key intOperator:(YMVisibilityOperator)op value:(NSInteger)value;
++ (instancetype)conditionWithKey:(NSString *)key inValues:(NSArray<NSNumber *> *)values;
++ (instancetype)conditionWithKey:(NSString *)key notInValues:(NSArray<NSNumber *> *)values;
++ (instancetype)conditionWithBlock:(BOOL (^)(NSUserDefaults *defaults))block;
+
+- (BOOL)evaluateWithDefaults:(NSUserDefaults *)defaults;
+@end
+
+@implementation YMVisibilityCondition
+
++ (instancetype)conditionWithBoolKey:(NSString *)key equals:(BOOL)value {
+    YMVisibilityCondition *cond = [[YMVisibilityCondition alloc] init];
+    cond.key = key;
+    cond.op = YMVisibilityOperatorBoolEquals;
+    cond.boolValue = value;
+    return cond;
+}
+
++ (instancetype)conditionWithKey:(NSString *)key intOperator:(YMVisibilityOperator)op value:(NSInteger)value {
+    YMVisibilityCondition *cond = [[YMVisibilityCondition alloc] init];
+    cond.key = key;
+    cond.op = op;
+    cond.intValue = value;
+    return cond;
+}
+
++ (instancetype)conditionWithKey:(NSString *)key inValues:(NSArray<NSNumber *> *)values {
+    YMVisibilityCondition *cond = [[YMVisibilityCondition alloc] init];
+    cond.key = key;
+    cond.op = YMVisibilityOperatorIntInValues;
+    cond.intValues = values;
+    return cond;
+}
+
++ (instancetype)conditionWithKey:(NSString *)key notInValues:(NSArray<NSNumber *> *)values {
+    YMVisibilityCondition *cond = [[YMVisibilityCondition alloc] init];
+    cond.key = key;
+    cond.op = YMVisibilityOperatorIntNotInValues;
+    cond.intValues = values;
+    return cond;
+}
+
++ (instancetype)conditionWithBlock:(BOOL (^)(NSUserDefaults *defaults))block {
+    YMVisibilityCondition *cond = [[YMVisibilityCondition alloc] init];
+    cond.op = YMVisibilityOperatorCustomBlock;
+    cond.customBlock = block;
+    return cond;
+}
+
+- (BOOL)evaluateWithDefaults:(NSUserDefaults *)defaults {
+    if (!defaults) defaults = [NSUserDefaults standardUserDefaults];
+    switch (self.op) {
+        case YMVisibilityOperatorBoolEquals:
+            return [defaults boolForKey:self.key] == self.boolValue;
+        case YMVisibilityOperatorIntEquals:
+            return [defaults integerForKey:self.key] == self.intValue;
+        case YMVisibilityOperatorIntNotEquals:
+            return [defaults integerForKey:self.key] != self.intValue;
+        case YMVisibilityOperatorIntGreaterThan:
+            return [defaults integerForKey:self.key] > self.intValue;
+        case YMVisibilityOperatorIntGreaterThanOrEqual:
+            return [defaults integerForKey:self.key] >= self.intValue;
+        case YMVisibilityOperatorIntLessThan:
+            return [defaults integerForKey:self.key] < self.intValue;
+        case YMVisibilityOperatorIntLessThanOrEqual:
+            return [defaults integerForKey:self.key] <= self.intValue;
+        case YMVisibilityOperatorIntInValues: {
+            NSInteger current = [defaults integerForKey:self.key];
+            for (NSNumber *v in self.intValues) {
+                if ([v integerValue] == current) return YES;
+            }
+            return NO;
+        }
+        case YMVisibilityOperatorIntNotInValues: {
+            NSInteger current = [defaults integerForKey:self.key];
+            for (NSNumber *v in self.intValues) {
+                if ([v integerValue] == current) return NO;
+            }
+            return YES;
+        }
+        case YMVisibilityOperatorCustomBlock:
+            return self.customBlock ? self.customBlock(defaults) : YES;
+        default:
+            return YES;
+    }
+}
+
+@end
+
 @interface YMSettingsItem : NSObject
 @property (nonatomic, assign) YMRowType type;
 @property (nonatomic, strong) NSString *title;
@@ -31,18 +142,11 @@ typedef NS_ENUM(NSInteger, YMRowType) {
 @property (nonatomic, assign) float sliderMax;
 @property (nonatomic, assign) float sliderStep;
 @property (nonatomic, assign) float sliderDefault;
-typedef NS_ENUM(NSInteger, YMVisibilityConditionType) {
-    YMVisibilityConditionNone = 0,
-    YMVisibilityConditionIntEquals,
-    YMVisibilityConditionBoolEquals,
-    YMVisibilityConditionIntGreaterThan
-};
 
-// Optional visibility predicate: when set, the row is shown only while the condition evaluates to true.
-@property (nonatomic, assign) YMVisibilityConditionType visibilityCondition;
-@property (nonatomic, strong) NSString *visibilityKey;
-@property (nonatomic, assign) NSInteger visibilityValue;
-@property (nonatomic, assign) BOOL visibilityBoolValue;
+// Multi-condition visibility predicates: all conditions must match by default (AND), or any condition if matchAnyCondition is YES (OR).
+@property (nonatomic, strong) NSMutableArray<YMVisibilityCondition *> *visibilityConditions;
+@property (nonatomic, assign) BOOL matchAnyCondition;
+
 + (instancetype)toggleWithTitle:(NSString *)title subtitle:(NSString *)subtitle key:(NSString *)key;
 + (instancetype)sliderWithTitle:(NSString *)title subtitle:(NSString *)subtitle key:(NSString *)key min:(float)min max:(float)max step:(float)step defaultValue:(float)defaultValue;
 + (instancetype)pickerWithTitle:(NSString *)title subtitle:(NSString *)subtitle key:(NSString *)key options:(NSArray<NSString *> *)options defaultValue:(NSInteger)defaultValue;
@@ -51,13 +155,44 @@ typedef NS_ENUM(NSInteger, YMVisibilityConditionType) {
 + (instancetype)segmentWithTitle:(NSString *)title key:(NSString *)key icons:(NSArray<NSNumber *> *)icons defaultValue:(NSInteger)defaultValue;
 + (instancetype)textSegmentWithTitle:(NSString *)title key:(NSString *)key labels:(NSArray<NSString *> *)labels defaultValue:(NSInteger)defaultValue;
 + (instancetype)imageSegmentWithTitle:(NSString *)title key:(NSString *)key images:(NSArray<UIImage *> *)images defaultValue:(NSInteger)defaultValue;
-- (instancetype)visibleWhenKey:(NSString *)key equals:(NSInteger)value; // chainable
-- (instancetype)visibleWhenBoolKey:(NSString *)key equals:(BOOL)value; // chainable
-- (instancetype)visibleWhenBoolKey:(NSString *)key; // chainable
-- (instancetype)visibleWhenKey:(NSString *)key isGreaterThan:(NSInteger)value; // chainable
+
+// Evaluation
+- (BOOL)isVisible;
+- (BOOL)isVisibleWithDefaults:(NSUserDefaults *)defaults;
+
+// Integer conditions (chainable)
+- (instancetype)visibleWhenKey:(NSString *)key equals:(NSInteger)value;
+- (instancetype)visibleWhenKey:(NSString *)key isNotEqualTo:(NSInteger)value;
+- (instancetype)visibleWhenKey:(NSString *)key isGreaterThan:(NSInteger)value;
+- (instancetype)visibleWhenKey:(NSString *)key isGreaterThanOrEqualTo:(NSInteger)value;
+- (instancetype)visibleWhenKey:(NSString *)key isLessThan:(NSInteger)value;
+- (instancetype)visibleWhenKey:(NSString *)key isLessThanOrEqualTo:(NSInteger)value;
+- (instancetype)visibleWhenKey:(NSString *)key inValues:(NSArray<NSNumber *> *)values;
+- (instancetype)visibleWhenKey:(NSString *)key notInValues:(NSArray<NSNumber *> *)values;
+- (instancetype)visibleWhenKeyDictionary:(NSDictionary<NSString *, NSNumber *> *)keyValues;
+
+// Boolean conditions (chainable)
+- (instancetype)visibleWhenBoolKey:(NSString *)key equals:(BOOL)value;
+- (instancetype)visibleWhenBoolKey:(NSString *)key;
+- (instancetype)visibleWhenBoolKeys:(NSArray<NSString *> *)keys;
+- (instancetype)visibleWhenBoolKeys:(NSArray<NSString *> *)keys allEqualTo:(BOOL)value;
+- (instancetype)visibleWhenAnyBoolKey:(NSArray<NSString *> *)keys;
+- (instancetype)visibleWhenBoolDictionary:(NSDictionary<NSString *, NSNumber *> *)keyValues;
+
+// Block / Custom conditions & modifier
+- (instancetype)visibleWhen:(BOOL (^)(NSUserDefaults *defaults))block;
+- (instancetype)requireAnyCondition;
 @end
 
 @implementation YMSettingsItem
+
+- (instancetype)init {
+    self = [super init];
+    if (self) {
+        _visibilityConditions = [NSMutableArray array];
+    }
+    return self;
+}
 
 + (instancetype)toggleWithTitle:(NSString *)title subtitle:(NSString *)subtitle key:(NSString *)key {
     YMSettingsItem *item = [[YMSettingsItem alloc] init];
@@ -138,17 +273,93 @@ typedef NS_ENUM(NSInteger, YMVisibilityConditionType) {
     return item;
 }
 
+- (BOOL)isVisible {
+    return [self isVisibleWithDefaults:[NSUserDefaults standardUserDefaults]];
+}
+
+- (BOOL)isVisibleWithDefaults:(NSUserDefaults *)defaults {
+    if (!self.visibilityConditions || self.visibilityConditions.count == 0) return YES;
+    if (!defaults) defaults = [NSUserDefaults standardUserDefaults];
+    if (self.matchAnyCondition) {
+        for (YMVisibilityCondition *cond in self.visibilityConditions) {
+            if ([cond evaluateWithDefaults:defaults]) return YES;
+        }
+        return NO;
+    } else {
+        for (YMVisibilityCondition *cond in self.visibilityConditions) {
+            if (![cond evaluateWithDefaults:defaults]) return NO;
+        }
+        return YES;
+    }
+}
+
 - (instancetype)visibleWhenKey:(NSString *)key equals:(NSInteger)value {
-    self.visibilityKey = key;
-    self.visibilityValue = value;
-    self.visibilityCondition = YMVisibilityConditionIntEquals;
+    if (key) {
+        [self.visibilityConditions addObject:[YMVisibilityCondition conditionWithKey:key intOperator:YMVisibilityOperatorIntEquals value:value]];
+    }
+    return self;
+}
+
+- (instancetype)visibleWhenKey:(NSString *)key isNotEqualTo:(NSInteger)value {
+    if (key) {
+        [self.visibilityConditions addObject:[YMVisibilityCondition conditionWithKey:key intOperator:YMVisibilityOperatorIntNotEquals value:value]];
+    }
+    return self;
+}
+
+- (instancetype)visibleWhenKey:(NSString *)key isGreaterThan:(NSInteger)value {
+    if (key) {
+        [self.visibilityConditions addObject:[YMVisibilityCondition conditionWithKey:key intOperator:YMVisibilityOperatorIntGreaterThan value:value]];
+    }
+    return self;
+}
+
+- (instancetype)visibleWhenKey:(NSString *)key isGreaterThanOrEqualTo:(NSInteger)value {
+    if (key) {
+        [self.visibilityConditions addObject:[YMVisibilityCondition conditionWithKey:key intOperator:YMVisibilityOperatorIntGreaterThanOrEqual value:value]];
+    }
+    return self;
+}
+
+- (instancetype)visibleWhenKey:(NSString *)key isLessThan:(NSInteger)value {
+    if (key) {
+        [self.visibilityConditions addObject:[YMVisibilityCondition conditionWithKey:key intOperator:YMVisibilityOperatorIntLessThan value:value]];
+    }
+    return self;
+}
+
+- (instancetype)visibleWhenKey:(NSString *)key isLessThanOrEqualTo:(NSInteger)value {
+    if (key) {
+        [self.visibilityConditions addObject:[YMVisibilityCondition conditionWithKey:key intOperator:YMVisibilityOperatorIntLessThanOrEqual value:value]];
+    }
+    return self;
+}
+
+- (instancetype)visibleWhenKey:(NSString *)key inValues:(NSArray<NSNumber *> *)values {
+    if (key && values) {
+        [self.visibilityConditions addObject:[YMVisibilityCondition conditionWithKey:key inValues:values]];
+    }
+    return self;
+}
+
+- (instancetype)visibleWhenKey:(NSString *)key notInValues:(NSArray<NSNumber *> *)values {
+    if (key && values) {
+        [self.visibilityConditions addObject:[YMVisibilityCondition conditionWithKey:key notInValues:values]];
+    }
+    return self;
+}
+
+- (instancetype)visibleWhenKeyDictionary:(NSDictionary<NSString *, NSNumber *> *)keyValues {
+    [keyValues enumerateKeysAndObjectsUsingBlock:^(NSString *k, NSNumber *val, BOOL *stop) {
+        [self visibleWhenKey:k equals:[val integerValue]];
+    }];
     return self;
 }
 
 - (instancetype)visibleWhenBoolKey:(NSString *)key equals:(BOOL)value {
-    self.visibilityKey = key;
-    self.visibilityBoolValue = value;
-    self.visibilityCondition = YMVisibilityConditionBoolEquals;
+    if (key) {
+        [self.visibilityConditions addObject:[YMVisibilityCondition conditionWithBoolKey:key equals:value]];
+    }
     return self;
 }
 
@@ -156,10 +367,43 @@ typedef NS_ENUM(NSInteger, YMVisibilityConditionType) {
     return [self visibleWhenBoolKey:key equals:YES];
 }
 
-- (instancetype)visibleWhenKey:(NSString *)key isGreaterThan:(NSInteger)value {
-    self.visibilityKey = key;
-    self.visibilityValue = value;
-    self.visibilityCondition = YMVisibilityConditionIntGreaterThan;
+- (instancetype)visibleWhenBoolKeys:(NSArray<NSString *> *)keys {
+    return [self visibleWhenBoolKeys:keys allEqualTo:YES];
+}
+
+- (instancetype)visibleWhenBoolKeys:(NSArray<NSString *> *)keys allEqualTo:(BOOL)value {
+    for (NSString *k in keys) {
+        [self visibleWhenBoolKey:k equals:value];
+    }
+    return self;
+}
+
+- (instancetype)visibleWhenAnyBoolKey:(NSArray<NSString *> *)keys {
+    if (keys.count == 0) return self;
+    return [self visibleWhen:^BOOL(NSUserDefaults *defaults) {
+        for (NSString *k in keys) {
+            if ([defaults boolForKey:k]) return YES;
+        }
+        return NO;
+    }];
+}
+
+- (instancetype)visibleWhenBoolDictionary:(NSDictionary<NSString *, NSNumber *> *)keyValues {
+    [keyValues enumerateKeysAndObjectsUsingBlock:^(NSString *k, NSNumber *val, BOOL *stop) {
+        [self visibleWhenBoolKey:k equals:[val boolValue]];
+    }];
+    return self;
+}
+
+- (instancetype)visibleWhen:(BOOL (^)(NSUserDefaults *defaults))block {
+    if (block) {
+        [self.visibilityConditions addObject:[YMVisibilityCondition conditionWithBlock:block]];
+    }
+    return self;
+}
+
+- (instancetype)requireAnyCondition {
+    self.matchAnyCondition = YES;
     return self;
 }
 
@@ -212,26 +456,24 @@ static const void *kYMPageFilterKey = &kYMPageFilterKey;
 - (NSString *)pageFilter { return objc_getAssociatedObject(self, kYMPageFilterKey); }
 - (void)setPageFilter:(NSString *)f { objc_setAssociatedObject(self, kYMPageFilterKey, f, OBJC_ASSOCIATION_COPY_NONATOMIC); }
 
-// The rows to display: all items, or — while a page search is active — only those
-// whose title/subtitle match, with headers dropped (a filtered list has no sections).
-// A row with a visibility predicate is shown only while its key's current integer
-// value matches (lets rows like the server picker appear only for the right method).
-- (BOOL)isItemVisible:(YMSettingsItem *)item {
-    if (!item.visibilityKey || item.visibilityCondition == YMVisibilityConditionNone) return YES;
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    switch (item.visibilityCondition) {
-        case YMVisibilityConditionIntEquals:
-            return [defaults integerForKey:item.visibilityKey] == item.visibilityValue;
-        case YMVisibilityConditionBoolEquals:
-            return [defaults boolForKey:item.visibilityKey] == item.visibilityBoolValue;
-        case YMVisibilityConditionIntGreaterThan:
-            return [defaults integerForKey:item.visibilityKey] > item.visibilityValue;
-        default:
-            return YES;
-    }
+static const void *kYMCachedDisplayedItemsKey = &kYMCachedDisplayedItemsKey;
+
+- (NSArray<YMSettingsItem *> *)cachedDisplayedItems {
+    return objc_getAssociatedObject(self, kYMCachedDisplayedItemsKey);
 }
 
-- (NSArray<YMSettingsItem *> *)displayedItems {
+- (void)setCachedDisplayedItems:(NSArray<YMSettingsItem *> *)items {
+    objc_setAssociatedObject(self, kYMCachedDisplayedItemsKey, items, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+}
+
+// The rows to display: all items, or — while a page search is active — only those
+// whose title/subtitle match, with headers dropped (a filtered list has no sections).
+// A row with visibility predicates is shown only while its conditions evaluate to true.
+- (BOOL)isItemVisible:(YMSettingsItem *)item {
+    return [item isVisible];
+}
+
+- (NSArray<YMSettingsItem *> *)computeDisplayedItems {
     NSString *q = self.pageFilter;
     if (q.length == 0) {
         NSMutableArray<YMSettingsItem *> *visible = [NSMutableArray array];
@@ -247,6 +489,54 @@ static const void *kYMPageFilterKey = &kYMPageFilterKey;
         if ([hay rangeOfString:q options:opts].location != NSNotFound) [matches addObject:item];
     }
     return matches;
+}
+
+- (NSArray<YMSettingsItem *> *)displayedItems {
+    NSArray<YMSettingsItem *> *cached = [self cachedDisplayedItems];
+    if (!cached) {
+        cached = [self computeDisplayedItems];
+        [self setCachedDisplayedItems:cached];
+    }
+    return cached;
+}
+
+- (void)updateDisplayedItemsAnimated:(BOOL)animated {
+    NSArray<YMSettingsItem *> *oldItems = [self displayedItems];
+    NSArray<YMSettingsItem *> *newItems = [self computeDisplayedItems];
+
+    if (!animated || self.pageFilter.length > 0 || !self.tableView.window) {
+        [self setCachedDisplayedItems:newItems];
+        [self.tableView reloadData];
+        return;
+    }
+
+    NSMutableArray<NSIndexPath *> *deletions = [NSMutableArray array];
+    for (NSUInteger i = 0; i < oldItems.count; i++) {
+        if (![newItems containsObject:oldItems[i]]) {
+            [deletions addObject:[NSIndexPath indexPathForRow:i inSection:0]];
+        }
+    }
+
+    NSMutableArray<NSIndexPath *> *insertions = [NSMutableArray array];
+    for (NSUInteger i = 0; i < newItems.count; i++) {
+        if (![oldItems containsObject:newItems[i]]) {
+            [insertions addObject:[NSIndexPath indexPathForRow:i inSection:0]];
+        }
+    }
+
+    if (deletions.count > 0 || insertions.count > 0) {
+        [self setCachedDisplayedItems:newItems];
+        [self.tableView performBatchUpdates:^{
+            if (deletions.count > 0) {
+                [self.tableView deleteRowsAtIndexPaths:deletions withRowAnimation:UITableViewRowAnimationFade];
+            }
+            if (insertions.count > 0) {
+                [self.tableView insertRowsAtIndexPaths:insertions withRowAnimation:UITableViewRowAnimationFade];
+            }
+        } completion:nil];
+    } else {
+        [self setCachedDisplayedItems:newItems];
+    }
 }
 
 - (void)updateSearchBarTheme {
@@ -346,7 +636,7 @@ static const void *kYMPageFilterKey = &kYMPageFilterKey;
         self.navigationController.navigationBar.standardAppearance = appearance;
         self.navigationController.navigationBar.scrollEdgeAppearance = appearance;
         [self updateSearchBarTheme];
-        [self.tableView reloadData];
+        [self updateDisplayedItemsAnimated:NO];
     }
 }
 
@@ -354,7 +644,7 @@ static const void *kYMPageFilterKey = &kYMPageFilterKey;
 
 - (void)searchBar:(UISearchBar *)searchBar textDidChange:(NSString *)searchText {
     self.pageFilter = [searchText stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
-    [self.tableView reloadData];
+    [self updateDisplayedItemsAnimated:NO];
 }
 
 - (void)searchBarTextDidBeginEditing:(UISearchBar *)searchBar {
@@ -373,7 +663,7 @@ static const void *kYMPageFilterKey = &kYMPageFilterKey;
     searchBar.text = @"";
     self.pageFilter = @"";
     [searchBar resignFirstResponder];
-    [self.tableView reloadData];
+    [self updateDisplayedItemsAnimated:NO];
 }
 
 - (void)viewWillAppear:(BOOL)animated {
@@ -489,7 +779,7 @@ static const void *kYMPageFilterKey = &kYMPageFilterKey;
     NSString *key = objc_getAssociatedObject(sender, kYMSwitchKeyAssoc);
     if (key) {
         [[NSUserDefaults standardUserDefaults] setBool:sender.on forKey:key];
-        [self.tableView reloadData];
+        [self updateDisplayedItemsAnimated:YES];
     }
 }
 
@@ -666,7 +956,7 @@ static const void *kYMPageFilterKey = &kYMPageFilterKey;
     NSString *key = objc_getAssociatedObject(sender, kYMSwitchKeyAssoc);
     if (key) {
         [[NSUserDefaults standardUserDefaults] setInteger:sender.selectedSegmentIndex forKey:key];
-        [self.tableView reloadData];
+        [self updateDisplayedItemsAnimated:YES];
     }
 }
 
@@ -773,21 +1063,7 @@ static const void *kYMPageFilterKey = &kYMPageFilterKey;
 
 #pragma mark - Picker Cell
 
-- (UITableViewCell *)pickerCellForItem:(YMSettingsItem *)item tableView:(UITableView *)tableView {
-    UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:nil];
-    cell.backgroundColor = [UIColor clearColor];
-    cell.selectionStyle = UITableViewCellSelectionStyleNone;
-    cell.textLabel.text = item.title;
-    cell.textLabel.textColor = [self ymTextColor];
-    cell.textLabel.font = [UIFont systemFontOfSize:16 weight:UIFontWeightMedium];
-
-    if (item.subtitle.length > 0) {
-        cell.detailTextLabel.text = item.subtitle;
-        cell.detailTextLabel.textColor = [self ymSecondaryColor];
-        cell.detailTextLabel.font = [UIFont systemFontOfSize:13];
-        cell.detailTextLabel.numberOfLines = 0;
-    }
-
+- (void)updatePickerButton:(UIButton *)menuButton item:(YMSettingsItem *)item {
     NSInteger safeDefault = (item.pickerDefault >= 0 && item.pickerDefault < (NSInteger)item.pickerOptions.count)
         ? item.pickerDefault : 0;
     id storedValue = [[NSUserDefaults standardUserDefaults] objectForKey:item.key];
@@ -796,32 +1072,95 @@ static const void *kYMPageFilterKey = &kYMPageFilterKey;
         ? item.pickerOptions[currentValue]
         : item.pickerOptions[safeDefault];
 
-    UIButton *menuButton = [UIButton buttonWithType:UIButtonTypeSystem];
-    [menuButton setTitle:currentTitle forState:UIControlStateNormal];
-    [menuButton setTitleColor:[self ymSecondaryColor] forState:UIControlStateNormal];
-    menuButton.titleLabel.font = [UIFont systemFontOfSize:15];
-    [menuButton setImage:[UIImage systemImageNamed:@"chevron.up.chevron.down"] forState:UIControlStateNormal];
-    menuButton.tintColor = [self ymSecondaryColor];
+    if (@available(iOS 15.0, *)) {
+        UIButtonConfiguration *config = [UIButtonConfiguration plainButtonConfiguration];
+        config.title = currentTitle;
+        config.image = [UIImage systemImageNamed:@"chevron.up.chevron.down" withConfiguration:[UIImageSymbolConfiguration configurationWithPointSize:11 weight:UIImageSymbolWeightMedium]];
+        config.imagePlacement = NSDirectionalRectEdgeTrailing;
+        config.imagePadding = 6.0;
+        config.baseForegroundColor = [self ymSecondaryColor];
+        config.contentInsets = NSDirectionalEdgeInsetsMake(6, 8, 6, 8);
+        menuButton.configuration = config;
+    } else {
+        [menuButton setTitle:currentTitle forState:UIControlStateNormal];
+        [menuButton setTitleColor:[self ymSecondaryColor] forState:UIControlStateNormal];
+        menuButton.titleLabel.font = [UIFont systemFontOfSize:15];
+        [menuButton setImage:[UIImage systemImageNamed:@"chevron.up.chevron.down"] forState:UIControlStateNormal];
+        menuButton.tintColor = [self ymSecondaryColor];
+        menuButton.semanticContentAttribute = UISemanticContentAttributeForceRightToLeft;
+        menuButton.imageEdgeInsets = UIEdgeInsetsMake(0, 6, 0, -6);
+    }
 
-    NSMutableArray *menuActions = [NSMutableArray array];
+    NSMutableArray<UIMenuElement *> *menuActions = [NSMutableArray array];
     __weak typeof(self) weakSelf = self;
+    __weak typeof(menuButton) weakButton = menuButton;
     for (NSInteger i = 0; i < (NSInteger)item.pickerOptions.count; i++) {
         NSString *optionTitle = item.pickerOptions[i];
         NSString *itemKey = item.key;
         UIAction *action = [UIAction actionWithTitle:optionTitle image:nil identifier:nil handler:^(__kindof UIAction *a) {
             [[NSUserDefaults standardUserDefaults] setInteger:i forKey:itemKey];
-            [weakSelf.tableView reloadData];
+            if (weakButton) {
+                [weakSelf updatePickerButton:weakButton item:item];
+            }
+            [weakSelf updateDisplayedItemsAnimated:YES];
         }];
-        if (i == currentValue) {
-            action.state = UIMenuElementStateOn;
-        }
+        action.state = (i == currentValue) ? UIMenuElementStateOn : UIMenuElementStateOff;
         [menuActions addObject:action];
     }
 
-    menuButton.menu = [UIMenu menuWithTitle:item.title children:menuActions];
+    menuButton.menu = [UIMenu menuWithTitle:item.title ?: @"" children:menuActions];
+}
+
+- (UITableViewCell *)pickerCellForItem:(YMSettingsItem *)item tableView:(UITableView *)tableView {
+    UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:nil];
+    cell.backgroundColor = [UIColor clearColor];
+    cell.selectionStyle = UITableViewCellSelectionStyleNone;
+
+    UIStackView *labelStack = [[UIStackView alloc] init];
+    labelStack.axis = UILayoutConstraintAxisVertical;
+    labelStack.spacing = 2.0;
+    labelStack.alignment = UIStackViewAlignmentLeading;
+    labelStack.translatesAutoresizingMaskIntoConstraints = NO;
+
+    UILabel *titleLabel = [[UILabel alloc] init];
+    titleLabel.text = item.title;
+    titleLabel.textColor = [self ymTextColor];
+    titleLabel.font = [UIFont systemFontOfSize:16 weight:UIFontWeightMedium];
+    titleLabel.numberOfLines = 0;
+    [labelStack addArrangedSubview:titleLabel];
+
+    if (item.subtitle.length > 0) {
+        UILabel *subLabel = [[UILabel alloc] init];
+        subLabel.text = item.subtitle;
+        subLabel.textColor = [self ymSecondaryColor];
+        subLabel.font = [UIFont systemFontOfSize:13];
+        subLabel.numberOfLines = 0;
+        [labelStack addArrangedSubview:subLabel];
+    }
+
+    UIButton *menuButton = [UIButton buttonWithType:UIButtonTypeSystem];
+    menuButton.translatesAutoresizingMaskIntoConstraints = NO;
     menuButton.showsMenuAsPrimaryAction = YES;
-    [menuButton sizeToFit];
-    cell.accessoryView = menuButton;
+    [menuButton setContentHuggingPriority:UILayoutPriorityRequired forAxis:UILayoutConstraintAxisHorizontal];
+    [menuButton setContentCompressionResistancePriority:UILayoutPriorityRequired forAxis:UILayoutConstraintAxisHorizontal];
+
+    [self updatePickerButton:menuButton item:item];
+
+    [cell.contentView addSubview:labelStack];
+    [cell.contentView addSubview:menuButton];
+
+    [NSLayoutConstraint activateConstraints:@[
+        [labelStack.leadingAnchor constraintEqualToAnchor:cell.contentView.leadingAnchor constant:16],
+        [labelStack.topAnchor constraintGreaterThanOrEqualToAnchor:cell.contentView.topAnchor constant:12],
+        [labelStack.bottomAnchor constraintLessThanOrEqualToAnchor:cell.contentView.bottomAnchor constant:-12],
+        [labelStack.centerYAnchor constraintEqualToAnchor:cell.contentView.centerYAnchor],
+
+        [menuButton.leadingAnchor constraintGreaterThanOrEqualToAnchor:labelStack.trailingAnchor constant:12],
+        [menuButton.trailingAnchor constraintEqualToAnchor:cell.contentView.trailingAnchor constant:-16],
+        [menuButton.centerYAnchor constraintEqualToAnchor:cell.contentView.centerYAnchor],
+        [menuButton.topAnchor constraintGreaterThanOrEqualToAnchor:cell.contentView.topAnchor constant:8],
+        [menuButton.bottomAnchor constraintLessThanOrEqualToAnchor:cell.contentView.bottomAnchor constant:-8]
+    ]];
 
     return cell;
 }

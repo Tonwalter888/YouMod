@@ -169,6 +169,16 @@ static void YouModFilterShortsPausedHeader(_ASDisplayView *self, NSString *iden)
     }
 }
 
+static void YouModFilterShortsDisclosure(_ASDisplayView *self, NSString *iden) {
+    if (![self.accessibilityIdentifier isEqualToString:@"eml.shorts-disclosures"] || !IS_ENABLED(RemoveShortsDisclosure)) return;
+    _ASDisplayView *dpView = (_ASDisplayView *)self.superview;
+    ASDisplayNode *node = dpView.keepalive_node;
+    _ASDisplayView *maindpView = (_ASDisplayView *)dpView.superview;
+    ASDisplayNode *mainNode = maindpView.keepalive_node;
+    [mainNode removeYogaChild:node];
+    [maindpView removeFromSuperview];
+}
+
 // _ASDisplayView filters
 %hook _ASDisplayView
 - (void)didMoveToWindow {
@@ -191,6 +201,7 @@ static void YouModFilterShortsPausedHeader(_ASDisplayView *self, NSString *iden)
     }
     YouModFilterShortsButtons(self, iden);
     YouModFilterShortsPausedHeader(self, iden);
+    YouModFilterShortsDisclosure(self, iden);
 }
 %end
 
@@ -205,7 +216,7 @@ static void YouModFilterShortsPausedHeader(_ASDisplayView *self, NSString *iden)
 
 %hook YTReelWatchPlaybackOverlayView
 %property (nonatomic, retain) UIPinchGestureRecognizer *YouModFullscreenGesture;
-- (void)layoutSubviews {
+- (void)didMoveToWindow {
     %orig;
     if (!IS_ENABLED(FullScreenShorts)) return;
     if (!self.YouModFullscreenGesture) {

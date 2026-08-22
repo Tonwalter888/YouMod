@@ -800,9 +800,9 @@ static void YouModSaveVideoToPhotos(NSURL *fileURL, UIViewController *presenter,
     });
 }
 
-static void YouModShareFile(NSURL *fileURL, UIViewController *presenter) {
-    if (!fileURL || !presenter) return;
-    UIActivityViewController *activity = [[UIActivityViewController alloc] initWithActivityItems:@[fileURL] applicationActivities:nil];
+static void YouModShareItem(id item, UIViewController *presenter) {
+    if (!item || !presenter) return;
+    UIActivityViewController *activity = [[UIActivityViewController alloc] initWithActivityItems:@[item] applicationActivities:nil];
     if (isPad()) {
         activity.popoverPresentationController.sourceView = presenter.view;
         activity.popoverPresentationController.sourceRect = CGRectMake(presenter.view.bounds.size.width / 2, presenter.view.bounds.size.height, 0, 0);
@@ -811,6 +811,113 @@ static void YouModShareFile(NSURL *fileURL, UIViewController *presenter) {
         activity.popoverPresentationController.sourceView = presenter.view;
     }
     [presenter presentViewController:activity animated:YES completion:nil];
+}
+
+static void YouModShareFile(NSURL *fileURL, UIViewController *presenter) {
+    YouModShareItem(fileURL, presenter);
+}
+
+static NSInteger YouModGetPostDownloadAction(void) {
+    return INTFORVAL(PostDownloadAction);
+}
+
+static void YouModHandlePostDownloadFile(NSURL *fileURL, BOOL isVideo, UIViewController *presenter) {
+    if (!fileURL) return;
+    NSInteger action = YouModGetPostDownloadAction();
+
+    if (action == PostDownloadActionSaveToPhotos) {
+        if (isVideo && YouModVideoFileCanSaveToPhotos(fileURL)) {
+            YouModSaveVideoToPhotos(fileURL, presenter, ^(BOOL success, NSError *error) {
+                if (success) {
+                    YouModSendSuccess(LOC(@"SAVED_TO_PHOTOS"));
+                } else {
+                    YouModSendError(error.localizedDescription ?: LOC(@"CANNOT_SAVE_TO_PHOTOS"));
+                    YouModShareFile(fileURL, presenter);
+                }
+            });
+        } else {
+            YouModSendSuccess(LOC(@"DOWNLOAD_COMPLETED"));
+            YouModShareFile(fileURL, presenter);
+        }
+    } else if (action == PostDownloadActionShare) {
+        YouModSendSuccess(LOC(@"DOWNLOAD_COMPLETED"));
+        YouModShareFile(fileURL, presenter);
+    } else if (action == PostDownloadActionAsk) {
+        UIView *parent = sbGetNotificationParent();
+        [SBSkipNotificationView showDownloadCompleteDialogInView:parent
+                                                        message:LOC(@"DOWNLOAD_COMPLETED")
+                                                    saveHandler:^{
+            if (isVideo && YouModVideoFileCanSaveToPhotos(fileURL)) {
+                YouModSaveVideoToPhotos(fileURL, presenter, ^(BOOL success, NSError *error) {
+                    if (success) {
+                        YouModSendSuccess(LOC(@"SAVED_TO_PHOTOS"));
+                    } else {
+                        YouModSendError(error.localizedDescription ?: LOC(@"CANNOT_SAVE_TO_PHOTOS"));
+                        YouModShareFile(fileURL, presenter);
+                    }
+                });
+            } else {
+                YouModSendSuccess(LOC(@"DOWNLOAD_COMPLETED"));
+                YouModShareFile(fileURL, presenter);
+            }
+        } shareHandler:^{
+            YouModShareFile(fileURL, presenter);
+        } duration:8.0];
+    }
+}
+
+static void YouModHandlePostDownloadImage(UIImage *image, UIViewController *presenter) {
+    if (!image) return;
+    NSInteger action = YouModGetPostDownloadAction();
+
+    if (action == PostDownloadActionSaveToPhotos) {
+        YouModRequestPhotoAccess(^(BOOL granted) {
+            if (!granted) {
+                YouModSendError(LOC(@"PHOTO_ACCESS_DENINED"));
+                return;
+            }
+            [[PHPhotoLibrary sharedPhotoLibrary] performChanges:^{
+                [PHAssetChangeRequest creationRequestForAssetFromImage:image];
+            } completionHandler:^(BOOL success, NSError *saveError) {
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    if (success) {
+                        YouModSendSuccess(LOC(@"SAVED_TO_PHOTOS"));
+                    } else {
+                        YouModSendError(saveError.localizedDescription ?: LOC(@"SAVE_FAILED"));
+                        YouModShareItem(image, presenter);
+                    }
+                });
+            }];
+        });
+    } else if (action == PostDownloadActionShare) {
+        YouModSendSuccess(LOC(@"DOWNLOAD_COMPLETED"));
+        YouModShareItem(image, presenter);
+    } else if (action == PostDownloadActionAsk) {
+        UIView *parent = sbGetNotificationParent();
+        [SBSkipNotificationView showDownloadCompleteDialogInView:parent
+                                                        message:LOC(@"DOWNLOAD_COMPLETED")
+                                                    saveHandler:^{
+            YouModRequestPhotoAccess(^(BOOL granted) {
+                if (!granted) {
+                    YouModSendError(LOC(@"PHOTO_ACCESS_DENINED"));
+                    return;
+                }
+                [[PHPhotoLibrary sharedPhotoLibrary] performChanges:^{
+                    [PHAssetChangeRequest creationRequestForAssetFromImage:image];
+                } completionHandler:^(BOOL success, NSError *saveError) {
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        if (success) {
+                            YouModSendSuccess(LOC(@"SAVED_TO_PHOTOS"));
+                        } else {
+                            YouModSendError(saveError.localizedDescription ?: LOC(@"SAVE_FAILED"));
+                        }
+                    });
+                }];
+            });
+        } shareHandler:^{
+            YouModShareItem(image, presenter);
+        } duration:8.0];
+    }
 }
 
 static void YouModPresentMenu(YTPlayerViewController *player, NSArray <YouModMenuItem *> *items, UIViewController *presenter, UIView *sender) {
@@ -1405,19 +1512,7 @@ static void YouModPresentMenu(YTPlayerViewController *player, NSArray <YouModMen
     [self updateProgressTitle:LOC(@"DOWNLOAD_COMPLETED") progress:1.0f];
     if (self.progressPill) { [self.progressPill dismiss]; self.progressPill = nil; }
 
-    if (isVideo && IS_ENABLED(DownloadSaveToPhotos) && YouModVideoFileCanSaveToPhotos(fileURL)) {
-        YouModSaveVideoToPhotos(fileURL, presenter, ^(BOOL success, NSError *error) {
-            if (success) {
-                YouModSendSuccess(LOC(@"SAVED_TO_PHOTOS"));
-            } else {
-                YouModSendError(error.localizedDescription ?: LOC(@"CANNOT_SAVE_TO_PHOTOS"));
-                YouModShareFile(fileURL, presenter);
-            }
-        });
-    } else {
-        YouModSendSuccess(LOC(@"DOWNLOAD_COMPLETED"));
-        YouModShareFile(fileURL, presenter);
-    }
+    YouModHandlePostDownloadFile(fileURL, isVideo, presenter);
 }
 
 - (void)failWithError:(NSError *)error {
@@ -1473,7 +1568,7 @@ static void YouModPresentMenu(YTPlayerViewController *player, NSArray <YouModMen
     if (INTFORVAL(DownloadServerIndex) == 0) {
         return @"https://appropriatenet2928.tail6a9ca7.ts.net/"; // Europe (@AppropriateNet2928)
     } else if (INTFORVAL(DownloadServerIndex) == 1) {
-        return @"https://waterdl.freeddns.org/"; // Thailand - Asia (@Tonwalter888)
+        return @"https://waterserver.freeddns.org/"; // Thailand - Asia (@Tonwalter888)
     }
     return @"";
 }
@@ -1655,19 +1750,7 @@ static void YouModDownloadThumbnail(YTPlayerViewController *player, UIViewContro
                 YouModSendError(error.localizedDescription ?: LOC(@"THUMBNAIL_FAILED"));
                 return;
             }
-            YouModRequestPhotoAccess(^(BOOL granted) {
-                if (!granted) {
-                    YouModSendError(LOC(@"PHOTO_ACCESS_DENINED"));
-                    return;
-                }
-                [[PHPhotoLibrary sharedPhotoLibrary] performChanges:^{
-                    [PHAssetChangeRequest creationRequestForAssetFromImage:image];
-                } completionHandler:^(BOOL success, NSError *saveError) {
-                    dispatch_async(dispatch_get_main_queue(), ^{
-                        if (success) YouModSendSuccess(LOC(@"SAVED_TO_PHOTOS")); else YouModSendError(saveError.localizedDescription ?: LOC(@"SAVE_FAILED"));
-                    });
-                }];
-            });
+            YouModHandlePostDownloadImage(image, presenter);
         });
     }] resume];
 }
@@ -2114,8 +2197,8 @@ static UIImage *YouModExtractPostImage(UIView *cellView) {
     [items addObject:[YouModMenuItem itemWithTitle:LOC(@"SAVE_COMMENT_IMAGE") subtitle:nil icon:YouModYTIconImage(367, NO, nil) handler:^{
         UIImage *image = YouModRenderViewToImage(self);
         if (image) {
-            UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil);
-            YouModSendSuccess(LOC(@"SAVED_TO_PHOTOS"));
+            UIViewController *p = YouModPresenterForSender(self, nil);
+            YouModHandlePostDownloadImage(image, p);
         }
     }]];
 
@@ -2153,8 +2236,8 @@ static UIImage *YouModExtractPostImage(UIView *cellView) {
     [items addObject:[YouModMenuItem itemWithTitle:LOC(@"SAVE_POST_IMAGE") subtitle:nil icon:YouModYTIconImage(367, NO, nil) handler:^{
         UIImage *image = YouModRenderViewToImage(self);
         if (image) {
-            UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil);
-            YouModSendSuccess(LOC(@"SAVED_TO_PHOTOS"));
+            UIViewController *p = YouModPresenterForSender(self, nil);
+            YouModHandlePostDownloadImage(image, p);
         }
     }]];
 
@@ -2202,7 +2285,7 @@ static UIImage *YouModExtractPostImage(UIView *cellView) {
 
 - (void)layoutSubviews {
     %orig;
-    if (!IS_ENABLED(DownloadManager) || !IS_ENABLED(AddDownloadToShorts)) return;
+    if (!IS_ENABLED(AddDownloadToShorts)) return;
     YTQTMButton *downloadBtn = (YTQTMButton *)[self viewWithTag:1501];
     if (!downloadBtn) {
         UIImageSymbolConfiguration *config = [UIImageSymbolConfiguration configurationWithPointSize:20 weight:UIImageSymbolWeightMedium];

@@ -299,8 +299,9 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
 
 %hook YTMainAppVideoPlayerOverlayViewController
 - (void)playerOverlayProvider:(YTPlayerOverlayProvider *)provider didInsertPlayerOverlay:(YTPlayerOverlay *)overlay {
-    if ([[overlay overlayIdentifier] isEqualToString:@"player_overlay_product_in_video"]) return;
-    if ([[overlay overlayIdentifier] isEqualToString:@"player_overlay_paid_content"] && IS_ENABLED(HidePaidPromoOverlay)) return;
+    NSString *iden = [overlay overlayIdentifier];
+    if ([iden isEqualToString:@"player_overlay_product_in_video"]) return;
+    if ([iden isEqualToString:@"player_overlay_paid_content"] && IS_ENABLED(HidePaidPromoOverlay)) return;
     %orig;
 }
 %end
@@ -331,16 +332,23 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
 %hook _ASDisplayView
 - (void)didMoveToWindow {
     %orig;
-    if ([self.accessibilityIdentifier isEqualToString:@"eml.expandable_metadata.vpp"]) [self removeFromSuperview];
-    if (IS_ENABLED(HideCommentsPreview) && [self.accessibilityIdentifier isEqualToString:@"id.ui.comments_entry_point_teaser"]) [self removeFromSuperview];
-    if ([self.accessibilityLabel containsString:@"Premium"]) {
-        YTPageHeaderViewController *pageh = (YTPageHeaderViewController *)self._viewControllerForAncestor;
-        if (![pageh isKindOfClass:%c(YTPageHeaderViewController)]) return;
-        YTIPageHeaderRenderer *pagerender = [pageh valueForKey:@"_renderer"];
-        NSString *desc = [pagerender description];
-        if ([desc containsString:@"Premium"] && [desc containsString:@"SPunlimited"]) {
-            [self removeFromSuperview];
+    NSString *iden = self.accessibilityIdentifier;
+    if ([iden isEqualToString:@"eml.expandable_metadata.vpp"]) [self removeFromSuperview];
+    if (IS_ENABLED(HideCommentsPreview) && [iden isEqualToString:@"id.ui.comments_entry_point_teaser"]) [self removeFromSuperview];
+    if ([self.accessibilityLabel containsString:@"Premium"] && [self._viewControllerForAncestor isKindOfClass:%c(YTPageHeaderViewController)]) {
+        [self removeFromSuperview];
+    }
+    // Filter new ads in newer YT versions
+    if ([iden containsString:@"eml.ad_layout."]) {
+        _ASCollectionViewCell *mainView = (_ASCollectionViewCell *)self.superview;
+        while (mainView != nil && ![mainView isKindOfClass:%c(_ASCollectionViewCell)]) {
+            mainView = (_ASCollectionViewCell *)mainView.superview;
         }
+        ASDisplayNode *node = mainView.node;
+        for (id child in [node.yogaChildren copy]) {
+            [node removeYogaChild:child];
+        }
+        // [mainView removeFromSuperview]; Sometimes running this crashes the app.
     }
 }
 %end
@@ -380,9 +388,9 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
 }
 %end
 
-// "Try new features" in settings
+// Settings
 %hook YTSettingsSectionItemManager
-// - (void)updatePremiumEarlyAccessSectionWithEntry:(id)arg1 {} Will think about this again
+// - (void)updatePremiumEarlyAccessSectionWithEntry:(id)arg1 {}
 - (void)updateUnlimitedSectionWithEntry:(id)arg {}
 %end
 
