@@ -57,12 +57,25 @@ static void YouModFilterChannelButtons(_ASDisplayView *self, NSString *iden) {
             }
         }
     } else {
-        _ASDisplayView *dpv = (_ASDisplayView *)sup;
-        ASDisplayNode *node = dpv.keepalive_node;
-        _ASDisplayView *maindpv = (_ASDisplayView *)dpv.superview;
-        ASDisplayNode *mainNode = maindpv.keepalive_node;
-        [mainNode removeYogaChild:node];
-        [dpv removeFromSuperview];
+        UIViewController *con = self._viewControllerForAncestor;
+        if ([con isKindOfClass:%c(YTPageHeaderViewController)]) {
+            _ASDisplayView *dpv = (_ASDisplayView *)sup;
+            ASDisplayNode *node = dpv.keepalive_node;
+            _ASDisplayView *maindpv = (_ASDisplayView *)dpv.superview;
+            ASDisplayNode *mainNode = maindpv.keepalive_node;
+            [mainNode removeYogaChild:node];
+            [dpv removeFromSuperview];
+        } else if ([con isKindOfClass:%c(YTWatchNextResultsViewController)]) {
+            _ASDisplayView *dpv = (_ASDisplayView *)sup;
+            ASDisplayNode *node = dpv.keepalive_node;
+            for (id child in [node.yogaChildren copy]) {
+                if ([[child description] containsString:iden]) {
+                    [node removeYogaChild:child];
+                    [self removeFromSuperview];
+                    break;
+                }
+            }
+        }
     }
 }
 

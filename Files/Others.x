@@ -208,3 +208,7 @@
 %hook UIKeyboardImpl
 + (BOOL)isFloating { return IS_ENABLED(FloatingKeyboard) && isPad() ? YES : %orig; }
 %end
+
+%hook YTEngagementPanelHeaderView
+- (void)setSubheader:(UIView *)view { if (!IS_ENABLED(HideEngagementSubbar)) %orig; }
+%end

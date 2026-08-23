@@ -98,6 +98,7 @@
 #define KeepMutedKey @"YouModKeepMutedKey"
 #define KeepLoopKey @"YouModKeepLoopKey"
 #define QualityButton @"YouModQualityButton"
+#define OverlayButtonOrder @"YouModOverlayButtonOrder"
 #define GlobalSpeedLocked @"YouModGlobalSpeedLocked"
 #define GlobalSavedNormalRate @"YouModGlobalSavedNormalRate"
 // Downloading
@@ -247,6 +248,7 @@
 #define HideStartupAni @"YouModHideStartupAnimations"
 #define HideLikeDislikeVotes @"YouModHideLikeDislikeVotes"
 #define HideCommuGuide @"YouModHideCommuGuide"
+#define HideEngagementSubbar @"YouModHideEngagementSubbar"
 #define DisablesRTL @"YouModDisablesRTL"
 #define DeviceUIIndex @"YouModDeviceUIIndex"
 #define FloatingKeyboard @"YouModFloatingKeyboard"
@@ -584,6 +586,10 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 - (CGFloat)mediaTime;
 @end
 
+@interface YTSingleVideo (YouMod)
+- (BOOL)isLivePlayback;
+@end
+
 @interface YTSingleVideoController (YouMod)
 - (CGFloat)totalMediaTime;
 - (void)setVideoFormatConstraint:(id)arg;
@@ -725,6 +731,8 @@ static const CGFloat SBAlertDurationDefault = 4.0;
 @property (nonatomic, copy) NSString *identifier;       // unique, e.g. @"sponsorblock.toggle"
 @property (nonatomic, copy) NSString *symbolName;       // SF Symbol name (icon button)
 @property (nonatomic, copy) NSString *title;            // text label; set this instead of symbolName for a text button
+@property (nonatomic, copy) NSString *displayName;      // localized display name for settings
+@property (nonatomic, copy) NSString *settingsSymbolName; // custom symbol name for settings table view
 @property (nonatomic, strong) UIColor *tintColor;       // default tint (used if tintProvider is nil)
 @property (nonatomic, assign) NSInteger sortOrder;      // ascending; lower = closer to gear (rightmost)
 @property (nonatomic, copy) void (^onTap)(YTPlayerViewController *player, YTQTMButton *button);
@@ -735,6 +743,9 @@ static const CGFloat SBAlertDurationDefault = 4.0;
 
 extern void YMRegisterOverlayButton(YMOverlayButtonSpec *spec);
 extern NSArray<YMOverlayButtonSpec *> *YMRegisteredOverlayButtons(void);
+extern NSArray<YMOverlayButtonSpec *> *YMOrderedOverlayButtons(void);
+extern BOOL YMIsOverlayButtonEnabled(NSString *identifier);
+extern void YMPushOverlayButtonOrder(id settingsVC, id parentResponder);
 
 #pragma mark - Settings Search
 

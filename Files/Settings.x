@@ -41,6 +41,7 @@ extern YMSettingsItem *YMSegment(NSString *title, NSString *key, NSArray<NSNumbe
 extern YMSettingsItem *YMTextSegment(NSString *title, NSString *key, NSArray<NSString *> *labels, NSInteger defaultValue);
 extern YMSettingsItem *YMImageSegment(NSString *title, NSString *key, NSArray<UIImage *> *images, NSInteger defaultValue);
 extern void YMPushTabOrder(id settingsVC, id parentResponder);
+extern void YMPushOverlayButtonOrder(id settingsVC, id parentResponder);
 extern void YMRegisterSettingsGroup(NSString *title, NSArray<YMSettingsItem *> *items);
 extern void YMPushSettingsSearch(id settingsVC, id parentResponder);
 
@@ -291,12 +292,10 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
             YMPicker(YMLOC(@"HOLD_TO_SPEED"), YMLOC(@"HOLD_TO_SPEED_DESC"), HoldToSpeedIndex, (@[YMLOC(@"DEFAULT"), @"0.25x", @"0.5x", @"0.75x", @"1x", @"1.25x", @"1.5x", @"1.75x", @"2x", @"3x", @"4x", @"5x"]), 0),
             [YMToggle(YMLOC(@"LOCK_SPEED"), YMLOC(@"LOCK_SPEED_DESC"), LockSpeed) visibleWhenKey:HoldToSpeedIndex isGreaterThan:0],
             YMHeader(YMLOC(@"INTERFACE")),
-            YMToggle(YMLOC(@"MUTE_BUTTON"), YMLOC(@"MUTE_BUTTON_DESC"), MuteButton),
-            YMToggle(YMLOC(@"SPEED_BUTTON"), YMLOC(@"SPEED_BUTTON_DESC"), SpeedButton),
-            YMToggle(YMLOC(@"QUALITY_BUTTON"), YMLOC(@"QUALITY_BUTTON_DESC"), QualityButton),
-            YMToggle(YMLOC(@"SHARE_BUTTON"), YMLOC(@"SHARE_BUTTON_DESC"), ShareButton),
-            YMToggle(YMLOC(@"LOOP_BUTTON"), YMLOC(@"LOOP_BUTTON_DESC"), LoopButton),
-            YMToggle(YMLOC(@"CAPTION_BUTTON"), YMLOC(@"CAPTION_BUTTON_DESC"), CaptionButton),
+            YMAction(YMLOC(@"MANAGE_OVERLAY_BUTTONS"), YMLOC(@"MANAGE_OVERLAY_BUTTONS_DESC"), ^(UIViewController *vc) {
+                (void)vc;
+                YMPushOverlayButtonOrder(settingsViewController, [self parentResponder]);
+            }),
             YMToggle(YMLOC(@"HIDE_AUTOPLAY"), YMLOC(@"HIDE_AUTOPLAY_DESC"), HideAutoPlayToggle),
             YMToggle(YMLOC(@"HIDE_FULL_VID_TITLE"), YMLOC(@"HIDE_FULL_VID_TITLE_DESC"), HideFullvidTitle),
             YMToggle(YMLOC(@"HIDE_CAPTIONS_BUTTON"), YMLOC(@"HIDE_CAPTIONS_BUTTON_DESC"), HideCaptionsButton),
@@ -479,6 +478,7 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
             YMToggle(YMLOC(@"HIDE_STARTUP_ANIMATIONS"), YMLOC(@"HIDE_STARTUP_ANIMATIONS_DESC"), HideStartupAni),
             YMToggle(YMLOC(@"HIDE_LIKE_DISLIKE_VOTES"), YMLOC(@"HIDE_LIKE_DISLIKE_VOTES_DESC"), HideLikeDislikeVotes),
             YMToggle(YMLOC(@"HIDE_COMMU_GUIDE"), YMLOC(@"HIDE_COMMU_GUIDE_DESC"), HideCommuGuide),
+            YMToggle(YMLOC(@"HIDE_ENGAGEMENT_SUBBAR"), YMLOC(@"HIDE_ENGAGEMENT_SUBBAR_DESC"), HideEngagementSubbar),
             YMToggle(YMLOC(@"FLOATING_KEYBOARD"), YMLOC(@"FLOATING_KEYBOARD_DESC"), FloatingKeyboard),
             YMToggle(YMLOC(@"DISABLES_RTL"), YMLOC(@"DISABLES_RTL_DESC"), DisablesRTL),
             YMHeader(@""),

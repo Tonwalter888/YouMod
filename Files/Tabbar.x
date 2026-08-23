@@ -197,7 +197,7 @@ static NSString *YMExtractYouTubeVideoID(NSString *urlString) {
 
     if (!extractedID) {
         NSError *error = nil;
-        NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"(?:v=|\\/(?:shorts|live|clip)\\Timer|youtu\\.be\\/)([a-zA-Z0-9_-]{11})"
+        NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"(?:v=|\\/(?:shorts|live|clip)\\/|youtu\\.be\\/)([a-zA-Z0-9_-]{11})"
                                                                                 options:NSRegularExpressionCaseInsensitive
                                                                                   error:&error];
         NSTextCheckingResult *match = [regex firstMatchInString:cleanString options:0 range:NSMakeRange(0, cleanString.length)];

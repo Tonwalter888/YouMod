@@ -24,7 +24,7 @@
 %end
 
 %hook _ASDisplayView
-- (void)layoutSubviews {
+- (void)didMoveToWindow {
     %orig;
     NSSet *blackViews = [NSSet setWithObjects:
         @"id.elements.components.comment_composer",
@@ -77,7 +77,7 @@
 %end
 
 %hook ASCollectionView
-- (void)layoutSubviews {
+- (void)didMoveToWindow {
     %orig;
     NSSet *blackViews = [NSSet setWithObjects:
         @"eml.chip_bar_collection",
@@ -102,7 +102,7 @@
 %end
 
 %hook YTContextualWrapView
-- (void)layoutSubviews {
+- (void)didMoveToWindow {
     %orig;
     UIView *sup = self.superview;
     if ([sup isKindOfClass:%c(YTContextualSheetView)]) {
@@ -114,7 +114,7 @@
 %end
 
 %hook ASScrollView
-- (void)layoutSubviews {
+- (void)didMoveToWindow {
     %orig;
     ASDisplayNode *node = self.scrollNode;
     if (node) {
@@ -132,7 +132,7 @@
 %end
 
 %hook MDCInkView
-- (void)layoutSubviews {
+- (void)didMoveToWindow {
     %orig;
     if ([self.superview isKindOfClass:%c(GOODialogActionMDCButton)]) {
         UIViewController *controller = self._viewControllerForAncestor;

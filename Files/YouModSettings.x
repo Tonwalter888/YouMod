@@ -1816,6 +1816,361 @@ void YMPresentTabOrderModally(id parentResponder) {
     [presenter presentViewController:nav animated:YES completion:nil];
 }
 
+#pragma mark - YMOverlayButtonOrderViewController
+
+static NSString * const kYMOverlayButtonIDs[] = {
+    @"sponsorblock.toggle",
+    @"download.video",
+    @"mute.video",
+    @"speed.video",
+    @"quality.video",
+    @"share.video",
+    @"loop.video",
+    @"caption.video"
+};
+static const NSInteger kYMOverlayButtonCount = 8;
+
+@interface YMOverlayButtonOrderViewController : UIViewController <UITableViewDelegate, UITableViewDataSource>
+- (UITableView *)tableView;
+- (void)setTableView:(UITableView *)tv;
+- (NSMutableArray<NSMutableDictionary *> *)buttonData;
+- (void)setButtonData:(NSMutableArray<NSMutableDictionary *> *)data;
+- (NSArray *)initialSnapshot;
+- (void)setInitialSnapshot:(NSArray *)snap;
+@end
+
+static const void *kYMOverlayTableViewKey = &kYMOverlayTableViewKey;
+static const void *kYMOverlayButtonDataKey = &kYMOverlayButtonDataKey;
+static const void *kYMOverlayButtonSnapshotKey = &kYMOverlayButtonSnapshotKey;
+static const void *kYMOverlaySavedStdAppearanceKey = &kYMOverlaySavedStdAppearanceKey;
+static const void *kYMOverlaySavedScrollEdgeAppearanceKey = &kYMOverlaySavedScrollEdgeAppearanceKey;
+
+@implementation YMOverlayButtonOrderViewController
+
+- (UITableView *)tableView { return objc_getAssociatedObject(self, kYMOverlayTableViewKey); }
+- (void)setTableView:(UITableView *)tv { objc_setAssociatedObject(self, kYMOverlayTableViewKey, tv, OBJC_ASSOCIATION_RETAIN_NONATOMIC); }
+- (NSMutableArray<NSMutableDictionary *> *)buttonData { return objc_getAssociatedObject(self, kYMOverlayButtonDataKey); }
+- (void)setButtonData:(NSMutableArray<NSMutableDictionary *> *)data { objc_setAssociatedObject(self, kYMOverlayButtonDataKey, data, OBJC_ASSOCIATION_RETAIN_NONATOMIC); }
+- (NSArray *)initialSnapshot { return objc_getAssociatedObject(self, kYMOverlayButtonSnapshotKey); }
+- (void)setInitialSnapshot:(NSArray *)snap { objc_setAssociatedObject(self, kYMOverlayButtonSnapshotKey, snap, OBJC_ASSOCIATION_RETAIN_NONATOMIC); }
+
+- (NSString *)localizedNameForButtonID:(NSString *)buttonID {
+    if ([buttonID isEqualToString:@"sponsorblock.toggle"]) return LOC(@"SPONSORBLOCK_BUTTON");
+    if ([buttonID isEqualToString:@"download.video"]) return LOC(@"DOWNLOAD_BUTTON");
+    if ([buttonID isEqualToString:@"mute.video"]) return LOC(@"MUTE_BUTTON");
+    if ([buttonID isEqualToString:@"speed.video"]) return LOC(@"SPEED_BUTTON");
+    if ([buttonID isEqualToString:@"quality.video"]) return LOC(@"QUALITY_BUTTON");
+    if ([buttonID isEqualToString:@"share.video"]) return LOC(@"SHARE_BUTTON");
+    if ([buttonID isEqualToString:@"loop.video"]) return LOC(@"LOOP_BUTTON");
+    if ([buttonID isEqualToString:@"caption.video"]) return LOC(@"CAPTION_BUTTON");
+    return buttonID;
+}
+
+- (UIImage *)iconForButtonID:(NSString *)buttonID {
+    if ([buttonID isEqualToString:@"quality.video"]) {
+        NSDictionary *attrs = @{
+            NSFontAttributeName: [UIFont systemFontOfSize:14 weight:UIFontWeightBold],
+            NSForegroundColorAttributeName: [UIColor whiteColor]
+        };
+        CGSize size = [@"HD" sizeWithAttributes:attrs];
+        UIGraphicsImageRenderer *renderer = [[UIGraphicsImageRenderer alloc] initWithSize:CGSizeMake(ceil(size.width), ceil(size.height))];
+        UIImage *img = [renderer imageWithActions:^(UIGraphicsImageRendererContext * _Nonnull context) {
+            [@"HD" drawAtPoint:CGPointZero withAttributes:attrs];
+        }];
+        return [img imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
+    }
+
+    NSString *symbol = @"circle";
+    if ([buttonID isEqualToString:@"sponsorblock.toggle"]) symbol = @"shield.fill";
+    else if ([buttonID isEqualToString:@"download.video"]) symbol = @"arrow.down.circle";
+    else if ([buttonID isEqualToString:@"mute.video"]) symbol = @"speaker.wave.2";
+    else if ([buttonID isEqualToString:@"speed.video"]) symbol = @"speedometer";
+    else if ([buttonID isEqualToString:@"share.video"]) symbol = @"arrowshape.turn.up.right";
+    else if ([buttonID isEqualToString:@"loop.video"]) symbol = @"repeat";
+    else if ([buttonID isEqualToString:@"caption.video"]) symbol = @"captions.bubble";
+
+    UIImageSymbolConfiguration *config = [UIImageSymbolConfiguration configurationWithPointSize:18 weight:UIImageSymbolWeightMedium];
+    return [[UIImage systemImageNamed:symbol withConfiguration:config] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
+}
+
+- (void)viewDidLoad {
+    Class ytStyled = objc_getClass("YTStyledViewController");
+    struct objc_super superStruct = { self, ytStyled ?: [UIViewController class] };
+    ((void (*)(struct objc_super *, SEL))objc_msgSendSuper)(&superStruct, @selector(viewDidLoad));
+
+    self.title = LOC(@"MANAGE_OVERLAY_BUTTONS");
+    [self loadButtonData];
+    [self takeSnapshot];
+
+    UINavigationBar *sharedNavBar = self.navigationController.navigationBar;
+    objc_setAssociatedObject(self, kYMOverlaySavedStdAppearanceKey, sharedNavBar.standardAppearance, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    objc_setAssociatedObject(self, kYMOverlaySavedScrollEdgeAppearanceKey, sharedNavBar.scrollEdgeAppearance, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+
+    UINavigationBarAppearance *appearance = [[UINavigationBarAppearance alloc] init];
+    [appearance configureWithDefaultBackground];
+    if (self.traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark) {
+        appearance.backgroundColor = [%c(YTColor) black3];
+    } else {
+        appearance.backgroundColor = [UIColor systemBackgroundColor];
+    }
+    self.navigationController.navigationBar.standardAppearance = appearance;
+    self.navigationController.navigationBar.scrollEdgeAppearance = appearance;
+
+    self.tableView = [[UITableView alloc] initWithFrame:self.view.bounds style:UITableViewStyleGrouped];
+    self.tableView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+    self.tableView.delegate = self;
+    self.tableView.dataSource = self;
+    self.tableView.editing = YES;
+    self.tableView.allowsSelectionDuringEditing = NO;
+    self.tableView.estimatedRowHeight = 56;
+    self.tableView.rowHeight = UITableViewAutomaticDimension;
+
+    if (self.traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark) {
+        self.tableView.backgroundColor = [%c(YTColor) black3];
+    } else {
+        self.tableView.backgroundColor = [UIColor systemBackgroundColor];
+    }
+
+    [self.view addSubview:self.tableView];
+}
+
+- (void)traitCollectionDidChange:(UITraitCollection *)previousTraitCollection {
+    [super traitCollectionDidChange:previousTraitCollection];
+    if (previousTraitCollection.userInterfaceStyle != self.traitCollection.userInterfaceStyle) {
+        self.tableView.backgroundColor = (self.traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark)
+            ? [%c(YTColor) black3]
+            : [UIColor systemBackgroundColor];
+        
+        UINavigationBarAppearance *appearance = [[UINavigationBarAppearance alloc] init];
+        [appearance configureWithDefaultBackground];
+        if (self.traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark) {
+            appearance.backgroundColor = [%c(YTColor) black3];
+        } else {
+            appearance.backgroundColor = [UIColor systemBackgroundColor];
+        }
+        self.navigationController.navigationBar.standardAppearance = appearance;
+        self.navigationController.navigationBar.scrollEdgeAppearance = appearance;
+
+        [self.tableView reloadData];
+    }
+}
+
+- (void)viewWillAppear:(BOOL)animated {
+    Class ytStyled = objc_getClass("YTStyledViewController");
+    struct objc_super superStruct = { self, ytStyled ?: [UIViewController class] };
+    ((void (*)(struct objc_super *, SEL, BOOL))objc_msgSendSuper)(&superStruct, @selector(viewWillAppear:), animated);
+}
+
+- (void)viewWillDisappear:(BOOL)animated {
+    Class ytStyled = objc_getClass("YTStyledViewController");
+    struct objc_super superStruct = { self, ytStyled ?: [UIViewController class] };
+    ((void (*)(struct objc_super *, SEL, BOOL))objc_msgSendSuper)(&superStruct, @selector(viewWillDisappear:), animated);
+
+    UINavigationBar *navBar = self.navigationController.navigationBar;
+    navBar.standardAppearance = objc_getAssociatedObject(self, kYMOverlaySavedStdAppearanceKey);
+    navBar.scrollEdgeAppearance = objc_getAssociatedObject(self, kYMOverlaySavedScrollEdgeAppearanceKey);
+}
+
+- (void)viewDidLayoutSubviews {
+    Class ytStyled = objc_getClass("YTStyledViewController");
+    struct objc_super superStruct = { self, ytStyled ?: [UIViewController class] };
+    ((void (*)(struct objc_super *, SEL))objc_msgSendSuper)(&superStruct, @selector(viewDidLayoutSubviews));
+    YTQTMButton *backButton = [self valueForKey:@"_backButton"];
+
+    if (self.traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark) {
+        backButton.tintColor = [UIColor whiteColor];
+    } else {
+        backButton.tintColor = [UIColor blackColor];
+    }
+}
+
+- (void)loadButtonData {
+    NSArray *savedOrder = [[NSUserDefaults standardUserDefaults] arrayForKey:OverlayButtonOrder];
+    NSMutableArray *data = [NSMutableArray array];
+
+    if (savedOrder.count > 0) {
+        for (NSDictionary *entry in savedOrder) {
+            NSString *buttonID = entry[@"id"];
+            BOOL enabled = [entry[@"enabled"] boolValue];
+            if (buttonID) {
+                [data addObject:[@{@"id": buttonID, @"enabled": @(enabled)} mutableCopy]];
+            }
+        }
+        for (NSInteger i = 0; i < kYMOverlayButtonCount; i++) {
+            NSString *buttonID = kYMOverlayButtonIDs[i];
+            BOOL found = NO;
+            for (NSDictionary *d in data) {
+                if ([d[@"id"] isEqualToString:buttonID]) { found = YES; break; }
+            }
+            if (!found) {
+                [data addObject:[@{@"id": buttonID, @"enabled": @(YMIsOverlayButtonEnabled(buttonID))} mutableCopy]];
+            }
+        }
+    } else {
+        for (NSInteger i = 0; i < kYMOverlayButtonCount; i++) {
+            NSString *buttonID = kYMOverlayButtonIDs[i];
+            BOOL defaultEnabled = YMIsOverlayButtonEnabled(buttonID);
+            [data addObject:[@{@"id": buttonID, @"enabled": @(defaultEnabled)} mutableCopy]];
+        }
+    }
+
+    self.buttonData = data;
+}
+
+- (void)saveButtonData {
+    NSMutableArray *toSave = [NSMutableArray array];
+    for (NSMutableDictionary *entry in self.buttonData) {
+        [toSave addObject:@{@"id": entry[@"id"], @"enabled": entry[@"enabled"]}];
+    }
+    [[NSUserDefaults standardUserDefaults] setObject:toSave forKey:OverlayButtonOrder];
+    [[NSUserDefaults standardUserDefaults] synchronize];
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"YouModUpdateOverlayButtons" object:nil];
+}
+
+- (void)takeSnapshot {
+    NSMutableArray *snap = [NSMutableArray array];
+    for (NSDictionary *entry in self.buttonData) {
+        [snap addObject:@{@"id": entry[@"id"], @"enabled": entry[@"enabled"]}];
+    }
+    self.initialSnapshot = [snap copy];
+}
+
+#pragma mark - UITableViewDataSource
+
+- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView { return 1; }
+
+- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
+    return self.buttonData.count;
+}
+
+- (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
+    static NSString *cellID = @"YMOverlayButtonCell";
+    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:cellID];
+    UISwitch *sw;
+
+    if (!cell) {
+        cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:cellID];
+        cell.backgroundColor = [UIColor clearColor];
+        cell.selectionStyle = UITableViewCellSelectionStyleNone;
+
+        sw = [[UISwitch alloc] init];
+        sw.onTintColor = [UIColor colorWithRed:0.6 green:0.2 blue:0.9 alpha:1.0];
+        [sw addTarget:self action:@selector(buttonToggleChanged:) forControlEvents:UIControlEventValueChanged];
+        sw.translatesAutoresizingMaskIntoConstraints = NO;
+        sw.tag = 999;
+        [cell.contentView addSubview:sw];
+
+        [NSLayoutConstraint activateConstraints:@[
+            [sw.centerYAnchor constraintEqualToAnchor:cell.contentView.centerYAnchor],
+            [sw.trailingAnchor constraintEqualToAnchor:cell.contentView.trailingAnchor constant:-16]
+        ]];
+    } else {
+        sw = [cell.contentView viewWithTag:999];
+    }
+
+    NSMutableDictionary *entry = self.buttonData[indexPath.row];
+    NSString *buttonID = entry[@"id"];
+    BOOL enabled = [entry[@"enabled"] boolValue];
+
+    cell.textLabel.text = [self localizedNameForButtonID:buttonID];
+    cell.textLabel.textColor = [UIColor labelColor];
+    cell.textLabel.font = [UIFont systemFontOfSize:16 weight:UIFontWeightMedium];
+
+    UIImage *btnIcon = [self iconForButtonID:buttonID];
+    cell.imageView.image = btnIcon;
+    cell.imageView.tintColor = [UIColor labelColor];
+
+    if ([buttonID isEqualToString:@"download.video"]) {
+        sw.hidden = !IS_ENABLED(DownloadManager);
+    } else {
+        sw.hidden = NO;
+    }
+
+    sw.on = enabled;
+    objc_setAssociatedObject(sw, kYMSwitchKeyAssoc, buttonID, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+
+    return cell;
+}
+
+- (void)buttonToggleChanged:(UISwitch *)sender {
+    NSString *buttonID = objc_getAssociatedObject(sender, kYMSwitchKeyAssoc);
+    if (!buttonID) return;
+
+    NSMutableDictionary *entry = nil;
+    for (NSMutableDictionary *d in self.buttonData) {
+        if ([d[@"id"] isEqualToString:buttonID]) { entry = d; break; }
+    }
+    if (!entry) return;
+
+    entry[@"enabled"] = @(sender.on);
+    [self saveButtonData];
+}
+
+#pragma mark - Reordering
+
+- (BOOL)tableView:(UITableView *)tableView canMoveRowAtIndexPath:(NSIndexPath *)indexPath { return YES; }
+
+- (void)tableView:(UITableView *)tableView moveRowAtIndexPath:(NSIndexPath *)from toIndexPath:(NSIndexPath *)to {
+    NSMutableDictionary *item = self.buttonData[from.row];
+    [self.buttonData removeObjectAtIndex:from.row];
+    [self.buttonData insertObject:item atIndex:to.row];
+    [self saveButtonData];
+}
+
+- (UITableViewCellEditingStyle)tableView:(UITableView *)tableView editingStyleForRowAtIndexPath:(NSIndexPath *)indexPath {
+    return UITableViewCellEditingStyleNone;
+}
+
+- (BOOL)tableView:(UITableView *)tableView shouldIndentWhileEditingRowAtIndexPath:(NSIndexPath *)indexPath {
+    return NO;
+}
+
+#pragma mark - Section Header/Footer
+
+- (CGFloat)tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)section {
+    return UITableViewAutomaticDimension;
+}
+
+- (UIColor *)ymSecondaryColor {
+    return [UIColor colorWithWhite:0.55 alpha:1.0];
+}
+
+- (UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section {
+    UIView *headerView = [[UIView alloc] init];
+    headerView.backgroundColor = [UIColor clearColor];
+    
+    UILabel *hintLabel = [[UILabel alloc] init];
+    hintLabel.text = LOC(@"OVERLAY_BUTTON_REORDER_HINT");
+    hintLabel.textColor = [self ymSecondaryColor];
+    hintLabel.font = [UIFont systemFontOfSize:13];
+    hintLabel.numberOfLines = 0;
+    hintLabel.translatesAutoresizingMaskIntoConstraints = NO;
+    [headerView addSubview:hintLabel];
+    
+    [NSLayoutConstraint activateConstraints:@[
+        [hintLabel.leadingAnchor constraintEqualToAnchor:headerView.leadingAnchor constant:16],
+        [hintLabel.trailingAnchor constraintEqualToAnchor:headerView.trailingAnchor constant:-16],
+        [hintLabel.topAnchor constraintEqualToAnchor:headerView.topAnchor constant:12],
+        [hintLabel.bottomAnchor constraintEqualToAnchor:headerView.bottomAnchor constant:-12]
+    ]];
+    
+    return headerView;
+}
+
+- (CGFloat)tableView:(UITableView *)tableView heightForFooterInSection:(NSInteger)section { return 0; }
+- (UIView *)tableView:(UITableView *)tableView viewForFooterInSection:(NSInteger)section { return [[UIView alloc] init]; }
+
+@end
+
+void YMPushOverlayButtonOrder(id settingsVC, id parentResponder) {
+    Class styledClass = objc_getClass("YMOverlayButtonOrderViewControllerStyled");
+    if (!styledClass) styledClass = [YMOverlayButtonOrderViewController class];
+
+    YMOverlayButtonOrderViewController *vc = (YMOverlayButtonOrderViewController *)((id (*)(id, SEL, id))objc_msgSend)([styledClass alloc], @selector(initWithParentResponder:), parentResponder);
+    if (!vc) vc = [[styledClass alloc] init];
+    [settingsVC pushViewController:vc];
+}
+
 #pragma mark - Entry Point
 
 void YMPushSubSettings(NSString *title, NSArray<YMSettingsItem *> *items, id settingsVC, id parentResponder) {
@@ -1910,5 +2265,6 @@ static void ymRegisterStyledSubclass(Class sourceClass, const char *name) {
 %ctor {
     ymRegisterStyledSubclass([YMSubSettingsViewController class], "YMSubSettingsViewControllerStyled");
     ymRegisterStyledSubclass([YMTabOrderViewController class], "YMTabOrderViewControllerStyled");
+    ymRegisterStyledSubclass([YMOverlayButtonOrderViewController class], "YMOverlayButtonOrderViewControllerStyled");
     ymRegisterStyledSubclass([YMSettingsSearchViewController class], "YMSettingsSearchViewControllerStyled");
 }

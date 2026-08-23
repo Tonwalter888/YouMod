@@ -125,6 +125,7 @@ extern void YouModConfigureDownloadButton(_ASDisplayView *view);
 static void YouModFilterShortsButtons(_ASDisplayView *self, NSString *iden) {
     NSDictionary *buttonsList = @{
         @"id.reel_like_button": @(IS_ENABLED(RemoveShortsLikeButton)),
+        @"id.reel_like_toggled_button": @(IS_ENABLED(RemoveShortsLikeButton)),
         @"id.reel_comment_button": @(IS_ENABLED(RemoveShortsCommentButton)),
         @"id.reel_share_button": @(IS_ENABLED(RemoveShortsShareButton)),
         @"id.reel_remix_button" : @(IS_ENABLED(RemoveShortsRemixButton)),
@@ -199,6 +200,7 @@ static void YouModFilterShortsDisclosure(_ASDisplayView *self, NSString *iden) {
         [self.superview removeFromSuperview];
         return;
     }
+    
     YouModFilterShortsButtons(self, iden);
     YouModFilterShortsPausedHeader(self, iden);
     YouModFilterShortsDisclosure(self, iden);

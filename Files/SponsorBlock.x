@@ -594,10 +594,12 @@ static UIColor *SBAccentColor() {
     YMOverlayButtonSpec *toggle = [[YMOverlayButtonSpec alloc] init];
     toggle.identifier = @"sponsorblock.toggle";
     toggle.symbolName = @"shield.fill";
+    toggle.settingsSymbolName = @"shield.fill";
+    toggle.displayName = LOC(@"SPONSORBLOCK_BUTTON");
     toggle.tintColor = SBAccentColor();
     toggle.sortOrder = 100;
     toggle.isVisible = ^BOOL(YTPlayerViewController *player) {
-        return IS_ENABLED(SBEnabled) && IS_ENABLED(SBShowButton);
+        return IS_ENABLED(SBEnabled) && YMIsOverlayButtonEnabled(@"sponsorblock.toggle");
     };
     toggle.tintProvider = ^UIColor *(YTPlayerViewController *player) {
         return IS_ENABLED(SBButtonKey) ? SBAccentColor() : [UIColor grayColor];

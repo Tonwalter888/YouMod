@@ -1935,22 +1935,26 @@ static void YouModShowDownloadManager(YTPlayerViewController *player, UIViewCont
         return;
     }
     NSMutableArray *items = [NSMutableArray array];
+    YTSingleVideoController *sgvidcon = player.activeVideo;
+    YTSingleVideo *sgvid = sgvidcon.singleVideo;
 
-    if (isShorts) {
-        [items addObject:[YouModMenuItem itemWithTitle:LOC(@"DOWNLOAD_SHORTS") subtitle:nil icon:YouModYTIconImage(769, NO, nil) handler:^{
-            YouModShowVideoQualitySheet(player, presenter, sender, YES);
+    if (!sgvid.isLivePlayback) {
+        if (isShorts) {
+            [items addObject:[YouModMenuItem itemWithTitle:LOC(@"DOWNLOAD_SHORTS") subtitle:nil icon:YouModYTIconImage(769, NO, nil) handler:^{
+                YouModShowVideoQualitySheet(player, presenter, sender, YES);
+            }]];
+        } else {
+            [items addObject:[YouModMenuItem itemWithTitle:LOC(@"DOWNLOAD_VIDEO") subtitle:nil icon:YouModYTIconImage(658, NO, nil) handler:^{
+                YouModShowVideoQualitySheet(player, presenter, sender, NO);
+            }]];
+        }
+        [items addObject:[YouModMenuItem itemWithTitle:LOC(@"DOWNLOAD_AUDIO") subtitle:nil icon:YouModYTIconImage(21, NO, nil) handler:^{
+            YouModStartDownloadAudio(player, presenter, sender);
         }]];
-    } else {
-        [items addObject:[YouModMenuItem itemWithTitle:LOC(@"DOWNLOAD_VIDEO") subtitle:nil icon:YouModYTIconImage(658, NO, nil) handler:^{
-            YouModShowVideoQualitySheet(player, presenter, sender, NO);
+        [items addObject:[YouModMenuItem itemWithTitle:LOC(@"DOWNLOAD_CAPTIONS") subtitle:nil icon:YouModYTIconImage(50, NO, nil) handler:^{
+            YouModShowCaptionsSheet(player, presenter, sender);
         }]];
     }
-    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"DOWNLOAD_AUDIO") subtitle:nil icon:YouModYTIconImage(21, NO, nil) handler:^{
-        YouModStartDownloadAudio(player, presenter, sender);
-    }]];
-    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"DOWNLOAD_CAPTIONS") subtitle:nil icon:YouModYTIconImage(50, NO, nil) handler:^{
-        YouModShowCaptionsSheet(player, presenter, sender);
-    }]];
     [items addObject:[YouModMenuItem itemWithTitle:LOC(@"THUMBNAIL_OPTIONS") subtitle:nil icon:YouModYTIconImage(367, NO, nil) handler:^{
         YouModShowThumbnailSheet(player, presenter, sender);
     }]];
@@ -2301,24 +2305,18 @@ static UIImage *YouModExtractPostImage(UIView *cellView) {
     }
     CGFloat btnWidth = 64.0;
     CGFloat btnHeight = 60.0;
-    UIView *likeButtonView = nil;
-    for (UIView *subview in self.subviews) {
-        if ([subview isKindOfClass:%c(YTReelPlayerButton)]) {
-            likeButtonView = subview;
-            break;
-        }
-    }
-    CGFloat X = 0.0;
+    YTReelElementAsyncComponentView *pov = nil;
+    @try {
+        pov = [self valueForKey:@"_playerOverlayView"];
+    } @catch (...) {}
+    YTReelElementAsyncComponentView *actionBar = [self valueForKey:@"_actionBarComponentView"];
+    CGFloat X = actionBar.frame.origin.x;
     CGFloat Y = 0.0;
-    // For older YT versions, the X and Y axis is 0. So we will calculate from the action bar.
-    if (likeButtonView.frame.origin.y == 0.0 && likeButtonView.frame.origin.x == 0.0) {
-        YTReelElementAsyncComponentView *actionBar = [self valueForKey:@"_actionBarComponentView"];
-        X = actionBar.frame.origin.x;
+    if (pov == nil) {
         Y = actionBar.frame.origin.y - 76.0;
         btnHeight = btnHeight + 16.0;
     } else {
-        X = likeButtonView.frame.origin.x;
-        Y = likeButtonView.frame.origin.y + 65.0;
+        Y = pov.frame.origin.y - 60.0;
     }
     downloadBtn.frame = CGRectMake(X, Y, btnWidth, btnHeight);
     [self bringSubviewToFront:downloadBtn];
@@ -2339,10 +2337,12 @@ static UIImage *YouModExtractPostImage(UIView *cellView) {
     YMOverlayButtonSpec *download = [[YMOverlayButtonSpec alloc] init];
     download.identifier = @"download.video";
     download.symbolName = @"arrow.down.circle";
+    download.settingsSymbolName = @"arrow.down.circle";
+    download.displayName = LOC(@"DOWNLOAD_BUTTON");
     download.tintColor = [UIColor whiteColor];
     download.sortOrder = 200;
     download.isVisible = ^BOOL(YTPlayerViewController *player) {
-        return IS_ENABLED(DownloadManager);
+        return YMIsOverlayButtonEnabled(@"download.video");
     };
     download.onTap = ^(YTPlayerViewController *player, UIButton *button) {
         UIViewController *presenter = YouModPresenterForSender(button, player ?: YouModCurrentPlayerViewController);
