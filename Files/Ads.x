@@ -1,4 +1,7 @@
 #import "Headers.h"
+#import <objc/runtime.h>
+
+static const void *kFilteredSectionKey = &kFilteredSectionKey;
 
 // YouTube-X (https://github.com/PoomSmart/YouTube-X)
 static BOOL isProductList(YTICommand *command) {
@@ -90,26 +93,48 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
 
     NSMutableArray <YTIItemSectionRenderer *> *newArray = [array mutableCopy];
     NSIndexSet *removeIndexes = [newArray indexesOfObjectsPassingTest:^BOOL(YTIItemSectionRenderer *sectionRenderer, NSUInteger idx, BOOL *stop) {
+        if (objc_getAssociatedObject(sectionRenderer, kFilteredSectionKey)) {
+            return NO;
+        }
+
         if ([sectionRenderer isKindOfClass:%c(YTIShelfRenderer)]) {
             NSString *description = [sectionRenderer description];
-            if ([description containsString:@"community-tab-chip-posts-section"]) return NO;
-            if (hideShorts) {
-                if (keepShortsSub && [description containsString:@"subscriptions-shorts-shelf-item"]) return NO;
-                else if ([description containsString:@"shorts_video_cell.eml"]) return YES;
-                else if ([description containsString:@"shelf_header.eml"] && [description containsString:@"youtube_shorts_24_cairo"]) return YES;
+            if ([description containsString:@"community-tab-chip-posts-section"]) {
+                objc_setAssociatedObject(sectionRenderer, kFilteredSectionKey, @YES, OBJC_ASSOCIATION_ASSIGN);
+                return NO;
             }
-            if (hideFeedPost && getPostString(description) != nil) return YES;
+            if (hideShorts) {
+                if (keepShortsSub && [description containsString:@"subscriptions-shorts-shelf-item"]) {
+                    objc_setAssociatedObject(sectionRenderer, kFilteredSectionKey, @YES, OBJC_ASSOCIATION_ASSIGN);
+                    return NO;
+                } else if ([description containsString:@"shorts_video_cell.eml"]) {
+                    return YES;
+                } else if ([description containsString:@"shelf_header.eml"] && [description containsString:@"youtube_shorts_24_cairo"]) {
+                    return YES;
+                }
+            }
+            if (hideFeedPost && getPostString(description) != nil) {
+                return YES;
+            }
+
             YTIShelfSupportedRenderers *content = ((YTIShelfRenderer *)sectionRenderer).content;
             YTIHorizontalListRenderer *horizontalListRenderer = content.horizontalListRenderer;
             NSMutableArray <YTIHorizontalListSupportedRenderers *> *itemsArray = horizontalListRenderer.itemsArray;
-            NSIndexSet *removeItemsArrayIndexes = [itemsArray indexesOfObjectsPassingTest:^BOOL(YTIHorizontalListSupportedRenderers *horizontalListSupportedRenderers, NSUInteger idx2, BOOL *stop2) {
-                YTIElementRenderer *elementRenderer = horizontalListSupportedRenderers.elementRenderer;
-                return isAdRenderer(elementRenderer, 4);
-            }];
-            [itemsArray removeObjectsAtIndexes:removeItemsArrayIndexes];
+            if (itemsArray.count > 0) {
+                NSIndexSet *removeItemsArrayIndexes = [itemsArray indexesOfObjectsPassingTest:^BOOL(YTIHorizontalListSupportedRenderers *horizontalListSupportedRenderers, NSUInteger idx2, BOOL *stop2) {
+                    YTIElementRenderer *elementRenderer = horizontalListSupportedRenderers.elementRenderer;
+                    return isAdRenderer(elementRenderer, 4);
+                }];
+                [itemsArray removeObjectsAtIndexes:removeItemsArrayIndexes];
+            }
+            objc_setAssociatedObject(sectionRenderer, kFilteredSectionKey, @YES, OBJC_ASSOCIATION_ASSIGN);
+            return NO;
         } else if ([sectionRenderer isKindOfClass:%c(YTIItemSectionRenderer)]) {
             NSString *description = [sectionRenderer description];
-            if ([description containsString:@"community-tab-chip-posts-section"]) return NO;
+            if ([description containsString:@"community-tab-chip-posts-section"]) {
+                objc_setAssociatedObject(sectionRenderer, kFilteredSectionKey, @YES, OBJC_ASSOCIATION_ASSIGN);
+                return NO;
+            }
             if ([description containsString:@"UNLIMITED"] && [description containsString:@"SPunlimited"]) {
                 NSMutableArray <YTIItemSectionSupportedRenderers *> *contentsArray = sectionRenderer.contentsArray;
                 NSMutableIndexSet *indexesToRemove = [NSMutableIndexSet indexSet];
@@ -127,9 +152,10 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
                     }
                 }];
                 [contentsArray removeObjectsAtIndexes:indexesToRemove];
+                objc_setAssociatedObject(sectionRenderer, kFilteredSectionKey, @YES, OBJC_ASSOCIATION_ASSIGN);
                 return NO;
             }
-            
+
             const BOOL isShortsShelf = [description containsString:@"shorts_shelf.eml"];
             const BOOL isHistory = [description containsString:@"history-shorts-shelf-item"];
             const BOOL isShortsOverlay = [description containsString:@"video_lockup_overlay"];
@@ -170,7 +196,12 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
             YTIItemSectionSupportedRenderers *firstObject = [contentsArray firstObject];
             YTIElementRenderer *elementRenderer = firstObject.elementRenderer;
             if (isAdRenderer(elementRenderer, 2)) return YES;
+
+            objc_setAssociatedObject(sectionRenderer, kFilteredSectionKey, @YES, OBJC_ASSOCIATION_ASSIGN);
+            return NO;
         }
+
+        objc_setAssociatedObject(sectionRenderer, kFilteredSectionKey, @YES, OBJC_ASSOCIATION_ASSIGN);
         return NO;
     }];
     [newArray removeObjectsAtIndexes:removeIndexes];
@@ -300,17 +331,14 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
 %hook YTMainAppVideoPlayerOverlayViewController
 - (void)playerOverlayProvider:(YTPlayerOverlayProvider *)provider didInsertPlayerOverlay:(YTPlayerOverlay *)overlay {
     NSString *iden = [overlay overlayIdentifier];
-    if ([iden isEqualToString:@"player_overlay_product_in_video"]) return;
+    if ([iden isEqualToString:@"player_overlay_product_in_video"] || [iden isEqualToString:@"player_overlay_timely_shelf"]) return;
     if ([iden isEqualToString:@"player_overlay_paid_content"] && IS_ENABLED(HidePaidPromoOverlay)) return;
-    if ([iden isEqualToString:@"player_overlay_timely_shelf"]) {
-        id timeshelf = [self performSelector:@selector(timelyShelfStateManager)];
-        if (timeshelf) {
-            [timeshelf performSelector:@selector(removeTimelyShelfOverlay:) withObject:overlay];
-        }
-        return;
-    }
     %orig;
 }
+%end
+
+%hook YTTimelyShelfStateManager
+- (BOOL)isTablet { return YES; }
 %end
 
 %hook YTWatchFloatingMiniplayerBadgeView

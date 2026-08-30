@@ -670,6 +670,9 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 @interface YTReelTopBarView : UIView
 @end
 
+@interface YTDialogContainerScrollView : UIScrollView
+@end
+
 @interface YTRiveStartupAnimationViewController : UIViewController
 @end
 
