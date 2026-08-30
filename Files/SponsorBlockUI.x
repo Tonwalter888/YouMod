@@ -721,7 +721,7 @@ static BOOL SBDecorationViewIsInMainPlayer(UIView *view) {
     while (currentView.superview != nil && ![currentView.superview isKindOfClass:%c(YTMainAppVideoPlayerOverlayView)]) {
         currentView = currentView.superview;
     }
-    BOOL isFull = [currentView performSelector:@selector(isFullScreen)];
+    BOOL isFull = [currentView performSelector:@selector(isFullscreen)];
     return isFull;
 }
 
