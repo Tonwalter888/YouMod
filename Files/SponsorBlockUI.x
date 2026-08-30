@@ -718,7 +718,7 @@ static BOOL SBGetDecorationViewTimeRange(UIView *view, CGFloat *outStart, CGFloa
 // inline-muted-playback bar. Only the main player's markers are rounded.
 static BOOL SBDecorationViewIsInMainPlayer(UIView *view) {
     UIView *currentView = view.superview;
-    while (currentView.superview != nil && ![currentView.superview isKindOfClass:%c(YTMainAppVideoPlayerOverlayView)]) {
+    while (currentView.superview != nil && ![currentView isKindOfClass:%c(YTMainAppVideoPlayerOverlayView)]) {
         currentView = currentView.superview;
     }
     BOOL isFull = [currentView performSelector:@selector(isFullscreen)];
