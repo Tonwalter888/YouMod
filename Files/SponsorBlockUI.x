@@ -716,15 +716,13 @@ static BOOL SBGetDecorationViewTimeRange(UIView *view, CGFloat *outStart, CGFloa
 
 // Whether a decoration view belongs to the main player's bar rather than the feed's
 // inline-muted-playback bar. Only the main player's markers are rounded.
-//
-// Both hosts lay out a YTModularPlayerBarView holding the same decoration views, so
-// the host has to be read off the view tree: only the main player's bar sits inside a
-// YTInlinePlayerBarContainerView. It must be read from the view on each call rather
-// than cached, because layoutSubviews fires on its own schedule, for either host.
 static BOOL SBDecorationViewIsInMainPlayer(UIView *view) {
-    for (UIView *ancestor = view.superview; ancestor; ancestor = ancestor.superview)
-        if ([ancestor isKindOfClass:%c(YTInlinePlayerBarContainerView)]) return YES;
-    return NO;
+    UIView *currentView = view.superview;
+    while (currentView.superview != nil && ![currentView.superview isKindOfClass:%c(YTMainAppVideoPlayerOverlayView)]) {
+        currentView = currentView.superview;
+    }
+    BOOL isFull = [currentView performSelector:@selector(isFullScreen)];
+    return isFull;
 }
 
 static void SBRebuildMarkersInDecorationView(UIView *view) {
