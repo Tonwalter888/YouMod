@@ -149,7 +149,7 @@ static void YouModRemoveShortsOverlayButton(_ASDisplayView *dpView) {
 extern void YouModConfigureDownloadButton(_ASDisplayView *view);
 
 %hook YTReelPausedStateCarouselView 
-- (void)didMoveToWindow {
+- (void)layoutSubviews {
     %orig;
     if (!IS_ENABLED(RemoveShortsPausedSubButton) && !IS_ENABLED(RemoveShortsPausedLiveButton) && !IS_ENABLED(RemoveShortsPausedLensButton) && !IS_ENABLED(RemoveShortsPausedTrendsButton)) return;
     ASScrollView *view = (ASScrollView *)self;
