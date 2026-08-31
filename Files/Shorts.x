@@ -144,15 +144,11 @@ static void YouModRemoveShortsOverlayButton(_ASDisplayView *dpView) {
         }
     }
 }
-%end
-
-extern void YouModConfigureDownloadButton(_ASDisplayView *view);
-
-%hook YTReelPausedStateCarouselView 
-- (void)layoutSubviews {
+- (void)layoutPausedStateCarouselView {
     %orig;
     if (!IS_ENABLED(RemoveShortsPausedSubButton) && !IS_ENABLED(RemoveShortsPausedLiveButton) && !IS_ENABLED(RemoveShortsPausedLensButton) && !IS_ENABLED(RemoveShortsPausedTrendsButton)) return;
-    ASScrollView *view = (ASScrollView *)self;
+    if (IS_ENABLED(HideShortsSubbar)) return;
+    ASScrollView *view = (ASScrollView *)[self valueForKey:@"_pausedStateCarouselView"];
     while (view.subviews.count == 1 && ![view isKindOfClass:%c(ASScrollView)]) {
         view = view.subviews[0];
     }
@@ -180,6 +176,8 @@ extern void YouModConfigureDownloadButton(_ASDisplayView *view);
     }
 }
 %end
+
+extern void YouModConfigureDownloadButton(_ASDisplayView *view);
 
 static void YouModFilterShortsDisclosure(_ASDisplayView *self, NSString *iden) {
     if (![self.accessibilityIdentifier isEqualToString:@"eml.shorts-disclosures"] || !IS_ENABLED(RemoveShortsDisclosure)) return;
