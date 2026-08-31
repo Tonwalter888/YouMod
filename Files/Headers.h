@@ -71,6 +71,7 @@
 #import <YouTubeHeader/YTIPlayerBarDecorationModel.h>
 #import <YouTubeHeader/YTPlayerBarProgressDecorationView.h>
 #import <YouTubeHeader/YTPlayerBarRectangleDecorationView.h>
+#import <objc/runtime.h>
 
 // For Settings.x and SponsorBlockSettings.x
 #import <roothide.h>

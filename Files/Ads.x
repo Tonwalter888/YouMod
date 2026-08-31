@@ -1,5 +1,4 @@
 #import "Headers.h"
-#import <objc/runtime.h>
 
 static const void *kFilteredSectionKey = &kFilteredSectionKey;
 
