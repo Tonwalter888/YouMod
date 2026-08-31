@@ -57,6 +57,72 @@ static BOOL isFullscreenEnabled = NO;
     if (INTFORVAL(AutoSpeedIndex) != 0) [main performSelector:@selector(YouModSetAutoSpeed) withObject:nil afterDelay:0.5];
     if (INTFORVAL(AudioTrack) != 0) [self performSelector:@selector(YouModAutoAudioTrack:) withObject:main afterDelay:0.5];
 }
+// Filtering Shorts overlay buttons
+- (void)layoutActionBar {
+    %orig;
+    YTReelElementAsyncComponentView *view = nil;
+    @try {
+        view = [self valueForKey:@"_playerOverlayView"];
+    } @catch (id ex) {}
+    if (view != nil) {
+        while (view.subviews.count == 1) {
+            view = view.subviews[0];
+        }
+        _ASDisplayView *dpView = (_ASDisplayView *)view.subviews[1];
+        ASDisplayNode *node = dpView.keepalive_node;
+        NSDictionary *buttonsList = @{
+            @"id.reel_like_button": @(IS_ENABLED(RemoveShortsLikeButton)),
+            @"id.reel_like_toggled_button": @(IS_ENABLED(RemoveShortsLikeButton)),
+            @"id.reel_comment_button": @(IS_ENABLED(RemoveShortsCommentButton)),
+            @"id.reel_share_button": @(IS_ENABLED(RemoveShortsShareButton)),
+            @"id.reel_remix_button" : @(IS_ENABLED(RemoveShortsRemixButton)),
+            @"id.reel_pivot_button": @(IS_ENABLED(RemoveShortsSoundMetadataButton))
+        };
+        for (NSString *button in buttonsList) {
+            if ([buttonsList[button] boolValue]) {
+                for (UIView *sub in dpView.subviews) {
+                    if ([sub.accessibilityIdentifier isEqualToString:button]) {
+                        [sub removeFromSuperview];
+                    }
+                }
+                for (id child in [node.yogaChildren copy]) {
+                    if ([[child description] containsString:button]) {
+                        [node removeYogaChild:child];
+                    }
+                }
+            }
+        }        
+    } else {
+        view = [self valueForKey:@"_actionBarComponentView"];
+        while (view.subviews.count == 1) {
+            view = view.subviews[0];
+        }
+        _ASDisplayView *dpView = (_ASDisplayView *)view;
+        ASDisplayNode *node = dpView.keepalive_node;
+        NSDictionary *buttonsList = @{
+            @"id.reel_like_button": @(IS_ENABLED(RemoveShortsLikeButton)),
+            @"id.reel_like_toggled_button": @(IS_ENABLED(RemoveShortsLikeButton)),
+            @"id.reel_comment_button": @(IS_ENABLED(RemoveShortsCommentButton)),
+            @"id.reel_share_button": @(IS_ENABLED(RemoveShortsShareButton)),
+            @"id.reel_remix_button" : @(IS_ENABLED(RemoveShortsRemixButton)),
+            @"id.reel_pivot_button": @(IS_ENABLED(RemoveShortsSoundMetadataButton))
+        };
+        for (NSString *button in buttonsList) {
+            if ([buttonsList[button] boolValue]) {
+                for (UIView *sub in dpView.subviews) {
+                    if ([sub.accessibilityIdentifier isEqualToString:button]) {
+                        [sub removeFromSuperview];
+                    }
+                }
+                for (id child in [node.yogaChildren copy]) {
+                    if ([[child description] containsString:button]) {
+                        [node removeYogaChild:child];
+                    }
+                }
+            }
+        }   
+    }
+}
 %new
 - (void)YouModAutoAudioTrack:(YTPlayerViewController *)pv {
     NSInteger selectedIndex = INTFORVAL(AudioTrackLangIndex);
@@ -122,32 +188,15 @@ static BOOL isFullscreenEnabled = NO;
 
 extern void YouModConfigureDownloadButton(_ASDisplayView *view);
 
-static void YouModFilterShortsButtons(_ASDisplayView *self, NSString *iden) {
-    NSDictionary *buttonsList = @{
-        @"id.reel_like_button": @(IS_ENABLED(RemoveShortsLikeButton)),
-        @"id.reel_like_toggled_button": @(IS_ENABLED(RemoveShortsLikeButton)),
-        @"id.reel_comment_button": @(IS_ENABLED(RemoveShortsCommentButton)),
-        @"id.reel_share_button": @(IS_ENABLED(RemoveShortsShareButton)),
-        @"id.reel_remix_button" : @(IS_ENABLED(RemoveShortsRemixButton)),
-        @"id.reel_pivot_button": @(IS_ENABLED(RemoveShortsSoundMetadataButton))
-    };
-    for (NSString *button in buttonsList) {
-        if ([iden isEqualToString:button] && [buttonsList[button] boolValue]) {
-            _ASDisplayView *mainView = (_ASDisplayView *)self.superview;
-            ASDisplayNode *node = mainView.keepalive_node;
-            for (_ASDisplayView *view in node.yogaChildren) {
-                if ([[view description] containsString:button]) {
-                    [node removeYogaChild:view];
-                    [self removeFromSuperview];
-                    break;
-                }
-            }
-            break;
-        }
+%hook YTReelPausedStateCarouselView 
+- (void)didMoveToWindow {
+    %orig;
+    if (!IS_ENABLED(RemoveShortsPausedSubButton) && !IS_ENABLED(RemoveShortsPausedLiveButton) && !IS_ENABLED(RemoveShortsPausedLensButton) && !IS_ENABLED(RemoveShortsPausedTrendsButton)) return;
+    ASScrollView *view = (ASScrollView *)self;
+    while (view.subviews.count == 1 && ![view isKindOfClass:%c(ASScrollView)]) {
+        view = view.subviews[0];
     }
-}
-
-static void YouModFilterShortsPausedHeader(_ASDisplayView *self, NSString *iden) {
+    ASDisplayNode *node = view.scrollNode;
     NSDictionary *buttonsList = @{
         @"id.ui.shorts_paused_state.subscriptions_button": @(IS_ENABLED(RemoveShortsPausedSubButton)),
         @"id.ui.shorts_paused_state.live_button": @(IS_ENABLED(RemoveShortsPausedLiveButton)),
@@ -155,20 +204,21 @@ static void YouModFilterShortsPausedHeader(_ASDisplayView *self, NSString *iden)
         @"id.ui.shorts_paused_state.trends_button" : @(IS_ENABLED(RemoveShortsPausedTrendsButton))
     };
     for (NSString *button in buttonsList) {
-        if ([iden isEqualToString:button] && [buttonsList[button] boolValue]) {
-            ASScrollView *mainView = (ASScrollView *)self.superview;
-            ASDisplayNode *node = mainView.scrollNode;
-            for (_ASDisplayView *view in node.yogaChildren) {
-                if ([[view description] containsString:button]) {
-                    [node removeYogaChild:view];
-                    [self removeFromSuperview];
-                    break;
+        if ([buttonsList[button] boolValue]) {
+            for (UIView *sub in view.subviews) {
+                if ([sub.accessibilityIdentifier isEqualToString:button]) {
+                    [sub removeFromSuperview];
                 }
             }
-            break;
+            for (id zzz in node.yogaChildren) {
+                if ([[zzz description] containsString:button]) {
+                    [node removeYogaChild:zzz];
+                }
+            }
         }
     }
 }
+%end
 
 static void YouModFilterShortsDisclosure(_ASDisplayView *self, NSString *iden) {
     if (![self.accessibilityIdentifier isEqualToString:@"eml.shorts-disclosures"] || !IS_ENABLED(RemoveShortsDisclosure)) return;
@@ -200,9 +250,6 @@ static void YouModFilterShortsDisclosure(_ASDisplayView *self, NSString *iden) {
         [self.superview removeFromSuperview];
         return;
     }
-    
-    YouModFilterShortsButtons(self, iden);
-    YouModFilterShortsPausedHeader(self, iden);
     YouModFilterShortsDisclosure(self, iden);
 }
 %end
