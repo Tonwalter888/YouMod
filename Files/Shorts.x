@@ -83,29 +83,6 @@ static void YouModRemoveShortsOverlayButton(_ASDisplayView *dpView) {
     if (INTFORVAL(AutoSpeedIndex) != 0) [main performSelector:@selector(YouModSetAutoSpeed) withObject:nil afterDelay:0.5];
     if (INTFORVAL(AudioTrack) != 0) [self performSelector:@selector(YouModAutoAudioTrack:) withObject:main afterDelay:0.5];
 }
-// Filtering Shorts overlay buttons
-- (void)layoutActionBar {
-    %orig;
-    if (!IS_ENABLED(RemoveShortsLikeButton) && !IS_ENABLED(RemoveShortsLikeButton) && !IS_ENABLED(RemoveShortsCommentButton) && !IS_ENABLED(RemoveShortsShareButton) && !IS_ENABLED(RemoveShortsRemixButton) && !IS_ENABLED(RemoveShortsSoundMetadataButton)) return;
-    YTReelElementAsyncComponentView *view = nil;
-    @try {
-        view = [self valueForKey:@"_playerOverlayView"];
-    } @catch (id ex) {}
-    if (view != nil) {
-        while (view.subviews.count == 1) {
-            view = view.subviews[0];
-        }
-        _ASDisplayView *dpView = (_ASDisplayView *)view.subviews[1];
-        YouModRemoveShortsOverlayButton(dpView);      
-    } else {
-        view = [self valueForKey:@"_actionBarComponentView"];
-        while (view.subviews.count == 1) {
-            view = view.subviews[0];
-        }
-        _ASDisplayView *dpView = (_ASDisplayView *)view;
-        YouModRemoveShortsOverlayButton(dpView);
-    }
-}
 %new
 - (void)YouModAutoAudioTrack:(YTPlayerViewController *)pv {
     NSInteger selectedIndex = INTFORVAL(AudioTrackLangIndex);
@@ -193,9 +170,9 @@ extern void YouModConfigureDownloadButton(_ASDisplayView *view);
                     [sub removeFromSuperview];
                 }
             }
-            for (id zzz in node.yogaChildren) {
-                if ([[zzz description] containsString:button]) {
-                    [node removeYogaChild:zzz];
+            for (id child in node.yogaChildren) {
+                if ([[child description] containsString:button]) {
+                    [node removeYogaChild:child];
                 }
             }
         }
@@ -286,6 +263,29 @@ static void YouModFilterShortsDisclosure(_ASDisplayView *self, NSString *iden) {
         return YES;
     }
     return NO;
+}
+// Filtering Shorts overlay buttons
+- (void)layoutActionBar {
+    %orig;
+    if (!IS_ENABLED(RemoveShortsLikeButton) && !IS_ENABLED(RemoveShortsLikeButton) && !IS_ENABLED(RemoveShortsCommentButton) && !IS_ENABLED(RemoveShortsShareButton) && !IS_ENABLED(RemoveShortsRemixButton) && !IS_ENABLED(RemoveShortsSoundMetadataButton)) return;
+    YTReelElementAsyncComponentView *view = nil;
+    @try {
+        view = [self valueForKey:@"_playerOverlayView"];
+    } @catch (id ex) {}
+    if (view != nil) {
+        while (view.subviews.count == 1) {
+            view = view.subviews[0];
+        }
+        _ASDisplayView *dpView = (_ASDisplayView *)view.subviews[1];
+        YouModRemoveShortsOverlayButton(dpView);      
+    } else {
+        view = [self valueForKey:@"_actionBarComponentView"];
+        while (view.subviews.count == 1) {
+            view = view.subviews[0];
+        }
+        _ASDisplayView *dpView = (_ASDisplayView *)view;
+        YouModRemoveShortsOverlayButton(dpView);
+    }
 }
 %end
 
