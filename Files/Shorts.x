@@ -42,6 +42,32 @@ static void YouModMakeAShortsAction(YTReelPlayerViewController *self, YTSingleVi
 static BOOL isShortsOnlyOn = YES;
 static BOOL isFullscreenEnabled = NO;
 
+static void YouModRemoveShortsOverlayButton(_ASDisplayView *dpView) {
+    NSDictionary *buttonsList = @{
+        @"id.reel_like_button": @(IS_ENABLED(RemoveShortsLikeButton)),
+        @"id.reel_like_toggled_button": @(IS_ENABLED(RemoveShortsLikeButton)),
+        @"id.reel_comment_button": @(IS_ENABLED(RemoveShortsCommentButton)),
+        @"id.reel_share_button": @(IS_ENABLED(RemoveShortsShareButton)),
+        @"id.reel_remix_button" : @(IS_ENABLED(RemoveShortsRemixButton)),
+        @"id.reel_pivot_button": @(IS_ENABLED(RemoveShortsSoundMetadataButton))
+    };
+    ASDisplayNode *node = dpView.keepalive_node;
+    for (NSString *button in buttonsList) {
+        if ([buttonsList[button] boolValue]) {
+            for (UIView *sub in dpView.subviews) {
+                if ([sub.accessibilityIdentifier isEqualToString:button]) {
+                    [sub removeFromSuperview];
+                }
+            }
+            for (id child in [node.yogaChildren copy]) {
+                if ([[child description] containsString:button]) {
+                    [node removeYogaChild:child];
+                }
+            }
+        }
+    }   
+}
+
 %hook YTReelPlayerViewController
 - (BOOL)shouldAlwaysEnablePlayerBar { return IS_ENABLED(ShowShortsSeekbar) ? YES : %orig; }
 - (BOOL)shouldEnablePlayerBarOnlyOnPause { return IS_ENABLED(ShowShortsSeekbar) ? NO : %orig; }
@@ -60,6 +86,7 @@ static BOOL isFullscreenEnabled = NO;
 // Filtering Shorts overlay buttons
 - (void)layoutActionBar {
     %orig;
+    if (!IS_ENABLED(RemoveShortsLikeButton) && !IS_ENABLED(RemoveShortsLikeButton) && !IS_ENABLED(RemoveShortsCommentButton) && !IS_ENABLED(RemoveShortsShareButton) && !IS_ENABLED(RemoveShortsRemixButton) && !IS_ENABLED(RemoveShortsSoundMetadataButton)) return;
     YTReelElementAsyncComponentView *view = nil;
     @try {
         view = [self valueForKey:@"_playerOverlayView"];
@@ -69,58 +96,14 @@ static BOOL isFullscreenEnabled = NO;
             view = view.subviews[0];
         }
         _ASDisplayView *dpView = (_ASDisplayView *)view.subviews[1];
-        ASDisplayNode *node = dpView.keepalive_node;
-        NSDictionary *buttonsList = @{
-            @"id.reel_like_button": @(IS_ENABLED(RemoveShortsLikeButton)),
-            @"id.reel_like_toggled_button": @(IS_ENABLED(RemoveShortsLikeButton)),
-            @"id.reel_comment_button": @(IS_ENABLED(RemoveShortsCommentButton)),
-            @"id.reel_share_button": @(IS_ENABLED(RemoveShortsShareButton)),
-            @"id.reel_remix_button" : @(IS_ENABLED(RemoveShortsRemixButton)),
-            @"id.reel_pivot_button": @(IS_ENABLED(RemoveShortsSoundMetadataButton))
-        };
-        for (NSString *button in buttonsList) {
-            if ([buttonsList[button] boolValue]) {
-                for (UIView *sub in dpView.subviews) {
-                    if ([sub.accessibilityIdentifier isEqualToString:button]) {
-                        [sub removeFromSuperview];
-                    }
-                }
-                for (id child in [node.yogaChildren copy]) {
-                    if ([[child description] containsString:button]) {
-                        [node removeYogaChild:child];
-                    }
-                }
-            }
-        }        
+        YouModRemoveShortsOverlayButton(dpView);      
     } else {
         view = [self valueForKey:@"_actionBarComponentView"];
         while (view.subviews.count == 1) {
             view = view.subviews[0];
         }
         _ASDisplayView *dpView = (_ASDisplayView *)view;
-        ASDisplayNode *node = dpView.keepalive_node;
-        NSDictionary *buttonsList = @{
-            @"id.reel_like_button": @(IS_ENABLED(RemoveShortsLikeButton)),
-            @"id.reel_like_toggled_button": @(IS_ENABLED(RemoveShortsLikeButton)),
-            @"id.reel_comment_button": @(IS_ENABLED(RemoveShortsCommentButton)),
-            @"id.reel_share_button": @(IS_ENABLED(RemoveShortsShareButton)),
-            @"id.reel_remix_button" : @(IS_ENABLED(RemoveShortsRemixButton)),
-            @"id.reel_pivot_button": @(IS_ENABLED(RemoveShortsSoundMetadataButton))
-        };
-        for (NSString *button in buttonsList) {
-            if ([buttonsList[button] boolValue]) {
-                for (UIView *sub in dpView.subviews) {
-                    if ([sub.accessibilityIdentifier isEqualToString:button]) {
-                        [sub removeFromSuperview];
-                    }
-                }
-                for (id child in [node.yogaChildren copy]) {
-                    if ([[child description] containsString:button]) {
-                        [node removeYogaChild:child];
-                    }
-                }
-            }
-        }   
+        YouModRemoveShortsOverlayButton(dpView);
     }
 }
 %new
