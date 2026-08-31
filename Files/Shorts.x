@@ -156,7 +156,7 @@ extern void YouModConfigureDownloadButton(_ASDisplayView *view);
     while (view.subviews.count == 1 && ![view isKindOfClass:%c(ASScrollView)]) {
         view = view.subviews[0];
     }
-    if (![view isKindOfClass:%c(ASScrollView)] || view == self) return; 
+    if (![view isKindOfClass:%c(ASScrollView)]) return; 
     ASDisplayNode *node = view.scrollNode;
     NSDictionary *buttonsList = @{
         @"id.ui.shorts_paused_state.subscriptions_button": @(IS_ENABLED(RemoveShortsPausedSubButton)),
