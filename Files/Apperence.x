@@ -221,7 +221,7 @@ static const void *kOLEDKey = &kOLEDKey;
 - (id)_currentTextSuggestions {
     UIKeyboard *keyboard = [%c(UIKeyboard) activeKeyboard];
     UIView *mainView = self.view;
-    if (objc_getAssociatedObject(mainView, kOLEDKey)) return;
+    if (objc_getAssociatedObject(mainView, kOLEDKey)) return %orig;
     UIColor *dynamicColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
         return isDarkMode(mainView) ? [UIColor blackColor] : [UIColor clearColor];
     }];
