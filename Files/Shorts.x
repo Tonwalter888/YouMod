@@ -273,16 +273,21 @@ static void YouModFilterShortsDisclosure(_ASDisplayView *self, NSString *iden) {
         view = [self valueForKey:@"_playerOverlayView"];
     } @catch (id ex) {}
     if (view != nil) {
+        UIView *check = view;
         while (view.subviews.count == 1) {
             view = view.subviews[0];
         }
-        _ASDisplayView *dpView = (_ASDisplayView *)view.subviews[1];
-        YouModRemoveShortsOverlayButton(dpView);      
+        if (view.subviews.count > 1 && view != check) {
+            _ASDisplayView *dpView = (_ASDisplayView *)view.subviews[1];
+            YouModRemoveShortsOverlayButton(dpView);
+        }
     } else {
         view = [self valueForKey:@"_actionBarComponentView"];
+        UIView *check = view;
         while (view.subviews.count == 1) {
             view = view.subviews[0];
         }
+        if (view == check) return;
         _ASDisplayView *dpView = (_ASDisplayView *)view;
         YouModRemoveShortsOverlayButton(dpView);
     }
