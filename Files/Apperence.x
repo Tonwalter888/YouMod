@@ -93,17 +93,14 @@ static const void *kOLEDKey = &kOLEDKey;
         self.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
             return isDarkMode(self) ? [UIColor blackColor] : [UIColor clearColor];
         }];
-        return;
     } else if ([self.accessibilityIdentifier isEqualToString:@"subs_channel_bar.collection"]) {
         self.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
             return isDarkMode(self) ? [UIColor blackColor] : [UIColor clearColor];
         }];
-        return;
     } else if ([self.accessibilityIdentifier isEqualToString:@"id.elements.components.more_drawer_collection"]) {
         self.superview.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
             return isDarkMode(self) ? [UIColor blackColor] : [UIColor whiteColor];
         }];
-        return;
     }
     objc_setAssociatedObject(self, kOLEDKey, @YES, OBJC_ASSOCIATION_ASSIGN);
 }
