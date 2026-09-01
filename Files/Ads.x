@@ -363,33 +363,16 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
 }
 %end
 
-%hook _ASDisplayView
-- (void)didMoveToWindow {
-    %orig;
-    NSString *iden = self.accessibilityIdentifier;
+void YouModFilterAdsDisplayView(_ASDisplayView *view, NSString *iden) {
     if ([iden isEqualToString:@"eml.expandable_metadata.vpp"]) {
-        [self removeFromSuperview];  
+        [view removeFromSuperview];
     } else if (IS_ENABLED(HideCommentsPreview) && [iden isEqualToString:@"id.ui.comments_entry_point_teaser"]) {
-        [self removeFromSuperview];
-    } else if ([self.accessibilityLabel containsString:@"Premium"] && [self._viewControllerForAncestor isKindOfClass:%c(YTPageHeaderViewController)]) {
-        [self removeFromSuperview];
+        [view removeFromSuperview];
+    } else if ([view.accessibilityLabel containsString:@"Premium"] && [view._viewControllerForAncestor isKindOfClass:%c(YTPageHeaderViewController)]) {
+        [view removeFromSuperview];
     }
-    // Filter new ads in newer YT versions
-    /* TEMP-DISABLED
-    if ([iden containsString:@"eml.ad_layout."]) {
-        _ASCollectionViewCell *mainView = (_ASCollectionViewCell *)self.superview;
-        while (mainView != nil && ![mainView isKindOfClass:%c(_ASCollectionViewCell)]) {
-            mainView = (_ASCollectionViewCell *)mainView.superview;
-        }
-        ASDisplayNode *node = mainView.node;
-        for (id child in [node.yogaChildren copy]) {
-            [node removeYogaChild:child];
-        }
-        // [mainView removeFromSuperview]; Sometimes running this crashes the app.
-    }
-    */
 }
-%end
+
 
 // NoYTPremium - @PoomSmart https://github.com/PoomSmart/NoYTPremium
 // Alert

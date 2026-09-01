@@ -177,24 +177,7 @@ static void YouModRemoveShortsOverlayButton(_ASDisplayView *dpView) {
 }
 %end
 
-extern void YouModConfigureDownloadButton(_ASDisplayView *view);
-
-static void YouModFilterShortsDisclosure(_ASDisplayView *self, NSString *iden) {
-    if (![self.accessibilityIdentifier isEqualToString:@"eml.shorts-disclosures"] || !IS_ENABLED(RemoveShortsDisclosure)) return;
-    _ASDisplayView *dpView = (_ASDisplayView *)self.superview;
-    ASDisplayNode *node = dpView.keepalive_node;
-    _ASDisplayView *maindpView = (_ASDisplayView *)dpView.superview;
-    ASDisplayNode *mainNode = maindpView.keepalive_node;
-    [mainNode removeYogaChild:node];
-    [maindpView removeFromSuperview];
-}
-
-// _ASDisplayView filters
-%hook _ASDisplayView
-- (void)didMoveToWindow {
-    %orig;
-    YouModConfigureDownloadButton(self);
-    NSString *iden = self.accessibilityIdentifier;
+void YouModFilterShortsDisplayView(_ASDisplayView *view, NSString *iden) {
     if (!iden || iden.length == 0) return;
     NSDictionary *elements = @{
         @"product_sticker.main_target": @(IS_ENABLED(HideShortsProducts)),
@@ -202,16 +185,25 @@ static void YouModFilterShortsDisclosure(_ASDisplayView *self, NSString *iden) {
         @"id.elements.components.suggested_action": @(IS_ENABLED(HideShortsRecbar))
     };
     if ([elements[iden] boolValue]) {
-        [self removeFromSuperview];
+        [view removeFromSuperview];
         return;
     }
     if ([iden isEqualToString:@"eml.reel_sponsor_button"] && IS_ENABLED(RemoveChannelSponsorAll)) {
-        [self.superview removeFromSuperview];
+        [view.superview removeFromSuperview];
         return;
     }
-    YouModFilterShortsDisclosure(self, iden);
+    if ([iden isEqualToString:@"eml.shorts-disclosures"] && IS_ENABLED(RemoveShortsDisclosure)) {
+        _ASDisplayView *dpView = (_ASDisplayView *)view.superview;
+        ASDisplayNode *node = dpView.keepalive_node;
+        _ASDisplayView *maindpView = (_ASDisplayView *)dpView.superview;
+        ASDisplayNode *mainNode = maindpView.keepalive_node;
+        [mainNode removeYogaChild:node];
+        [maindpView removeFromSuperview];
+        return;
+    }
 }
-%end
+
+
 
 %hook YTAppDelegate
 - (void)appDidBecomeActive {

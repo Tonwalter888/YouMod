@@ -44,7 +44,16 @@
 }
 %end
 
-static void YouModFilterChannelButtons(_ASDisplayView *self, NSString *iden) {
+void YouModFilterChannelButtons(_ASDisplayView *self, NSString *iden) {
+    if (!iden || iden.length == 0) return;
+    BOOL remove = NO;
+    if ([iden isEqualToString:@"eml.header_community_button"] && IS_ENABLED(RemoveChannelCommunityButton)) {
+        remove = YES;
+    } else if ([iden isEqualToString:@"id.sponsor_button"] && IS_ENABLED(RemoveChannelSponsorAll)) {
+        remove = YES;
+    }
+    if (!remove) return;
+
     UIView *sup = self.superview;
     if ([sup isKindOfClass:%c(ASScrollView)]) {
         ASScrollView *scroll = (ASScrollView *)sup;
@@ -79,19 +88,4 @@ static void YouModFilterChannelButtons(_ASDisplayView *self, NSString *iden) {
     }
 }
 
-%hook _ASDisplayView
-- (void)didMoveToWindow {
-    %orig;
-    NSString *iden = self.accessibilityIdentifier;
-    if (!iden || iden.length == 0) return;
-    BOOL remove = NO;
-    if ([iden isEqualToString:@"eml.header_community_button"] && IS_ENABLED(RemoveChannelCommunityButton)) {
-        remove = YES;
-    } else if ([iden isEqualToString:@"id.sponsor_button"] && IS_ENABLED(RemoveChannelSponsorAll)) {
-        remove = YES;
-    }
-    if (remove) {
-        YouModFilterChannelButtons(self, iden);
-    }
-}
-%end
+

@@ -1426,7 +1426,28 @@ static CGFloat remainingOverlayWidth(YTPlayerViewController *pvc, CGFloat fullWi
 %end
 
 // Video buttons filtering
-static void YouModFilterVideoButtons(_ASDisplayView *view, NSString *iden) {
+void YouModFilterVideoButtons(_ASDisplayView *view, NSString *iden) {
+    if (!iden || iden.length == 0) return;
+    BOOL shouldFilter = NO;
+    if ([iden isEqualToString:@"id.video.share.button"] && IS_ENABLED(RemoveVideoShareButton)) {
+        shouldFilter = YES;
+    } else if ([iden isEqualToString:@"id.video.add_to.button"] && IS_ENABLED(RemoveVideoSaveButton)) {
+        shouldFilter = YES;
+    } else if ([iden isEqualToString:@"id.ui.add_to.offline.button"] && (IS_ENABLED(RemoveVideoDownloadButton) || (IS_ENABLED(DownloadManager) && INTFORVAL(DownloadButtonPosition) == DownloadButtonPositionOverlay))) {
+        shouldFilter = YES;
+    } else if ([iden isEqualToString:@"clip_button.eml"] && IS_ENABLED(RemoveVideoClipButton)) {
+        shouldFilter = YES;
+    } else if ([iden isEqualToString:@"id.video.remix.button"] && IS_ENABLED(RemoveVideoRemixButton)) {
+        shouldFilter = YES;
+    } else if ([iden isEqualToString:@"id.video.like.button"] && IS_ENABLED(RemoveVideoLikeButton)) {
+        shouldFilter = YES;
+    } else if ([iden isEqualToString:@"id.video.dislike.button"] && IS_ENABLED(RemoveVideoDislikeButton)) {
+        shouldFilter = YES;
+    } else if ([iden isEqualToString:@"id.player.chat.toggle.button"] && IS_ENABLED(RemoveVideoLiveChatButton)) {
+        shouldFilter = YES;
+    }
+    if (!shouldFilter) return;
+
     UIViewController *con = view._viewControllerForAncestor;
     if ([con isKindOfClass:%c(YTELMViewController)]) {
         _ASDisplayView *mainView = (_ASDisplayView *)view.superview;
@@ -1542,34 +1563,8 @@ static void YouModFilterVideoButtons(_ASDisplayView *view, NSString *iden) {
     }
 }
 
-%hook _ASDisplayView
-- (void)didMoveToWindow {
-    %orig;
-    NSString *iden = self.accessibilityIdentifier;
-    if (!iden || iden.length == 0) return;
-    BOOL shouldFilter = NO;
-    if ([iden isEqualToString:@"id.video.share.button"] && IS_ENABLED(RemoveVideoShareButton)) {
-        shouldFilter = YES;
-    } else if ([iden isEqualToString:@"id.video.add_to.button"] && IS_ENABLED(RemoveVideoSaveButton)) {
-        shouldFilter = YES;
-    } else if ([iden isEqualToString:@"id.ui.add_to.offline.button"] && (IS_ENABLED(RemoveVideoDownloadButton) || (IS_ENABLED(DownloadManager) && INTFORVAL(DownloadButtonPosition) == DownloadButtonPositionOverlay))) {
-        shouldFilter = YES;
-    } else if ([iden isEqualToString:@"clip_button.eml"] && IS_ENABLED(RemoveVideoClipButton)) {
-        shouldFilter = YES;
-    } else if ([iden isEqualToString:@"id.video.remix.button"] && IS_ENABLED(RemoveVideoRemixButton)) {
-        shouldFilter = YES;
-    } else if ([iden isEqualToString:@"id.video.like.button"] && IS_ENABLED(RemoveVideoLikeButton)) {
-        shouldFilter = YES;
-    } else if ([iden isEqualToString:@"id.video.dislike.button"] && IS_ENABLED(RemoveVideoDislikeButton)) {
-        shouldFilter = YES;
-    } else if ([iden isEqualToString:@"id.player.chat.toggle.button"] && IS_ENABLED(RemoveVideoLiveChatButton)) {
-        shouldFilter = YES;
-    }
-    if (shouldFilter) {
-        YouModFilterVideoButtons(self, iden);
-    }
-}
-%end
+
+
 
 %ctor {
     %init;

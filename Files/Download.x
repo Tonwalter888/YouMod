@@ -2084,9 +2084,7 @@ NSString *YouModGlobalAuthHeader = nil;
 %end
 
 void YouModConfigureDownloadButton(_ASDisplayView *view) {
-    if (!IS_ENABLED(DownloadManager)) return;
-    if (INTFORVAL(DownloadButtonPosition) == DownloadButtonPositionOverlay) return;
-    if (objc_getAssociatedObject(view, @selector(YouModDownloadButtonTapped:))) return;
+    if (!IS_ENABLED(DownloadManager) || INTFORVAL(DownloadButtonPosition) == DownloadButtonPositionOverlay) return;
 
     if ([view.accessibilityIdentifier isEqualToString:@"id.ui.add_to.offline.button"]) {
         view.userInteractionEnabled = YES;
@@ -2216,13 +2214,10 @@ static UIImage *YouModExtractPostImage(UIView *cellView) {
 }
 */
 
-%hook _ASDisplayView
-
-- (void)didMoveToWindow {
-    %orig;
-    if ([self.accessibilityIdentifier isEqualToString:@"id.ui.comment_cell"] && IS_ENABLED(DownloadComment)) {
+void YouModSetupDownloadGestures(_ASDisplayView *view, NSString *iden) {
+    if ([iden isEqualToString:@"id.ui.comment_cell"] && IS_ENABLED(DownloadComment)) {
         BOOL hasGesture = NO;
-        for (UIGestureRecognizer *g in self.gestureRecognizers) {
+        for (UIGestureRecognizer *g in view.gestureRecognizers) {
             if ([g.name isEqualToString:@"YouModCommentLongPress"]) {
                 hasGesture = YES;
                 break;
@@ -2230,14 +2225,14 @@ static UIImage *YouModExtractPostImage(UIView *cellView) {
         }
         
         if (!hasGesture) {
-            UILongPressGestureRecognizer *longPress = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(YouModHandleCommentLongPress:)];
+            UILongPressGestureRecognizer *longPress = [[UILongPressGestureRecognizer alloc] initWithTarget:view action:@selector(YouModHandleCommentLongPress:)];
             longPress.name = @"YouModCommentLongPress";
             longPress.minimumPressDuration = 0.3;
-            [self addGestureRecognizer:longPress];
+            [view addGestureRecognizer:longPress];
         }
-    } else if ([self.accessibilityIdentifier isEqualToString:@"id.ui.backstage.original_post"] && IS_ENABLED(DownloadPost)) {
+    } else if ([iden isEqualToString:@"id.ui.backstage.original_post"] && IS_ENABLED(DownloadPost)) {
         BOOL hasGesture = NO;
-        for (UIGestureRecognizer *g in self.gestureRecognizers) {
+        for (UIGestureRecognizer *g in view.gestureRecognizers) {
             if ([g.name isEqualToString:@"YouModPostLongPress"]) {
                 hasGesture = YES;
                 break;
@@ -2245,24 +2240,24 @@ static UIImage *YouModExtractPostImage(UIView *cellView) {
         }
         
         if (!hasGesture) {
-            UILongPressGestureRecognizer *longPress = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(YouModHandlePostLongPress:)];
+            UILongPressGestureRecognizer *longPress = [[UILongPressGestureRecognizer alloc] initWithTarget:view action:@selector(YouModHandlePostLongPress:)];
             longPress.name = @"YouModPostLongPress";
             longPress.minimumPressDuration = 0.3;
-            [self addGestureRecognizer:longPress];
+            [view addGestureRecognizer:longPress];
         }
     }
 }
 
-%new
-- (void)YouModHandleCommentLongPress:(UILongPressGestureRecognizer *)sender {
+
+void YouModHandleCommentLongPressAction(_ASDisplayView *view, UILongPressGestureRecognizer *sender) {
     if (sender.state != UIGestureRecognizerStateBegan) return;
 
     NSMutableArray *items = [NSMutableArray array];
-    NSString *commentText = YouModExtractCommentText(self);
+    NSString *commentText = YouModExtractCommentText(view);
 
     if (commentText && commentText.length > 0) {
         [items addObject:[YouModMenuItem itemWithTitle:LOC(@"TRANSLATE_COMMENT") subtitle:nil icon:YouModYTIconImage(897, NO, nil) handler:^{
-            UIViewController *presenter = YouModPresenterForSender(self, nil);
+            UIViewController *presenter = YouModPresenterForSender(view, nil);
             YouModShowTranslationDialog(commentText, presenter);
         }]];
 
@@ -2272,36 +2267,35 @@ static UIImage *YouModExtractPostImage(UIView *cellView) {
     }
 
     [items addObject:[YouModMenuItem itemWithTitle:LOC(@"SAVE_COMMENT_IMAGE") subtitle:nil icon:YouModYTIconImage(367, NO, nil) handler:^{
-        UIImage *image = YouModRenderViewToImage(self);
+        UIImage *image = YouModRenderViewToImage(view);
         if (image) {
-            UIViewController *p = YouModPresenterForSender(self, nil);
+            UIViewController *p = YouModPresenterForSender(view, nil);
             YouModHandlePostDownloadImage(image, p);
         }
     }]];
 
     [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_COMMENT_IMAGE") subtitle:nil icon:YouModYTIconImage(208, NO, nil) handler:^{
-        UIImage *image = YouModRenderViewToImage(self);
+        UIImage *image = YouModRenderViewToImage(view);
         if (image) {
             YouModCopyImageToPasteboard(image, @"COPIED_TO_CLIPBOARD");
         }
     }]];
 
-    UIViewController *presenter = YouModPresenterForSender(self, nil);
+    UIViewController *presenter = YouModPresenterForSender(view, nil);
     if (!presenter) return;
 
-    YouModPresentMenu(nil, items, presenter, self);
+    YouModPresentMenu(nil, items, presenter, view);
 }
 
-%new
-- (void)YouModHandlePostLongPress:(UILongPressGestureRecognizer *)sender {
+void YouModHandlePostLongPressAction(_ASDisplayView *view, UILongPressGestureRecognizer *sender) {
     if (sender.state != UIGestureRecognizerStateBegan) return;
 
     NSMutableArray *items = [NSMutableArray array];
-    NSString *commentText = YouModExtractCommentText(self);
+    NSString *commentText = YouModExtractCommentText(view);
 
     if (commentText && commentText.length > 0) {
         [items addObject:[YouModMenuItem itemWithTitle:LOC(@"TRANSLATE_POST") subtitle:nil icon:YouModYTIconImage(897, NO, nil) handler:^{
-            UIViewController *presenter = YouModPresenterForSender(self, nil);
+            UIViewController *presenter = YouModPresenterForSender(view, nil);
             YouModShowTranslationDialog(commentText, presenter);
         }]];
 
@@ -2311,52 +2305,33 @@ static UIImage *YouModExtractPostImage(UIView *cellView) {
     }
 
     [items addObject:[YouModMenuItem itemWithTitle:LOC(@"SAVE_POST_IMAGE") subtitle:nil icon:YouModYTIconImage(367, NO, nil) handler:^{
-        UIImage *image = YouModRenderViewToImage(self);
+        UIImage *image = YouModRenderViewToImage(view);
         if (image) {
-            UIViewController *p = YouModPresenterForSender(self, nil);
+            UIViewController *p = YouModPresenterForSender(view, nil);
             YouModHandlePostDownloadImage(image, p);
         }
     }]];
 
     [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_POST_IMAGE") subtitle:nil icon:YouModYTIconImage(208, NO, nil) handler:^{
-        UIImage *image = YouModRenderViewToImage(self);
+        UIImage *image = YouModRenderViewToImage(view);
         if (image) {
             YouModCopyImageToPasteboard(image, @"COPIED_TO_CLIPBOARD");
         }
     }]];
 
-    /*
-    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"SAVE_CURRENT_IMAGE") subtitle:nil icon:YouModYTIconImage(367, YES, [UIColor systemPurpleColor]) handler:^{
-        UIImage *image = YouModExtractPostImage(self);
-        if (image) {
-            UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil);
-            YouModSendSuccess(LOC(@"SAVED_TO_PHOTOS"));
-        }
-    }]];
-
-    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_CURRENT_IMAGE") subtitle:nil icon:YouModYTIconImage(208, YES, [UIColor systemPurpleColor]) handler:^{
-        UIImage *image = YouModExtractPostImage(self);
-        if (image) {
-            YouModCopyImageToPasteboard(image, @"COPIED_TO_CLIPBOARD");
-        }
-    }]];
-    */
-
-    UIViewController *presenter = YouModPresenterForSender(self, nil);
+    UIViewController *presenter = YouModPresenterForSender(view, nil);
     if (!presenter) return;
 
-    YouModPresentMenu(nil, items, presenter, self);
+    YouModPresentMenu(nil, items, presenter, view);
 }
 
-%new
-- (void)YouModDownloadButtonTapped:(UITapGestureRecognizer *)sender {
+void YouModHandleDownloadButtonAction(_ASDisplayView *view, UITapGestureRecognizer *sender) {
     if (sender.state != UIGestureRecognizerStateEnded) return;
-    UIViewController *presenter = YouModPresenterForSender(self, YouModCurrentPlayerViewController);
+    UIViewController *presenter = YouModPresenterForSender(view, YouModCurrentPlayerViewController);
     YTPlayerViewController *player = YouModPlayerFromViewController(presenter);
-    YouModShowDownloadManager(player, presenter, self, NO);
+    YouModShowDownloadManager(player, presenter, view, NO);
 }
 
-%end
 
 %hook YTReelWatchPlaybackOverlayView
 

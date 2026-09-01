@@ -896,3 +896,15 @@ typedef NS_ENUM(NSInteger, YouModTranslationState) {
                completion:(void (^)(NSURL *audioURL, NSString *err))completion;
 + (void)cancelCurrent;
 @end
+
+// ASDisplayView centralized helpers
+extern void YouModApplyOLEDToDisplayView(_ASDisplayView *view);
+extern void YouModFilterAdsDisplayView(_ASDisplayView *view, NSString *iden);
+extern void YouModConfigureDownloadButton(_ASDisplayView *view);
+extern void YouModSetupDownloadGestures(_ASDisplayView *view, NSString *iden);
+extern void YouModHandleCommentLongPressAction(_ASDisplayView *view, UILongPressGestureRecognizer *sender);
+extern void YouModHandlePostLongPressAction(_ASDisplayView *view, UILongPressGestureRecognizer *sender);
+extern void YouModHandleDownloadButtonAction(_ASDisplayView *view, UITapGestureRecognizer *sender);
+extern void YouModFilterChannelButtons(_ASDisplayView *view, NSString *iden);
+extern void YouModFilterVideoButtons(_ASDisplayView *view, NSString *iden);
+extern void YouModFilterShortsDisplayView(_ASDisplayView *view, NSString *iden);
