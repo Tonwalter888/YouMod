@@ -129,8 +129,8 @@ void YouModApplyPrevNextReplacement(YTMainAppControlsOverlayView *overlay);
 
 @implementation YouModOverlayRefreshHandler
 - (void)refreshSoon {
-    YouModApplyPrevNextReplacement(self.overlay);
-    YTMainAppControlsOverlayView *overlay = self.overlay;
+    YTMainAppControlsOverlayView *overlay = [self overlay];
+    YouModApplyPrevNextReplacement(overlay);
     if (!overlay) return;
     static const NSTimeInterval kDelays[] = {0.05, 0.15, 0.35, 0.75, 1.5};
     for (size_t i = 0; i < sizeof(kDelays) / sizeof(kDelays[0]); i++) {
@@ -161,7 +161,7 @@ static YouModOverlayRefreshHandler *YouModRefreshHandlerForOverlay(YTMainAppCont
 @implementation YouModSeekTapHandler
 - (void)handleTap:(UITapGestureRecognizer *)gr {
     YouModSeekByInterval(self.rewind ? -YouModRewindSecondsValue() : YouModForwardSecondsValue());
-    [[YouModRefreshHandlerForOverlay(self.overlay)] refreshSoon];
+    [[YouModRefreshHandlerForOverlay([self overlay])] refreshSoon];
 }
 @end
 
@@ -172,7 +172,7 @@ static YouModOverlayRefreshHandler *YouModRefreshHandlerForOverlay(YTMainAppCont
 
 @implementation YouModSeekRefreshTapHandler
 - (void)handleTap:(UITapGestureRecognizer *)gr {
-    [[YouModRefreshHandlerForOverlay(self.overlay)] refreshSoon];
+    [[YouModRefreshHandlerForOverlay([self overlay])] refreshSoon];
 }
 @end
 
