@@ -518,9 +518,14 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 - (BOOL)isExpanded;
 @end
 
+@interface YTTransportControlsButtonView : UIView
+@end
+
 @interface YTMainAppControlsOverlayView (YouMod)
 - (YTMainAppVideoPlayerOverlayViewController *)eventsDelegate;
 @end
+
+void YouModApplyPrevNextReplacement(YTMainAppControlsOverlayView *overlay);
 
 @interface YTVideoQualitySwitchOriginalController (YouMod)
 @property (retain, nonatomic) YTVideoQualitySwitchRedesignedController *redesignedController;

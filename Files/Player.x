@@ -1,4 +1,5 @@
 #import "Headers.h"
+#import <objc/runtime.h>
 
 static BOOL isWiFiConnected() {
     struct sockaddr_in zeroAddress;
@@ -106,6 +107,81 @@ static void YouModConfigureRemoteSkipCommands(void) {
             return YouModSeekByInterval(YouModForwardSecondsValue()) ? MPRemoteCommandHandlerStatusSuccess : MPRemoteCommandHandlerStatusNoSuchContent;
         }];
     }
+}
+
+#pragma mark - Replace prev/next paddles in playlists
+
+static const void *kYouModSeekRemapKey = &kYouModSeekRemapKey;
+
+@interface YouModSeekTapHandler : NSObject
+@property (nonatomic, assign) BOOL rewind;
+- (void)handleTap:(UITapGestureRecognizer *)gr;
+@end
+
+@implementation YouModSeekTapHandler
+- (void)handleTap:(UITapGestureRecognizer *)gr {
+    YouModSeekByInterval(self.rewind ? -YouModRewindSecondsValue() : YouModForwardSecondsValue());
+}
+@end
+
+static YouModSeekTapHandler *YouModRewindTapHandler(void) {
+    static YouModSeekTapHandler *handler;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        handler = [YouModSeekTapHandler new];
+        handler.rewind = YES;
+    });
+    return handler;
+}
+
+static YouModSeekTapHandler *YouModForwardTapHandler(void) {
+    static YouModSeekTapHandler *handler;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        handler = [YouModSeekTapHandler new];
+        handler.rewind = NO;
+    });
+    return handler;
+}
+
+static void YouModAttachSeekRemap(UIView *view, YouModSeekTapHandler *handler) {
+    if (!view || objc_getAssociatedObject(view, kYouModSeekRemapKey)) return;
+    view.userInteractionEnabled = YES;
+    UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:handler action:@selector(handleTap:)];
+    tap.cancelsTouchesInView = YES;
+    [view addGestureRecognizer:tap];
+    objc_setAssociatedObject(view, kYouModSeekRemapKey, @YES, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+}
+
+// Part B: when seek paddles are unavailable, remap prev/next taps to seek within the video.
+static void YouModRemapPrevNextToSeek(YTMainAppControlsOverlayView *overlay) {
+    YouModAttachSeekRemap(MSHookIvar<UIView *>(overlay, "_previousButtonView"), YouModRewindTapHandler());
+    YouModAttachSeekRemap(MSHookIvar<UIView *>(overlay, "_nextButtonView"), YouModForwardTapHandler());
+    YouModAttachSeekRemap(MSHookIvar<UIView *>(overlay, "_previousButton"), YouModRewindTapHandler());
+    YouModAttachSeekRemap(MSHookIvar<UIView *>(overlay, "_nextButton"), YouModForwardTapHandler());
+}
+
+// Part A: hide queue-navigation paddles and show seek paddles when both sets exist.
+void YouModApplyPrevNextReplacement(YTMainAppControlsOverlayView *overlay) {
+    if (!IS_ENABLED(ReplacePrevNextButtons) || IS_ENABLED(HideNextAndPrevButtons)) return;
+
+    UIView *seekBack = MSHookIvar<UIView *>(overlay, "_seekBackwardAccessibilityButtonView");
+    UIView *seekFwd = MSHookIvar<UIView *>(overlay, "_seekForwardAccessibilityButtonView");
+
+    if (seekBack && seekFwd) {
+        MSHookIvar<UIView *>(overlay, "_nextButton").hidden = YES;
+        MSHookIvar<UIView *>(overlay, "_previousButton").hidden = YES;
+        MSHookIvar<UIView *>(overlay, "_nextButtonView").hidden = YES;
+        MSHookIvar<UIView *>(overlay, "_previousButtonView").hidden = YES;
+
+        seekBack.hidden = NO;
+        seekFwd.hidden = NO;
+        seekBack.userInteractionEnabled = YES;
+        seekFwd.userInteractionEnabled = YES;
+        return;
+    }
+
+    YouModRemapPrevNextToSeek(overlay);
 }
 
 static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoController *video, YTSingleVideoTime *time) {
