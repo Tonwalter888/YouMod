@@ -153,26 +153,37 @@ static void YouModAttachSeekRemap(UIView *view, YouModSeekTapHandler *handler) {
     objc_setAssociatedObject(view, kYouModSeekRemapKey, @YES, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 }
 
+static UIView *YouModOverlayIvarView(id object, const char *name) {
+    Ivar ivar = class_getInstanceVariable(object_getClass(object), name);
+    if (!ivar) return nil;
+    return (UIView *)object_getIvar(object, ivar);
+}
+
+static void YouModSetOverlayIvarHidden(id object, const char *name, BOOL hidden) {
+    UIView *view = YouModOverlayIvarView(object, name);
+    if (view) view.hidden = hidden;
+}
+
 // Part B: when seek paddles are unavailable, remap prev/next taps to seek within the video.
 static void YouModRemapPrevNextToSeek(YTMainAppControlsOverlayView *overlay) {
-    YouModAttachSeekRemap(MSHookIvar<UIView *>(overlay, "_previousButtonView"), YouModRewindTapHandler());
-    YouModAttachSeekRemap(MSHookIvar<UIView *>(overlay, "_nextButtonView"), YouModForwardTapHandler());
-    YouModAttachSeekRemap(MSHookIvar<UIView *>(overlay, "_previousButton"), YouModRewindTapHandler());
-    YouModAttachSeekRemap(MSHookIvar<UIView *>(overlay, "_nextButton"), YouModForwardTapHandler());
+    YouModAttachSeekRemap(YouModOverlayIvarView(overlay, "_previousButtonView"), YouModRewindTapHandler());
+    YouModAttachSeekRemap(YouModOverlayIvarView(overlay, "_nextButtonView"), YouModForwardTapHandler());
+    YouModAttachSeekRemap(YouModOverlayIvarView(overlay, "_previousButton"), YouModRewindTapHandler());
+    YouModAttachSeekRemap(YouModOverlayIvarView(overlay, "_nextButton"), YouModForwardTapHandler());
 }
 
 // Part A: hide queue-navigation paddles and show seek paddles when both sets exist.
 void YouModApplyPrevNextReplacement(YTMainAppControlsOverlayView *overlay) {
     if (!IS_ENABLED(ReplacePrevNextButtons) || IS_ENABLED(HideNextAndPrevButtons)) return;
 
-    UIView *seekBack = MSHookIvar<UIView *>(overlay, "_seekBackwardAccessibilityButtonView");
-    UIView *seekFwd = MSHookIvar<UIView *>(overlay, "_seekForwardAccessibilityButtonView");
+    UIView *seekBack = YouModOverlayIvarView(overlay, "_seekBackwardAccessibilityButtonView");
+    UIView *seekFwd = YouModOverlayIvarView(overlay, "_seekForwardAccessibilityButtonView");
 
     if (seekBack && seekFwd) {
-        MSHookIvar<UIView *>(overlay, "_nextButton").hidden = YES;
-        MSHookIvar<UIView *>(overlay, "_previousButton").hidden = YES;
-        MSHookIvar<UIView *>(overlay, "_nextButtonView").hidden = YES;
-        MSHookIvar<UIView *>(overlay, "_previousButtonView").hidden = YES;
+        YouModSetOverlayIvarHidden(overlay, "_nextButton", YES);
+        YouModSetOverlayIvarHidden(overlay, "_previousButton", YES);
+        YouModSetOverlayIvarHidden(overlay, "_nextButtonView", YES);
+        YouModSetOverlayIvarHidden(overlay, "_previousButtonView", YES);
 
         seekBack.hidden = NO;
         seekFwd.hidden = NO;
