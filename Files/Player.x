@@ -161,7 +161,8 @@ static YouModOverlayRefreshHandler *YouModRefreshHandlerForOverlay(YTMainAppCont
 @implementation YouModSeekTapHandler
 - (void)handleTap:(UITapGestureRecognizer *)gr {
     YouModSeekByInterval(self.rewind ? -YouModRewindSecondsValue() : YouModForwardSecondsValue());
-    [[YouModRefreshHandlerForOverlay([self overlay])] refreshSoon];
+    YouModOverlayRefreshHandler *refreshHandler = YouModRefreshHandlerForOverlay([self overlay]);
+    [refreshHandler refreshSoon];
 }
 @end
 
@@ -172,7 +173,8 @@ static YouModOverlayRefreshHandler *YouModRefreshHandlerForOverlay(YTMainAppCont
 
 @implementation YouModSeekRefreshTapHandler
 - (void)handleTap:(UITapGestureRecognizer *)gr {
-    [[YouModRefreshHandlerForOverlay([self overlay])] refreshSoon];
+    YouModOverlayRefreshHandler *refreshHandler = YouModRefreshHandlerForOverlay([self overlay]);
+    [refreshHandler refreshSoon];
 }
 @end
 
