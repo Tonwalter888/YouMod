@@ -40,7 +40,7 @@ void YouModApplyOLEDToDisplayView(_ASDisplayView *view) {
     }     
     UIViewController *controller = view._viewControllerForAncestor;
     if ([controller isKindOfClass:%c(YTActionSheetDialogViewController)] || [controller isKindOfClass:%c(YTBottomSheetController)]) {
-        if ([view.superiden isEqualToString:@"eml.animated_subscribe_button"]) {
+        if ([view.superview.accessibilityIdentifier isEqualToString:@"eml.animated_subscribe_button"]) {
             objc_setAssociatedObject(view, kOLEDKey, @YES, OBJC_ASSOCIATION_ASSIGN);
             return;
         }
