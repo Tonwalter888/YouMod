@@ -137,17 +137,16 @@ static void YouModRemoveShortsOverlayButton(_ASDisplayView *dpView) {
         if (self.superview) {
             [self removeFromSuperview];
         }
+        return;
     } else if (IS_ENABLED(HideShortsSubbar)) {
         UIView *subbar = [self valueForKey:@"_pausedStateCarouselView"];
         if (subbar && subbar.superview) {
             [subbar removeFromSuperview];
         }
+        return;
     }
-}
-- (void)layoutPausedStateCarouselView {
-    %orig;
+
     if (!IS_ENABLED(RemoveShortsPausedSubButton) && !IS_ENABLED(RemoveShortsPausedLiveButton) && !IS_ENABLED(RemoveShortsPausedLensButton) && !IS_ENABLED(RemoveShortsPausedTrendsButton)) return;
-    if (IS_ENABLED(HideShortsSubbar)) return;
     ASScrollView *view = (ASScrollView *)[self valueForKey:@"_pausedStateCarouselView"];
     while (view.subviews.count == 1 && ![view isKindOfClass:%c(ASScrollView)]) {
         view = view.subviews[0];
