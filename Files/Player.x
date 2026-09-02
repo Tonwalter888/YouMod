@@ -108,13 +108,12 @@ static void YouModConfigureRemoteSkipCommands(void) {
     }
 }
 
-static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoController *video, YTSingleVideoTime *time) {
+static void YouModAddEndTime(YTInlinePlayerBarContainerView *playerbar, YTPlayerViewController *self, YTMainAppVideoPlayerOverlayViewController *con) {
     if (!IS_ENABLED(ShowExtraTimeRemaining) && !IS_ENABLED(SBShowDuration)) return;
 
-    YTMainAppVideoPlayerOverlayViewController *con = [self activeVideoPlayerOverlay];
-    if (![con isKindOfClass:%c(YTMainAppVideoPlayerOverlayViewController)]) return;
     CGFloat rate = [con currentPlaybackRate] != 0 ? [con currentPlaybackRate] : 1.0;
-    NSTimeInterval remainingSeconds = (lround(video.totalMediaTime) - lround(time.time)) / rate;
+    CGFloat totalVideo = self.currentVideoTotalMediaTime;
+    NSTimeInterval remainingSeconds = (lround(totalVideo) - lround(self.currentVideoMediaTime)) / rate;
 
     NSString *remainingTimeText;
     NSString *SBTimeRemaining = nil;
@@ -130,7 +129,7 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
                 SBTotalTimeRemaining = SBTotalTimeRemaining + timeValue;
             }
             if (SBTotalTimeRemaining != 0.0) { 
-                NSTimeInterval SBRemaining = video.totalMediaTime - SBTotalTimeRemaining;
+                NSTimeInterval SBRemaining = totalVideo - SBTotalTimeRemaining;
                 int hours = (int)(SBRemaining / 3600);
                 int minutes = (int)(((int)SBRemaining % 3600) / 60);
                 int seconds = (int)((int)SBRemaining % 60);
@@ -154,13 +153,9 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
     NSString *safeRemainingTimeText = remainingTimeText ?: @"";
     NSString *safeSBTimeRemaining = SBTimeRemaining ?: @"";
 
-    YTPlayerView *playerView = (YTPlayerView *)self.playerView;
-    if (![playerView.overlayView isKindOfClass:%c(YTMainAppVideoPlayerOverlayView)]) return;
-
-    YTMainAppVideoPlayerOverlayView *overlay = (YTMainAppVideoPlayerOverlayView*)playerView.overlayView;
-    YTLabel *durationLabel = overlay.playerBar.durationLabel;
+    YTLabel *durationLabel2 = playerbar.durationLabel;
     
-    NSString *labelText = durationLabel.text ?: @"";
+    NSString *labelText = durationLabel2.text ?: @"";
 
     NSString *baseText = labelText;
     NSRange extraTimeRange = [baseText rangeOfString:@" • "];
@@ -181,9 +176,9 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
     }
 
     if (![labelText isEqualToString:newLabelText]) {
-        durationLabel.text = newLabelText;
-        overlay.playerBar.endTimeString = newLabelText;
-        [durationLabel sizeToFit];
+        durationLabel2.text = newLabelText;
+        playerbar.endTimeString = newLabelText;
+        [durationLabel2 sizeToFit];
     }
 }
 
@@ -283,6 +278,13 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
         }
     }
 }
+- (void)updateTimeLabels {
+    %orig;
+    YTMainAppVideoPlayerOverlayViewController *ovcon = (YTMainAppVideoPlayerOverlayViewController *)self._viewControllerForAncestor;
+    if (![ovcon isKindOfClass:%c(YTMainAppVideoPlayerOverlayViewController)]) return;
+    YTPlayerViewController *pvc = (YTPlayerViewController *)ovcon.parentViewController;
+    YouModAddEndTime(self, pvc, ovcon);
+}
 %end
 
 static BOOL hasSetSeekButtons = NO;
@@ -306,8 +308,10 @@ static BOOL hasSetSeekButtons = NO;
 - (void)didMoveToWindow {
     %orig;
     if (IS_ENABLED(ReplacePrevNextButtons) && !hasSetSeekButtons) {
-        [self performSelector:@selector(setPreviousButtonHidden:) withObject:@YES];
-        [self performSelector:@selector(setNextButtonHidden:) withObject:@YES];
+        UIView *preBut = [self valueForKey:@"_previousButtonView"];
+        UIView *nextBut = [self valueForKey:@"_nextButtonView"];
+        preBut.hidden = YES;
+        nextBut.hidden = YES;
         [self setValue:[self valueForKey:@"_seekBackwardAccessibilityButtonView"] forKey:@"_previousButtonView"];
         [self setValue:[self valueForKey:@"_seekForwardAccessibilityButtonView"] forKey:@"_nextButtonView"];
         hasSetSeekButtons = YES;
@@ -348,6 +352,8 @@ static BOOL hasSetSeekButtons = NO;
 }
 - (void)setPreviousButtonEnabled:(BOOL)arg { if (!IS_ENABLED(ReplacePrevNextButtons)) %orig; }
 - (void)setNextButtonEnabled:(BOOL)arg { if (!IS_ENABLED(ReplacePrevNextButtons)) %orig; }
+- (void)setPreviousButtonHidden:(BOOL)arg { if (!IS_ENABLED(ReplacePrevNextButtons)) %orig; }
+- (void)setNextButtonHidden:(BOOL)arg { if (!IS_ENABLED(ReplacePrevNextButtons)) %orig; }
 %end
 
 %hook YTAutonavEndscreenController
@@ -1154,16 +1160,6 @@ static CGFloat remainingOverlayWidth(YTPlayerViewController *pvc, CGFloat fullWi
     if (INTFORVAL(AutoSpeedIndex) == 0) return;
     NSArray *speedLabels = @[@0.01, @0.25, @0.5, @0.75, @1.0, @1.25, @1.5, @1.75, @2.0, @3.0, @4.0, @5.0];
     [self setPlaybackRate:[speedLabels[INTFORVAL(AutoSpeedIndex)] floatValue]];
-}
-
-- (void)singleVideo:(YTSingleVideoController *)video currentVideoTimeDidChange:(YTSingleVideoTime *)time {
-    %orig;
-    YouModAddEndTime(self, video, time);
-}
-
-- (void)potentiallyMutatedSingleVideo:(YTSingleVideoController *)video currentVideoTimeDidChange:(YTSingleVideoTime *)time {
-    %orig;
-    YouModAddEndTime(self, video, time);
 }
 
 %new

@@ -145,9 +145,14 @@ static void YouModRemoveShortsOverlayButton(_ASDisplayView *dpView) {
         }
         return;
     }
+}
+%end
 
+%hook YTReelPausedStateCarouselView
+- (void)layoutSubviews {
+    %orig;
     if (!IS_ENABLED(RemoveShortsPausedSubButton) && !IS_ENABLED(RemoveShortsPausedLiveButton) && !IS_ENABLED(RemoveShortsPausedLensButton) && !IS_ENABLED(RemoveShortsPausedTrendsButton)) return;
-    ASScrollView *view = (ASScrollView *)[self valueForKey:@"_pausedStateCarouselView"];
+    ASScrollView *view = (ASScrollView *)self;
     while (view.subviews.count == 1 && ![view isKindOfClass:%c(ASScrollView)]) {
         view = view.subviews[0];
     }
@@ -201,8 +206,6 @@ void YouModFilterShortsDisplayView(_ASDisplayView *view, NSString *iden) {
         return;
     }
 }
-
-
 
 %hook YTAppDelegate
 - (void)appDidBecomeActive {

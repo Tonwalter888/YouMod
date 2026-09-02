@@ -433,6 +433,14 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 - (YTIFormattedString *)name;
 @end
 
+@interface YTSettingsSectionItem (YouMod)
+- (NSNumber *)categoryId;
+@end
+
+@interface NSArray (YouMod)
+- (void)removeObject:(id)object;
+@end
+
 @interface YTPlayerViewController (YouMod) <UIGestureRecognizerDelegate>
 @property (nonatomic, retain) UIPanGestureRecognizer *YouModPanGesture;
 @property (nonatomic, retain) UITapGestureRecognizer *YouModTapGesture;
@@ -907,4 +915,4 @@ extern void YouModHandlePostLongPressAction(_ASDisplayView *view, UILongPressGes
 extern void YouModHandleDownloadButtonAction(_ASDisplayView *view, UITapGestureRecognizer *sender);
 extern void YouModFilterChannelButtons(_ASDisplayView *view, NSString *iden);
 extern void YouModFilterVideoButtons(_ASDisplayView *view, NSString *iden);
-extern void YouModFilterShortsDisplayView(_ASDisplayView *view, NSString *iden);
+extern void YouModFilterShortsDisplayView(_ASDisplayView *view, NSString *iden);

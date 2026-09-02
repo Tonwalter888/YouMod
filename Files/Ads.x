@@ -70,7 +70,7 @@ static NSString *getAdString(NSString *description) {
 }
 
 static BOOL isAdRenderer(YTIElementRenderer *elementRenderer, int kind) {
-    if ([elementRenderer respondsToSelector:@selector(hasCompatibilityOptions)] && elementRenderer.hasCompatibilityOptions && elementRenderer.compatibilityOptions.hasAdLoggingData) {
+    if (elementRenderer.hasCompatibilityOptions && elementRenderer.compatibilityOptions.hasAdLoggingData) {
         return YES;
     }
     NSString *description = [elementRenderer description];
@@ -206,6 +206,14 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
     [newArray removeObjectsAtIndexes:removeIndexes];
     return newArray;
 }
+
+// Filering new ads
+%hook YTIElementRenderer
+- (NSData *)elementData {
+    if (self.hasCompatibilityOptions && self.compatibilityOptions.hasAdLoggingData) return nil;
+    return %orig;
+}
+%end
 
 %hook YTPlayerResponse
 %new(@@:)
@@ -373,7 +381,6 @@ void YouModFilterAdsDisplayView(_ASDisplayView *view, NSString *iden) {
     }
 }
 
-
 // NoYTPremium - @PoomSmart https://github.com/PoomSmart/NoYTPremium
 // Alert
 %hook YTCommerceEventGroupHandler
@@ -411,8 +418,23 @@ void YouModFilterAdsDisplayView(_ASDisplayView *view, NSString *iden) {
 
 // Settings
 %hook YTSettingsSectionItemManager
-// - (void)updatePremiumEarlyAccessSectionWithEntry:(id)arg1 {}
+- (void)updatePremiumEarlyAccessSectionWithEntry:(id)arg {}
 - (void)updateUnlimitedSectionWithEntry:(id)arg {}
+%end
+
+%hook YTSettingsSectionController
+- (NSArray <YTSettingsSectionItem *> *)items {
+    NSArray <YTSettingsSectionItem *> *orig = %orig;
+    if (orig) {
+        for (YTSettingsSectionItem *item in orig) {
+            if ([item.categoryId integerValue] == 31) {
+                [orig removeObject:item];
+                break;
+            }
+        }
+    }
+    return orig;
+}
 %end
 
 // Survey
