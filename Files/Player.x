@@ -285,6 +285,8 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
 }
 %end
 
+static BOOL hasSetSeekButtons = NO;
+
 %hook YTMainAppControlsOverlayView
 // Hide autoplay Switch
 - (void)setAutoplaySwitchButtonRenderer:(id)arg1 { if (!IS_ENABLED(HideAutoPlayToggle)) %orig; }
@@ -299,6 +301,50 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
     YTMainAppVideoPlayerOverlayViewController *mainOverlayController = (YTMainAppVideoPlayerOverlayViewController *)self.eventsDelegate;
     YTPlayerViewController *playerViewController = mainOverlayController.parentViewController;
     visible ? [playerViewController pause] : [playerViewController play];
+}
+// Replace previous/next buttons with back and forward
+- (void)didMoveToWindow {
+    %orig;
+    if (IS_ENABLED(ReplacePrevNextButtons) && !hasSetSeekButtons) {
+        [self performSelector:@selector(setPreviousButtonHidden:) withObject:@YES];
+        [self performSelector:@selector(setNextButtonHidden:) withObject:@YES];
+        [self setValue:[self valueForKey:@"_seekBackwardAccessibilityButtonView"] forKey:@"_previousButtonView"];
+        [self setValue:[self valueForKey:@"_seekForwardAccessibilityButtonView"] forKey:@"_nextButtonView"];
+        hasSetSeekButtons = YES;
+    }
+}
+- (void)setSeekForwardAccessibilityButtonEnabled:(BOOL)arg {
+    BOOL temp = IS_ENABLED(ReplacePrevNextButtons) ? YES : arg;
+    %orig(arg);
+}
+- (void)setSeekBackwardAccessibilityButtonEnabled:(BOOL)arg {
+    BOOL temp = IS_ENABLED(ReplacePrevNextButtons) ? YES : arg;
+    %orig(arg);
+}
+- (void)setSeekForwardAccessibilityButtonHidden:(BOOL)arg {
+    BOOL isOVOn = [self performSelector:@selector(isOverlayVisible)];
+    BOOL temp = IS_ENABLED(ReplacePrevNextButtons) ? !isOVOn : arg;
+    %orig(arg);
+}
+- (void)setSeekBackwardAccessibilityButtonHidden:(BOOL)arg {
+    BOOL isOVOn = [self performSelector:@selector(isOverlayVisible)];
+    BOOL temp = IS_ENABLED(ReplacePrevNextButtons) ? !isOVOn : arg;
+    %orig(arg);
+}
+- (void)setSeekForwardAccessibilityButtonVisible:(BOOL)arg {
+    BOOL isOVOn = [self performSelector:@selector(isOverlayVisible)];
+    BOOL temp = IS_ENABLED(ReplacePrevNextButtons) ? isOVOn : arg;
+    %orig(arg);
+}
+- (void)setSeekBackwardAccessibilityButtonVisible:(BOOL)arg {
+    BOOL isOVOn = [self performSelector:@selector(isOverlayVisible)];
+    BOOL temp = IS_ENABLED(ReplacePrevNextButtons) ? isOVOn : arg;
+    %orig(arg);
+}
+- (void)setSeekAccessibilityButtonsVisible:(BOOL)arg {
+    BOOL isOVOn = [self performSelector:@selector(isOverlayVisible)];
+    BOOL temp = IS_ENABLED(ReplacePrevNextButtons) ? isOVOn : arg;
+    %orig(arg);
 }
 %end
 
@@ -322,7 +368,7 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
 - (BOOL)isLandscapeEngagementPanelEnabled { return IS_ENABLED(DisablesEngagementPanel) ? NO : %orig; }
 - (BOOL)removeNextPaddleForAllVideos { return IS_ENABLED(HideNextAndPrevButtons) ? YES : %orig; }
 - (BOOL)removePreviousPaddleForAllVideos { return IS_ENABLED(HideNextAndPrevButtons) ? YES : %orig; }
-// Replace previous/next buttons with back and forward
+// Helper for seek buttons
 - (BOOL)replaceNextPaddleWithFastForwardButtonForSingletonVods { return IS_ENABLED(ReplacePrevNextButtons) ? YES : %orig; }
 - (BOOL)replacePreviousPaddleWithRewindButtonForSingletonVods { return IS_ENABLED(ReplacePrevNextButtons) ? YES : %orig; }
 %end
