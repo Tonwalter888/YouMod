@@ -346,6 +346,8 @@ static BOOL hasSetSeekButtons = NO;
     BOOL temp = IS_ENABLED(ReplacePrevNextButtons) ? isOVOn : arg;
     %orig(temp);
 }
+- (void)setPreviousButtonEnabled:(BOOL)arg { if (!IS_ENABLED(ReplacePrevNextButtons)) %orig; }
+- (void)setNextButtonEnabled:(BOOL)arg { if (!IS_ENABLED(ReplacePrevNextButtons)) %orig; }
 %end
 
 %hook YTAutonavEndscreenController
