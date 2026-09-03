@@ -87,5 +87,3 @@ void YouModFilterChannelButtons(_ASDisplayView *self, NSString *iden) {
         }
     }
 }
-
-

@@ -31,28 +31,25 @@ void YouModApplyOLEDToDisplayView(_ASDisplayView *view) {
     NSSet *blackViews = [NSSet setWithObjects:
         @"id.elements.components.comment_composer",
         @"id.subs.subscriptions_channel_bar",
+        @"eml.vwc",
+        @"eml.cvr",
         @"PAmedia_hub_device_picker.engagement_panel_header", nil
     ];  
     if ([blackViews containsObject:iden]) {
         view.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
             return isDarkMode(view) ? [UIColor blackColor] : [UIColor clearColor];
         }];
+        return;
     }     
     UIViewController *controller = view._viewControllerForAncestor;
     if ([controller isKindOfClass:%c(YTActionSheetDialogViewController)] || [controller isKindOfClass:%c(YTBottomSheetController)]) {
-        if ([view.superview.accessibilityIdentifier isEqualToString:@"eml.animated_subscribe_button"]) {
-            objc_setAssociatedObject(view, kOLEDKey, @YES, OBJC_ASSOCIATION_ASSIGN);
-            return;
-        }
+        if ([view.superview.accessibilityIdentifier isEqualToString:@"eml.animated_subscribe_button"]) return;
         view.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
             return isDarkMode(view) ? [UIColor blackColor] : [UIColor clearColor];
         }];
     } else if ([iden isEqualToString:@"eml.live_chat_text_message"] && [controller isKindOfClass:%c(YCHAsyncLiveChatCollectionViewController)]) {
         YCHAsyncLiveChatCollectionViewController *con = (YCHAsyncLiveChatCollectionViewController *)controller;
-        if ([con.view isKindOfClass:%c(YCHAsyncLiveChatImmersiveCollectionView)]) {
-            objc_setAssociatedObject(view, kOLEDKey, @YES, OBJC_ASSOCIATION_ASSIGN);
-            return;
-        }
+        if ([con.view isKindOfClass:%c(YCHAsyncLiveChatImmersiveCollectionView)]) return;
         view.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
             return isDarkMode(view) ? [UIColor blackColor] : [UIColor whiteColor];
         }];
