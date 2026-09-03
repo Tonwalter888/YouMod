@@ -75,10 +75,8 @@ void YouModApplyOLEDToDisplayView(_ASDisplayView *view) {
     }
 }
 
-%hook ASCollectionView
-- (void)didMoveToWindow {
-    %orig;
-    if (objc_getAssociatedObject(self, kOLEDKey)) return;
+void YouModAppleOLEDCollectionView(ASCollectionView *self) {
+    if (!IS_ENABLED(OLEDTheme)) return;
     NSSet *blackViews = [NSSet setWithObjects:
         @"eml.chip_bar_collection",
         @"subs_channel_bar.collection", nil
@@ -96,9 +94,7 @@ void YouModApplyOLEDToDisplayView(_ASDisplayView *view) {
             return isDarkMode(self) ? [UIColor blackColor] : [UIColor whiteColor];
         }];
     }
-    objc_setAssociatedObject(self, kOLEDKey, @YES, OBJC_ASSOCIATION_ASSIGN);
 }
-%end
 
 %hook YTContextualWrapView
 - (void)didMoveToWindow {

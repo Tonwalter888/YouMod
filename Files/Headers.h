@@ -922,4 +922,6 @@ extern void YouModFilterChannelButtons(_ASDisplayView *view, NSString *iden);
 extern void YouModFilterVideoButtons(_ASDisplayView *view, NSString *iden);
 extern void YouModFilterShortsDisplayView(_ASDisplayView *view, NSString *iden);
 extern void YouModApplyOLEDScrollView(ASScrollView *view, ASDisplayNode *node);
-extern void YouModRemoveShortsPausedButtons(ASScrollView *view, ASDisplayNode *node);
+extern void YouModRemoveShortsPausedButtons(_ASDisplayView *view);
+extern void YouModAppleOLEDCollectionView(ASCollectionView *self);
+extern void YouModRemoveDrawerAds(ASCollectionView *self);

@@ -317,14 +317,6 @@ static BOOL hasSetSeekButtons = NO;
         hasSetSeekButtons = YES;
     }
 }
-- (void)layoutSubviews {
-    %orig;
-    [self performSelector:@selector(setSeekForwardAccessibilityButtonEnabled:) withObject:@YES];
-    [self performSelector:@selector(setSeekBackwardAccessibilityButtonEnabled:) withObject:@YES];
-    [self performSelector:@selector(setSeekBackwardAccessibilityButtonVisible:) withObject:@YES];
-    [self performSelector:@selector(setSeekForwardAccessibilityButtonVisible:) withObject:@YES];
-    [self performSelector:@selector(setSeekAccessibilityButtonsVisible:) withObject:@YES];
-}
 - (void)setSeekForwardAccessibilityButtonEnabled:(BOOL)arg {
     BOOL temp = IS_ENABLED(ReplacePrevNextButtons) ? YES : arg;
     %orig(temp);

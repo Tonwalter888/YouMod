@@ -375,37 +375,53 @@ void YouModFilterAdsDisplayView(_ASDisplayView *view, NSString *iden) {
     if ([iden isEqualToString:@"eml.expandable_metadata.vpp"]) {
         _ASDisplayView *spview = (_ASDisplayView *)view.superview;
         ASDisplayNode *node = spview.keepalive_node;
-        [node removeYogaChild:node.yogaChildren[0]];
+        [node removeYogaChild:node.yogaChildren.firstObject];
     } else if (IS_ENABLED(HideCommentsPreview) && [iden isEqualToString:@"id.ui.comments_entry_point_teaser"]) {
         [view removeFromSuperview];
-    } else if ([view.accessibilityLabel containsString:@"Premium"]) {
-        UIViewController *con = view._viewControllerForAncestor;
-        if ([con isKindOfClass:%c(YTPageHeaderViewController)]) {
-            _ASDisplayView *spview = (_ASDisplayView *)view.superview;
-            ASDisplayNode *node = spview.keepalive_node;
-            [node removeYogaChild:node.yogaChildren[1]];
-            [view removeFromSuperview];
-        } else if ([con isKindOfClass:%c(YTELMViewController)]) {
-            YTELMViewController *cont = (YTELMViewController *)con;
-            YTIElementRenderer *renderer = [cont valueForKey:@"_renderer"];
-            NSString *desc = [renderer description];
-            if ([desc containsString:@"more_drawer.eml"]) {
-                _ASCollectionViewCell *_colview = (_ASCollectionViewCell *)view.superview;
-                while (_colview != nil && _colview.superview != nil && ![_colview isKindOfClass:%c(_ASCollectionViewCell)]) {
-                    _colview = (_ASCollectionViewCell *)_colview.superview;
+    } else if ([view.accessibilityLabel containsString:@"Premium"] && [view._viewControllerForAncestor isKindOfClass:%c(YTPageHeaderViewController)]) {
+        _ASDisplayView *spview = (_ASDisplayView *)view.superview;
+        ASDisplayNode *node = spview.keepalive_node;
+        if (node.yogaChildren.count == 1) {
+            node = node.yogaChildren[0];
+        }
+        [node removeYogaChild:node.yogaChildren.lastObject];
+        [view removeFromSuperview];
+    }
+}
+
+void YouModRemoveDrawerAds(ASCollectionView *self) {
+    UIViewController *con = self._viewControllerForAncestor;
+    if ([con isKindOfClass:%c(YTELMViewController)]) {
+        YTELMViewController *cont = (YTELMViewController *)con;
+        YTIElementRenderer *renderer = [cont valueForKey:@"_renderer"];
+        NSString *desc = [renderer description];
+        if ([desc containsString:@"more_drawer.eml"]) {
+            _ASCollectionViewCell *premiumCell = nil;
+            int index = 0;
+            for (_ASCollectionViewCell *vc in self.subviews) {
+                if ([vc isKindOfClass:%c(_ASCollectionViewCell)]) {
+                    UIView *svtemp = self.subviews[0];
+                    BOOL found = NO;
+                    while (svtemp != nil && svtemp.subviews.count == 1) {
+                        if ([svtemp.accessibilityLabel containsString:@"Premium"]) {
+                            found = YES;
+                            break;
+                        }
+                        svtemp = svtemp.subviews[0];
+                    }
+                    if (found) {
+                        premiumCell = vc;
+                        break;
+                    }
                 }
-                ASCollectionView *colview = (ASCollectionView *)_colview.superview;
-                // Loop to find the "YouTube Premium" section index
-                int index = 0;
-                for (UIView *sub in colview.subviews) {
-                    if (sub == (UIView *)_colview) break;
-                    index++;
-                }
-                ASCollectionNode *node = colview.collectionNode;
-                ELMNodeController *nodecon = node.controller;
-                [nodecon remove:nodecon.children[index]];
-                [_colview removeFromSuperview];
+                index++;
             }
+            if (premiumCell == nil) return;
+            ASDisplayNode *node = premiumCell.node;
+            for (id child in [node.yogaChildren copy]) {
+                [node removeYogaChild:child];
+            }
+            [premiumCell removeFromSuperview];
         }
     }
 }

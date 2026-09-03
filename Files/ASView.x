@@ -47,11 +47,14 @@ static const void *YouModASViewKey = &YouModASViewKey;
     YouModApplyOLEDScrollView(self, node);
     objc_setAssociatedObject(self, YouModASViewKey, @YES, OBJC_ASSOCIATION_ASSIGN);
 }
-- (void)layoutSubviews {
+%end
+
+%hook ASCollectionView
+- (void)didMoveToWindow {
     %orig;
     if (objc_getAssociatedObject(self, YouModASViewKey)) return;
-    ASDisplayNode *node = self.scrollNode;
-    YouModRemoveShortsPausedButtons(self, node);
+    YouModAppleOLEDCollectionView(self);
+    YouModRemoveDrawerAds(self);
     objc_setAssociatedObject(self, YouModASViewKey, @YES, OBJC_ASSOCIATION_ASSIGN);
 }
 %end

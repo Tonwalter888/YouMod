@@ -153,7 +153,7 @@ static void YouModRemoveShortsOverlayButton(_ASDisplayView *dpView) {
 }
 %end
 
-void YouModRemoveShortsPausedButtons(ASScrollView *self, ASDisplayNode *node) {
+void YouModRemoveShortsPausedButtons(_ASDisplayView *self) {
     if (!IS_ENABLED(RemoveShortsPausedSubButton) && !IS_ENABLED(RemoveShortsPausedLiveButton) && !IS_ENABLED(RemoveShortsPausedLensButton) && !IS_ENABLED(RemoveShortsPausedTrendsButton)) return;
     if (![self._viewControllerForAncestor isKindOfClass:%c(YTReelTopBarViewController)]) return;
     NSDictionary *buttonsList = @{
@@ -162,9 +162,11 @@ void YouModRemoveShortsPausedButtons(ASScrollView *self, ASDisplayNode *node) {
         @"id.ui.shorts_paused_state.lens_button": @(IS_ENABLED(RemoveShortsPausedLensButton)),
         @"id.ui.shorts_paused_state.trends_button" : @(IS_ENABLED(RemoveShortsPausedTrendsButton))
     };
+    ASScrollView *view = (ASScrollView *)self.superview;
+    ASDisplayNode *node = view.scrollNode;
     for (NSString *button in buttonsList) {
         if ([buttonsList[button] boolValue]) {
-            for (UIView *sub in self.subviews) {
+            for (UIView *sub in view.subviews) {
                 if ([sub.accessibilityIdentifier isEqualToString:button]) {
                     [sub removeFromSuperview];
                 }

@@ -750,7 +750,7 @@ static void SBRebuildMarkersInDecorationView(UIView *view) {
     NSArray<SBSegment *> *segments = sbActivePlayerSegments;
     if (!segments || segments.count == 0) return;
 
-    BOOL isMainPlayer = SBDecorationViewIsInMainPlayer(view) && [view respondsToSelector:@selector(enableRoundedCourners)] && [view performSelector:@selector(enableRoundedCourners)];
+    BOOL isMainPlayer = SBDecorationViewIsInMainPlayer(view);
 
     [CATransaction begin];
     [CATransaction setDisableActions:YES];
