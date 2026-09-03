@@ -50,7 +50,7 @@
 "AUTO_CLEARCACHE" = "캐시 자동 삭제";
 "AUTO_CLEARCACHE_DESC" = "앱을 시작할 때 캐시를 자동으로 삭제합니다.";
 
-"DOWNLOADING" = "다운로드 중";
+"DOWNLOADING" = "다운로드";
 "DOWNLOAD_MANAGER" = "다운로드 관리자";
 "DOWNLOAD_MANAGER_DESC" = "YouTube의 동영상 다운로더를 YouMod 다운로더로 대체합니다. 동영상, 오디오, 자막, 썸네일을 다운로드할 수 있습니다.";
 "POST_DOWNLOAD_ACTION" = "다운로드 후 동작";
