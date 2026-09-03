@@ -1,12 +1,12 @@
 #import "Headers.h"
 
-static const void *kYouModASDisplayViewHandledKey = &kYouModASDisplayViewHandledKey;
+static const void *YouModASViewKey = &YouModASViewKey;
 
 %hook _ASDisplayView
 
 - (void)didMoveToWindow {
     %orig;
-    if (objc_getAssociatedObject(self, kYouModASDisplayViewHandledKey)) return;
+    if (objc_getAssociatedObject(self, YouModASViewKey)) return;
 
     YouModApplyOLEDToDisplayView(self);
 
@@ -21,7 +21,7 @@ static const void *kYouModASDisplayViewHandledKey = &kYouModASDisplayViewHandled
         YouModFilterShortsDisplayView(self, iden);
     }
 
-    objc_setAssociatedObject(self, kYouModASDisplayViewHandledKey, @YES, OBJC_ASSOCIATION_ASSIGN);
+    objc_setAssociatedObject(self, YouModASViewKey, @YES, OBJC_ASSOCIATION_ASSIGN);
 }
 
 %new
@@ -39,4 +39,15 @@ static const void *kYouModASDisplayViewHandledKey = &kYouModASDisplayViewHandled
     YouModHandleDownloadButtonAction(self, sender);
 }
 
+%end
+
+%hook ASScrollView
+- (void)didMoveToWindow {
+    %orig;
+    if (objc_getAssociatedObject(self, YouModASViewKey)) return;
+    ASDisplayNode *node = self.scrollNode;
+    YouModApplyOLEDScrollView(self, node);
+    YouModRemoveShortsPausedButtons(self, node);
+    objc_setAssociatedObject(self, YouModASViewKey, @YES, OBJC_ASSOCIATION_ASSIGN);
+}
 %end

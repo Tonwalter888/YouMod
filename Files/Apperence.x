@@ -128,25 +128,18 @@ void YouModApplyOLEDToDisplayView(_ASDisplayView *view) {
 }
 %end
 
-%hook ASScrollView
-- (void)didMoveToWindow {
-    %orig;
-    if (objc_getAssociatedObject(self, kOLEDKey)) return;
-    ASDisplayNode *node = self.scrollNode;
-    if (node) {
-        for (UIView *child in node.yogaChildren) {
-            NSString *desc = [child description];
-            if ([desc containsString:@"id.elements.components.report_form_reason_select_page.container"] || [desc containsString:@"id.elements.components.report_form_sign_in_page.container"]) {
-                self.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
-                    return isDarkMode(self) ? [UIColor blackColor] : [UIColor clearColor];
-                }];
-                break;
-            }
+void YouModApplyOLEDScrollView(ASScrollView *view, ASDisplayNode *node) {
+    if (!IS_ENABLED(OLEDTheme)) return;
+    for (UIView *child in node.yogaChildren) {
+        NSString *desc = [child description];
+        if ([desc containsString:@"id.elements.components.report_form_reason_select_page.container"] || [desc containsString:@"id.elements.components.report_form_sign_in_page.container"]) {
+            view.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
+                return isDarkMode(view) ? [UIColor blackColor] : [UIColor clearColor];
+            }];
+            break;
         }
     } 
-    objc_setAssociatedObject(self, kOLEDKey, @YES, OBJC_ASSOCIATION_ASSIGN);
 }
-%end
 
 %hook MDCInkView
 - (void)didMoveToWindow {

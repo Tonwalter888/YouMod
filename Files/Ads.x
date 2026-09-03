@@ -425,7 +425,7 @@ void YouModFilterAdsDisplayView(_ASDisplayView *view, NSString *iden) {
 %hook YTSettingsSectionController
 - (NSArray <YTSettingsSectionItem *> *)items {
     NSArray <YTSettingsSectionItem *> *orig = %orig;
-    if (orig) {
+    if (orig && orig.count > 0) {
         for (YTSettingsSectionItem *item in orig) {
             if ([item.categoryId integerValue] == 31) {
                 [orig removeObject:item];

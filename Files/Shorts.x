@@ -148,16 +148,9 @@ static void YouModRemoveShortsOverlayButton(_ASDisplayView *dpView) {
 }
 %end
 
-%hook YTReelPausedStateCarouselView
-- (void)layoutSubviews {
-    %orig;
+void YouModRemoveShortsPausedButtons(ASScrollView *self, ASDisplayNode *node) {
     if (!IS_ENABLED(RemoveShortsPausedSubButton) && !IS_ENABLED(RemoveShortsPausedLiveButton) && !IS_ENABLED(RemoveShortsPausedLensButton) && !IS_ENABLED(RemoveShortsPausedTrendsButton)) return;
-    ASScrollView *view = (ASScrollView *)self;
-    while (view.subviews.count == 1 && ![view isKindOfClass:%c(ASScrollView)]) {
-        view = view.subviews[0];
-    }
-    if (![view isKindOfClass:%c(ASScrollView)]) return; 
-    ASDisplayNode *node = view.scrollNode;
+    if (![self._viewControllerForAncestor isKindOfClass:%c(YTReelTopBarViewController)]) return;
     NSDictionary *buttonsList = @{
         @"id.ui.shorts_paused_state.subscriptions_button": @(IS_ENABLED(RemoveShortsPausedSubButton)),
         @"id.ui.shorts_paused_state.live_button": @(IS_ENABLED(RemoveShortsPausedLiveButton)),
@@ -166,7 +159,7 @@ static void YouModRemoveShortsOverlayButton(_ASDisplayView *dpView) {
     };
     for (NSString *button in buttonsList) {
         if ([buttonsList[button] boolValue]) {
-            for (UIView *sub in view.subviews) {
+            for (UIView *sub in self.subviews) {
                 if ([sub.accessibilityIdentifier isEqualToString:button]) {
                     [sub removeFromSuperview];
                 }
@@ -179,7 +172,6 @@ static void YouModRemoveShortsOverlayButton(_ASDisplayView *dpView) {
         }
     }
 }
-%end
 
 void YouModFilterShortsDisplayView(_ASDisplayView *view, NSString *iden) {
     if (!iden || iden.length == 0) return;

@@ -325,16 +325,8 @@ static BOOL hasSetSeekButtons = NO;
     BOOL temp = IS_ENABLED(ReplacePrevNextButtons) ? YES : arg;
     %orig(temp);
 }
-- (void)setSeekForwardAccessibilityButtonHidden:(BOOL)arg {
-    BOOL isOVOn = [self performSelector:@selector(isOverlayVisible)];
-    BOOL temp = IS_ENABLED(ReplacePrevNextButtons) ? !isOVOn : arg;
-    %orig(temp);
-}
-- (void)setSeekBackwardAccessibilityButtonHidden:(BOOL)arg {
-    BOOL isOVOn = [self performSelector:@selector(isOverlayVisible)];
-    BOOL temp = IS_ENABLED(ReplacePrevNextButtons) ? !isOVOn : arg;
-    %orig(temp);
-}
+- (void)setSeekForwardAccessibilityButtonHidden:(BOOL)arg { if (!IS_ENABLED(ReplacePrevNextButtons)) %orig; }
+- (void)setSeekBackwardAccessibilityButtonHidden:(BOOL)arg { if (!IS_ENABLED(ReplacePrevNextButtons)) %orig; }
 - (void)setSeekForwardAccessibilityButtonVisible:(BOOL)arg {
     BOOL isOVOn = [self performSelector:@selector(isOverlayVisible)];
     BOOL temp = IS_ENABLED(ReplacePrevNextButtons) ? isOVOn : arg;
