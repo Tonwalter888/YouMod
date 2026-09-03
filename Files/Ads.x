@@ -376,8 +376,35 @@ void YouModFilterAdsDisplayView(_ASDisplayView *view, NSString *iden) {
         [view removeFromSuperview];
     } else if (IS_ENABLED(HideCommentsPreview) && [iden isEqualToString:@"id.ui.comments_entry_point_teaser"]) {
         [view removeFromSuperview];
-    } else if ([view.accessibilityLabel containsString:@"Premium"] && [view._viewControllerForAncestor isKindOfClass:%c(YTPageHeaderViewController)]) {
-        [view removeFromSuperview];
+    } else if ([view.accessibilityLabel containsString:@"Premium"]) {
+        UIViewController *con = view._viewControllerForAncestor;
+        if ([con isKindOfClass:%c(YTPageHeaderViewController)]) {
+            _ASDisplayView *spview = (_ASDisplayView *)view.superview;
+            ASDisplayNode *node = spview.keepalive_node;
+            [node removeYogaChild:node.yogaChildren[1]];
+            [view removeFromSuperview];
+        } else if ([con isKindOfClass:%c(YTELMViewController)]) {
+            YTELMViewController *cont = (YTELMViewController *)con;
+            YTIElementRenderer *renderer = [cont valueForKey:@"_renderer"];
+            NSString *desc = [renderer description];
+            if ([desc containsString:@"more_drawer.eml"]) {
+                _ASCollectionViewCell *_colview = (_ASCollectionViewCell *)view.superview;
+                while (_colview != nil && _colview.superview != nil && ![_colview isKindOfClass:%c(_ASCollectionViewCell)]) {
+                    _colview = (_ASCollectionViewCell *)_colview.superview;
+                }
+                ASCollectionView *colview = (ASCollectionView *)_colview.superview;
+                // Loop to find the "YouTube Premium" section index
+                int index = 0;
+                for (UIView *sub in colview.subviews) {
+                    if (sub == (UIView *)_colview) break;
+                    index++;
+                }
+                ASCollectionNode *node = colview.collectionNode;
+                ELMNodeController *nodecon = node.controller;
+                [nodecon remove:nodecon.children[index]];
+                [_colview removeFromSuperview];
+            }
+        }
     }
 }
 

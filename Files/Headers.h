@@ -71,6 +71,7 @@
 #import <YouTubeHeader/YTIPlayerBarDecorationModel.h>
 #import <YouTubeHeader/YTPlayerBarProgressDecorationView.h>
 #import <YouTubeHeader/YTPlayerBarRectangleDecorationView.h>
+#import <YouTubeHeader/ELMNodeController.h>
 #import <objc/runtime.h>
 
 // For Settings.x and SponsorBlockSettings.x
@@ -516,6 +517,10 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 
 @interface ASDisplayNode (YouMod)
 - (void)removeYogaChild:(id)arg;
+@end
+
+@interface ELMNodeController (YouMod)
+- (void)remove:(id)arg;
 @end
 
 @interface YTIMySubsFilterHeaderRenderer : GPBMessage

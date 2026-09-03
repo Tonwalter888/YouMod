@@ -13,13 +13,11 @@ static const void *YouModASViewKey = &YouModASViewKey;
     YouModConfigureDownloadButton(self);
 
     NSString *iden = self.accessibilityIdentifier;
-    if (iden && iden.length > 0) {
-        YouModSetupDownloadGestures(self, iden);
-        YouModFilterAdsDisplayView(self, iden);
-        YouModFilterChannelButtons(self, iden);
-        YouModFilterVideoButtons(self, iden);
-        YouModFilterShortsDisplayView(self, iden);
-    }
+    YouModSetupDownloadGestures(self, iden);
+    YouModFilterAdsDisplayView(self, iden);
+    YouModFilterChannelButtons(self, iden);
+    YouModFilterVideoButtons(self, iden);
+    YouModFilterShortsDisplayView(self, iden);
 
     objc_setAssociatedObject(self, YouModASViewKey, @YES, OBJC_ASSOCIATION_ASSIGN);
 }
@@ -47,6 +45,12 @@ static const void *YouModASViewKey = &YouModASViewKey;
     if (objc_getAssociatedObject(self, YouModASViewKey)) return;
     ASDisplayNode *node = self.scrollNode;
     YouModApplyOLEDScrollView(self, node);
+    objc_setAssociatedObject(self, YouModASViewKey, @YES, OBJC_ASSOCIATION_ASSIGN);
+}
+- (void)layoutSubviews {
+    %orig;
+    if (objc_getAssociatedObject(self, YouModASViewKey)) return;
+    ASDisplayNode *node = self.scrollNode;
     YouModRemoveShortsPausedButtons(self, node);
     objc_setAssociatedObject(self, YouModASViewKey, @YES, OBJC_ASSOCIATION_ASSIGN);
 }
