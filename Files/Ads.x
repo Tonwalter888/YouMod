@@ -373,7 +373,9 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
 
 void YouModFilterAdsDisplayView(_ASDisplayView *view, NSString *iden) {
     if ([iden isEqualToString:@"eml.expandable_metadata.vpp"]) {
-        [view removeFromSuperview];
+        _ASDisplayView *spview = (_ASDisplayView *)view.superview;
+        ASDisplayNode *node = spview.keepalive_node;
+        [node removeYogaChild:node.yogaChildren[0]];
     } else if (IS_ENABLED(HideCommentsPreview) && [iden isEqualToString:@"id.ui.comments_entry_point_teaser"]) {
         [view removeFromSuperview];
     } else if ([view.accessibilityLabel containsString:@"Premium"]) {
