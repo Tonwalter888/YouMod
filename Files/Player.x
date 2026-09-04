@@ -1598,9 +1598,6 @@ void YouModFilterVideoButtons(_ASDisplayView *view, NSString *iden) {
     }
 }
 
-
-
-
 %ctor {
     %init;
     YouModConfigureRemoteSkipCommands();

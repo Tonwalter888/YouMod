@@ -818,7 +818,7 @@ static void SBRenderMarkersInDecorationView(UIView *view) {
         return;
     }
 
-    BOOL isMainPlayer = SBDecorationViewIsInMainPlayer(view);
+    BOOL isMainPlayer = SBDecorationViewIsInMainPlayer(view) && [view respondsToSelector:@selector(enableRoundedCorners)];
 
     BOOL hasMarkers = NO;
     [CATransaction begin];
