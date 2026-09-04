@@ -11,8 +11,8 @@ static const void *YouModASViewKey = &YouModASViewKey;
     YouModConfigureDownloadButton(self, iden);
     YouModSetupDownloadGestures(self, iden);
     YouModFilterAdsDisplayView(self, iden);
-    YouModFilterChannelButtons(self, iden);
-    YouModFilterVideoButtons(self, iden); // I want to improve this
+    YouModFilterChannelButtons(self, iden); // Will improve this
+    YouModFilterVideoButtons(self, iden);
     YouModFilterShortsDisplayView(self, iden);
     YouModRemoveShortsPausedButtons(self, iden);
     objc_setAssociatedObject(self, YouModASViewKey, @YES, OBJC_ASSOCIATION_ASSIGN);
@@ -58,24 +58,6 @@ static const void *YouModASViewKey = &YouModASViewKey;
 }
 - (void)viewDidAppear:(BOOL)animated {
     NSLog(@"[WaterDev] viewDidAppear PageHeaderView got called");
-    %orig;
-}
-%end
-
-%hook YTPageHeaderView
-- (void)layoutSubviews {
-    NSLog(@"[WaterDev] layoutSubviews PageHeaderView got called");
-    %orig;
-}
-- (void)didMoveToWindow {
-    NSLog(@"[WaterDev] didMoveToWindow PageHeaderView got called");
-    %orig;
-}
-%end
-
-%hook YTWatchNextResultsViewController
-- (void)viewDidAppear:(BOOL)animated {
-    NSLog(@"[WaterDev] viewDidAppear watchnext got called");
     %orig;
 }
 %end

@@ -35,7 +35,6 @@
 // Hide related videos in the player
 %hook YTWatchNextResultsViewController
 - (void)setVisibleSections:(NSInteger)sections {
-    NSLog(@"[WaterDev] setVisibleSections watchnext got called");
     if (![self.parentViewController isKindOfClass:%c(YTWatchNextResponseViewController)]) {
         %orig;
         return;

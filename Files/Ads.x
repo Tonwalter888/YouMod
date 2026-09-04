@@ -401,15 +401,10 @@ void YouModRemoveDrawerAds(ASCollectionView *self) {
             for (_ASCollectionViewCell *vc in self.subviews) {
                 if ([vc isKindOfClass:%c(_ASCollectionViewCell)]) {
                     UIView *svtemp = vc.subviews[0];
-                    BOOL found = NO;
                     while (svtemp != nil && svtemp.subviews.count == 1) {
-                        if ([svtemp.accessibilityLabel containsString:@"Premium"]) {
-                            found = YES;
-                            break;
-                        }
                         svtemp = svtemp.subviews[0];
                     }
-                    if (found) {
+                    if ([svtemp.accessibilityLabel containsString:@"Premium"]) {
                         premiumCell = vc;
                         break;
                     }
