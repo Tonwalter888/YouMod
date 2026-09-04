@@ -65,8 +65,8 @@ void YouModFilterChannelButtons(_ASDisplayView *self, NSString *iden) {
                 break;
             }
         }
-        if (IS_ENABLED(RemoveChannelCommunityButton)) [node removeYogaChild:node.yogaChild[2]];
-        if (IS_ENABLED(RemoveChannelSponsorAll)) [node removeYogaChild:node.yogaChild[1]];
+        if (IS_ENABLED(RemoveChannelCommunityButton)) [node removeYogaChild:node.yogaChildren[2]];
+        if (IS_ENABLED(RemoveChannelSponsorAll)) [node removeYogaChild:node.yogaChildren[1]];
     } else {
         UIViewController *con = self._viewControllerForAncestor;
         if ([con isKindOfClass:%c(YTPageHeaderViewController)]) {

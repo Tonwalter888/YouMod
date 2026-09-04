@@ -2129,7 +2129,7 @@ static NSString *YouModExtractCommentText(UIView *cellView) {
                 resultText = current.accessibilityLabel;
                 break;
             }
-            ASDisplayNode *node = current.keepalive_node;
+            ASDisplayNode *node = [current performSelector:@selector(keepalive_node)];
             if ([node isKindOfClass:%c(ELMExpandableTextNode)] || [node isKindOfClass:%c(ELMTextNode)]) {
                 NSString *desc = [[[[node valueForKey:@"_controller"] valueForKey:@"_parent"] valueForKey:@"_weakComponent"] description];
                 if ([desc containsString:@"post_text.eml"]) {
