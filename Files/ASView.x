@@ -31,33 +31,33 @@ static const void *YouModASViewKey = &YouModASViewKey;
 }
 %end
 
-%hook ASScrollView
-- (void)didMoveToWindow {
-    %orig;
-    if (objc_getAssociatedObject(self, YouModASViewKey)) return;
-    ASDisplayNode *node = self.scrollNode;
-    YouModApplyOLEDScrollView(self, node);
-    objc_setAssociatedObject(self, YouModASViewKey, @YES, OBJC_ASSOCIATION_ASSIGN);
-}
-%end
-
 %hook ASCollectionView
 - (void)didMoveToWindow {
     %orig;
     if (objc_getAssociatedObject(self, YouModASViewKey)) return;
-    YouModAppleOLEDCollectionView(self);
-    YouModRemoveDrawerAds(self);
+    YouModApplyOLEDCollectionView(self);
     objc_setAssociatedObject(self, YouModASViewKey, @YES, OBJC_ASSOCIATION_ASSIGN);
 }
 %end
 
-%hook YTPageHeaderViewController
+%hook YTELMViewController
 - (void)viewWillAppear:(BOOL)animated {
-    NSLog(@"[WaterDev] viewWillAppear PageHeaderView got called");
     %orig;
-}
-- (void)viewDidAppear:(BOOL)animated {
-    NSLog(@"[WaterDev] viewDidAppear PageHeaderView got called");
-    %orig;
+    if (objc_getAssociatedObject(self, YouModASViewKey)) return;
+    NSString *desc = [[self valueForKey:@"_renderer"] description];
+    if ([desc containsString:@"more_drawer.eml"]) {
+        YouModRemoveDrawerAds(self);
+        if (IS_ENABLED(OLEDTheme)) {
+            self.view.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
+                return isDarkMode(self.view) ? [UIColor blackColor] : [UIColor whiteColor];
+            }];
+        }
+    } else if (IS_ENABLED(OLEDTheme) && ([desc containsString:@"report_form_reason_select_page.eml"] || [desc containsString:@"report_form_sign_in_page.eml"] || [desc containsString:@"transcript_panel.eml"])) {
+        self.view.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
+            return isDarkMode(self.view) ? [UIColor blackColor] : [UIColor clearColor];
+        }];
+    }
+    objc_setAssociatedObject(self, YouModASViewKey, @YES, OBJC_ASSOCIATION_ASSIGN);
 }
 %end
+

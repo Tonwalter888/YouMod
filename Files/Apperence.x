@@ -67,15 +67,11 @@ void YouModApplyOLEDToDisplayView(_ASDisplayView *view, NSString *iden) {
             view.superview.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
                 return isDarkMode(view) ? [UIColor blackColor] : [UIColor clearColor];
             }];
-        } else if ([desc containsString:@"transcript_panel.eml"]) {
-            view.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
-                return isDarkMode(view) ? [UIColor blackColor] : [UIColor clearColor];
-            }];
         }
     }
 }
 
-void YouModAppleOLEDCollectionView(ASCollectionView *self) {
+void YouModApplyOLEDCollectionView(ASCollectionView *self) {
     if (!IS_ENABLED(OLEDTheme)) return;
     NSString *iden = self.accessibilityIdentifier;
     NSSet *blackViews = [NSSet setWithObjects:
@@ -85,10 +81,6 @@ void YouModAppleOLEDCollectionView(ASCollectionView *self) {
     if ([blackViews containsObject:iden]) {
         self.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
             return isDarkMode(self) ? [UIColor blackColor] : [UIColor clearColor];
-        }];
-    } else if ([iden isEqualToString:@"id.elements.components.more_drawer_collection"]) {
-        self.superview.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
-            return isDarkMode(self) ? [UIColor blackColor] : [UIColor whiteColor];
         }];
     }
 }
@@ -117,19 +109,6 @@ void YouModAppleOLEDCollectionView(ASCollectionView *self) {
     objc_setAssociatedObject(self, kOLEDKey, @YES, OBJC_ASSOCIATION_ASSIGN);
 }
 %end
-
-void YouModApplyOLEDScrollView(ASScrollView *view, ASDisplayNode *node) {
-    if (!IS_ENABLED(OLEDTheme)) return;
-    for (id child in node.yogaChildren) {
-        NSString *desc = [child description];
-        if ([desc containsString:@"id.elements.components.report_form_reason_select_page.container"] || [desc containsString:@"id.elements.components.report_form_sign_in_page.container"]) {
-            view.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
-                return isDarkMode(view) ? [UIColor blackColor] : [UIColor clearColor];
-            }];
-            break;
-        }
-    } 
-}
 
 %hook MDCInkView
 - (void)didMoveToWindow {

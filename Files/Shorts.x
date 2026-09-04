@@ -75,11 +75,6 @@ static void YouModRemoveShortsOverlayButton(_ASDisplayView *dpView) {
     %orig;
     YouModMakeAShortsAction(self, video, time);
 }
-// Debuging
-- (void)playbackControllerDidFinishPlaybackAndWillTransitionInternallyToNextPlayback:(BOOL)arg {
-    NSLog(@"[WaterDev] playbackDidFinish got called in Shorts");
-    %orig;
-}
 - (void)loadPlayerBar {
     %orig;
     if ((isShortsOnlyOn && IS_ENABLED(ShortsOnly)) || (isFullscreenEnabled && IS_ENABLED(FullScreenShorts))) [[self valueForKey:@"_pivotBarProvider"] performSelector:@selector(hidePivotBar)];

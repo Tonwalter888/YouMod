@@ -390,34 +390,34 @@ void YouModFilterAdsDisplayView(_ASDisplayView *view, NSString *iden) {
     }
 }
 
-void YouModRemoveDrawerAds(ASCollectionView *self) {
-    UIViewController *con = self._viewControllerForAncestor;
-    if ([con isKindOfClass:%c(YTELMViewController)]) {
-        YTELMViewController *cont = (YTELMViewController *)con;
-        YTIElementRenderer *renderer = [cont valueForKey:@"_renderer"];
-        NSString *desc = [renderer description];
-        if ([desc containsString:@"more_drawer.eml"]) {
-            _ASCollectionViewCell *premiumCell = nil;
-            for (_ASCollectionViewCell *vc in self.subviews) {
-                if ([vc isKindOfClass:%c(_ASCollectionViewCell)]) {
-                    UIView *svtemp = vc.subviews[0];
-                    while (svtemp != nil && svtemp.subviews.count == 1) {
-                        svtemp = svtemp.subviews[0];
-                    }
-                    if ([svtemp.accessibilityLabel containsString:@"Premium"]) {
-                        premiumCell = vc;
-                        break;
-                    }
-                }
-            }
-            if (premiumCell == nil) return;
-            ASDisplayNode *node = premiumCell.node;
-            for (id child in [node.yogaChildren copy]) {
-                [node removeYogaChild:child];
-            }
-            [premiumCell removeFromSuperview];
+void YouModRemoveDrawerAds(YTELMViewController *self) {
+    ASCollectionView *coll = nil;
+    for (UIView *view in self.view.subviews) {
+        if ([view isKindOfClass:%c(ASCollectionView)]) {
+            coll = view;
+            break;
         }
     }
+    if (coll == nil) return;
+    _ASCollectionViewCell *premiumCell = nil;
+    for (_ASCollectionViewCell *vc in coll.subviews) {
+        if ([vc isKindOfClass:%c(_ASCollectionViewCell)]) {
+            UIView *svtemp = vc.subviews[0];
+            while (svtemp != nil && svtemp.subviews.count == 1) {
+                svtemp = svtemp.subviews[0];
+            }
+            if ([svtemp.accessibilityLabel containsString:@"Premium"]) {
+                premiumCell = vc;
+                break;
+            }
+        }
+    }
+    if (premiumCell == nil) return;
+    ASDisplayNode *node = premiumCell.node;
+    for (id child in [node.yogaChildren copy]) {
+        [node removeYogaChild:child];
+    }
+    [premiumCell removeFromSuperview];
 }
 
 // NoYTPremium - @PoomSmart https://github.com/PoomSmart/NoYTPremium
