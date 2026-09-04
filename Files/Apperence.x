@@ -25,9 +25,8 @@ static const void *kOLEDKey = &kOLEDKey;
 - (UIColor *)backgroundColor:(NSInteger)pageStyle { return pageStyle == 1 ? [UIColor blackColor] : %orig; }
 %end
 
-void YouModApplyOLEDToDisplayView(_ASDisplayView *view) {
+void YouModApplyOLEDToDisplayView(_ASDisplayView *view, NSString *iden) {
     if (!IS_ENABLED(OLEDTheme)) return;
-    NSString *iden = view.accessibilityIdentifier;
     NSSet *blackViews = [NSSet setWithObjects:
         @"id.elements.components.comment_composer",
         @"id.subs.subscriptions_channel_bar",

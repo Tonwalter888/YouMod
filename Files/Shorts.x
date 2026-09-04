@@ -153,10 +153,9 @@ static void YouModRemoveShortsOverlayButton(_ASDisplayView *dpView) {
 }
 %end
 
-void YouModRemoveShortsPausedButtons(_ASDisplayView *self) {
+void YouModRemoveShortsPausedButtons(_ASDisplayView *self, NSString *iden) {
     if (!IS_ENABLED(RemoveShortsPausedSubButton) && !IS_ENABLED(RemoveShortsPausedLiveButton) && !IS_ENABLED(RemoveShortsPausedLensButton) && !IS_ENABLED(RemoveShortsPausedTrendsButton)) return;
     if (![self._viewControllerForAncestor isKindOfClass:%c(YTReelTopBarViewController)]) return;
-    NSString *iden = self.accessibilityIdentifier;
     if ([iden containsString:@"id.ui.shorts_paused_state."] && [iden hasSuffix:@"_button"]) {
         NSDictionary *buttonsList = @{
             @"id.ui.shorts_paused_state.subscriptions_button": @(IS_ENABLED(RemoveShortsPausedSubButton)),

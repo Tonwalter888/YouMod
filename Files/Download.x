@@ -2083,10 +2083,9 @@ NSString *YouModGlobalAuthHeader = nil;
 }
 %end
 
-void YouModConfigureDownloadButton(_ASDisplayView *view) {
+void YouModConfigureDownloadButton(_ASDisplayView *view, NSString *iden) {
     if (!IS_ENABLED(DownloadManager) || INTFORVAL(DownloadButtonPosition) == DownloadButtonPositionOverlay) return;
-
-    if ([view.accessibilityIdentifier isEqualToString:@"id.ui.add_to.offline.button"]) {
+    if ([iden isEqualToString:@"id.ui.add_to.offline.button"]) {
         view.userInteractionEnabled = YES;
         UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:view action:@selector(YouModDownloadButtonTapped:)];
         tap.cancelsTouchesInView = YES;
@@ -2334,7 +2333,6 @@ void YouModHandleDownloadButtonAction(_ASDisplayView *view, UITapGestureRecogniz
 
 
 %hook YTReelWatchPlaybackOverlayView
-
 - (void)layoutSubviews {
     %orig;
     if (!IS_ENABLED(AddDownloadToShorts)) return;
@@ -2369,7 +2367,6 @@ void YouModHandleDownloadButtonAction(_ASDisplayView *view, UITapGestureRecogniz
     downloadBtn.frame = CGRectMake(X, Y, btnWidth, btnHeight);
     [self bringSubviewToFront:downloadBtn];
 }
-
 %new
 - (void)didTapYouModShortsDownload:(YTQTMButton *)button {
     YTShortsPlayerViewController *shortsPlayerView = (YTShortsPlayerViewController *)self._viewControllerForAncestor;
@@ -2377,7 +2374,6 @@ void YouModHandleDownloadButtonAction(_ASDisplayView *view, UITapGestureRecogniz
     UIViewController *presenter = YouModPresenterForSender(button, player);
     YouModShowDownloadManager(player, presenter, button, YES);
 }
-
 %end
 
 %ctor {

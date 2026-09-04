@@ -3,41 +3,32 @@
 static const void *YouModASViewKey = &YouModASViewKey;
 
 %hook _ASDisplayView
-
 - (void)didMoveToWindow {
     %orig;
     if (objc_getAssociatedObject(self, YouModASViewKey)) return;
-
-    YouModApplyOLEDToDisplayView(self);
-
-    YouModConfigureDownloadButton(self);
-
     NSString *iden = self.accessibilityIdentifier;
+    YouModApplyOLEDToDisplayView(self, iden);
+    YouModConfigureDownloadButton(self, iden);
     YouModSetupDownloadGestures(self, iden);
     YouModFilterAdsDisplayView(self, iden);
     YouModFilterChannelButtons(self, iden);
-    YouModFilterVideoButtons(self, iden);
+    YouModFilterVideoButtons(self, iden); // I want to improve this
     YouModFilterShortsDisplayView(self, iden);
-    YouModRemoveShortsPausedButtons(self);
-
+    YouModRemoveShortsPausedButtons(self, iden);
     objc_setAssociatedObject(self, YouModASViewKey, @YES, OBJC_ASSOCIATION_ASSIGN);
 }
-
 %new
 - (void)YouModHandleCommentLongPress:(UILongPressGestureRecognizer *)sender {
     YouModHandleCommentLongPressAction(self, sender);
 }
-
 %new
 - (void)YouModHandlePostLongPress:(UILongPressGestureRecognizer *)sender {
     YouModHandlePostLongPressAction(self, sender);
 }
-
 %new
 - (void)YouModDownloadButtonTapped:(UITapGestureRecognizer *)sender {
     YouModHandleDownloadButtonAction(self, sender);
 }
-
 %end
 
 %hook ASScrollView
