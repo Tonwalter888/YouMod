@@ -1,4 +1,5 @@
 #import "Headers.h"
+#import <objc/runtime.h>
 
 static BOOL isWiFiConnected() {
     struct sockaddr_in zeroAddress;
@@ -106,6 +107,195 @@ static void YouModConfigureRemoteSkipCommands(void) {
             return YouModSeekByInterval(YouModForwardSecondsValue()) ? MPRemoteCommandHandlerStatusSuccess : MPRemoteCommandHandlerStatusNoSuchContent;
         }];
     }
+}
+
+#pragma mark - Replace prev/next paddles in playlists
+
+static const void *kYouModSeekRemapKey = &kYouModSeekRemapKey;
+static const void *kYouModSeekRefreshKey = &kYouModSeekRefreshKey;
+static const void *kYouModOverlayRefreshHandlerKey = &kYouModOverlayRefreshHandlerKey;
+static BOOL gYouModEnforcingOverlayReplacement = NO;
+
+static BOOL YouModShouldForcePrevNextReplacement(void) {
+    return IS_ENABLED(ReplacePrevNextButtons) && !IS_ENABLED(HideNextAndPrevButtons);
+}
+
+void YouModApplyPrevNextReplacement(YTMainAppControlsOverlayView *overlay);
+
+@interface YouModOverlayRefreshHandler : NSObject
+@property (nonatomic, weak) YTMainAppControlsOverlayView *overlay;
+- (void)refreshSoon;
+@end
+
+@implementation YouModOverlayRefreshHandler
+- (void)refreshSoon {
+    YTMainAppControlsOverlayView *overlay = [self overlay];
+    YouModApplyPrevNextReplacement(overlay);
+    if (!overlay) return;
+    static const NSTimeInterval kDelays[] = {0.05, 0.15, 0.35, 0.75, 1.5};
+    for (size_t i = 0; i < sizeof(kDelays) / sizeof(kDelays[0]); i++) {
+        NSTimeInterval delay = kDelays[i];
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delay * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+            YouModApplyPrevNextReplacement(overlay);
+        });
+    }
+}
+@end
+
+static YouModOverlayRefreshHandler *YouModRefreshHandlerForOverlay(YTMainAppControlsOverlayView *overlay) {
+    YouModOverlayRefreshHandler *handler = objc_getAssociatedObject(overlay, kYouModOverlayRefreshHandlerKey);
+    if (!handler) {
+        handler = [YouModOverlayRefreshHandler new];
+        handler.overlay = overlay;
+        objc_setAssociatedObject(overlay, kYouModOverlayRefreshHandlerKey, handler, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    }
+    return handler;
+}
+
+@interface YouModSeekTapHandler : NSObject
+@property (nonatomic, assign) BOOL rewind;
+@property (nonatomic, weak) YTMainAppControlsOverlayView *overlay;
+- (void)handleTap:(UITapGestureRecognizer *)gr;
+@end
+
+@implementation YouModSeekTapHandler
+- (void)handleTap:(UITapGestureRecognizer *)gr {
+    YouModSeekByInterval(self.rewind ? -YouModRewindSecondsValue() : YouModForwardSecondsValue());
+    YouModOverlayRefreshHandler *refreshHandler = YouModRefreshHandlerForOverlay([self overlay]);
+    [refreshHandler refreshSoon];
+}
+@end
+
+@interface YouModSeekRefreshTapHandler : NSObject
+@property (nonatomic, weak) YTMainAppControlsOverlayView *overlay;
+- (void)handleTap:(UITapGestureRecognizer *)gr;
+@end
+
+@implementation YouModSeekRefreshTapHandler
+- (void)handleTap:(UITapGestureRecognizer *)gr {
+    YouModOverlayRefreshHandler *refreshHandler = YouModRefreshHandlerForOverlay([self overlay]);
+    [refreshHandler refreshSoon];
+}
+@end
+
+static YouModSeekTapHandler *YouModRewindTapHandler(YTMainAppControlsOverlayView *overlay) {
+    static YouModSeekTapHandler *handler;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        handler = [YouModSeekTapHandler new];
+        handler.rewind = YES;
+    });
+    handler.overlay = overlay;
+    return handler;
+}
+
+static YouModSeekTapHandler *YouModForwardTapHandler(YTMainAppControlsOverlayView *overlay) {
+    static YouModSeekTapHandler *handler;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        handler = [YouModSeekTapHandler new];
+        handler.rewind = NO;
+    });
+    handler.overlay = overlay;
+    return handler;
+}
+
+static YouModSeekRefreshTapHandler *YouModSeekRefreshTapHandlerForOverlay(YTMainAppControlsOverlayView *overlay) {
+    YouModSeekRefreshTapHandler *handler = objc_getAssociatedObject(overlay, kYouModSeekRefreshKey);
+    if (!handler) {
+        handler = [YouModSeekRefreshTapHandler new];
+        handler.overlay = overlay;
+        objc_setAssociatedObject(overlay, kYouModSeekRefreshKey, handler, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    }
+    return handler;
+}
+
+static void YouModAttachSeekRemap(UIView *view, YouModSeekTapHandler *handler) {
+    if (!view || objc_getAssociatedObject(view, kYouModSeekRemapKey)) return;
+    view.userInteractionEnabled = YES;
+    UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:handler action:@selector(handleTap:)];
+    tap.cancelsTouchesInView = YES;
+    [view addGestureRecognizer:tap];
+    objc_setAssociatedObject(view, kYouModSeekRemapKey, @YES, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+}
+
+static void YouModAttachSeekRefresh(UIView *view, YTMainAppControlsOverlayView *overlay) {
+    static const void *kViewRefreshKey = &kViewRefreshKey;
+    if (!view || objc_getAssociatedObject(view, kViewRefreshKey)) return;
+    UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:YouModSeekRefreshTapHandlerForOverlay(overlay) action:@selector(handleTap:)];
+    tap.cancelsTouchesInView = NO;
+    [view addGestureRecognizer:tap];
+    objc_setAssociatedObject(view, kViewRefreshKey, @YES, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+}
+
+static UIView *YouModOverlayIvarView(id object, const char *name) {
+    Ivar ivar = class_getInstanceVariable(object_getClass(object), name);
+    if (!ivar) return nil;
+    return (UIView *)object_getIvar(object, ivar);
+}
+
+static void YouModSetOverlayIvarHidden(id object, const char *name, BOOL hidden) {
+    UIView *view = YouModOverlayIvarView(object, name);
+    if (view) view.hidden = hidden;
+}
+
+static YTMainAppControlsOverlayView *YouModOverlayForSubview(UIView *view) {
+    for (UIView *v = view; v; v = v.superview) {
+        if ([v isKindOfClass:%c(YTMainAppControlsOverlayView)]) return (YTMainAppControlsOverlayView *)v;
+    }
+    return nil;
+}
+
+static BOOL YouModIsPrevNextSubview(UIView *view, YTMainAppControlsOverlayView *overlay) {
+    return view == YouModOverlayIvarView(overlay, "_previousButtonView")
+        || view == YouModOverlayIvarView(overlay, "_nextButtonView")
+        || view == YouModOverlayIvarView(overlay, "_previousButton")
+        || view == YouModOverlayIvarView(overlay, "_nextButton");
+}
+
+static BOOL YouModIsSeekSubview(UIView *view, YTMainAppControlsOverlayView *overlay) {
+    return view == YouModOverlayIvarView(overlay, "_seekBackwardAccessibilityButtonView")
+        || view == YouModOverlayIvarView(overlay, "_seekForwardAccessibilityButtonView");
+}
+
+static void YouModEnforcePrevNextVisibility(YTMainAppControlsOverlayView *overlay) {
+    UIView *seekBack = YouModOverlayIvarView(overlay, "_seekBackwardAccessibilityButtonView");
+    UIView *seekFwd = YouModOverlayIvarView(overlay, "_seekForwardAccessibilityButtonView");
+    if (!seekBack || !seekFwd) return;
+
+    gYouModEnforcingOverlayReplacement = YES;
+    YouModSetOverlayIvarHidden(overlay, "_nextButton", YES);
+    YouModSetOverlayIvarHidden(overlay, "_previousButton", YES);
+    YouModSetOverlayIvarHidden(overlay, "_nextButtonView", YES);
+    YouModSetOverlayIvarHidden(overlay, "_previousButtonView", YES);
+    seekBack.hidden = NO;
+    seekFwd.hidden = NO;
+    seekBack.userInteractionEnabled = YES;
+    seekFwd.userInteractionEnabled = YES;
+    gYouModEnforcingOverlayReplacement = NO;
+}
+
+// Part B: when seek paddles are unavailable, remap prev/next taps to seek within the video.
+static void YouModRemapPrevNextToSeek(YTMainAppControlsOverlayView *overlay) {
+    YouModAttachSeekRemap(YouModOverlayIvarView(overlay, "_previousButtonView"), YouModRewindTapHandler(overlay));
+    YouModAttachSeekRemap(YouModOverlayIvarView(overlay, "_nextButtonView"), YouModForwardTapHandler(overlay));
+    YouModAttachSeekRemap(YouModOverlayIvarView(overlay, "_previousButton"), YouModRewindTapHandler(overlay));
+    YouModAttachSeekRemap(YouModOverlayIvarView(overlay, "_nextButton"), YouModForwardTapHandler(overlay));
+}
+
+void YouModApplyPrevNextReplacement(YTMainAppControlsOverlayView *overlay) {
+    if (!YouModShouldForcePrevNextReplacement()) return;
+
+    UIView *seekBack = YouModOverlayIvarView(overlay, "_seekBackwardAccessibilityButtonView");
+    UIView *seekFwd = YouModOverlayIvarView(overlay, "_seekForwardAccessibilityButtonView");
+
+    if (seekBack && seekFwd) {
+        YouModEnforcePrevNextVisibility(overlay);
+        YouModAttachSeekRefresh(seekBack, overlay);
+        YouModAttachSeekRefresh(seekFwd, overlay);
+    }
+
+    YouModRemapPrevNextToSeek(overlay);
 }
 
 static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoController *video, YTSingleVideoTime *time) {
@@ -285,6 +475,29 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
 }
 %end
 
+%hook YTTransportControlsButtonView
+- (void)setHidden:(BOOL)hidden {
+    if (!gYouModEnforcingOverlayReplacement && YouModShouldForcePrevNextReplacement()) {
+        YTMainAppControlsOverlayView *overlay = YouModOverlayForSubview(self);
+        if (overlay) {
+            if (YouModIsPrevNextSubview(self, overlay)) hidden = YES;
+            else if (YouModIsSeekSubview(self, overlay)) hidden = NO;
+        }
+    }
+    %orig(hidden);
+}
+%end
+
+%hook YTQTMButton
+- (void)setHidden:(BOOL)hidden {
+    if (!gYouModEnforcingOverlayReplacement && YouModShouldForcePrevNextReplacement()) {
+        YTMainAppControlsOverlayView *overlay = YouModOverlayForSubview(self);
+        if (overlay && YouModIsPrevNextSubview(self, overlay)) hidden = YES;
+    }
+    %orig(hidden);
+}
+%end
+
 %hook YTMainAppControlsOverlayView
 // Hide autoplay Switch
 - (void)setAutoplaySwitchButtonRenderer:(id)arg1 { if (!IS_ENABLED(HideAutoPlayToggle)) %orig; }
@@ -295,6 +508,7 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
 // Pause On Overlay
 - (void)setOverlayVisible:(BOOL)visible {
     %orig;
+    YouModApplyPrevNextReplacement(self);
     if (!IS_ENABLED(PauseOnOverlay)) return;
     YTMainAppVideoPlayerOverlayViewController *mainOverlayController = (YTMainAppVideoPlayerOverlayViewController *)self.eventsDelegate;
     YTPlayerViewController *playerViewController = mainOverlayController.parentViewController;
