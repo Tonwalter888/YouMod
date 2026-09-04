@@ -135,6 +135,17 @@ static void YouModRemoveShortsOverlayButton(_ASDisplayView *dpView) {
 }
 %end
 
+%hook YTReelTopBarViewController
+- (void)viewWillAppear:(BOOL)arg {
+    NSLog(@"[WaterDev] viewWillAppear topbar got called");
+    %orig;
+}
+- (void)viewDidAppear:(BOOL)arg {
+    NSLog(@"[WaterDev] viewDidAppear topbar got called");
+    %orig;
+}
+%end
+
 %hook YTReelTopBarView
 - (void)didMoveToWindow {
     %orig;
