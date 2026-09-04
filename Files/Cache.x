@@ -8,13 +8,12 @@
     [[NSFileManager defaultManager] removeItemAtPath:cachePath error:nil];
 }
 - (BOOL)application:(id)application didFinishLaunchingWithOptions:(id)launchOptions {
-    BOOL result = %orig;
     if (IS_ENABLED(AutoClearCache)) {
         // Clear cache on app launch
         dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
             [self YouModAutoClearCache];
         });
     }
-    return result;
+    return %orig;
 }
 %end
