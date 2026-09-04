@@ -52,6 +52,10 @@ static const void *YouModASViewKey = &YouModASViewKey;
 %end
 
 %hook YTPageHeaderViewController
+- (void)viewWillAppear:(BOOL)animated {
+    NSLog(@"[WaterDev] viewWillAppear PageHeaderView got called");
+    %orig;
+}
 - (void)viewDidAppear:(BOOL)animated {
     NSLog(@"[WaterDev] viewDidAppear PageHeaderView got called");
     %orig;
