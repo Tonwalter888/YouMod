@@ -391,7 +391,7 @@ void YouModFilterAdsDisplayView(_ASDisplayView *view, NSString *iden) {
 }
 
 void YouModRemoveDrawerAds(YTELMViewController *self) {
-    ASCollectionView *coll = nil;
+    UIView *coll = nil;
     for (UIView *view in self.view.subviews) {
         if ([view isKindOfClass:%c(ASCollectionView)]) {
             coll = view;

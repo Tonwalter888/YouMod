@@ -59,15 +59,6 @@ void YouModApplyOLEDToDisplayView(_ASDisplayView *view, NSString *iden) {
         view.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
             return isDarkMode(view) ? [UIColor blackColor] : [UIColor whiteColor];
         }];
-    } else if ([controller isKindOfClass:%c(YTELMViewController)]) {
-        YTELMViewController *con = (YTELMViewController *)controller;
-        YTIElementRenderer *renderer = [con valueForKey:@"_renderer"];
-        NSString *desc = [renderer description];
-        if ([iden isEqualToString:@"id.elements.components.text_field"] && [desc containsString:@"timeline_search_input_form_id"] && [desc containsString:@"search_input.eml"]) {
-            view.superview.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
-                return isDarkMode(view) ? [UIColor blackColor] : [UIColor clearColor];
-            }];
-        }
     }
 }
 

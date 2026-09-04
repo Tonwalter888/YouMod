@@ -52,7 +52,7 @@ static const void *YouModASViewKey = &YouModASViewKey;
                 return isDarkMode(self.view) ? [UIColor blackColor] : [UIColor whiteColor];
             }];
         }
-    } else if (IS_ENABLED(OLEDTheme) && ([desc containsString:@"report_form_reason_select_page.eml"] || [desc containsString:@"report_form_sign_in_page.eml"] || [desc containsString:@"transcript_panel.eml"])) {
+    } else if (IS_ENABLED(OLEDTheme) && ([desc containsString:@"report_form_reason_select_page.eml"] || [desc containsString:@"report_form_sign_in_page.eml"] || [desc containsString:@"transcript_panel.eml"] || ([desc containsString:@"timeline_search_input_form_id"] && [desc containsString:@"search_input.eml"]))) {
         self.view.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
             return isDarkMode(self.view) ? [UIColor blackColor] : [UIColor clearColor];
         }];
@@ -60,4 +60,3 @@ static const void *YouModASViewKey = &YouModASViewKey;
     objc_setAssociatedObject(self, YouModASViewKey, @YES, OBJC_ASSOCIATION_ASSIGN);
 }
 %end
-
