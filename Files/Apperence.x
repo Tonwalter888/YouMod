@@ -40,7 +40,14 @@ void YouModApplyOLEDToDisplayView(_ASDisplayView *view) {
             return isDarkMode(view) ? [UIColor blackColor] : [UIColor clearColor];
         }];
         return;
-    }     
+    } else if ([iden isEqualToString:@"id.elements.components.filter_chip_bar"]) {
+        UIColor *dynamicColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
+            return isDarkMode(view) ? [UIColor blackColor] : [UIColor clearColor];
+        }];
+        view.backgroundColor = dynamicColor;
+        view.superview.backgroundColor = dynamicColor;
+        return;
+    }  
     UIViewController *controller = view._viewControllerForAncestor;
     if ([controller isKindOfClass:%c(YTActionSheetDialogViewController)] || [controller isKindOfClass:%c(YTBottomSheetController)]) {
         if ([view.superview.accessibilityIdentifier isEqualToString:@"eml.animated_subscribe_button"]) return;
@@ -66,30 +73,21 @@ void YouModApplyOLEDToDisplayView(_ASDisplayView *view) {
                 return isDarkMode(view) ? [UIColor blackColor] : [UIColor clearColor];
             }];
         }
-    } else if ([iden isEqualToString:@"id.elements.components.filter_chip_bar"]) {
-        UIColor *dynamicColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
-            return isDarkMode(view) ? [UIColor blackColor] : [UIColor clearColor];
-        }];
-        view.backgroundColor = dynamicColor;
-        view.superview.backgroundColor = dynamicColor;
     }
 }
 
 void YouModAppleOLEDCollectionView(ASCollectionView *self) {
     if (!IS_ENABLED(OLEDTheme)) return;
+    NSString *iden = self.accessibilityIdentifier;
     NSSet *blackViews = [NSSet setWithObjects:
         @"eml.chip_bar_collection",
         @"subs_channel_bar.collection", nil
     ];  
-    if ([blackViews containsObject:self.accessibilityIdentifier]) {
+    if ([blackViews containsObject:iden]) {
         self.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
             return isDarkMode(self) ? [UIColor blackColor] : [UIColor clearColor];
         }];
-    } else if ([self.accessibilityIdentifier isEqualToString:@"subs_channel_bar.collection"]) {
-        self.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
-            return isDarkMode(self) ? [UIColor blackColor] : [UIColor clearColor];
-        }];
-    } else if ([self.accessibilityIdentifier isEqualToString:@"id.elements.components.more_drawer_collection"]) {
+    } else if ([iden isEqualToString:@"id.elements.components.more_drawer_collection"]) {
         self.superview.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
             return isDarkMode(self) ? [UIColor blackColor] : [UIColor whiteColor];
         }];
@@ -123,7 +121,7 @@ void YouModAppleOLEDCollectionView(ASCollectionView *self) {
 
 void YouModApplyOLEDScrollView(ASScrollView *view, ASDisplayNode *node) {
     if (!IS_ENABLED(OLEDTheme)) return;
-    for (UIView *child in node.yogaChildren) {
+    for (id child in node.yogaChildren) {
         NSString *desc = [child description];
         if ([desc containsString:@"id.elements.components.report_form_reason_select_page.container"] || [desc containsString:@"id.elements.components.report_form_sign_in_page.container"]) {
             view.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
