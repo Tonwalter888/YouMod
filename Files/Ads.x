@@ -376,6 +376,7 @@ void YouModFilterAdsDisplayView(_ASDisplayView *view, NSString *iden) {
         _ASDisplayView *spview = (_ASDisplayView *)view.superview;
         ASDisplayNode *node = spview.keepalive_node;
         [node removeYogaChild:node.yogaChildren.firstObject];
+        [view removeFromSuperview];
     } else if (IS_ENABLED(HideCommentsPreview) && [iden isEqualToString:@"id.ui.comments_entry_point_teaser"]) {
         [view removeFromSuperview];
     } else if ([view.accessibilityLabel containsString:@"Premium"] && [view._viewControllerForAncestor isKindOfClass:%c(YTPageHeaderViewController)]) {
@@ -397,10 +398,9 @@ void YouModRemoveDrawerAds(ASCollectionView *self) {
         NSString *desc = [renderer description];
         if ([desc containsString:@"more_drawer.eml"]) {
             _ASCollectionViewCell *premiumCell = nil;
-            int index = 0;
             for (_ASCollectionViewCell *vc in self.subviews) {
                 if ([vc isKindOfClass:%c(_ASCollectionViewCell)]) {
-                    UIView *svtemp = self.subviews[0];
+                    UIView *svtemp = vc.subviews[0];
                     BOOL found = NO;
                     while (svtemp != nil && svtemp.subviews.count == 1) {
                         if ([svtemp.accessibilityLabel containsString:@"Premium"]) {
@@ -414,7 +414,6 @@ void YouModRemoveDrawerAds(ASCollectionView *self) {
                         break;
                     }
                 }
-                index++;
             }
             if (premiumCell == nil) return;
             ASDisplayNode *node = premiumCell.node;
