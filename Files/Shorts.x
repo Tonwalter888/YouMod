@@ -156,25 +156,25 @@ static void YouModRemoveShortsOverlayButton(_ASDisplayView *dpView) {
 void YouModRemoveShortsPausedButtons(_ASDisplayView *self) {
     if (!IS_ENABLED(RemoveShortsPausedSubButton) && !IS_ENABLED(RemoveShortsPausedLiveButton) && !IS_ENABLED(RemoveShortsPausedLensButton) && !IS_ENABLED(RemoveShortsPausedTrendsButton)) return;
     if (![self._viewControllerForAncestor isKindOfClass:%c(YTReelTopBarViewController)]) return;
-    NSDictionary *buttonsList = @{
-        @"id.ui.shorts_paused_state.subscriptions_button": @(IS_ENABLED(RemoveShortsPausedSubButton)),
-        @"id.ui.shorts_paused_state.live_button": @(IS_ENABLED(RemoveShortsPausedLiveButton)),
-        @"id.ui.shorts_paused_state.lens_button": @(IS_ENABLED(RemoveShortsPausedLensButton)),
-        @"id.ui.shorts_paused_state.trends_button" : @(IS_ENABLED(RemoveShortsPausedTrendsButton))
-    };
-    ASScrollView *view = (ASScrollView *)self.superview;
-    ASDisplayNode *node = view.scrollNode;
-    for (NSString *button in buttonsList) {
-        if ([buttonsList[button] boolValue]) {
-            for (UIView *sub in view.subviews) {
-                if ([sub.accessibilityIdentifier isEqualToString:button]) {
-                    [sub removeFromSuperview];
+    NSString *iden = self.accessibilityIdentifier;
+    if ([iden containsString:@"id.ui.shorts_paused_state."] && [iden hasSuffix:@"_button"]) {
+        NSDictionary *buttonsList = @{
+            @"id.ui.shorts_paused_state.subscriptions_button": @(IS_ENABLED(RemoveShortsPausedSubButton)),
+            @"id.ui.shorts_paused_state.live_button": @(IS_ENABLED(RemoveShortsPausedLiveButton)),
+            @"id.ui.shorts_paused_state.lens_button": @(IS_ENABLED(RemoveShortsPausedLensButton)),
+            @"id.ui.shorts_paused_state.trends_button" : @(IS_ENABLED(RemoveShortsPausedTrendsButton))
+        };
+        for (NSString *button in buttonsList) {
+            if ([buttonsList[button] boolValue] && [iden isEqualToString:button]) {
+                ASScrollView *view = (ASScrollView *)self.superview;
+                ASDisplayNode *node = view.scrollNode;
+                for (id child in node.yogaChildren) {
+                    if ([[child description] containsString:button]) {
+                        [node removeYogaChild:child];
+                        break;
+                    }
                 }
-            }
-            for (id child in node.yogaChildren) {
-                if ([[child description] containsString:button]) {
-                    [node removeYogaChild:child];
-                }
+                [self removeFromSuperview];
             }
         }
     }

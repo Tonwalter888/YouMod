@@ -18,6 +18,7 @@ static const void *YouModASViewKey = &YouModASViewKey;
     YouModFilterChannelButtons(self, iden);
     YouModFilterVideoButtons(self, iden);
     YouModFilterShortsDisplayView(self, iden);
+    YouModRemoveShortsPausedButtons(self);
 
     objc_setAssociatedObject(self, YouModASViewKey, @YES, OBJC_ASSOCIATION_ASSIGN);
 }
