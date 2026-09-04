@@ -456,6 +456,7 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
         YMPushSubSettings(YMLOC(@"TABBAR"), @[
             YMImageSegment(YMLOC(@"DEFAULT_TAB"), DefaultTab, defaultTabImages, 0),
             YMTextSegment(YMLOC(@"FORSTED_TAB_BAR"), UseFrostedTabBar, (@[YMLOC(@"DEFAULT"),YMLOC(@"ENABLED"), YMLOC(@"DISABLED")]), 0),
+            YMTextSegment(YMLOC(@"PIVOT_BAR_HIDE"), PivotBarHide, (@[YMLOC(@"DEFAULT"), YMLOC(@"ENABLED"), YMLOC(@"DISABLED")]), 0),
             YMToggle(YMLOC(@"HIDE_TAB_INDI"), YMLOC(@"HIDE_TAB_INDI_DESC"), HideTabIndi),
             YMToggle(YMLOC(@"HIDE_TAB_LABELS"), YMLOC(@"HIDE_TAB_LABELS_DESC"), HideTabLabels),
             YMAction(YMLOC(@"MANAGE_TABS"), YMLOC(@"MANAGE_TABS_DESC"), ^(UIViewController *vc) {
@@ -485,10 +486,14 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
             YMToggle(YMLOC(@"HIDE_LIKE_DISLIKE_VOTES"), YMLOC(@"HIDE_LIKE_DISLIKE_VOTES_DESC"), HideLikeDislikeVotes),
             YMToggle(YMLOC(@"HIDE_COMMU_GUIDE"), YMLOC(@"HIDE_COMMU_GUIDE_DESC"), HideCommuGuide),
             YMToggle(YMLOC(@"HIDE_ENGAGEMENT_SUBBAR"), YMLOC(@"HIDE_ENGAGEMENT_SUBBAR_DESC"), HideEngagementSubbar),
+            YMToggle(YMLOC(@"HIDE_INFO_BUTTON_PANEL"), YMLOC(@"HIDE_INFO_BUTTON_PANEL_DESC"), HideInfoButtonPanel),
+            YMToggle(YMLOC(@"HIDE_SORT_FILTER_BUTTON_PANEL"), YMLOC(@"HIDE_SORT_FILTER_BUTTON_PANEL_DESC"), HideSortFilterButtonPanel),
+            YMToggle(YMLOC(@"HIDE_COMMUNITY_BUTTON_PANEL"), YMLOC(@"HIDE_COMMUNITY_BUTTON_PANEL_DESC"), HideCommunityButtonPanel),
             YMToggle(YMLOC(@"FLOATING_KEYBOARD"), YMLOC(@"FLOATING_KEYBOARD_DESC"), FloatingKeyboard),
             YMToggle(YMLOC(@"DISABLES_RTL"), YMLOC(@"DISABLES_RTL_DESC"), DisablesRTL),
             YMHeader(@""),
             YMTextSegment(YMLOC(@"DEVICE_UI"), DeviceUIIndex, (@[YMLOC(@"DEFAULT"), @"iPad", @"iPhone"]), 0),
+            YMTextSegment(YMLOC(@"PIVOT_BAR_HIDE"), PivotBarHide, (@[YMLOC(@"DEFAULT"), YMLOC(@"ENABLED"), YMLOC(@"DISABLED")]), 0),
             YMToggle(YMLOC(@"AUTO_OPEN_LINK"), YMLOC(@"AUTO_OPEN_LINK_DESC"), AutoOpenLink),
             YMHeader(YMLOC(@"FLYOUT_MENU")),
             YMToggle(YMLOC(@"REMOVE_PLAY_IN_NEXT_QUEUE_OPTION"), YMLOC(@"REMOVE_PLAY_IN_NEXT_QUEUE_OPTION_DESC"), RemovePlayInNextQueueOption),

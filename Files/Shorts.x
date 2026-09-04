@@ -187,27 +187,17 @@ void YouModRemoveShortsPausedButtons(_ASDisplayView *self, NSString *iden) {
 
 void YouModFilterShortsDisplayView(_ASDisplayView *view, NSString *iden) {
     if (!iden || iden.length == 0) return;
-    NSDictionary *elements = @{
-        @"product_sticker.main_target": @(IS_ENABLED(HideShortsProducts)),
-        @"product_sticker.secondary_target": @(IS_ENABLED(HideShortsProducts)),
-        @"id.elements.components.suggested_action": @(IS_ENABLED(HideShortsRecbar))
-    };
-    if ([elements[iden] boolValue]) {
+    if ([iden isEqualToString:@"id.elements.components.suggested_action"] && IS_ENABLED(HideShortsRecbar)) {
         [view removeFromSuperview];
-        return;
-    }
-    if ([iden isEqualToString:@"eml.reel_sponsor_button"] && IS_ENABLED(RemoveChannelSponsorAll)) {
+    } else if ([iden isEqualToString:@"eml.reel_sponsor_button"] && IS_ENABLED(RemoveChannelSponsorAll)) {
         [view.superview removeFromSuperview];
-        return;
-    }
-    if ([iden isEqualToString:@"eml.shorts-disclosures"] && IS_ENABLED(RemoveShortsDisclosure)) {
+    } else if ([iden isEqualToString:@"eml.shorts-disclosures"] && IS_ENABLED(RemoveShortsDisclosure)) {
         _ASDisplayView *dpView = (_ASDisplayView *)view.superview;
         ASDisplayNode *node = dpView.keepalive_node;
         _ASDisplayView *maindpView = (_ASDisplayView *)dpView.superview;
         ASDisplayNode *mainNode = maindpView.keepalive_node;
         [mainNode removeYogaChild:node];
         [maindpView removeFromSuperview];
-        return;
     }
 }
 
@@ -330,5 +320,12 @@ void YouModFilterShortsDisplayView(_ASDisplayView *view, NSString *iden) {
         return NO;
     }
     return YES;
+}
+- (UIView *)stickerContainer {
+    UIView *orig = %orig;
+    if (orig && IS_ENABLED(HideShortsProducts)) {
+        [orig removeFromSuperview];
+    }
+    return orig;
 }
 %end

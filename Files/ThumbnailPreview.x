@@ -177,10 +177,7 @@
 
 - (void)moreTapped:(UIButton *)sender {
     UIActivityViewController *activityVC = [[UIActivityViewController alloc] initWithActivityItems:@[self.thumbnailImage] applicationActivities:nil];
-    if (isPad()) {
-        activityVC.popoverPresentationController.sourceView = sender;
-        activityVC.popoverPresentationController.sourceRect = sender.bounds;
-    }
+    YouModConfigureSharePopover(activityVC, self.view);
     [self presentViewController:activityVC animated:YES completion:nil];
 }
 

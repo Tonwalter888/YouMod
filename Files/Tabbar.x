@@ -319,6 +319,26 @@ static BOOL isTabSelected = NO;
 }
 %end
 
+%hook YTScrollableNavigationController
+- (BOOL)hidePivotBarOnScroll {
+    if (INTFORVAL(PivotBarHide) == 1) {
+        return YES;
+    } else if (INTFORVAL(PivotBarHide) == 2) {
+        return NO;
+    }
+    return %orig;
+}
+- (void)setHidePivotBarOnScroll:(BOOL)arg {
+    BOOL temp = arg;
+    if (INTFORVAL(PivotBarHide) == 1) {
+        temp = YES;
+    } else if (INTFORVAL(PivotBarHide) == 2) {
+        temp = NO;
+    }
+    %orig(temp);
+}
+%end
+
 %hook YTAppDelegate
 - (void)appDidBecomeActive {
     %orig;

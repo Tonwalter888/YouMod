@@ -211,4 +211,31 @@
 
 %hook YTEngagementPanelHeaderView
 - (void)setSubheader:(UIView *)view { if (!IS_ENABLED(HideEngagementSubbar)) %orig; }
+- (void)layoutSubviews {
+    %orig;
+    if (IS_ENABLED(HideInfoButtonPanel)) {
+        YTQTMButton *button = self.informationButton;
+        if (button != nil) {
+            button.hidden = YES;
+        }
+    }
+    if (IS_ENABLED(HideSortFilterButtonPanel)) {
+        YTQTMButton *button = self.sortFilterMenuButton;
+        if (button != nil) {
+            button.hidden = YES;
+        }
+    }
+    if (IS_ENABLED(HideCommunityButtonPanel)) {
+        for (YTQTMButton *button in self.subviews) {
+            if ([button isKindOfClass:%c(YTQTMButton)]) {
+                YTIButtonRenderer *renderer = [button valueForKey:@"_buttonRenderer"];
+                NSString *desc = [renderer description];
+                if ([desc containsString:@"FEcommunity_page"]) {
+                    button.hidden = YES;
+                    break;
+                }
+            }
+        }
+    }
+}
 %end

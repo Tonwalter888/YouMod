@@ -73,6 +73,7 @@
 #import <YouTubeHeader/YTPlayerBarRectangleDecorationView.h>
 #import <YouTubeHeader/ELMNodeController.h>
 #import <objc/runtime.h>
+#import <YouTubeHeader/ELMTouchCommandPropertiesHandler.h>
 
 // For Settings.x and SponsorBlockSettings.x
 #import <roothide.h>
@@ -246,6 +247,7 @@
 #define HideTabIndi @"YouModHideTabIndicators"
 #define HideTabLabels @"YouModHideTabLabels"
 #define UseFrostedTabBar @"YouModUseFrostedTabBar"
+#define PivotBarHide @"YouModPivotBarHide"
 // Miscellaneous
 #define BackgroundPlayback @"YouModEnablesBackgroundPlayback"
 #define DisablesShortsPiP @"YouModTrytoDisablesShortsPiP"
@@ -259,6 +261,9 @@
 #define HideLikeDislikeVotes @"YouModHideLikeDislikeVotes"
 #define HideCommuGuide @"YouModHideCommuGuide"
 #define HideEngagementSubbar @"YouModHideEngagementSubbar"
+#define HideInfoButtonPanel @"YouModHideInfoButtonPanel"
+#define HideSortFilterButtonPanel @"YouModHideSortFilterButtonPanel"
+#define HideCommunityButtonPanel @"YouModHideCommunityButtonPanel"
 #define DisablesRTL @"YouModDisablesRTL"
 #define DeviceUIIndex @"YouModDeviceUIIndex"
 #define FloatingKeyboard @"YouModFloatingKeyboard"
@@ -529,7 +534,14 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 @interface YTMySubsFilterHeaderViewController : UIViewController
 @end
 
+@interface YTEngagementPanelHeaderView : UIView
+- (YTQTMButton *)informationButton;
+- (YTQTMButton *)sortFilterMenuButton;
+@end
+
 @interface YTEngagementPanelView : UIView
+- (YTQTMButton *)informationButton;
+- (YTQTMButton *)sortFilterMenuButton;
 @end
 
 @interface YTEngagementPanelContainerView : UIView
@@ -829,6 +841,7 @@ extern NSArray *getAllSystemLanguageValues();
 extern UIViewController *YouModTopViewController(UIViewController *root);
 extern BOOL isDarkMode(UIView *view);
 extern BOOL isPad();
+extern void YouModConfigureSharePopover(UIActivityViewController *activityVC, UIView *sourceView);
 
 #define LOC(x) [YouModBundle() localizedStringForKey:x value:nil table:nil]
 

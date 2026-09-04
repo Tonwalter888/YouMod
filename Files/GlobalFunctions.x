@@ -96,3 +96,18 @@ BOOL isDarkMode(UIView *view) {
 BOOL isPad() {
     return UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad;
 }
+
+void YouModConfigureSharePopover(UIActivityViewController *activityVC, UIView *sourceView) {
+    if (isPad() && activityVC) {
+        UIView *targetView = sourceView ?: YouModTopViewController(nil).view;
+        if (targetView) {
+            activityVC.popoverPresentationController.sourceView = targetView;
+            CGRect bounds = targetView.bounds;
+            if (CGRectIsEmpty(bounds) && targetView.window) {
+                bounds = targetView.window.bounds;
+            }
+            activityVC.popoverPresentationController.sourceRect = CGRectMake(bounds.size.width / 2, bounds.size.height, 0, 0);
+            activityVC.popoverPresentationController.permittedArrowDirections = 0;
+        }
+    }
+}

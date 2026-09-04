@@ -875,13 +875,7 @@ static void YouModSaveVideoToPhotos(NSURL *fileURL, UIViewController *presenter,
 static void YouModShareItem(id item, UIViewController *presenter) {
     if (!item || !presenter) return;
     UIActivityViewController *activity = [[UIActivityViewController alloc] initWithActivityItems:@[item] applicationActivities:nil];
-    if (isPad()) {
-        activity.popoverPresentationController.sourceView = presenter.view;
-        activity.popoverPresentationController.sourceRect = CGRectMake(presenter.view.bounds.size.width / 2, presenter.view.bounds.size.height, 0, 0);
-        activity.popoverPresentationController.permittedArrowDirections = 0;
-    } else {
-        activity.popoverPresentationController.sourceView = presenter.view;
-    }
+    YouModConfigureSharePopover(activity, presenter.view);
     [presenter presentViewController:activity animated:YES completion:nil];
 }
 
@@ -2122,34 +2116,24 @@ static void YouModShowTranslationDialog(NSString *text, UIViewController *presen
 }
 
 static NSString *YouModExtractCommentText(UIView *cellView) {
-    if (!cellView) return @"";
-
-    NSString *resultText = @"";
+    NSString *resultText = nil;
     NSMutableArray<UIView *> *queue = [NSMutableArray arrayWithObject:cellView];
-    Class asDisplayClass = NSClassFromString(@"_ASDisplayView");
-    Class elmTextExClass = NSClassFromString(@"ELMExpandableTextNode");
-    Class elmTextClass = NSClassFromString(@"ELMTextNode");
 
     while (queue.count > 0) {
         UIView *current = queue.firstObject;
         [queue removeObjectAtIndex:0];
 
-        if (asDisplayClass && [current isKindOfClass:asDisplayClass]) {
-            ASDisplayNode *node = [current performSelector:@selector(keepalive_node)];
-
-            BOOL isExpandableText = node && elmTextExClass && [node isKindOfClass:elmTextExClass];
-            BOOL isText = node && elmTextClass && [node isKindOfClass:elmTextClass];
+        if ([current isKindOfClass:%c(_ASDisplayView)]) {
             BOOL isCommentLabel = [current.accessibilityIdentifier isEqualToString:@"id.comment.content.label"];
-
-            if (isText || isExpandableText || isCommentLabel) {
-                resultText = current.accessibilityLabel ?: @"";
+            if (isCommentLabel) {
+                resultText = current.accessibilityLabel;
                 break;
             }
-
-            for (id obj in node.yogaChildren) {
-                if ([obj isKindOfClass:elmTextClass] && [[obj description] containsString:@"id.comment.content.label"]) {
-                    NSAttributedString *text = [obj valueForKey:@"_attributedText"];
-                    resultText = text.string;
+            ASDisplayNode *node = current.keepalive_node;
+            if ([node isKindOfClass:%c(ELMExpandableTextNode)] || [node isKindOfClass:%c(ELMTextNode)]) {
+                NSString *desc = [[[[node valueForKey:@"_controller"] valueForKey:@"_parent"] valueForKey:@"_weakComponent"] description];
+                if ([desc containsString:@"post_text.eml"]) {
+                    resultText = current.accessibilityLabel;
                     break;
                 }
             }
