@@ -524,10 +524,6 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 - (void)removeYogaChild:(id)arg;
 @end
 
-@interface ELMNodeController (YouMod)
-- (void)remove:(id)arg;
-@end
-
 @interface YTIMySubsFilterHeaderRenderer : GPBMessage
 @end
 
@@ -540,8 +536,6 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 @end
 
 @interface YTEngagementPanelView : UIView
-- (YTQTMButton *)informationButton;
-- (YTQTMButton *)sortFilterMenuButton;
 @end
 
 @interface YTEngagementPanelContainerView : UIView

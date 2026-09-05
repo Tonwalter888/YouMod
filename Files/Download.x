@@ -2087,6 +2087,23 @@ void YouModConfigureDownloadButton(_ASDisplayView *view, NSString *iden) {
         tap.delaysTouchesEnded = YES;
         [view addGestureRecognizer:tap];
         objc_setAssociatedObject(view, @selector(YouModDownloadButtonTapped:), @YES, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    } else if ([iden isEqualToString:@"id.elements.list_item"]) {
+        ASDisplayNode *node = view.keepalive_node;
+        NSString *desc = nil;
+        @try {
+            desc = [[[[node valueForKey:@"_weakNodeController"] valueForKey:@"_weakComponent"] valueForKey:@"_weakOwningComponent"] description];
+        } @catch (id ex) {
+            return;
+        }
+        if ([desc containsString:@"download_button_inner.eml"]) {
+            view.userInteractionEnabled = YES;
+            UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:view action:@selector(YouModDownloadButtonTapped:)];
+            tap.cancelsTouchesInView = YES;
+            tap.delaysTouchesBegan = YES;
+            tap.delaysTouchesEnded = YES;
+            [view addGestureRecognizer:tap];
+            objc_setAssociatedObject(view, @selector(YouModDownloadButtonTapped:), @YES, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+        }
     }
 }
 
@@ -2131,7 +2148,12 @@ static NSString *YouModExtractCommentText(UIView *cellView) {
             }
             ASDisplayNode *node = [current performSelector:@selector(keepalive_node)];
             if ([node isKindOfClass:%c(ELMExpandableTextNode)] || [node isKindOfClass:%c(ELMTextNode)]) {
-                NSString *desc = [[[[node valueForKey:@"_controller"] valueForKey:@"_parent"] valueForKey:@"_weakComponent"] description];
+                NSString *desc = nil;
+                @try {
+                    desc = [[[[node valueForKey:@"_weakNodeController"] valueForKey:@"_parent"] valueForKey:@"_weakComponent"] description];
+                } @catch (id ex) {
+                    continue;
+                }
                 if ([desc containsString:@"post_text.eml"]) {
                     resultText = current.accessibilityLabel;
                     break;
