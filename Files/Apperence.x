@@ -32,6 +32,7 @@ void YouModApplyOLEDToDisplayView(_ASDisplayView *view, NSString *iden) {
         @"id.subs.subscriptions_channel_bar",
         @"eml.vwc",
         @"eml.cvr",
+        @"intro_dialog",
         @"PAmedia_hub_device_picker.engagement_panel_header", nil
     ];  
     if ([blackViews containsObject:iden]) {
@@ -58,6 +59,18 @@ void YouModApplyOLEDToDisplayView(_ASDisplayView *view, NSString *iden) {
         if ([con.view isKindOfClass:%c(YCHAsyncLiveChatImmersiveCollectionView)]) return;
         view.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
             return isDarkMode(view) ? [UIColor blackColor] : [UIColor whiteColor];
+        }];
+    }
+    ASDisplayNode *node = view.keepalive_node;
+    NSString *desc = nil;
+    @try {
+        desc = [[[[node valueForKey:@"_weakNodeController"] valueForKey:@"_parent"] valueForKey:@"_weakComponent"] description];
+    } @catch (id ex) {
+        return;
+    }
+    if ([desc containsString:@"live_chat_buy_flow_panel_header.eml"] || [desc containsString:@"missing_content_view.eml"]) {
+        view.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
+            return isDarkMode(view) ? [UIColor blackColor] : [UIColor clearColor];
         }];
     }
 }

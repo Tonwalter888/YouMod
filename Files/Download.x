@@ -2108,17 +2108,28 @@ static NSString *YouModExtractCommentText(UIView *cellView) {
                 break;
             }
             ASDisplayNode *node = [current performSelector:@selector(keepalive_node)];
-            if ([node isKindOfClass:%c(ELMExpandableTextNode)] || [node isKindOfClass:%c(ELMTextNode)]) {
-                NSString *desc = nil;
-                @try {
-                    desc = [[[[node valueForKey:@"_weakNodeController"] valueForKey:@"_parent"] valueForKey:@"_weakComponent"] description];
-                } @catch (id ex) {
-                    continue;
+
+            if (![node isKindOfClass:%c(ELMExpandableTextNode)] && ![node isKindOfClass:%c(ELMTextNode)]) {
+                BOOL found = NO;
+                for (id child in node.yogaChildren) {
+                    if ([child isKindOfClass:%c(ELMExpandableTextNode)] || [child isKindOfClass:%c(ELMTextNode)]) {
+                        node = child;
+                        found = YES;
+                        break;
+                    }
                 }
-                if ([desc containsString:@"post_text.eml"]) {
-                    resultText = current.accessibilityLabel;
-                    break;
-                }
+                if (!found) continue;
+            }
+            NSString *desc = nil;
+            @try {
+                desc = [[[[node valueForKey:@"_weakNodeController"] valueForKey:@"_parent"] valueForKey:@"_weakComponent"] description];
+            } @catch (id ex) {
+                continue;
+            }
+            if ([desc containsString:@"post_text.eml"]) {
+                NSAttributedString *strings = [node valueForKey:@"_attributedText"];
+                resultText = strings.string;
+                break;
             }
         }
 
@@ -2296,6 +2307,8 @@ void YouModHandleDownloadButtonAction(_ASDisplayView *view, UITapGestureRecogniz
     UIViewController *presenter = view._viewControllerForAncestor;
     if ([presenter isKindOfClass:%c(YTActionSheetDialogViewController)]) {
         parentResponder = [[presenter valueForKey:@"_delegate"] valueForKey:@"_parentResponder"];
+    } else {
+        parentResponder = [presenter valueForKey:@"_parentResponder"];
     }
     YouModShowDownloadManager(YouModCurrentPlayerViewController, presenter, view, NO);
 }
@@ -2314,7 +2327,6 @@ void YouModHandleDownloadButtonAction(_ASDisplayView *view, UITapGestureRecogniz
         downloadBtn.exclusiveTouch = YES;
         downloadBtn.tag = 1501;
         [downloadBtn addTarget:self action:@selector(didTapYouModShortsDownload:) forControlEvents:UIControlEventTouchUpInside];
-        [downloadBtn enableNewTouchFeedback];
         [self addSubview:downloadBtn];
     }
     CGFloat btnWidth = 64.0;
@@ -2331,6 +2343,7 @@ void YouModHandleDownloadButtonAction(_ASDisplayView *view, UITapGestureRecogniz
         btnHeight = btnHeight + 16.0;
     } else {
         Y = pov.frame.origin.y - 60.0;
+        [downloadBtn enableNewTouchFeedback];
     }
     downloadBtn.frame = CGRectMake(X, Y, btnWidth, btnHeight);
     [self bringSubviewToFront:downloadBtn];
