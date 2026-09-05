@@ -25,8 +25,7 @@ static BOOL isWiFiConnected() {
     return !isCellular;
 }
 
-extern void YouModDownloadSetCurrentPlayer(YTPlayerViewController *player);
-extern YTPlayerViewController *YouModDownloadGetCurrentPlayer(void);
+extern YTPlayerViewController *YouModCurrentPlayerViewController;
 
 #pragma mark - Rewind / Fast-forward on iOS media controls
 
@@ -50,7 +49,7 @@ static CGFloat YouModForwardSecondsValue(void) {
 // off the main thread (notably from Bluetooth and CarPlay), while seekToTime: and
 // the player's time accessors are main-thread-only.
 static BOOL YouModSeekByInterval(CGFloat delta) {
-    YTPlayerViewController *player = YouModDownloadGetCurrentPlayer();
+    YTPlayerViewController *player = YouModCurrentPlayerViewController;
     if (!player || ![player respondsToSelector:@selector(seekToTime:)]) return NO;
     dispatch_async(dispatch_get_main_queue(), ^{
         CGFloat cur = [player currentVideoMediaTime];
@@ -471,7 +470,6 @@ static BOOL hasSetSeekButtons = NO;
     YTSingleVideoController *sgvid = [self valueForKey:@"_currentSingleVideo"];
     YTPlayerView *playerview = [sgvid valueForKey:@"_playerView"];
     YTPlayerViewController *playerviewController = [playerview valueForKey:@"_playerViewDelegate"];
-    YouModDownloadSetCurrentPlayer(playerviewController);
     YouModConfigureRemoteSkipCommands();
     if (INTFORVAL(AutoDRCAudioIndex) != 0) [playerviewController YouModAutoDRCAudio];
     if (INTFORVAL(AudioTrack) != 0) [playerviewController performSelector:@selector(YouModAutoAudioTrack) withObject:nil afterDelay:0.5];

@@ -60,3 +60,10 @@ static const void *YouModASViewKey = &YouModASViewKey;
     objc_setAssociatedObject(self, YouModASViewKey, @YES, OBJC_ASSOCIATION_ASSIGN);
 }
 %end
+
+%hook YTInlinePlayerBarContainerView
+- (void)updateCurrentTimeTitleLabel {
+    NSLog(@"[WaterDev] updateTime called");
+    %orig;
+}
+%end

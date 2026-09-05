@@ -70,6 +70,7 @@ static const NSInteger YMOverlayButtonBaseTag = 9910;
 // Button geometry. The top inset places the row just below YouTube's own
 // CC/gear row in the top-right corner of the player overlay.
 static const CGFloat YMOverlayButtonSize = 32.5;
+static const CGFloat YMOverlayButtonGap = 3.0;
 static const CGFloat YMOverlayButtonTopInset = 52.0; // fallback row top when the gear can't be located
 static const CGFloat YMOverlayButtonEdgePadding = 12.0; // fallback right padding when the gear isn't found
 
@@ -345,7 +346,7 @@ static BOOL isRelatedVideosExpanded = NO;
         }
 
         CGFloat width = (spec.title.length > 0) ? YMOverlayTextButtonWidth : YMOverlayButtonSize;
-        CGFloat centerX = (prevHalfWidth == 0) ? trailingCenterX : trailingCenterX - prevHalfWidth - width / 2.0;
+        CGFloat centerX = (prevHalfWidth == 0) ? trailingCenterX : trailingCenterX - prevHalfWidth - YMOverlayButtonGap - width / 2.0;
 
         btn.frame = CGRectMake(centerX - width / 2.0, rowTop, width, YMOverlayButtonSize);
         trailingCenterX = centerX;

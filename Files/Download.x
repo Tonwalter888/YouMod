@@ -418,27 +418,7 @@ static void YouModApplyDownloadHeaders(NSMutableURLRequest *request, NSDictionar
 
 @end
 
-static __weak YTPlayerViewController *YouModCurrentPlayerViewController;
-
-void YouModDownloadSetCurrentPlayer(YTPlayerViewController *player) {
-    YouModCurrentPlayerViewController = player;
-}
-
-YTPlayerViewController *YouModDownloadGetCurrentPlayer(void) {
-    return YouModCurrentPlayerViewController;
-}
-
-static id YouModObjectFromSelector(id object, SEL selector) {
-    if (!object) return nil;
-    if ([object respondsToSelector:selector]) {
-        return ((id (*)(id, SEL))objc_msgSend)(object, selector);
-    }
-    @try {
-        return [object valueForKey:NSStringFromSelector(selector)];
-    } @catch (__unused NSException *exception) {
-        return nil;
-    }
-}
+YTPlayerViewController *YouModCurrentPlayerViewController = nil;
 
 static void YouModSendToast(NSString *message) {
     UIView *parent = sbGetNotificationParent();
@@ -811,26 +791,6 @@ static NSArray <YouModMediaFormat *> *YouModFormatsForPlayer(YTPlayerViewControl
     }
 }
 
-static UIViewController *YouModPresenterForSender(UIView *sender, YTPlayerViewController *player) {
-    UIViewController *presenter = nil;
-    if ([sender respondsToSelector:@selector(_viewControllerForAncestor)])
-        presenter = [sender _viewControllerForAncestor];
-    if (!presenter) presenter = player;
-    return YouModTopViewController(presenter);
-}
-
-static YTPlayerViewController *YouModPlayerFromViewController(UIViewController *vc) {
-    Class playerClass = NSClassFromString(@"YTPlayerViewController");
-    UIViewController *cursor = vc;
-    while (cursor) {
-        if (playerClass && [cursor isKindOfClass:playerClass]) return (YTPlayerViewController *)cursor;
-        id player = YouModObjectFromSelector(cursor, @selector(playerViewController));
-        if (playerClass && [player isKindOfClass:playerClass]) return (YTPlayerViewController *)player;
-        cursor = cursor.parentViewController;
-    }
-    return YouModCurrentPlayerViewController;
-}
-
 static NSURL *YouModThumbnailURL(YTPlayerViewController *player) {
     if (!player) return nil;
     YTIVideoDetails *details = YouModVideoDetailsForPlayer(player);
@@ -986,9 +946,10 @@ static void YouModHandlePostDownloadImage(UIImage *image, UIViewController *pres
     }
 }
 
+static id parentResponder = nil;
+
 static void YouModPresentMenu(YTPlayerViewController *player, NSArray <YouModMenuItem *> *items, UIViewController *presenter, UIView *sender) {
-    presenter = YouModTopViewController(presenter);
-    YTDefaultSheetController *sheet = [%c(YTDefaultSheetController) sheetControllerWithParentResponder:presenter];
+    YTDefaultSheetController *sheet = [%c(YTDefaultSheetController) sheetControllerWithParentResponder:parentResponder];
     for (YouModMenuItem *item in items) {
         YTActionSheetAction *action;
         if (item.subtitle == nil) {
@@ -2262,7 +2223,7 @@ void YouModHandleCommentLongPressAction(_ASDisplayView *view, UILongPressGesture
 
     if (commentText && commentText.length > 0) {
         [items addObject:[YouModMenuItem itemWithTitle:LOC(@"TRANSLATE_COMMENT") subtitle:nil icon:YouModYTIconImage(897, NO, nil) handler:^{
-            UIViewController *presenter = YouModPresenterForSender(view, nil);
+            UIViewController *presenter = view._viewControllerForAncestor;
             YouModShowTranslationDialog(commentText, presenter);
         }]];
 
@@ -2274,7 +2235,7 @@ void YouModHandleCommentLongPressAction(_ASDisplayView *view, UILongPressGesture
     [items addObject:[YouModMenuItem itemWithTitle:LOC(@"SAVE_COMMENT_IMAGE") subtitle:nil icon:YouModYTIconImage(367, NO, nil) handler:^{
         UIImage *image = YouModRenderViewToImage(view);
         if (image) {
-            UIViewController *p = YouModPresenterForSender(view, nil);
+            UIViewController *p = view._viewControllerForAncestor;
             YouModHandlePostDownloadImage(image, p);
         }
     }]];
@@ -2286,7 +2247,7 @@ void YouModHandleCommentLongPressAction(_ASDisplayView *view, UILongPressGesture
         }
     }]];
 
-    UIViewController *presenter = YouModPresenterForSender(view, nil);
+    UIViewController *presenter = view._viewControllerForAncestor;
     if (!presenter) return;
 
     YouModPresentMenu(nil, items, presenter, view);
@@ -2300,7 +2261,7 @@ void YouModHandlePostLongPressAction(_ASDisplayView *view, UILongPressGestureRec
 
     if (commentText && commentText.length > 0) {
         [items addObject:[YouModMenuItem itemWithTitle:LOC(@"TRANSLATE_POST") subtitle:nil icon:YouModYTIconImage(897, NO, nil) handler:^{
-            UIViewController *presenter = YouModPresenterForSender(view, nil);
+            UIViewController *presenter = view._viewControllerForAncestor;
             YouModShowTranslationDialog(commentText, presenter);
         }]];
 
@@ -2312,7 +2273,7 @@ void YouModHandlePostLongPressAction(_ASDisplayView *view, UILongPressGestureRec
     [items addObject:[YouModMenuItem itemWithTitle:LOC(@"SAVE_POST_IMAGE") subtitle:nil icon:YouModYTIconImage(367, NO, nil) handler:^{
         UIImage *image = YouModRenderViewToImage(view);
         if (image) {
-            UIViewController *p = YouModPresenterForSender(view, nil);
+            UIViewController *p = view._viewControllerForAncestor;
             YouModHandlePostDownloadImage(image, p);
         }
     }]];
@@ -2324,7 +2285,7 @@ void YouModHandlePostLongPressAction(_ASDisplayView *view, UILongPressGestureRec
         }
     }]];
 
-    UIViewController *presenter = YouModPresenterForSender(view, nil);
+    UIViewController *presenter = view._viewControllerForAncestor;
     if (!presenter) return;
 
     YouModPresentMenu(nil, items, presenter, view);
@@ -2332,11 +2293,12 @@ void YouModHandlePostLongPressAction(_ASDisplayView *view, UILongPressGestureRec
 
 void YouModHandleDownloadButtonAction(_ASDisplayView *view, UITapGestureRecognizer *sender) {
     if (sender.state != UIGestureRecognizerStateEnded) return;
-    UIViewController *presenter = YouModPresenterForSender(view, YouModCurrentPlayerViewController);
-    YTPlayerViewController *player = YouModPlayerFromViewController(presenter);
-    YouModShowDownloadManager(player, presenter, view, NO);
+    UIViewController *presenter = view._viewControllerForAncestor;
+    if ([presenter isKindOfClass:%c(YTActionSheetDialogViewController)]) {
+        parentResponder = [[presenter valueForKey:@"_delegate"] valueForKey:@"_parentResponder"];
+    }
+    YouModShowDownloadManager(YouModCurrentPlayerViewController, presenter, view, NO);
 }
-
 
 %hook YTReelWatchPlaybackOverlayView
 - (void)layoutSubviews {
@@ -2377,7 +2339,8 @@ void YouModHandleDownloadButtonAction(_ASDisplayView *view, UITapGestureRecogniz
 - (void)didTapYouModShortsDownload:(YTQTMButton *)button {
     YTShortsPlayerViewController *shortsPlayerView = (YTShortsPlayerViewController *)self._viewControllerForAncestor;
     YTPlayerViewController *player = (YTPlayerViewController *)shortsPlayerView.childViewControllers[0];
-    UIViewController *presenter = YouModPresenterForSender(button, player);
+    UIViewController *presenter = button._viewControllerForAncestor;
+    parentResponder = [presenter valueForKey:@"_parentResponder"];
     YouModShowDownloadManager(player, presenter, button, YES);
 }
 %end
@@ -2395,9 +2358,9 @@ void YouModHandleDownloadButtonAction(_ASDisplayView *view, UITapGestureRecogniz
         return YMIsOverlayButtonEnabled(@"download.video");
     };
     download.onTap = ^(YTPlayerViewController *player, UIButton *button) {
-        UIViewController *presenter = YouModPresenterForSender(button, player ?: YouModCurrentPlayerViewController);
-        YTPlayerViewController *resolved = YouModPlayerFromViewController(presenter) ?: player ?: YouModCurrentPlayerViewController;
-        YouModShowDownloadManager(resolved, presenter, button, NO);
+        UIViewController *presenter = button._viewControllerForAncestor;
+        parentResponder = [presenter valueForKey:@"_parentResponder"];
+        YouModShowDownloadManager(YouModCurrentPlayerViewController, presenter, button, NO);
     };
     YMRegisterOverlayButton(download);
 }
