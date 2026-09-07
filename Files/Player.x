@@ -1516,7 +1516,7 @@ void YouModRemoveFullscreenActionsButtons(YTELMViewController *controller) {
                     break;
                 }
             }    
-            for (id child in node.yogaChildren) {
+            for (ASDisplayNode *child in node.yogaChildren) {
                 for (id child2 in child.yogaChildren) {
                     if ([[child2 description] containsString:button]) {
                         [node removeYogaChild:child];
