@@ -13,6 +13,7 @@ static const void *YouModASViewKey = &YouModASViewKey;
     YouModFilterAdsDisplayView(self, iden);
     YouModFilterChannelButtons(self, iden); // Will improve this
     YouModFilterVideoButtons(self, iden);
+    YouModFilterNonScrollableVideoButtons(self, iden);
     YouModFilterShortsDisplayView(self, iden);
     YouModRemoveShortsPausedButtons(self, iden);
     objc_setAssociatedObject(self, YouModASViewKey, @YES, OBJC_ASSOCIATION_ASSIGN);
@@ -60,6 +61,8 @@ static const void *YouModASViewKey = &YouModASViewKey;
         self.view.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
             return isDarkMode(self.view) ? [UIColor blackColor] : [UIColor whiteColor];
         }];
+    } else if ([desc containsString:@"quick_actions.eml"]) {
+        YouModRemoveFullscreenActionsButtons(self);
     }
     objc_setAssociatedObject(self, YouModASViewKey, @YES, OBJC_ASSOCIATION_ASSIGN);
 }
