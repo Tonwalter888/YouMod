@@ -11,9 +11,9 @@ static const void *YouModASViewKey = &YouModASViewKey;
     YouModConfigureDownloadButton(self, iden);
     YouModSetupDownloadGestures(self, iden);
     YouModFilterAdsDisplayView(self, iden);
-    YouModFilterChannelButtons(self, iden); // Will improve this
-    YouModFilterVideoButtons(self, iden);
+    YouModFilterChannelButtons(self, iden); // Maybe I will improve this
     YouModFilterNonScrollableVideoButtons(self, iden);
+    YouModFilterVideoButtons(self, iden);
     YouModFilterShortsDisplayView(self, iden);
     YouModRemoveShortsPausedButtons(self, iden);
     objc_setAssociatedObject(self, YouModASViewKey, @YES, OBJC_ASSOCIATION_ASSIGN);
@@ -36,7 +36,8 @@ static const void *YouModASViewKey = &YouModASViewKey;
 - (void)didMoveToWindow {
     %orig;
     if (objc_getAssociatedObject(self, YouModASViewKey)) return;
-    YouModApplyOLEDCollectionView(self);
+    NSString *iden = self.accessibilityIdentifier;
+    YouModApplyOLEDCollectionView(self, iden);
     objc_setAssociatedObject(self, YouModASViewKey, @YES, OBJC_ASSOCIATION_ASSIGN);
 }
 %end
@@ -60,6 +61,11 @@ static const void *YouModASViewKey = &YouModASViewKey;
     } else if (IS_ENABLED(OLEDTheme) && [desc containsString:@"timeline_search_input_form_id"] && [desc containsString:@"search_input.eml"]) {
         self.view.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
             return isDarkMode(self.view) ? [UIColor blackColor] : [UIColor whiteColor];
+        }];
+    } else if (IS_ENABLED(OLEDTheme) && [desc containsString:@"subs_channel_bar.eml"]) {
+        UIView *sub = self.view.subviews[0];
+        sub.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
+            return isDarkMode(sub) ? [UIColor blackColor] : [UIColor clearColor];
         }];
     } else if ([desc containsString:@"quick_actions.eml"]) {
         YouModRemoveFullscreenActionsButtons(self);

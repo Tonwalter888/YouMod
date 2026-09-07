@@ -30,8 +30,6 @@ void YouModApplyOLEDToDisplayView(_ASDisplayView *view, NSString *iden) {
     NSSet *blackViews = [NSSet setWithObjects:
         @"id.elements.components.comment_composer",
         @"id.subs.subscriptions_channel_bar",
-        @"eml.vwc",
-        @"eml.cvr",
         @"intro_dialog",
         @"PAmedia_hub_device_picker.engagement_panel_header", nil
     ];  
@@ -75,14 +73,9 @@ void YouModApplyOLEDToDisplayView(_ASDisplayView *view, NSString *iden) {
     }
 }
 
-void YouModApplyOLEDCollectionView(ASCollectionView *self) {
+void YouModApplyOLEDCollectionView(ASCollectionView *self, NSString *iden) {
     if (!IS_ENABLED(OLEDTheme)) return;
-    NSString *iden = self.accessibilityIdentifier;
-    NSSet *blackViews = [NSSet setWithObjects:
-        @"eml.chip_bar_collection",
-        @"subs_channel_bar.collection", nil
-    ];  
-    if ([blackViews containsObject:iden]) {
+    if ([iden isEqualToString:@"eml.chip_bar_collection"]) {
         self.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
             return isDarkMode(self) ? [UIColor blackColor] : [UIColor clearColor];
         }];
@@ -130,7 +123,7 @@ void YouModApplyOLEDCollectionView(ASCollectionView *self) {
 %end
 
 %hook YTRiveStartupAnimationViewController
-- (void)viewDidAppear:(BOOL)animated {
+- (void)viewWillAppear:(BOOL)animated {
     %orig;
     UIView *mainView = self.view;
     if (objc_getAssociatedObject(mainView, kOLEDKey)) return;
@@ -142,7 +135,7 @@ void YouModApplyOLEDCollectionView(ASCollectionView *self) {
 %end
 
 %hook YTStartupAnimationViewController
-- (void)viewDidAppear:(BOOL)animated {
+- (void)viewWillAppear:(BOOL)animated {
     %orig;
     UIView *mainView = self.view;
     if (objc_getAssociatedObject(mainView, kOLEDKey)) return;
