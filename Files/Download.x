@@ -2108,7 +2108,6 @@ static NSString *YouModExtractCommentText(UIView *cellView) {
                 break;
             }
             ASDisplayNode *node = [current performSelector:@selector(keepalive_node)];
-
             if (![node isKindOfClass:%c(ELMExpandableTextNode)] && ![node isKindOfClass:%c(ELMTextNode)]) {
                 BOOL found = NO;
                 for (id child in node.yogaChildren) {
@@ -2127,6 +2126,9 @@ static NSString *YouModExtractCommentText(UIView *cellView) {
                 continue;
             }
             if ([desc containsString:@"post_text.eml"]) {
+                if ([node isKindOfClass:%c(ELMExpandableTextNode)]) {
+                    node = [node performSelector:@selector(currentTextNode)];
+                }
                 NSAttributedString *strings = [node valueForKey:@"_attributedText"];
                 resultText = strings.string;
                 break;
