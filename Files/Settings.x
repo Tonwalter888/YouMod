@@ -493,7 +493,6 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
             YMToggle(YMLOC(@"DISABLES_RTL"), YMLOC(@"DISABLES_RTL_DESC"), DisablesRTL),
             YMHeader(@""),
             YMTextSegment(YMLOC(@"DEVICE_UI"), DeviceUIIndex, (@[YMLOC(@"DEFAULT"), @"iPad", @"iPhone"]), 0),
-            YMTextSegment(YMLOC(@"PIVOT_BAR_HIDE"), PivotBarHide, (@[YMLOC(@"DEFAULT"), YMLOC(@"ENABLED"), YMLOC(@"DISABLED")]), 0),
             YMToggle(YMLOC(@"AUTO_OPEN_LINK"), YMLOC(@"AUTO_OPEN_LINK_DESC"), AutoOpenLink),
             YMHeader(YMLOC(@"FLYOUT_MENU")),
             YMToggle(YMLOC(@"REMOVE_PLAY_IN_NEXT_QUEUE_OPTION"), YMLOC(@"REMOVE_PLAY_IN_NEXT_QUEUE_OPTION_DESC"), RemovePlayInNextQueueOption),

@@ -714,18 +714,17 @@ static BOOL SBGetDecorationViewTimeRange(UIView *view, CGFloat *outStart, CGFloa
     return NO;
 }
 
-// Whether a decoration view belongs to the main player's bar rather than the feed's
-// inline-muted-playback bar. Only the main player's markers are rounded.
-static BOOL SBDecorationViewIsInMainPlayer(UIView *view) {
+// The feed's inline-muted-playback bar and the windowed main player are both excluded:
+// only the fullscreen main player's markers are rounded. isFullscreen is private on the
+// overlay view, so a view that does not answer it counts as not fullscreen.
+static BOOL SBDecorationViewIsInFullscreenMainPlayer(UIView *view) {
     UIView *currentView = view.superview;
     while (currentView != nil && currentView.superview != nil && ![currentView isKindOfClass:%c(YTMainAppVideoPlayerOverlayView)]) {
         currentView = currentView.superview;
     }
-    if ([currentView isKindOfClass:%c(YTMainAppVideoPlayerOverlayView)]) {
-        BOOL isFull = [currentView performSelector:@selector(isFullscreen)];
-        return isFull;
-    }
-    return NO;
+    if (![currentView isKindOfClass:%c(YTMainAppVideoPlayerOverlayView)]) return NO;
+    if (![currentView respondsToSelector:@selector(isFullscreen)]) return NO;
+    return [(YTMainAppVideoPlayerOverlayView *)currentView isFullscreen];
 }
 
 static void SBRebuildMarkersInDecorationView(UIView *view) {
@@ -750,7 +749,7 @@ static void SBRebuildMarkersInDecorationView(UIView *view) {
     NSArray<SBSegment *> *segments = sbActivePlayerSegments;
     if (!segments || segments.count == 0) return;
 
-    BOOL isMainPlayer = SBDecorationViewIsInMainPlayer(view);
+    BOOL isFullscreenMainPlayer = SBDecorationViewIsInFullscreenMainPlayer(view);
 
     [CATransaction begin];
     [CATransaction setDisableActions:YES];
@@ -771,7 +770,7 @@ static void SBRebuildMarkersInDecorationView(UIView *view) {
                 markerLayer.frame = CGRectMake(x, 0, w, barHeight);
                 markerLayer.backgroundColor = [segment segmentColor].CGColor;
                 markerLayer.masksToBounds = YES;
-                if (isMainPlayer) SBApplyMarkerRounding(markerLayer);
+                if (isFullscreenMainPlayer) SBApplyMarkerRounding(markerLayer);
                 objc_setAssociatedObject(markerLayer, @selector(sbSegmentData), @[@(frac), @(frac), @(YES)], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 
                 [view.layer addSublayer:markerLayer];
@@ -792,7 +791,7 @@ static void SBRebuildMarkersInDecorationView(UIView *view) {
                 markerLayer.frame = CGRectMake(x, 0, w, barHeight);
                 markerLayer.backgroundColor = [segment segmentColor].CGColor;
                 markerLayer.masksToBounds = YES;
-                if (isMainPlayer) SBApplyMarkerRounding(markerLayer);
+                if (isFullscreenMainPlayer) SBApplyMarkerRounding(markerLayer);
                 objc_setAssociatedObject(markerLayer, @selector(sbSegmentData), @[@(fracStart), @(fracEnd), @(NO)], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 
                 [view.layer addSublayer:markerLayer];
@@ -818,7 +817,7 @@ static void SBRenderMarkersInDecorationView(UIView *view) {
         return;
     }
 
-    BOOL isMainPlayer = SBDecorationViewIsInMainPlayer(view) && [view respondsToSelector:@selector(enableRoundedCorners)];
+    BOOL isFullscreenMainPlayer = SBDecorationViewIsInFullscreenMainPlayer(view) && [view respondsToSelector:@selector(enableRoundedCorners)];
 
     BOOL hasMarkers = NO;
     [CATransaction begin];
@@ -842,7 +841,7 @@ static void SBRenderMarkersInDecorationView(UIView *view) {
                 }
                 // Re-derive the radius: the bar is 2pt windowed and 4pt fullscreen, and
                 // the width changes on every re-layout.
-                if (isMainPlayer) SBApplyMarkerRounding(layer);
+                if (isFullscreenMainPlayer) SBApplyMarkerRounding(layer);
             }
         }
     }
