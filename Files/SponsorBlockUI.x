@@ -749,7 +749,7 @@ static void SBRebuildMarkersInDecorationView(UIView *view) {
     NSArray<SBSegment *> *segments = sbActivePlayerSegments;
     if (!segments || segments.count == 0) return;
 
-    BOOL isFullscreenMainPlayer = SBDecorationViewIsInFullscreenMainPlayer(view);
+    BOOL isFullscreenMainPlayer = SBDecorationViewIsInFullscreenMainPlayer(view) && [view respondsToSelector:@selector(enableRoundedCorners)] && [view isKindOfClass:%c(YTPlayerBarProgressDecorationView)];
 
     [CATransaction begin];
     [CATransaction setDisableActions:YES];
@@ -817,7 +817,7 @@ static void SBRenderMarkersInDecorationView(UIView *view) {
         return;
     }
 
-    BOOL isFullscreenMainPlayer = SBDecorationViewIsInFullscreenMainPlayer(view) && [view respondsToSelector:@selector(enableRoundedCorners)];
+    BOOL isFullscreenMainPlayer = SBDecorationViewIsInFullscreenMainPlayer(view) && [view respondsToSelector:@selector(enableRoundedCorners)] && [view isKindOfClass:%c(YTPlayerBarProgressDecorationView)];
 
     BOOL hasMarkers = NO;
     [CATransaction begin];
