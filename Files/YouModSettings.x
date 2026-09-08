@@ -780,6 +780,9 @@ static const void *kYMCachedDisplayedItemsKey = &kYMCachedDisplayedItemsKey;
     if (key) {
         [[NSUserDefaults standardUserDefaults] setBool:sender.on forKey:key];
         [self updateDisplayedItemsAnimated:YES];
+        if ([key isEqualToString:SkipBackwardEnabled] || [key isEqualToString:SkipForwardEnabled]) {
+            YouModConfigureRemoteSkipCommands();
+        }
     }
 }
 
@@ -854,6 +857,9 @@ static const void *kYMCachedDisplayedItemsKey = &kYMCachedDisplayedItemsKey;
     formatter.unitsStyle = NSDateComponentsFormatterUnitsStyleAbbreviated;
     
     valueLabel.text = [formatter stringFromTimeInterval:snapped];
+    if ([key isEqualToString:RewindSeconds] || [key isEqualToString:ForwardSeconds]) {
+        YouModConfigureRemoteSkipCommands();
+    }
 }
 
 #pragma mark - Action Cell

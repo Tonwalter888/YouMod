@@ -325,9 +325,9 @@
 "PAUSE_TWO_FINGERS" = "Pause using two fingers";
 "PAUSE_TWO_FINGERS_DESC" = "Pause/Resume playback by tapping on the screen using two fingers.";
 "SKIP_BACKWARD" = "Skip backward";
-"SKIP_BACKWARD_DESC" = "Replaces the previous track button in Control Center with a skip backward button by a set number of seconds.";
+"SKIP_BACKWARD_DESC" = "Replaces the previous track button in Control Center, Lock Screen, Bluetooth, and CarPlay with a skip backward button by a set number of seconds.";
 "SKIP_FORWARD" = "Skip forward";
-"SKIP_FORWARD_DESC" = "Replaces the next track button in Control Center with a skip forward button by a set number of seconds.";
+"SKIP_FORWARD_DESC" = "Replaces the next track button in Control Center, Lock Screen, Bluetooth, and CarPlay with a skip forward button by a set number of seconds.";
 "REWIND_SECONDS" = "Rewind seconds";
 "FORWARD_SECONDS" = "Fast-forward seconds";
 "HIDE_COMMENTS_SECTION" = "Hide comments section";

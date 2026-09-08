@@ -68,6 +68,84 @@ static BOOL YouModSeekByInterval(CGFloat delta) {
 // command whose handler is already installed, so it is installed only once.
 static id gYouModRewindTarget = nil;
 static id gYouModForwardTarget = nil;
+static NSMutableArray *gYouModRemoteCommandTargetProxies = nil;
+
+typedef MPRemoteCommandHandlerStatus (^YouModRemoteCommandHandler)(MPRemoteCommandEvent *event);
+
+static BOOL YouModIsPreviousTrackCommand(MPRemoteCommand *command) {
+    return command == [MPRemoteCommandCenter sharedCommandCenter].previousTrackCommand;
+}
+
+static BOOL YouModIsNextTrackCommand(MPRemoteCommand *command) {
+    return command == [MPRemoteCommandCenter sharedCommandCenter].nextTrackCommand;
+}
+
+static BOOL YouModIsPreviousNextCommand(MPRemoteCommand *command) {
+    return YouModIsPreviousTrackCommand(command) || YouModIsNextTrackCommand(command);
+}
+
+static BOOL YouModIsSkipBackwardCommand(MPRemoteCommand *command) {
+    return command == [MPRemoteCommandCenter sharedCommandCenter].skipBackwardCommand;
+}
+
+static BOOL YouModIsSkipForwardCommand(MPRemoteCommand *command) {
+    return command == [MPRemoteCommandCenter sharedCommandCenter].skipForwardCommand;
+}
+
+static MPRemoteCommandHandlerStatus YouModStatusForSeek(BOOL handled) {
+    return handled ? MPRemoteCommandHandlerStatusSuccess : MPRemoteCommandHandlerStatusNoSuchContent;
+}
+
+// When Skip Backward/Forward is on, Bluetooth/CarPlay/Lock Screen often still
+// deliver previous/next track events rather than skip events. Remap those to
+// seek using the matching per-direction preference; otherwise report unhandled
+// so the caller can fall through to YouTube's default track change.
+static BOOL YouModHandlePreviousNextRemoteCommand(MPRemoteCommandEvent *event) {
+    if (YouModIsPreviousTrackCommand(event.command) && IS_ENABLED(SkipBackwardEnabled)) {
+        return YouModSeekByInterval(-YouModRewindSecondsValue());
+    }
+    if (YouModIsNextTrackCommand(event.command) && IS_ENABLED(SkipForwardEnabled)) {
+        return YouModSeekByInterval(YouModForwardSecondsValue());
+    }
+    return NO;
+}
+
+@interface YouModRemoteCommandTargetProxy : NSObject
+@property (nonatomic, weak) MPRemoteCommand *command;
+@property (nonatomic, weak) id target;
+@property (nonatomic, assign) SEL action;
+- (MPRemoteCommandHandlerStatus)youModHandleRemoteCommandEvent:(MPRemoteCommandEvent *)event;
+@end
+
+@implementation YouModRemoteCommandTargetProxy
+- (MPRemoteCommandHandlerStatus)youModHandleRemoteCommandEvent:(MPRemoteCommandEvent *)event {
+    if (YouModIsPreviousNextCommand(event.command)) {
+        BOOL remapped = (YouModIsPreviousTrackCommand(event.command) && IS_ENABLED(SkipBackwardEnabled))
+            || (YouModIsNextTrackCommand(event.command) && IS_ENABLED(SkipForwardEnabled));
+        if (remapped) {
+            return YouModStatusForSeek(YouModHandlePreviousNextRemoteCommand(event));
+        }
+    }
+
+    if (!self.target || !self.action) return MPRemoteCommandHandlerStatusCommandFailed;
+
+    NSMethodSignature *signature = [self.target methodSignatureForSelector:self.action];
+    if (!signature) return MPRemoteCommandHandlerStatusCommandFailed;
+
+    NSInvocation *invocation = [NSInvocation invocationWithMethodSignature:signature];
+    invocation.target = self.target;
+    invocation.selector = self.action;
+    MPRemoteCommandEvent *eventArg = event;
+    if (signature.numberOfArguments > 2) [invocation setArgument:&eventArg atIndex:2];
+    [invocation invoke];
+
+    if (signature.methodReturnLength == 0) return MPRemoteCommandHandlerStatusSuccess;
+
+    MPRemoteCommandHandlerStatus status = MPRemoteCommandHandlerStatusSuccess;
+    [invocation getReturnValue:&status];
+    return status;
+}
+@end
 
 // Points the system now-playing skip controls (lock screen, Bluetooth, Control
 // Center, CarPlay) at our per-direction seek. When enabled, the OS previous/next
@@ -80,8 +158,11 @@ static id gYouModForwardTarget = nil;
 // preferred intervals are updated. Because the handlers read the seconds at press
 // time, a changed preference always seeks by the new amount immediately; the
 // interval shown on the OS controls reflects the value captured the last time this
-// ran (video change or launch).
-static void YouModConfigureRemoteSkipCommands(void) {
+// ran (settings change, video change, or launch).
+//
+// YouTube repeatedly re-enables previous/next after we configure, so
+// %hook MPRemoteCommand also forces enabled state and wraps prev/next targets.
+void YouModConfigureRemoteSkipCommands(void) {
     MPRemoteCommandCenter *cc = [MPRemoteCommandCenter sharedCommandCenter];
     BOOL back = IS_ENABLED(SkipBackwardEnabled);
     BOOL fwd = IS_ENABLED(SkipForwardEnabled);
@@ -99,15 +180,106 @@ static void YouModConfigureRemoteSkipCommands(void) {
 
     if (!gYouModRewindTarget) {
         gYouModRewindTarget = [cc.skipBackwardCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *event) {
-            return YouModSeekByInterval(-YouModRewindSecondsValue()) ? MPRemoteCommandHandlerStatusSuccess : MPRemoteCommandHandlerStatusNoSuchContent;
+            return YouModStatusForSeek(YouModSeekByInterval(-YouModRewindSecondsValue()));
         }];
     }
     if (!gYouModForwardTarget) {
         gYouModForwardTarget = [cc.skipForwardCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *event) {
-            return YouModSeekByInterval(YouModForwardSecondsValue()) ? MPRemoteCommandHandlerStatusSuccess : MPRemoteCommandHandlerStatusNoSuchContent;
+            return YouModStatusForSeek(YouModSeekByInterval(YouModForwardSecondsValue()));
         }];
     }
 }
+
+// Intercept YouTube's registration of previous/next remote targets so Bluetooth,
+// CarPlay, and Lock Screen presses seek when Skip Backward/Forward is enabled.
+// Also fight YouTube's attempts to re-enable previous/next or disable skip.
+%hook MPRemoteCommand
+- (void)addTarget:(id)target action:(SEL)action {
+    if (YouModIsPreviousNextCommand(self)) {
+        if (!gYouModRemoteCommandTargetProxies) gYouModRemoteCommandTargetProxies = [NSMutableArray array];
+
+        YouModRemoteCommandTargetProxy *proxy = [[YouModRemoteCommandTargetProxy alloc] init];
+        proxy.command = self;
+        proxy.target = target;
+        proxy.action = action;
+        [gYouModRemoteCommandTargetProxies addObject:proxy];
+        %orig(proxy, @selector(youModHandleRemoteCommandEvent:));
+        YouModConfigureRemoteSkipCommands();
+        return;
+    }
+
+    %orig;
+}
+
+- (id)addTargetWithHandler:(YouModRemoteCommandHandler)handler {
+    if (YouModIsPreviousNextCommand(self)) {
+        YouModRemoteCommandHandler wrappedHandler = ^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *event) {
+            BOOL remapped = (YouModIsPreviousTrackCommand(event.command) && IS_ENABLED(SkipBackwardEnabled))
+                || (YouModIsNextTrackCommand(event.command) && IS_ENABLED(SkipForwardEnabled));
+            if (remapped) {
+                return YouModStatusForSeek(YouModHandlePreviousNextRemoteCommand(event));
+            }
+            return handler(event);
+        };
+        id commandTarget = %orig(wrappedHandler);
+        YouModConfigureRemoteSkipCommands();
+        return commandTarget;
+    }
+
+    return %orig;
+}
+
+- (void)setEnabled:(BOOL)enabled {
+    if (YouModIsPreviousTrackCommand(self) && IS_ENABLED(SkipBackwardEnabled)) {
+        %orig(NO);
+        return;
+    }
+    if (YouModIsNextTrackCommand(self) && IS_ENABLED(SkipForwardEnabled)) {
+        %orig(NO);
+        return;
+    }
+    if (YouModIsSkipBackwardCommand(self) && IS_ENABLED(SkipBackwardEnabled)) {
+        %orig(YES);
+        return;
+    }
+    if (YouModIsSkipForwardCommand(self) && IS_ENABLED(SkipForwardEnabled)) {
+        %orig(YES);
+        return;
+    }
+
+    %orig;
+}
+
+- (void)removeTarget:(id)target action:(SEL)action {
+    if (YouModIsPreviousNextCommand(self) && gYouModRemoteCommandTargetProxies.count > 0) {
+        NSArray *proxies = [gYouModRemoteCommandTargetProxies copy];
+        for (YouModRemoteCommandTargetProxy *proxy in proxies) {
+            BOOL targetMatches = !target || proxy.target == target;
+            BOOL actionMatches = !action || proxy.action == action;
+            if (proxy.command == self && targetMatches && actionMatches) {
+                %orig(proxy, @selector(youModHandleRemoteCommandEvent:));
+                [gYouModRemoteCommandTargetProxies removeObject:proxy];
+            }
+        }
+    }
+
+    %orig;
+}
+
+- (void)removeTarget:(id)target {
+    if (YouModIsPreviousNextCommand(self) && gYouModRemoteCommandTargetProxies.count > 0) {
+        NSArray *proxies = [gYouModRemoteCommandTargetProxies copy];
+        for (YouModRemoteCommandTargetProxy *proxy in proxies) {
+            if (proxy.command == self && (!target || proxy.target == target)) {
+                %orig(proxy);
+                [gYouModRemoteCommandTargetProxies removeObject:proxy];
+            }
+        }
+    }
+
+    %orig;
+}
+%end
 
 #pragma mark - Replace prev/next paddles in playlists
 

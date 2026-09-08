@@ -526,6 +526,7 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 @end
 
 void YouModApplyPrevNextReplacement(YTMainAppControlsOverlayView *overlay);
+void YouModConfigureRemoteSkipCommands(void);
 
 @interface YTVideoQualitySwitchOriginalController (YouMod)
 @property (retain, nonatomic) YTVideoQualitySwitchRedesignedController *redesignedController;
