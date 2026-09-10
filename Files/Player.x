@@ -327,6 +327,14 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
 - (BOOL)replacePreviousPaddleWithRewindButtonForSingletonVods { return IS_ENABLED(ReplacePrevNextButtons) ? YES : %orig; }
 %end
 
+// Disable the newer fullscreen engagement overlay introduced in recent YouTube versions.
+// Keep the YTColdConfig hook above for older versions that use the A/B flag directly.
+%hook YTFullscreenEngagementOverlayController
+- (void)setEnabled:(BOOL)enabled {
+    %orig(IS_ENABLED(DisablesEngagementPanel) ? NO : enabled);
+}
+%end
+
 // No Endscreen Cards
 %hook YTCreatorEndscreenView
 - (void)setHidden:(BOOL)arg1 { 
