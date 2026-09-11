@@ -320,6 +320,16 @@ static BOOL isRelatedVideosExpanded = NO;
         if (!YMIsOverlayButtonBottom(spec.identifier)) [specs addObject:spec];
     }
 
+    // Nothing enabled on this side — drop any leftovers and bail before the
+    // gear lookup / player resolution.
+    if (specs.count == 0) {
+        for (YMOverlayButtonSpec *spec in allRegistered) {
+            UIView *btn = [self viewWithTag:spec.viewTag];
+            if (btn) [btn removeFromSuperview];
+        }
+        return;
+    }
+
     NSMutableSet<NSNumber *> *activeTags = [NSMutableSet set];
     for (YMOverlayButtonSpec *spec in specs) {
         [activeTags addObject:@(spec.viewTag)];
@@ -330,8 +340,6 @@ static BOOL isRelatedVideosExpanded = NO;
             if (btn) [btn removeFromSuperview];
         }
     }
-
-    if (specs.count == 0) return;
 
     YTPlayerViewController *player = YMPlayerVCFromOverlay(self);
     YTSingleVideoController *sgvid = player.activeVideo;
@@ -481,6 +489,15 @@ static BOOL isRelatedVideosExpanded = NO;
     for (YMOverlayButtonSpec *spec in YMOrderedOverlayButtons()) {
         if (YMIsOverlayButtonBottom(spec.identifier)) [specs addObject:spec];
     }
+    // Nothing enabled on this side — drop any leftovers and bail before the
+    // anchor lookup / player resolution.
+    if (specs.count == 0) {
+        for (YMOverlayButtonSpec *spec in allRegistered) {
+            UIView *btn = [self viewWithTag:spec.viewTag];
+            if (btn) [btn removeFromSuperview];
+        }
+        return;
+    }
     UIView *exitFullscreenButton = [self exitFullscreenButton];
     if (exitFullscreenButton == nil) exitFullscreenButton = [self rightIcons];
     BOOL hasAnchor = exitFullscreenButton && exitFullscreenButton.window;
@@ -495,7 +512,7 @@ static BOOL isRelatedVideosExpanded = NO;
             if (btn) [btn removeFromSuperview];
         }
     }
-    if (!hasAnchor || specs.count == 0) return;
+    if (!hasAnchor) return;
 
     YTPlayerViewController *player = ((YTMainAppVideoPlayerOverlayViewController *)self._viewControllerForAncestor).parentViewController;
     YTSingleVideoController *sgvid = player.activeVideo;
@@ -504,7 +521,8 @@ static BOOL isRelatedVideosExpanded = NO;
 
     CGRect exitFrame = exitFullscreenButton.frame;
     CGFloat trailingCenterX = CGRectGetMidX(exitFrame);
-    CGFloat rowTop = exitFrame.origin.y;
+    // Stack the row on top of the fullscreen button, not beside/over it.
+    CGFloat rowTop = CGRectGetMinY(exitFrame) - YMOverlayButtonGap - YMOverlayButtonSize;
     CGFloat prevHalfWidth = 0;
 
     for (YMOverlayButtonSpec *spec in specs) {
@@ -533,6 +551,18 @@ static BOOL isRelatedVideosExpanded = NO;
         trailingCenterX = centerX;
         prevHalfWidth = width / 2.0;
         [self bringSubviewToFront:btn];
+    }
+}
+
+// Follow YouTube's auto-hide for the bar: when the controls fade and the bar
+// peeks, hide our buttons along with the native ones (and bring them back on
+// the reverse transition). Player.x also hooks this method; Logos chains the
+// two via %orig.
+- (void)setPeekableViewVisible:(BOOL)visible {
+    %orig;
+    for (YMOverlayButtonSpec *spec in YMRegisteredOverlayButtons()) {
+        UIView *btn = [self viewWithTag:spec.viewTag];
+        if ([btn isKindOfClass:%c(YTQTMButton)]) btn.hidden = !visible;
     }
 }
 
