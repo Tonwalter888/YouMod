@@ -307,6 +307,11 @@ static BOOL isYouModButtons = NO;
     YTMainAppVideoPlayerOverlayViewController *mainOverlayController = (YTMainAppVideoPlayerOverlayViewController *)self.eventsDelegate;
     YTPlayerViewController *playerViewController = mainOverlayController.parentViewController;
     visible ? [playerViewController pause] : [playerViewController play];
+    if (IS_ENABLED(ReplacePrevNextButtons)) {
+        isYouModButtons = YES;
+        [self performSelector:@selector(setSeekAccessibilityButtonsVisible:) withObject:arg];
+        isYouModButtons = NO;
+    }
 }
 // Replace previous/next buttons with back and forward
 - (void)didMoveToWindow {
@@ -328,12 +333,6 @@ static BOOL isYouModButtons = NO;
 - (void)setSeekBackwardAccessibilityButtonEnabled:(BOOL)arg {
     BOOL temp = IS_ENABLED(ReplacePrevNextButtons) ? YES : arg;
     %orig(temp);
-}
-- (void)setOverlayVisible:(BOOL)arg {
-    %orig;
-    isYouModButtons = YES;
-    [self performSelector:@selector(setSeekAccessibilityButtonsVisible:) withObject:@arg];
-    isYouModButtons = NO;
 }
 - (void)setSeekForwardAccessibilityButtonHidden:(BOOL)arg { if (!IS_ENABLED(ReplacePrevNextButtons)) %orig; }
 - (void)setSeekBackwardAccessibilityButtonHidden:(BOOL)arg { if (!IS_ENABLED(ReplacePrevNextButtons)) %orig; }
