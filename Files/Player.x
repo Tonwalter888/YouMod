@@ -610,7 +610,7 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
     // Return early if there aren't any video formats available
     // eg. Voice comments and others
     if (!videoFormats || videoFormats.count == 0) return;
-    NSInteger kQualityIndex;
+    NSInteger kQualityIndex = 0;
     if ([NSProcessInfo processInfo].lowPowerModeEnabled) {
         kQualityIndex = INTFORVAL(LowPowerQualityIndex);
     } else if (gNetworkType == 1) {
