@@ -587,7 +587,6 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 @interface YTInlinePlayerBarContainerView (YouMod)
 @property (nonatomic, strong) NSString *endTimeString;
 - (YTQTMButton *)exitFullscreenButton;
-- (UIView *)rightIcons;
 @end
 
 // Custom perferences logics
