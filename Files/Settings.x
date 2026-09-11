@@ -456,7 +456,6 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
         YMPushSubSettings(YMLOC(@"TABBAR"), @[
             YMImageSegment(YMLOC(@"DEFAULT_TAB"), DefaultTab, defaultTabImages, 0),
             YMTextSegment(YMLOC(@"FORSTED_TAB_BAR"), UseFrostedTabBar, (@[YMLOC(@"DEFAULT"),YMLOC(@"ENABLED"), YMLOC(@"DISABLED")]), 0),
-            YMTextSegment(YMLOC(@"PIVOT_BAR_HIDE"), PivotBarHide, (@[YMLOC(@"DEFAULT"), YMLOC(@"ENABLED"), YMLOC(@"DISABLED")]), 0),
             YMToggle(YMLOC(@"HIDE_TAB_INDI"), YMLOC(@"HIDE_TAB_INDI_DESC"), HideTabIndi),
             YMToggle(YMLOC(@"HIDE_TAB_LABELS"), YMLOC(@"HIDE_TAB_LABELS_DESC"), HideTabLabels),
             YMAction(YMLOC(@"MANAGE_TABS"), YMLOC(@"MANAGE_TABS_DESC"), ^(UIViewController *vc) {

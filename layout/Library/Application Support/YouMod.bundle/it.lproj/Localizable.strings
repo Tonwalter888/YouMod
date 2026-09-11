@@ -165,7 +165,8 @@
 "HIDE_VOICE_SEARCH_BUTTON_DESC" = "Hide voice search button in the navigation bar.";
 "HIDE_CAST_BUTTON_NAVBAR" = "Hide cast button";
 "HIDE_CAST_BUTTON_NAVBAR_DESC" = "Hide cast button in the navigation bar.";
-
+"HIDE_MESSAGES_BUTTON" = "Hide messages button";
+"HIDE_MESSAGES_BUTTON_DESC" = "Hide messages button in the navigation bar.";
 "FEED" = "Feed";
 "HIDE_SUBBAR" = "Hide subbar";
 "HIDE_SUBBAR_DESC" = "Hide subbar at the top of the feed.";
@@ -513,6 +514,10 @@
 "HIDE_COMMU_GUIDE_DESC" = "Hide community guidelines header.";
 "HIDE_ENGAGEMENT_SUBBAR" = "Hide comments header";
 "HIDE_ENGAGEMENT_SUBBAR_DESC" = "Hides sort comments header (Top, Newest) so it will never appear.";
+"HIDE_SORT_FILTER_BUTTON_PANEL" = "Hide sort & filter button panel";
+"HIDE_SORT_FILTER_BUTTON_PANEL_DESC" = "Hide the sort and filter buttons in the comments panel.";
+"HIDE_COMMUNITY_BUTTON_PANEL" = "Hide community button panel";
+"HIDE_COMMUNITY_BUTTON_PANEL_DESC" = "Hide the community button panel on the channel page.";
 "DISABLES_RTL" = "Disable RTL formatting";
 "DISABLES_RTL_DESC" = "Forcefully displays text in left-to-right (LTR) format for languages that are initially displayed in right-to-left (RTL).";
 "DEVICE_UI" = "Interface style";
@@ -580,3 +585,6 @@
 "SB_SKIP_ALERT_DURATION" = "Skip alert duration";
 "SB_UNSKIP_ALERT_DURATION" = "Unskip alert duration";
 "SB_MIN_DURATION_SLIDER" = "Minimum segment duration to skip";
+"AUDIO" = "Audio";
+"HIDE_INFO_BUTTON_PANEL" = "Hide info button panel";
+"HIDE_INFO_BUTTON_PANEL_DESC" = "Hide the info button panel in the video description.";

@@ -588,6 +588,10 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 @property (nonatomic, strong) NSString *endTimeString;
 @end
 
+@interface YTInlinePlayerBarContainerView (YouModOverlayButtons)
+- (YTQTMButton *)exitFullscreenButton;
+@end
+
 // Custom perferences logics
 @interface YouModPrefsManager : NSObject <UIDocumentPickerDelegate>
 + (instancetype)sharedManager;
@@ -810,6 +814,7 @@ extern void YMRegisterOverlayButton(YMOverlayButtonSpec *spec);
 extern NSArray<YMOverlayButtonSpec *> *YMRegisteredOverlayButtons(void);
 extern NSArray<YMOverlayButtonSpec *> *YMOrderedOverlayButtons(void);
 extern BOOL YMIsOverlayButtonEnabled(NSString *identifier);
+extern BOOL YMIsOverlayButtonBottom(NSString *identifier);
 extern void YMPushOverlayButtonOrder(id settingsVC, id parentResponder);
 
 #pragma mark - Settings Search

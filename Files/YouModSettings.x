@@ -1992,11 +1992,12 @@ static const void *kYMOverlaySavedScrollEdgeAppearanceKey = &kYMOverlaySavedScro
         for (NSDictionary *entry in savedOrder) {
             NSString *buttonID = entry[@"id"];
             BOOL enabled = [entry[@"enabled"] boolValue];
+            BOOL bottom = [entry[@"bottom"] boolValue];
             if ([buttonID isEqualToString:@"sponsorblock.toggle"]) {
                 enabled = YMIsOverlayButtonEnabled(buttonID);
             }
             if (buttonID) {
-                [data addObject:[@{@"id": buttonID, @"enabled": @(enabled)} mutableCopy]];
+                [data addObject:[@{@"id": buttonID, @"enabled": @(enabled), @"bottom": @(bottom)} mutableCopy]];
             }
         }
         for (NSInteger i = 0; i < kYMOverlayButtonCount; i++) {
@@ -2006,14 +2007,14 @@ static const void *kYMOverlaySavedScrollEdgeAppearanceKey = &kYMOverlaySavedScro
                 if ([d[@"id"] isEqualToString:buttonID]) { found = YES; break; }
             }
             if (!found) {
-                [data addObject:[@{@"id": buttonID, @"enabled": @(YMIsOverlayButtonEnabled(buttonID))} mutableCopy]];
+                [data addObject:[@{@"id": buttonID, @"enabled": @(YMIsOverlayButtonEnabled(buttonID)), @"bottom": @(NO)} mutableCopy]];
             }
         }
     } else {
         for (NSInteger i = 0; i < kYMOverlayButtonCount; i++) {
             NSString *buttonID = kYMOverlayButtonIDs[i];
             BOOL defaultEnabled = YMIsOverlayButtonEnabled(buttonID);
-            [data addObject:[@{@"id": buttonID, @"enabled": @(defaultEnabled)} mutableCopy]];
+            [data addObject:[@{@"id": buttonID, @"enabled": @(defaultEnabled), @"bottom": @(NO)} mutableCopy]];
         }
     }
 
@@ -2028,7 +2029,7 @@ static const void *kYMOverlaySavedScrollEdgeAppearanceKey = &kYMOverlaySavedScro
         if ([buttonID isEqualToString:@"sponsorblock.toggle"]) {
             enabled = YMIsOverlayButtonEnabled(buttonID);
         }
-        [toSave addObject:@{@"id": buttonID, @"enabled": @(enabled)}];
+        [toSave addObject:@{@"id": buttonID, @"enabled": @(enabled), @"bottom": @([entry[@"bottom"] boolValue])}];
     }
     [[NSUserDefaults standardUserDefaults] setObject:toSave forKey:OverlayButtonOrder];
     [[NSUserDefaults standardUserDefaults] synchronize];
@@ -2038,7 +2039,7 @@ static const void *kYMOverlaySavedScrollEdgeAppearanceKey = &kYMOverlaySavedScro
 - (void)takeSnapshot {
     NSMutableArray *snap = [NSMutableArray array];
     for (NSDictionary *entry in self.buttonData) {
-        [snap addObject:@{@"id": entry[@"id"], @"enabled": entry[@"enabled"]}];
+        [snap addObject:@{@"id": entry[@"id"], @"enabled": entry[@"enabled"], @"bottom": entry[@"bottom"]}];
     }
     self.initialSnapshot = [snap copy];
 }
@@ -2055,6 +2056,7 @@ static const void *kYMOverlaySavedScrollEdgeAppearanceKey = &kYMOverlaySavedScro
     static NSString *cellID = @"YMOverlayButtonCell";
     UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:cellID];
     UISwitch *sw;
+    UISegmentedControl *segment;
 
     if (!cell) {
         cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:cellID];
@@ -2068,17 +2070,29 @@ static const void *kYMOverlaySavedScrollEdgeAppearanceKey = &kYMOverlaySavedScro
         sw.tag = 999;
         [cell.contentView addSubview:sw];
 
+        segment = [[UISegmentedControl alloc] initWithItems:@[LOC(@"TOP"), LOC(@"BOTTOM")]];
+        segment.backgroundColor = [UIColor secondarySystemBackgroundColor];
+        [segment addTarget:self action:@selector(placementChanged:) forControlEvents:UIControlEventValueChanged];
+        segment.translatesAutoresizingMaskIntoConstraints = NO;
+        segment.tag = 998;
+        segment.apportionsSegmentWidthsByContent = YES;
+        [cell.contentView addSubview:segment];
+
         [NSLayoutConstraint activateConstraints:@[
             [sw.centerYAnchor constraintEqualToAnchor:cell.contentView.centerYAnchor],
-            [sw.trailingAnchor constraintEqualToAnchor:cell.contentView.trailingAnchor constant:-16]
+            [sw.trailingAnchor constraintEqualToAnchor:cell.contentView.trailingAnchor constant:-16],
+            [segment.centerYAnchor constraintEqualToAnchor:cell.contentView.centerYAnchor],
+            [segment.trailingAnchor constraintEqualToAnchor:sw.leadingAnchor constant:-12]
         ]];
     } else {
         sw = [cell.contentView viewWithTag:999];
+        segment = [cell.contentView viewWithTag:998];
     }
 
     NSMutableDictionary *entry = self.buttonData[indexPath.row];
     NSString *buttonID = entry[@"id"];
     BOOL enabled = [entry[@"enabled"] boolValue];
+    BOOL bottom = [entry[@"bottom"] boolValue];
 
     cell.textLabel.text = [self localizedNameForButtonID:buttonID];
     cell.textLabel.textColor = [UIColor labelColor];
@@ -2097,6 +2111,9 @@ static const void *kYMOverlaySavedScrollEdgeAppearanceKey = &kYMOverlaySavedScro
     sw.on = enabled;
     objc_setAssociatedObject(sw, kYMSwitchKeyAssoc, buttonID, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 
+    segment.selectedSegmentIndex = bottom ? 1 : 0;
+    objc_setAssociatedObject(segment, kYMSwitchKeyAssoc, buttonID, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+
     return cell;
 }
 
@@ -2111,6 +2128,20 @@ static const void *kYMOverlaySavedScrollEdgeAppearanceKey = &kYMOverlaySavedScro
     if (!entry) return;
 
     entry[@"enabled"] = @(sender.on);
+    [self saveButtonData];
+}
+
+- (void)placementChanged:(UISegmentedControl *)sender {
+    NSString *buttonID = objc_getAssociatedObject(sender, kYMSwitchKeyAssoc);
+    if (!buttonID) return;
+
+    NSMutableDictionary *entry = nil;
+    for (NSMutableDictionary *d in self.buttonData) {
+        if ([d[@"id"] isEqualToString:buttonID]) { entry = d; break; }
+    }
+    if (!entry) return;
+
+    entry[@"bottom"] = @(sender.selectedSegmentIndex == 1);
     [self saveButtonData];
 }
 

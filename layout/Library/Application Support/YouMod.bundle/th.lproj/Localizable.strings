@@ -165,7 +165,10 @@
 "HIDE_VOICE_SEARCH_BUTTON_DESC" = "ซ่อนปุ่มค้นหาด้วยเสียงในแถบนำทาง";
 "HIDE_CAST_BUTTON_NAVBAR" = "ซ่อนปุ่มแคสต์";
 "HIDE_CAST_BUTTON_NAVBAR_DESC" = "ซ่อนปุ่มแคสต์ในแถบนำทาง";
-
+"HIDE_MESSAGES_BUTTON" = "ซ่อนปุ่มข้อความ";
+"HIDE_MESSAGES_BUTTON_DESC" = "ซ่อนปุ่มข้อความในแถบนำทาง";
+"HIDE_MESSAGES_BUTTON" = "ซ่อนปุ่มข้อความ";
+"HIDE_MESSAGES_BUTTON_DESC" = "ซ่อนปุ่มข้อความในแถบนำทาง";
 "FEED" = "ฟีด";
 "HIDE_SUBBAR" = "ซ่อนแถบหมวดหมู่";
 "HIDE_SUBBAR_DESC" = "ซ่อนแถบหมวดหมู่ในฟีด";
@@ -513,6 +516,10 @@
 "HIDE_COMMU_GUIDE_DESC" = "นำหลักเกณฑ์ชุมชนที่ปักหมุดไว้ออกจากคอมเมนต์";
 "HIDE_ENGAGEMENT_SUBBAR" = "ซ่อนส่วนหัวความคิดเห็น";
 "HIDE_ENGAGEMENT_SUBBAR_DESC" = "ซ่อนแถบจัดเรียงความคิดเห็น (ยอดนิยม, ล่าสุด) ด้านบนของคอมเมนต์";
+"HIDE_SORT_FILTER_BUTTON_PANEL" = "ซ่อนแผงปุ่มเรียงลำดับและตัวกรอง";
+"HIDE_SORT_FILTER_BUTTON_PANEL_DESC" = "ซ่อนปุ่มเรียงลำดับและตัวกรองในส่วนความคิดเห็น";
+"HIDE_COMMUNITY_BUTTON_PANEL" = "ซ่อนแผงปุ่มชุมชน";
+"HIDE_COMMUNITY_BUTTON_PANEL_DESC" = "ซ่อนแผงปุ่มชุมชนในหน้าช่อง";
 "DISABLES_RTL" = "ปิดใช้งานเลย์เอาต์ RTL";
 "DISABLES_RTL_DESC" = "บังคับให้แสดงผลจากซ้ายไปขวา (LTR) และปิดการจัดหน้าแบบขวาไปซ้าย (RTL)";
 "DEVICE_UI" = "รูปแบบอุปกรณ์";
@@ -579,4 +586,5 @@
 "SB_SECTION_MAIN" = "ตั้งค่าหลัก";
 "SB_SKIP_ALERT_DURATION" = "ระยะเวลาแสดงการแจ้งเตือนเมื่อข้าม";
 "SB_UNSKIP_ALERT_DURATION" = "ระยะเวลาแสดงการแจ้งเตือนเมื่อยกเลิกการข้าม";
-"SB_MIN_DURATION_SLIDER" = "ความยาวขั้นต่ำของช่วงวิดีโอที่จะให้ข้าม";
+"SB_MIN_DURATION_SLIDER" = "ความยาวขั้นต่ำของช่วงวิดีโอที่จะให้ข้าม";"AUDIO" = "เสียง";
+

@@ -165,7 +165,8 @@
 "HIDE_VOICE_SEARCH_BUTTON_DESC" = "Masque le bouton de recherche vocale dans la barre de navigation.";
 "HIDE_CAST_BUTTON_NAVBAR" = "Masquer le bouton Cast";
 "HIDE_CAST_BUTTON_NAVBAR_DESC" = "Masque le bouton Cast (diffusion) dans la barre de navigation.";
-
+"HIDE_MESSAGES_BUTTON" = "Hide messages button";
+"HIDE_MESSAGES_BUTTON_DESC" = "Hide messages button in the navigation bar.";
 "FEED" = "Flux";
 "HIDE_SUBBAR" = "Masquer la sous-barre";
 "HIDE_SUBBAR_DESC" = "Masque la sous-barre (filtres) en haut du flux.";
@@ -513,6 +514,10 @@
 "HIDE_COMMU_GUIDE_DESC" = "Masque l'en-tête du règlement de la communauté.";
 "HIDE_ENGAGEMENT_SUBBAR" = "Masquer l'en-tête de tri des commentaires";
 "HIDE_ENGAGEMENT_SUBBAR_DESC" = "Masque l'en-tête de tri des commentaires (Principaux commentaires, Les plus récents) pour qu'il n'apparaisse jamais.";
+"HIDE_SORT_FILTER_BUTTON_PANEL" = "Hide sort & filter button panel";
+"HIDE_SORT_FILTER_BUTTON_PANEL_DESC" = "Hide the sort and filter buttons in the comments panel.";
+"HIDE_COMMUNITY_BUTTON_PANEL" = "Hide community button panel";
+"HIDE_COMMUNITY_BUTTON_PANEL_DESC" = "Hide the community button panel on the channel page.";
 "DISABLES_RTL" = "Désactiver le formatage de droite à gauche";
 "DISABLES_RTL_DESC" = "Force l'affichage du texte de gauche à droite (LTR) pour les langues s'écrivant habituellement de droite à gauche (RTL).";
 "DEVICE_UI" = "Style d'interface";
@@ -579,4 +584,6 @@
 "SB_SECTION_MAIN" = "Principal";
 "SB_SKIP_ALERT_DURATION" = "Durée de l'alerte de saut";
 "SB_UNSKIP_ALERT_DURATION" = "Durée de l'alerte de retour";
-"SB_MIN_DURATION_SLIDER" = "Durée minimale de segment à passer";
+"SB_MIN_DURATION_SLIDER" = "Durée minimale de segment à passer";"AUDIO" = "Audio";
+"HIDE_INFO_BUTTON_PANEL" = "Hide info button panel";
+"HIDE_INFO_BUTTON_PANEL_DESC" = "Hide the info button panel in the video description.";
