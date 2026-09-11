@@ -245,7 +245,7 @@
 #define TabOrder @"YouModTabOrder"
 #define HideTabIndi @"YouModHideTabIndicators"
 #define HideTabLabels @"YouModHideTabLabels"
-#define UseFrostedTabBar @"YouModUseFrostedTabBar"F
+#define UseFrostedTabBar @"YouModUseFrostedTabBar"
 // Miscellaneous
 #define BackgroundPlayback @"YouModEnablesBackgroundPlayback"
 #define DisablesShortsPiP @"YouModTrytoDisablesShortsPiP"
