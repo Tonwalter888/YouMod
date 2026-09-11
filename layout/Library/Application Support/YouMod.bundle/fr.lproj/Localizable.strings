@@ -584,6 +584,7 @@
 "SB_SECTION_MAIN" = "Principal";
 "SB_SKIP_ALERT_DURATION" = "Durée de l'alerte de saut";
 "SB_UNSKIP_ALERT_DURATION" = "Durée de l'alerte de retour";
-"SB_MIN_DURATION_SLIDER" = "Durée minimale de segment à passer";"AUDIO" = "Audio";
+"SB_MIN_DURATION_SLIDER" = "Durée minimale de segment à passer";
+"AUDIO" = "Audio";
 "HIDE_INFO_BUTTON_PANEL" = "Hide info button panel";
 "HIDE_INFO_BUTTON_PANEL_DESC" = "Hide the info button panel in the video description.";
