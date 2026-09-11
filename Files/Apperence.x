@@ -27,9 +27,13 @@ static const void *kOLEDKey = &kOLEDKey;
 
 void YouModApplyOLEDToDisplayView(_ASDisplayView *view, NSString *iden) {
     if (!IS_ENABLED(OLEDTheme)) return;
+    UIViewController *controller = view._viewControllerForAncestor;
+    if ([controller isKindOfClass:%c(YTRelatedVideosCollectionViewController)]) return;
     NSSet *blackViews = [NSSet setWithObjects:
         @"id.elements.components.comment_composer",
         @"id.subs.subscriptions_channel_bar",
+        @"eml.cvr",
+        @"eml.vwc",
         @"intro_dialog",
         @"PAmedia_hub_device_picker.engagement_panel_header", nil
     ];  
