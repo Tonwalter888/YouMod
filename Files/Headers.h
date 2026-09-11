@@ -375,8 +375,9 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 @end
 
 @interface YTRightNavigationButtons (YouMod)
-@property (nonatomic, strong) YTQTMButton *notificationButton;
-@property (nonatomic, strong) YTQTMButton *searchButton;
+- (YTLightweightQTMButton *)notificationButton;
+- (YTLightweightQTMButton *)searchButton;
+- (YTLightweightQTMButton *)connectionsInboxButton;
 @end
 
 @interface YTVideoFreeZoomOverlayController : NSObject
@@ -464,6 +465,8 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 - (void)setPlaybackRate:(float)rate;
 - (void)setActiveCaptionTrack:(MLInnerTubeCaptionTrack *)arg1 source:(NSInteger)arg2;
 - (void)setActiveCaptionTrack:(MLInnerTubeCaptionTrack *)arg;
+- (BOOL)isPlaybackFinished;
+- (void)didPressReplay;
 - (void)play;
 - (void)pause;
 - (void)YouModAutoMute;

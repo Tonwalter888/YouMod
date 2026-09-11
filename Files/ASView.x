@@ -73,3 +73,14 @@ static const void *YouModASViewKey = &YouModASViewKey;
     objc_setAssociatedObject(self, YouModASViewKey, @YES, OBJC_ASSOCIATION_ASSIGN);
 }
 %end
+
+%hook YCHAsyncLiveChatCollectionViewController
+- (void)viewWillAppear:(BOOL)animated {
+    %orig;
+    NSLog(@"[WaterDev] viewWillAppear LiveChat got called");
+}
+- (void)viewDidAppear:(BOOL)animated {
+    %orig;
+    NSLog(@"[WaterDev] viewDidAppear LiveChat got called");
+}
+%end

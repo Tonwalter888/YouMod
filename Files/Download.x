@@ -2121,7 +2121,7 @@ static NSString *YouModExtractCommentText(UIView *cellView) {
             }
             NSString *desc = nil;
             @try {
-                desc = [[[[node valueForKey:@"_weakNodeController"] valueForKey:@"_parent"] valueForKey:@"_weakComponent"] description];
+                desc = [[[[node valueForKey:@"_weakNodeController"] valueForKey:@"_parent"] performSelector:@selector(owningComponent)] description];
             } @catch (id ex) {
                 continue;
             }

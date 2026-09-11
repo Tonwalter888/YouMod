@@ -65,6 +65,7 @@ void YouModFilterChannelButtons(_ASDisplayView *self, NSString *iden) {
                 break;
             }
         }
+        if (n)
         /*
         if (IS_ENABLED(RemoveChannelCommunityButton)) [node removeYogaChild:node.yogaChildren[2]];
         if (IS_ENABLED(RemoveChannelSponsorAll)) [node removeYogaChild:node.yogaChildren[1]];

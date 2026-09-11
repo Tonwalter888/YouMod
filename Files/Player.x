@@ -230,9 +230,8 @@ static void YouModAddEndTime(YTInlinePlayerBarContainerView *playerbar, YTPlayer
                 percentage = 0.0;
             } else if (relativeX >= barWidth - snapThreshold) {
                 percentage = 1.0;
-            } else {
-                if (percentage < 0.0) percentage = 0.0;
-                if (percentage > 1.0) percentage = 1.0;
+            } else if (percentage < 0.0 || percentage > 1.0) {
+                return;
             }
 
             YTMainAppVideoPlayerOverlayViewController *ovcon = (YTMainAppVideoPlayerOverlayViewController *)self._viewControllerForAncestor;
@@ -279,14 +278,20 @@ static void YouModAddEndTime(YTInlinePlayerBarContainerView *playerbar, YTPlayer
 }
 - (void)updateTimeLabels {
     %orig;
+    NSLog(@"[WaterDev] updateTimeLabels got called");
     YTMainAppVideoPlayerOverlayViewController *ovcon = (YTMainAppVideoPlayerOverlayViewController *)self._viewControllerForAncestor;
     if (![ovcon isKindOfClass:%c(YTMainAppVideoPlayerOverlayViewController)]) return;
     YTPlayerViewController *pvc = (YTPlayerViewController *)ovcon.parentViewController;
     YouModAddEndTime(self, pvc, ovcon);
 }
+- (void)updateCurrentTimeTitleLabel {
+    %orig;
+    NSLog(@"[WaterDev] updateCurrentTimeTitleLabel got called");
+}
 %end
 
 static BOOL hasSetSeekButtons = NO;
+static BOOL isYouModButtons = NO;
 
 %hook YTMainAppControlsOverlayView
 // Hide autoplay Switch
@@ -324,23 +329,17 @@ static BOOL hasSetSeekButtons = NO;
     BOOL temp = IS_ENABLED(ReplacePrevNextButtons) ? YES : arg;
     %orig(temp);
 }
+- (void)setOverlayVisible:(BOOL)arg {
+    %orig;
+    isYouModButtons = YES;
+    [self performSelector:@selector(setSeekAccessibilityButtonsVisible:) withObject:@arg];
+    isYouModButtons = NO;
+}
 - (void)setSeekForwardAccessibilityButtonHidden:(BOOL)arg { if (!IS_ENABLED(ReplacePrevNextButtons)) %orig; }
 - (void)setSeekBackwardAccessibilityButtonHidden:(BOOL)arg { if (!IS_ENABLED(ReplacePrevNextButtons)) %orig; }
-- (void)setSeekForwardAccessibilityButtonVisible:(BOOL)arg {
-    BOOL isOVOn = [self performSelector:@selector(isOverlayVisible)];
-    BOOL temp = IS_ENABLED(ReplacePrevNextButtons) ? isOVOn : arg;
-    %orig(temp);
-}
-- (void)setSeekBackwardAccessibilityButtonVisible:(BOOL)arg {
-    BOOL isOVOn = [self performSelector:@selector(isOverlayVisible)];
-    BOOL temp = IS_ENABLED(ReplacePrevNextButtons) ? isOVOn : arg;
-    %orig(temp);
-}
-- (void)setSeekAccessibilityButtonsVisible:(BOOL)arg {
-    BOOL isOVOn = [self performSelector:@selector(isOverlayVisible)];
-    BOOL temp = IS_ENABLED(ReplacePrevNextButtons) ? isOVOn : arg;
-    %orig(temp);
-}
+- (void)setSeekForwardAccessibilityButtonVisible:(BOOL)arg { if (!IS_ENABLED(ReplacePrevNextButtons)) %orig; }
+- (void)setSeekBackwardAccessibilityButtonVisible:(BOOL)arg { if (!IS_ENABLED(ReplacePrevNextButtons)) %orig; }
+- (void)setSeekAccessibilityButtonsVisible:(BOOL)arg { if (!IS_ENABLED(ReplacePrevNextButtons) || isYouModButtons) %orig; }
 - (void)setPreviousButtonEnabled:(BOOL)arg { if (!IS_ENABLED(ReplacePrevNextButtons)) %orig; }
 - (void)setNextButtonEnabled:(BOOL)arg { if (!IS_ENABLED(ReplacePrevNextButtons)) %orig; }
 - (void)setPreviousButtonHidden:(BOOL)arg { if (!IS_ENABLED(ReplacePrevNextButtons)) %orig; }
@@ -457,7 +456,7 @@ static BOOL hasSetSeekButtons = NO;
 // Always use remaining time in the video player - @bhackel
 %hook YTPlayerBarController
 // When a new video is played, enable time remaining flag
-- (void)setActiveSingleVideo:(id)arg1 {
+- (void)setActiveSingleVideo:(YTSingleVideoController *)singleVideoController {
     %orig;
     if (IS_ENABLED(AlwaysShowRemaining) && !IS_ENABLED(DisablesShowRemaining)) {
         // Get the player bar view
@@ -467,16 +466,17 @@ static BOOL hasSetSeekButtons = NO;
             playerBar.shouldDisplayTimeRemaining = YES;
         }
     }
-    YTSingleVideoController *sgvid = [self valueForKey:@"_currentSingleVideo"];
-    YTPlayerView *playerview = [sgvid valueForKey:@"_playerView"];
-    YTPlayerViewController *playerviewController = [playerview valueForKey:@"_playerViewDelegate"];
-    YouModConfigureRemoteSkipCommands();
-    if (INTFORVAL(AutoDRCAudioIndex) != 0) [playerviewController YouModAutoDRCAudio];
-    if (INTFORVAL(AudioTrack) != 0) [playerviewController performSelector:@selector(YouModAutoAudioTrack) withObject:nil afterDelay:0.5];
-    if (YMIsOverlayButtonEnabled(@"mute.video")) [playerviewController YouModAutoMute];
-    if (IS_ENABLED(AutoFullScreen)) [playerviewController performSelector:@selector(YouModAutoFullscreen) withObject:nil afterDelay:0.5];
-    if (INTFORVAL(CaptionTrack) != 0) [playerviewController performSelector:@selector(YouModAutoCaptions) withObject:nil afterDelay:0.5];
-    if (INTFORVAL(AutoSpeedIndex) != 0) [playerviewController YouModSetAutoSpeed];
+    if (singleVideoController) {
+        YTPlayerView *playerview = [singleVideoController valueForKey:@"_playerView"];
+        YTPlayerViewController *playerviewController = [playerview valueForKey:@"_playerViewDelegate"];
+        YouModConfigureRemoteSkipCommands();
+        if (INTFORVAL(AutoDRCAudioIndex) != 0) [playerviewController YouModAutoDRCAudio];
+        if (INTFORVAL(AudioTrack) != 0) [playerviewController performSelector:@selector(YouModAutoAudioTrack) withObject:nil afterDelay:0.5];
+        if (YMIsOverlayButtonEnabled(@"mute.video")) [playerviewController YouModAutoMute];
+        if (IS_ENABLED(AutoFullScreen)) [playerviewController performSelector:@selector(YouModAutoFullscreen) withObject:nil afterDelay:0.5];
+        if (INTFORVAL(CaptionTrack) != 0) [playerviewController performSelector:@selector(YouModAutoCaptions) withObject:nil afterDelay:0.5];
+        if (INTFORVAL(AutoSpeedIndex) != 0) [playerviewController YouModSetAutoSpeed];
+    }
 }
 %end
 
@@ -617,7 +617,7 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
 }
 - (void)layoutSubviews {
     %orig;
-    if (IS_ENABLED(HideCastButtonPlayer)) self.playbackRouteButton.hidden = YES;
+    if (IS_ENABLED(HideCastButtonPlayer) && self.playbackRouteButton != nil) self.playbackRouteButton.hidden = YES;
 }
 %end
 
@@ -1121,10 +1121,13 @@ static CGFloat remainingOverlayWidth(YTPlayerViewController *pvc, CGFloat fullWi
     if (startLocation.x > remainingWidth) return;
 
     if (tapGestureRecognizer.state == UIGestureRecognizerStateEnded) {
-        if (self.playerState == 3) {
+        NSInteger state = self.playerState;
+        if (state == 3) {
             [self pause];
-        } else if (self.playerState == 4) {
+        } else if (state == 4) {
             [self play];
+        } else if (self.isPlaybackFinished) {
+            [self didPressReplay];
         }
     }
 }
