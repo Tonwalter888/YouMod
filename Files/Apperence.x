@@ -65,7 +65,7 @@ void YouModApplyOLEDToDisplayView(_ASDisplayView *view, NSString *iden) {
     ASDisplayNode *node = view.keepalive_node;
     NSString *desc = nil;
     @try {
-        desc = [[[[node valueForKey:@"_weakNodeController"] valueForKey:@"_parent"] performSelector:@selector(owningComponent)] description];
+        desc = [[[[node performSelector:@selector(nodeController)] performSelector:@selector(parent)] performSelector:@selector(owningComponent)] description];
     } @catch (id ex) {
         return;
     }

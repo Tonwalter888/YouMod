@@ -317,12 +317,16 @@ static BOOL isYouModButtons = NO;
 - (void)didMoveToWindow {
     %orig;
     if (IS_ENABLED(ReplacePrevNextButtons) && !hasSetSeekButtons) {
-        UIView *preBut = [self valueForKey:@"_previousButtonView"];
-        UIView *nextBut = [self valueForKey:@"_nextButtonView"];
+        YTQTMButton *preBut = [self valueForKey:@"_previousButtonView"];
+        YTQTMButton *nextBut = [self valueForKey:@"_nextButtonView"];
         preBut.hidden = YES;
         nextBut.hidden = YES;
         [self setValue:[self valueForKey:@"_seekBackwardAccessibilityButtonView"] forKey:@"_previousButtonView"];
         [self setValue:[self valueForKey:@"_seekForwardAccessibilityButtonView"] forKey:@"_nextButtonView"];
+        preBut = [[self valueForKey:@"_seekBackwardAccessibilityButtonView"] valueForKey:@"_button"];
+        nextBut = [[self valueForKey:@"_seekForwardAccessibilityButtonView"] valueForKey:@"_button"];
+        preBut.enabled = YES;
+        nextBut.enabled = YES;
         hasSetSeekButtons = YES;
     }
 }
@@ -1239,24 +1243,17 @@ static CGFloat remainingOverlayWidth(YTPlayerViewController *pvc, CGFloat fullWi
         return;
     }
     if (matchedTrack && matchedTrack != currentTrack) {
-        [self YouModCaptionsHelper:matchedTrack];
+        [self setActiveCaptionTrack:matchedTrack source:0];
     }
 }
 
-%new
-- (void)YouModCaptionsHelper:(MLInnerTubeCaptionTrack *)track {
-    if ([self respondsToSelector:@selector(setActiveCaptionTrack:source:)]) {
-        [self setActiveCaptionTrack:track source:0];
-    } else {
-        [self setActiveCaptionTrack:track];
-    }
-}
 %new
 - (void)YouModHideSpeedToast {
     [UIView animateWithDuration:0.2 animations:^{
         self.YouModSpeedToastView.alpha = 0.0;
     }];
 }
+
 %new
 - (void)YouModShowSpeedToast:(CGFloat)speed isLocked:(BOOL)isLocked {
     UIColor *themeTextColor = [UIColor labelColor];
@@ -1450,6 +1447,7 @@ static CGFloat remainingOverlayWidth(YTPlayerViewController *pvc, CGFloat fullWi
         [self YouModHideSpeedToast];
     }
 }
+
 %new
 - (void)YouModAutoDRCAudio {
     BOOL value = NO;

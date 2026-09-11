@@ -2093,7 +2093,7 @@ static void YouModShowTranslationDialog(NSString *text, UIViewController *presen
     [presenter presentViewController:nav animated:YES completion:nil];
 }
 
-static NSString *YouModExtractCommentText(UIView *cellView) {
+static NSString *YouModExtractCommentText(UIView *cellView, BOOL isPost) {
     NSString *resultText = nil;
     NSMutableArray<UIView *> *queue = [NSMutableArray arrayWithObject:cellView];
 
@@ -2107,31 +2107,33 @@ static NSString *YouModExtractCommentText(UIView *cellView) {
                 resultText = current.accessibilityLabel;
                 break;
             }
-            ASDisplayNode *node = [current performSelector:@selector(keepalive_node)];
-            if (![node isKindOfClass:%c(ELMExpandableTextNode)] && ![node isKindOfClass:%c(ELMTextNode)]) {
-                BOOL found = NO;
-                for (id child in node.yogaChildren) {
-                    if ([child isKindOfClass:%c(ELMExpandableTextNode)] || [child isKindOfClass:%c(ELMTextNode)]) {
-                        node = child;
-                        found = YES;
-                        break;
+            if (isPost) {
+                ASDisplayNode *node = [current performSelector:@selector(keepalive_node)];
+                if (![node isKindOfClass:%c(ELMExpandableTextNode)] && ![node isKindOfClass:%c(ELMTextNode)]) {
+                    BOOL found = NO;
+                    for (id child in node.yogaChildren) {
+                        if ([child isKindOfClass:%c(ELMExpandableTextNode)] || [child isKindOfClass:%c(ELMTextNode)]) {
+                            node = child;
+                            found = YES;
+                            break;
+                        }
                     }
+                    if (!found) continue;
                 }
-                if (!found) continue;
-            }
-            NSString *desc = nil;
-            @try {
-                desc = [[[[node valueForKey:@"_weakNodeController"] valueForKey:@"_parent"] performSelector:@selector(owningComponent)] description];
-            } @catch (id ex) {
-                continue;
-            }
-            if ([desc containsString:@"post_text.eml"]) {
-                if ([node isKindOfClass:%c(ELMExpandableTextNode)]) {
-                    node = [node performSelector:@selector(currentTextNode)];
+                NSString *desc = nil;
+                @try {
+                    desc = [[[[node performSelector:@selector(nodeController)] performSelector:@selector(parent)] performSelector:@selector(owningComponent)] description];
+                } @catch (id ex) {
+                    continue;
                 }
-                NSAttributedString *strings = [node valueForKey:@"_attributedText"];
-                resultText = strings.string;
-                break;
+                if ([desc containsString:@"post_text.eml"]) {
+                    if ([node isKindOfClass:%c(ELMExpandableTextNode)]) {
+                        node = [node performSelector:@selector(currentTextNode)];
+                    }
+                    NSAttributedString *strings = [node valueForKey:@"_attributedText"];
+                    resultText = strings.string;
+                    break;
+                }
             }
         }
 
@@ -2232,7 +2234,7 @@ void YouModHandleCommentLongPressAction(_ASDisplayView *view, UILongPressGesture
     if (sender.state != UIGestureRecognizerStateBegan) return;
 
     NSMutableArray *items = [NSMutableArray array];
-    NSString *commentText = YouModExtractCommentText(view);
+    NSString *commentText = YouModExtractCommentText(view, NO);
 
     if (commentText && commentText.length > 0) {
         [items addObject:[YouModMenuItem itemWithTitle:LOC(@"TRANSLATE_COMMENT") subtitle:nil icon:YouModYTIconImage(897, NO, nil) handler:^{
@@ -2270,16 +2272,16 @@ void YouModHandlePostLongPressAction(_ASDisplayView *view, UILongPressGestureRec
     if (sender.state != UIGestureRecognizerStateBegan) return;
 
     NSMutableArray *items = [NSMutableArray array];
-    NSString *commentText = YouModExtractCommentText(view);
+    NSString *postText = YouModExtractCommentText(view, YES);
 
-    if (commentText && commentText.length > 0) {
+    if (postText && postText.length > 0) {
         [items addObject:[YouModMenuItem itemWithTitle:LOC(@"TRANSLATE_POST") subtitle:nil icon:YouModYTIconImage(897, NO, nil) handler:^{
             UIViewController *presenter = view._viewControllerForAncestor;
-            YouModShowTranslationDialog(commentText, presenter);
+            YouModShowTranslationDialog(postText, presenter);
         }]];
 
         [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_POST_TEXT") subtitle:nil icon:YouModYTIconImage(243, NO, nil) handler:^{
-            YouModCopyTextToPasteboard(commentText, @"COPIED_TO_CLIPBOARD");
+            YouModCopyTextToPasteboard(postText, @"COPIED_TO_CLIPBOARD");
         }]];
     }
 

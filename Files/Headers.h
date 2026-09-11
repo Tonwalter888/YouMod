@@ -464,7 +464,6 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 - (void)YouModSetAutoSpeed;
 - (void)setPlaybackRate:(float)rate;
 - (void)setActiveCaptionTrack:(MLInnerTubeCaptionTrack *)arg1 source:(NSInteger)arg2;
-- (void)setActiveCaptionTrack:(MLInnerTubeCaptionTrack *)arg;
 - (BOOL)isPlaybackFinished;
 - (void)didPressReplay;
 - (void)play;
@@ -473,7 +472,6 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 - (void)YouModAutoAudioTrack;
 - (void)YouModAutoCaptions;
 - (void)YouModLoopButton;
-- (void)YouModCaptionsHelper:(MLInnerTubeCaptionTrack *)arg;
 - (void)YouModShareButton:(UIView *)sourceView;
 - (NSInteger)playerState;
 - (YTPlayerResponse *)contentPlayerResponse;
