@@ -1223,7 +1223,7 @@ static CGFloat remainingOverlayWidth(YTPlayerViewController *pvc, CGFloat fullWi
 
     if (INTFORVAL(CaptionTrack) == 1) {
         if (currentTrack != nil) {
-            [self YouModCaptionsHelper:nil];
+            [self setActiveCaptionTrack:nil source:0];
         }
         return;
     }
@@ -1236,10 +1236,10 @@ static CGFloat remainingOverlayWidth(YTPlayerViewController *pvc, CGFloat fullWi
     }
     if (matchedTrack && ([matchedTrack.VSSID hasPrefix:@"a."] || [matchedTrack.VSSID hasPrefix:@"ta."]) && IS_ENABLED(DisablesCaptionTrack)) {
         matchedTrack = nil;
-        [self YouModCaptionsHelper:nil];
+        [self setActiveCaptionTrack:nil source:0];
         return;
     } else if (!matchedTrack && IS_ENABLED(DisablesCaptionTrack)) {
-        [self YouModCaptionsHelper:nil];
+        [self setActiveCaptionTrack:nil source:0];
         return;
     }
     if (matchedTrack && matchedTrack != currentTrack) {
