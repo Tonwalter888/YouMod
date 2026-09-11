@@ -309,7 +309,7 @@ static BOOL isYouModButtons = NO;
     visible ? [playerViewController pause] : [playerViewController play];
     if (IS_ENABLED(ReplacePrevNextButtons)) {
         isYouModButtons = YES;
-        [self performSelector:@selector(setSeekAccessibilityButtonsVisible:) withObject:arg];
+        [self performSelector:@selector(setSeekAccessibilityButtonsVisible:) withObject:visible];
         isYouModButtons = NO;
     }
 }
