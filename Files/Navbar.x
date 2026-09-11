@@ -80,9 +80,10 @@
     if (IS_ENABLED(HideNoti) && self.notificationButton != nil) self.notificationButton.hidden = YES;
     if (IS_ENABLED(HideSearch) && self.searchButton != nil) self.searchButton.hidden = YES;
     if (IS_ENABLED(HideMessages) && self.connectionsInboxButton != nil) self.connectionsInboxButton.hidden = YES;
+    if (IS_ENABLED(HideCastButtonNav) && self.MDXButton != nil) self.MDXButton.hidden = YES;
     for (UIView *subview in self.subviews) {
         if (IS_ENABLED(HideVoiceSearch) && [subview.accessibilityLabel isEqualToString:NSLocalizedString(@"search.voice.access", nil)]) subview.hidden = YES;
-        if (IS_ENABLED(HideCastButtonNav) && [subview.accessibilityIdentifier isEqualToString:@"id.mdx.playbackroute.button"]) subview.hidden = YES;
+        break;
     }
 }
 %end

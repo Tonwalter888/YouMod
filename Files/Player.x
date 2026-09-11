@@ -1,28 +1,32 @@
 #import "Headers.h"
 
-static BOOL isWiFiConnected() {
-    struct sockaddr_in zeroAddress;
-    bzero(&zeroAddress, sizeof(zeroAddress));
-    zeroAddress.sin_len = sizeof(zeroAddress);
-    zeroAddress.sin_family = AF_INET;
-    
-    SCNetworkReachabilityRef reachability = SCNetworkReachabilityCreateWithAddress(kCFAllocatorDefault, (const struct sockaddr *)&zeroAddress);
-    if (!reachability) return NO;
-    
-    SCNetworkReachabilityFlags flags;
-    BOOL retrievedFlags = SCNetworkReachabilityGetFlags(reachability, &flags);
-    CFRelease(reachability);
-    
-    if (!retrievedFlags) return NO;
-    
-    BOOL isReachable = (flags & kSCNetworkReachabilityFlagsReachable) != 0;
-    BOOL needsConnection = (flags & kSCNetworkReachabilityFlagsConnectionRequired) != 0;
-    BOOL canConnect = isReachable && !needsConnection;
-    
-    if (!canConnect) return NO;
-    
-    BOOL isCellular = (flags & kSCNetworkReachabilityFlagsIsWWAN) != 0;
-    return !isCellular;
+static int gNetworkType = 0;
+
+static void startNetworkMonitoring(void) {
+    static nw_path_monitor_t monitor;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        monitor = nw_path_monitor_create();
+        dispatch_queue_t queue = dispatch_queue_create("com.youmod.network", DISPATCH_QUEUE_SERIAL);
+        
+        nw_path_monitor_set_update_handler(monitor, ^(nw_path_t path) {
+            nw_path_status_t status = nw_path_get_status(path);
+            if (status == nw_path_status_satisfied) {
+                if (nw_path_uses_interface_type(path, nw_interface_type_wifi)) {
+                    gNetworkType = 1;
+                } else if (nw_path_uses_interface_type(path, nw_interface_type_cellular)) {
+                    gNetworkType = 2;
+                } else {
+                    gNetworkType = 0;
+                }
+            } else {
+                gNetworkType = 0;
+            }
+        });
+        
+        nw_path_monitor_set_queue(monitor, queue);
+        nw_path_monitor_start(monitor);
+    });
 }
 
 extern YTPlayerViewController *YouModCurrentPlayerViewController;
@@ -291,7 +295,6 @@ static void YouModAddEndTime(YTInlinePlayerBarContainerView *playerbar, YTPlayer
 %end
 
 static BOOL hasSetSeekButtons = NO;
-static BOOL isYouModButtons = NO;
 
 %hook YTMainAppControlsOverlayView
 // Hide autoplay Switch
@@ -307,11 +310,6 @@ static BOOL isYouModButtons = NO;
     YTMainAppVideoPlayerOverlayViewController *mainOverlayController = (YTMainAppVideoPlayerOverlayViewController *)self.eventsDelegate;
     YTPlayerViewController *playerViewController = mainOverlayController.parentViewController;
     visible ? [playerViewController pause] : [playerViewController play];
-    if (IS_ENABLED(ReplacePrevNextButtons)) {
-        isYouModButtons = YES;
-        [self setSeekAccessibilityButtonsVisible:visible];
-        isYouModButtons = NO;
-    }
 }
 // Replace previous/next buttons with back and forward
 - (void)didMoveToWindow {
@@ -342,7 +340,7 @@ static BOOL isYouModButtons = NO;
 - (void)setSeekBackwardAccessibilityButtonHidden:(BOOL)arg { if (!IS_ENABLED(ReplacePrevNextButtons)) %orig; }
 - (void)setSeekForwardAccessibilityButtonVisible:(BOOL)arg { if (!IS_ENABLED(ReplacePrevNextButtons)) %orig; }
 - (void)setSeekBackwardAccessibilityButtonVisible:(BOOL)arg { if (!IS_ENABLED(ReplacePrevNextButtons)) %orig; }
-- (void)setSeekAccessibilityButtonsVisible:(BOOL)arg { if (!IS_ENABLED(ReplacePrevNextButtons) || isYouModButtons) %orig; }
+- (void)setSeekAccessibilityButtonsVisible:(BOOL)arg { if (!IS_ENABLED(ReplacePrevNextButtons)) %orig; }
 - (void)setPreviousButtonEnabled:(BOOL)arg { if (!IS_ENABLED(ReplacePrevNextButtons)) %orig; }
 - (void)setNextButtonEnabled:(BOOL)arg { if (!IS_ENABLED(ReplacePrevNextButtons)) %orig; }
 - (void)setPreviousButtonHidden:(BOOL)arg { if (!IS_ENABLED(ReplacePrevNextButtons)) %orig; }
@@ -500,6 +498,7 @@ static BOOL isYouModButtons = NO;
 
 // Disable Autoplay 
 %hook YTPlaybackConfig
+- (BOOL)startPlayback { return IS_ENABLED(StopAutoplayVideo) ? NO : %orig; }
 - (void)setStartPlayback:(BOOL)arg1 { 
     BOOL temp = IS_ENABLED(StopAutoplayVideo) ? NO : arg1;
     %orig(temp);
@@ -533,29 +532,6 @@ static BOOL isYouModButtons = NO;
 %group Speed
 
 #define itemCount 13
-
-%hook YTMenuController
-
-- (NSMutableArray <YTActionSheetAction *> *)actionsForRenderers:(NSMutableArray <YTIMenuItemSupportedRenderers *> *)renderers fromView:(UIView *)fromView entry:(id)entry shouldLogItems:(BOOL)shouldLogItems firstResponder:(id)firstResponder {
-    NSUInteger index = [renderers indexOfObjectPassingTest:^BOOL(YTIMenuItemSupportedRenderers *renderer, NSUInteger idx, BOOL *stop) {
-        YTIMenuItemSupportedRenderersElementRendererCompatibilityOptionsExtension *extension = (YTIMenuItemSupportedRenderersElementRendererCompatibilityOptionsExtension *)[renderer.elementRenderer.compatibilityOptions messageForFieldNumber:396644439];
-        BOOL isVideoSpeed = [extension.menuItemIdentifier isEqualToString:@"menu_item_playback_speed"];
-        if (isVideoSpeed) *stop = YES;
-        return isVideoSpeed;
-    }];
-    NSMutableArray <YTActionSheetAction *> *actions = %orig;
-    if (index != NSNotFound) {
-        YTActionSheetAction *action = actions[index];
-        action.handler = ^{
-            [firstResponder didPressVarispeed:fromView];
-        };
-        UIView *elementView = [action.button valueForKey:@"_elementView"];
-        elementView.userInteractionEnabled = NO;
-    }
-    return actions;
-}
-
-%end
 
 %hook YTVarispeedSwitchController
 
@@ -593,17 +569,13 @@ static BOOL isYouModButtons = NO;
 %end
 %end
 
-static NSArray *YouModHoldSpeedValues(void) {
-    return @[@0.0, @0.25, @0.5, @0.75, @1.0, @1.25, @1.5, @1.75, @2.0, @3.0, @4.0, @5.0];
-}
-
 static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
-    NSArray *values = YouModHoldSpeedValues();
+    NSArray *values = @[@1.0, @0.25, @0.5, @0.75, @1.0, @1.25, @1.5, @1.75, @2.0, @3.0, @4.0, @5.0];
     return [values[index] floatValue];
 }
 
 %hook YTMainAppVideoPlayerOverlayView
-- (void)setLongPressGestureRecognizer:(id)arg {
+- (void)setLongPressGestureRecognizer:(UILongPressGestureRecognizer *)arg {
     if (INTFORVAL(HoldToSpeedIndex) != 0) return;
     %orig;
 }
@@ -638,8 +610,14 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
     // Return early if there aren't any video formats available
     // eg. Voice comments and others
     if (!videoFormats || videoFormats.count == 0) return;
-    NSInteger kQualityIndex = isWiFiConnected() ? INTFORVAL(WifiQualityIndex) : INTFORVAL(CellQualityIndex);
-    if ([NSProcessInfo processInfo].lowPowerModeEnabled) kQualityIndex = INTFORVAL(LowPowerQualityIndex);
+    NSInteger kQualityIndex;
+    if ([NSProcessInfo processInfo].lowPowerModeEnabled) {
+        kQualityIndex = INTFORVAL(LowPowerQualityIndex);
+    } else if (gNetworkType == 1) {
+        kQualityIndex = INTFORVAL(WifiQualityIndex);
+    } else if (gNetworkType == 2) {
+        kQualityIndex = INTFORVAL(CellQualityIndex);
+    }
     if (kQualityIndex == 0) return;
 
     NSString *bestQualityLabel;
@@ -715,27 +693,6 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
 - (void)dealloc {
     self.redesignedController = nil;
     %orig;
-}
-%end
-
-%hook YTMenuController
-- (NSMutableArray <YTActionSheetAction *> *)actionsForRenderers:(NSMutableArray <YTIMenuItemSupportedRenderers *> *)renderers fromView:(UIView *)fromView entry:(id)entry shouldLogItems:(BOOL)shouldLogItems firstResponder:(id)firstResponder {
-    NSUInteger index = [renderers indexOfObjectPassingTest:^BOOL(YTIMenuItemSupportedRenderers *renderer, NSUInteger idx, BOOL *stop) {
-        YTIMenuItemSupportedRenderersElementRendererCompatibilityOptionsExtension *extension = (YTIMenuItemSupportedRenderersElementRendererCompatibilityOptionsExtension *)[renderer.elementRenderer.compatibilityOptions messageForFieldNumber:396644439];
-        BOOL isVideoQuality = [extension.menuItemIdentifier isEqualToString:@"menu_item_video_quality"];
-        if (isVideoQuality) *stop = YES;
-        return isVideoQuality;
-    }];
-    NSMutableArray <YTActionSheetAction *> *actions = %orig;
-    if (index != NSNotFound) {
-        YTActionSheetAction *action = actions[index];
-        action.handler = ^{
-            [firstResponder didPressVideoQuality:fromView];
-        };
-        UIView *elementView = [action.button valueForKey:@"_elementView"];
-        elementView.userInteractionEnabled = NO;
-    }
-    return actions;
 }
 %end
 %end
@@ -1587,9 +1544,48 @@ void YouModFilterVideoButtons(_ASDisplayView *view, NSString *iden) {
     }
 }
 
+%hook YTMenuController
+- (NSMutableArray <YTActionSheetAction *> *)actionsForRenderers:(NSMutableArray <YTIMenuItemSupportedRenderers *> *)renderers fromView:(UIView *)fromView entry:(id)entry shouldLogItems:(BOOL)shouldLogItems firstResponder:(id)firstResponder {
+    NSMutableArray <YTActionSheetAction *> *actions = %orig;
+    if (!IS_ENABLED(ExtraSpeed) && !IS_ENABLED(OldQualityPicker)) return actions;
+    NSUInteger speedIndex = [renderers indexOfObjectPassingTest:^BOOL(YTIMenuItemSupportedRenderers *renderer, NSUInteger idx, BOOL *stop) {
+        YTIMenuItemSupportedRenderersElementRendererCompatibilityOptionsExtension *extension = (YTIMenuItemSupportedRenderersElementRendererCompatibilityOptionsExtension *)[renderer.elementRenderer.compatibilityOptions messageForFieldNumber:396644439];
+        BOOL isVideoSpeed = [extension.menuItemIdentifier isEqualToString:@"menu_item_playback_speed"];
+        if (isVideoSpeed) *stop = YES;
+        return isVideoSpeed;
+    }];
+    NSUInteger qualityIndex = [renderers indexOfObjectPassingTest:^BOOL(YTIMenuItemSupportedRenderers *renderer, NSUInteger idx, BOOL *stop) {
+        YTIMenuItemSupportedRenderersElementRendererCompatibilityOptionsExtension *extension = (YTIMenuItemSupportedRenderersElementRendererCompatibilityOptionsExtension *)[renderer.elementRenderer.compatibilityOptions messageForFieldNumber:396644439];
+        BOOL isVideoQuality = [extension.menuItemIdentifier isEqualToString:@"menu_item_video_quality"];
+        if (isVideoQuality) *stop = YES;
+        return isVideoQuality;
+    }];
+    if (speedIndex != NSNotFound && IS_ENABLED(ExtraSpeed)) {
+        YTActionSheetAction *action = actions[speedIndex];
+        action.handler = ^{
+            [firstResponder didPressVarispeed:fromView];
+        };
+        UIView *elementView = [action.button valueForKey:@"_elementView"];
+        elementView.userInteractionEnabled = NO;
+    }
+    if (qualityIndex != NSNotFound && IS_ENABLED(OldQualityPicker)) {
+        YTActionSheetAction *action = actions[qualityIndex];
+        action.handler = ^{
+            [firstResponder didPressVideoQuality:fromView];
+        };
+        UIView *elementView = [action.button valueForKey:@"_elementView"];
+        elementView.userInteractionEnabled = NO;
+    }
+    return actions;
+}
+%end
+
 %ctor {
     %init;
     YouModConfigureRemoteSkipCommands();
+    if (INTFORVAL(WifiQualityIndex) != 0 || INTFORVAL(CellQualityIndex) != 0) {
+        startNetworkMonitoring();
+    }
     if (IS_ENABLED(OldQualityPicker)) {
         %init(OldVideoQuality);
     }

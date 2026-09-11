@@ -150,7 +150,8 @@ static void YouModRemoveShortsOverlayButton(_ASDisplayView *dpView) {
 
 void YouModRemoveShortsPausedButtons(_ASDisplayView *self, NSString *iden) {
     if (!IS_ENABLED(RemoveShortsPausedSubButton) && !IS_ENABLED(RemoveShortsPausedLiveButton) && !IS_ENABLED(RemoveShortsPausedLensButton) && !IS_ENABLED(RemoveShortsPausedTrendsButton)) return;
-    if (![self._viewControllerForAncestor isKindOfClass:%c(YTReelTopBarViewController)]) return;
+    ASScrollView *view = (ASScrollView *)self.superview;
+    if (![self._viewControllerForAncestor isKindOfClass:%c(YTReelTopBarViewController)] || ![view isKindOfClass:%c(ASScrollView)]) return;
     if ([iden containsString:@"id.ui.shorts_paused_state."] && [iden hasSuffix:@"_button"]) {
         NSDictionary *buttonsList = @{
             @"id.ui.shorts_paused_state.subscriptions_button": @(IS_ENABLED(RemoveShortsPausedSubButton)),
@@ -160,7 +161,6 @@ void YouModRemoveShortsPausedButtons(_ASDisplayView *self, NSString *iden) {
         };
         for (NSString *button in buttonsList) {
             if ([buttonsList[button] boolValue] && [iden isEqualToString:button]) {
-                ASScrollView *view = (ASScrollView *)self.superview;
                 ASDisplayNode *node = view.scrollNode;
                 for (id child in node.yogaChildren) {
                     if ([[child description] containsString:button]) {

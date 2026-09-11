@@ -1,5 +1,4 @@
 #import "Headers.h"
-#import <objc/runtime.h>
 
 // Tab icons
 %hook YTAppPivotBarItemStyle
@@ -31,11 +30,11 @@
 %end
 
 static NSString *ymPivotIDForTabID(NSString *tabID) {
-    if ([tabID isEqualToString:@"home"]) return @"FEwhat_to_watch";
+    if ([tabID isEqualToString:@"home"]) return [%c(YTIBrowseRequest) browseIDForWhatToWatch];
     if ([tabID isEqualToString:@"shorts"]) return @"FEshorts";
     if ([tabID isEqualToString:@"create"]) return @"FEuploads";
-    if ([tabID isEqualToString:@"subscriptions"]) return @"FEsubscriptions";
-    if ([tabID isEqualToString:@"library"]) return @"FElibrary";
+    if ([tabID isEqualToString:@"subscriptions"]) return [%c(YTIBrowseRequest) browseIDForSubscriptionsTab];
+    if ([tabID isEqualToString:@"library"]) return [%c(YTIBrowseRequest) browseIDForLibraryTab];
     if ([tabID isEqualToString:@"history"]) return [%c(YTIBrowseRequest) browseIDForHistory];
     if ([tabID isEqualToString:@"gaming"]) return [%c(YTIBrowseRequest) browseIDForGamingDestination];
     if ([tabID isEqualToString:@"sports"]) return [%c(YTIBrowseRequest) browseIDForSportsDestination];
@@ -47,12 +46,12 @@ static NSString *ymPivotIDForTabID(NSString *tabID) {
     if ([tabID isEqualToString:@"like"]) return @"VLLL";
     if ([tabID isEqualToString:@"live"]) return @"UC4R8DWoMoI7CAwX8_LjQHig";
     if ([tabID isEqualToString:@"post"]) return @"FEpost_home";
-    if ([tabID isEqualToString:@"video"]) return @"UC3qapbGAd2-S75NkBY3XWww";
+    if ([tabID isEqualToString:@"video"]) return [%c(YTIBrowseRequest) browseIDForMyVideos];
     if ([tabID isEqualToString:@"movie"]) return @"FEstorefront";
     if ([tabID isEqualToString:@"course"]) return @"FEcourses";
     if ([tabID isEqualToString:@"minigame"]) return @"FEmini_app_destination";
     if ([tabID isEqualToString:@"fashion"]) return @"UCrpQ4p1Ql_hG8rKXIKM1MOQ";
-    if ([tabID isEqualToString:@"learning"]) return @"UCtFRv9O2AHqOZjjynzrv-xg";
+    if ([tabID isEqualToString:@"learning"]) return [%c(YTIBrowseRequest) browseIDForLearningDestination];
     return nil;
 }
 
@@ -321,21 +320,10 @@ static BOOL isTabSelected = NO;
 
 %hook YTScrollableNavigationController
 - (BOOL)hidePivotBarOnScroll {
-    if (INTFORVAL(PivotBarHide) == 1) {
-        return YES;
-    } else if (INTFORVAL(PivotBarHide) == 2) {
-        return NO;
-    }
-    return %orig;
+    return YES;
 }
 - (void)setHidePivotBarOnScroll:(BOOL)arg {
-    BOOL temp = arg;
-    if (INTFORVAL(PivotBarHide) == 1) {
-        temp = YES;
-    } else if (INTFORVAL(PivotBarHide) == 2) {
-        temp = NO;
-    }
-    %orig(temp);
+    %orig(YES);
 }
 %end
 

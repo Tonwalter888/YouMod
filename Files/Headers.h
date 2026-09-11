@@ -47,8 +47,7 @@
 #import <YouTubeHeader/YTTypeStyle.h>
 #import <YouTubeHeader/YTModularPlayerBarController.h>
 #import <dlfcn.h>
-#import <SystemConfiguration/SystemConfiguration.h>
-#import <netinet/in.h>
+#import <Network/Network.h>
 #import <YouTubeHeader/YTAppViewControllerImpl.h>
 #import <YouTubeHeader/YTAppViewController.h>
 #import <YouTubeHeader/YTDefaultSheetController.h>
@@ -246,8 +245,7 @@
 #define TabOrder @"YouModTabOrder"
 #define HideTabIndi @"YouModHideTabIndicators"
 #define HideTabLabels @"YouModHideTabLabels"
-#define UseFrostedTabBar @"YouModUseFrostedTabBar"
-#define PivotBarHide @"YouModPivotBarHide"
+#define UseFrostedTabBar @"YouModUseFrostedTabBar"F
 // Miscellaneous
 #define BackgroundPlayback @"YouModEnablesBackgroundPlayback"
 #define DisablesShortsPiP @"YouModTrytoDisablesShortsPiP"
@@ -368,6 +366,11 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 + (NSString *)browseIDForSportsDestination;
 + (NSString *)browseIDForNotificationsInbox;
 + (NSString *)browseIDForHistory;
++ (NSString *)browseIDForWhatToWatch;
++ (NSString *)browseIDForSubscriptionsTab;
++ (NSString *)browseIDForLibraryTab;
++ (NSString *)browseIDForMyVideos;
++ (NSString *)browseIDForLearningDestination;
 @end
 
 @interface YTITopbarLogoRenderer : NSObject
@@ -378,6 +381,7 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 - (YTLightweightQTMButton *)notificationButton;
 - (YTLightweightQTMButton *)searchButton;
 - (YTLightweightQTMButton *)connectionsInboxButton;
+- (YTLightweightQTMButton *)MDXButton;
 @end
 
 @interface YTVideoFreeZoomOverlayController : NSObject
