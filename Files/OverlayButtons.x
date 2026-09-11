@@ -481,7 +481,8 @@ static BOOL isRelatedVideosExpanded = NO;
     for (YMOverlayButtonSpec *spec in YMOrderedOverlayButtons()) {
         if (YMIsOverlayButtonBottom(spec.identifier)) [specs addObject:spec];
     }
-    YTQTMButton *exitFullscreenButton = [self exitFullscreenButton];
+    UIView *exitFullscreenButton = [self exitFullscreenButton];
+    if (exitFullscreenButton == nil) exitFullscreenButton = [self rightIcons];
     BOOL hasAnchor = exitFullscreenButton && exitFullscreenButton.window;
     NSMutableSet<NSNumber *> *activeTags = [NSMutableSet set];
     if (hasAnchor) {
