@@ -718,12 +718,12 @@ static BOOL SBGetDecorationViewTimeRange(UIView *view, CGFloat *outStart, CGFloa
 // only the fullscreen main player's markers are rounded. isFullscreen is private on the
 // overlay view, so a view that does not answer it counts as not fullscreen.
 static BOOL SBDecorationViewIsInFullscreenMainPlayer(UIView *view) {
+    if (![view respondsToSelector:@selector(enableRoundedCorners)] || ![view isKindOfClass:%c(YTPlayerBarProgressDecorationView)]) return NO;
     UIView *currentView = view.superview;
     while (currentView != nil && currentView.superview != nil && ![currentView isKindOfClass:%c(YTMainAppVideoPlayerOverlayView)]) {
         currentView = currentView.superview;
     }
     if (![currentView isKindOfClass:%c(YTMainAppVideoPlayerOverlayView)]) return NO;
-    if (![currentView respondsToSelector:@selector(isFullscreen)]) return NO;
     return [(YTMainAppVideoPlayerOverlayView *)currentView isFullscreen];
 }
 
@@ -749,8 +749,6 @@ static void SBRebuildMarkersInDecorationView(UIView *view) {
     NSArray<SBSegment *> *segments = sbActivePlayerSegments;
     if (!segments || segments.count == 0) return;
 
-    BOOL isFullscreenMainPlayer = SBDecorationViewIsInFullscreenMainPlayer(view) && [view respondsToSelector:@selector(enableRoundedCorners)] && [view isKindOfClass:%c(YTPlayerBarProgressDecorationView)];
-
     [CATransaction begin];
     [CATransaction setDisableActions:YES];
 
@@ -770,7 +768,7 @@ static void SBRebuildMarkersInDecorationView(UIView *view) {
                 markerLayer.frame = CGRectMake(x, 0, w, barHeight);
                 markerLayer.backgroundColor = [segment segmentColor].CGColor;
                 markerLayer.masksToBounds = YES;
-                if (isFullscreenMainPlayer) SBApplyMarkerRounding(markerLayer);
+                if (SBDecorationViewIsInFullscreenMainPlayer(view)) SBApplyMarkerRounding(markerLayer);
                 objc_setAssociatedObject(markerLayer, @selector(sbSegmentData), @[@(frac), @(frac), @(YES)], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 
                 [view.layer addSublayer:markerLayer];
@@ -791,7 +789,7 @@ static void SBRebuildMarkersInDecorationView(UIView *view) {
                 markerLayer.frame = CGRectMake(x, 0, w, barHeight);
                 markerLayer.backgroundColor = [segment segmentColor].CGColor;
                 markerLayer.masksToBounds = YES;
-                if (isFullscreenMainPlayer) SBApplyMarkerRounding(markerLayer);
+                if (SBDecorationViewIsInFullscreenMainPlayer(view)) SBApplyMarkerRounding(markerLayer);
                 objc_setAssociatedObject(markerLayer, @selector(sbSegmentData), @[@(fracStart), @(fracEnd), @(NO)], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 
                 [view.layer addSublayer:markerLayer];
@@ -817,8 +815,6 @@ static void SBRenderMarkersInDecorationView(UIView *view) {
         return;
     }
 
-    BOOL isFullscreenMainPlayer = SBDecorationViewIsInFullscreenMainPlayer(view) && [view respondsToSelector:@selector(enableRoundedCorners)] && [view isKindOfClass:%c(YTPlayerBarProgressDecorationView)];
-
     BOOL hasMarkers = NO;
     [CATransaction begin];
     [CATransaction setDisableActions:YES];
@@ -841,7 +837,7 @@ static void SBRenderMarkersInDecorationView(UIView *view) {
                 }
                 // Re-derive the radius: the bar is 2pt windowed and 4pt fullscreen, and
                 // the width changes on every re-layout.
-                if (isFullscreenMainPlayer) SBApplyMarkerRounding(layer);
+                if (SBDecorationViewIsInFullscreenMainPlayer(view)) SBApplyMarkerRounding(layer);
             }
         }
     }
