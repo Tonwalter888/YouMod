@@ -552,6 +552,7 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 
 @interface YTMainAppControlsOverlayView (YouMod)
 - (YTMainAppVideoPlayerOverlayViewController *)eventsDelegate;
+- (void)setSeekAccessibilityButtonsVisible:(BOOL)arg;
 @end
 
 @interface YTVideoQualitySwitchOriginalController (YouMod)
