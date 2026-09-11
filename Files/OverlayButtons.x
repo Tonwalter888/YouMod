@@ -499,7 +499,7 @@ static BOOL isRelatedVideosExpanded = NO;
         return;
     }
     UIView *exitFullscreenButton = [self exitFullscreenButton];
-    if (exitFullscreenButton == nil) exitFullscreenButton = [self rightIcons];
+    if (exitFullscreenButton == nil) exitFullscreenButton = [self valueForKey:@"_rightIconsView"];
     BOOL hasAnchor = exitFullscreenButton && exitFullscreenButton.window;
     NSMutableSet<NSNumber *> *activeTags = [NSMutableSet set];
     if (hasAnchor) {
