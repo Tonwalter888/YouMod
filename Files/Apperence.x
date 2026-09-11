@@ -50,7 +50,6 @@ void YouModApplyOLEDToDisplayView(_ASDisplayView *view, NSString *iden) {
         view.superview.backgroundColor = dynamicColor;
         return;
     }  
-    UIViewController *controller = view._viewControllerForAncestor;
     if ([controller isKindOfClass:%c(YTActionSheetDialogViewController)] || [controller isKindOfClass:%c(YTBottomSheetController)]) {
         if ([view.superview.accessibilityIdentifier isEqualToString:@"eml.animated_subscribe_button"]) return;
         view.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
