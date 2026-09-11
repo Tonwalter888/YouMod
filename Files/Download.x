@@ -2102,12 +2102,13 @@ static NSString *YouModExtractCommentText(UIView *cellView, BOOL isPost) {
         [queue removeObjectAtIndex:0];
 
         if ([current isKindOfClass:%c(_ASDisplayView)]) {
-            BOOL isCommentLabel = [current.accessibilityIdentifier isEqualToString:@"id.comment.content.label"];
-            if (isCommentLabel) {
-                resultText = current.accessibilityLabel;
-                break;
-            }
-            if (isPost) {
+            if (!isPost) {
+                BOOL isCommentLabel = [current.accessibilityIdentifier isEqualToString:@"id.comment.content.label"];
+                if (isCommentLabel) {
+                    resultText = current.accessibilityLabel;
+                    break;
+                }
+            } else {
                 ASDisplayNode *node = [current performSelector:@selector(keepalive_node)];
                 if (![node isKindOfClass:%c(ELMExpandableTextNode)] && ![node isKindOfClass:%c(ELMTextNode)]) {
                     BOOL found = NO;
