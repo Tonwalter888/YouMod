@@ -268,7 +268,7 @@ static BOOL isGestureRegistered = NO;
             YMOpenLinkFromClipboard(topVC, YES);
         }];
         UIAction *whitelistAction = [UIAction actionWithTitle:LOC(@"SB_WHITELIST_MANAGE")
-                                                 image:[UIImage systemImageNamed:@"checkmark.seal"]
+                                                 image:[UIImage systemImageNamed:@"shield"]
                                             identifier:nil
                                                handler:^(__kindof UIAction * _Nonnull action) {
             YMSBPresentWhitelistManager();
