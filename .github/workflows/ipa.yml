@@ -244,7 +244,7 @@ jobs:
            
       - name: Clone YTVideoOverlay
         if: ${{ inputs.youpip || inputs.ytuhd || inputs.youquality }}
-        run: git clone --quiet --depth=1 https://github.com/Tonwalter888/YTVideoOverlay.git
+        run: git clone --quiet --depth=1 https://github.com/PoomSmart/YTVideoOverlay.git
           
       - name: Clone YTABConfig
         if: ${{ inputs.abconfig }}

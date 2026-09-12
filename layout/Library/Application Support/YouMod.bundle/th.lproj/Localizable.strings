@@ -586,5 +586,39 @@
 "SB_SKIP_ALERT_DURATION" = "ระยะเวลาแสดงการแจ้งเตือนเมื่อข้าม";
 "SB_UNSKIP_ALERT_DURATION" = "ระยะเวลาแสดงการแจ้งเตือนเมื่อยกเลิกการข้าม";
 "SB_MIN_DURATION_SLIDER" = "ความยาวขั้นต่ำของช่วงวิดีโอที่จะให้ข้าม";
+
+/* SponsorBlock menu / vote / whitelist / user ID */
+"SB_MENU_TITLE" = "SponsorBlock";
+"SB_MENU_ENABLE" = "เปิด SponsorBlock";
+"SB_MENU_DISABLE" = "ปิด SponsorBlock";
+"SB_MENU_VOTE" = "โหวต segment";
+"SB_MENU_WHITELIST" = "Whitelist ช่องนี้";
+"SB_VOTE_TITLE" = "Segments";
+"SB_VOTES_COUNT" = "%ld โหวต";
+"SB_VOTE_UPVOTE" = "โหวตว่าถูกต้อง";
+"SB_VOTE_DOWNVOTE" = "โหวตว่าไม่ถูกต้อง";
+"SB_VOTE_UNDO" = "ยกเลิกโหวต";
+"SB_VOTE_CHANGE_CATEGORY" = "เปลี่ยนหมวดหมู่";
+"SB_VOTE_JUMP_START" = "กระโดดไปจุดเริ่ม segment";
+"SB_VOTE_JUMP_END" = "กระโดดไปจุดจบ segment";
+"SB_VOTE_SUCCESS" = "ส่งโหวตแล้ว";
+"SB_VOTE_FAILED" = "โหวตไม่สำเร็จ";
+"SB_VOTE_NO_SEGMENTS" = "ไม่มี segment ในวิดีโอนี้";
+"SB_WHITELIST_ADD" = "เพิ่มใน whitelist";
+"SB_WHITELIST_REMOVE" = "นำออกจาก whitelist";
+"SB_WHITELIST_DESC" = "SponsorBlock จะถูกปิดสำหรับช่องนี้";
+"SB_WHITELIST_MANAGE" = "Whitelist";
+"SB_WHITELIST_EMPTY" = "ยังไม่มีช่องใน whitelist";
+"SB_WHITELIST_DELETE" = "ลบ";
+"SB_USERID_HEADER" = "User ID";
+"SB_PRIVATE_ID" = "Private User ID";
+"SB_PUBLIC_ID" = "Public User ID";
+"SB_COPY_ID" = "คัดลอก ID";
+"SB_EDIT_ID" = "แก้ไข ID";
+"SB_ID_COPIED" = "คัดลอก ID แล้ว";
+"SB_ID_SAVED" = "บันทึก ID แล้ว";
+"SB_ID_INVALID" = "ID ต้องยาวอย่างน้อย 30 ตัวอักษร";
+"SB_ID_SAVE" = "บันทึก";
+"SB_ID_CANCEL" = "ยกเลิก";
 "AUDIO" = "เสียง";
 

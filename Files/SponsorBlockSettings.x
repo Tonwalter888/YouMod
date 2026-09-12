@@ -332,16 +332,17 @@ static const void *kSBAllFlatRowsKey = &kSBAllFlatRowsKey;
     return [UIColor colorWithWhite:0.55 alpha:1.0];
 }
 
-#pragma mark - Sections: 0=Main, 1=Sliders, 2=Segments
+#pragma mark - Sections: 0=Main, 1=Sliders, 2=Segments, 3=User ID
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
-    return self.isFiltering ? 1 : 3;  // one flat section of matches while searching
+    return self.isFiltering ? 1 : 4;  // one flat section of matches while searching
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
     if (self.isFiltering) return self.filteredFlatRows.count;
     if (section == 0) return sbToggleRows().count;  // toggles
     if (section == 1) return 3;  // sliders (skip alert, unskip alert, min duration)
+    if (section == 3) return 2;  // private / public user ID
     return sbAllCategories().count * 2;  // action + color per category
 }
 
@@ -350,6 +351,7 @@ static const void *kSBAllFlatRowsKey = &kSBAllFlatRowsKey;
     NSString *title = nil;
     if (section == 0) title = LOC(@"SB_SECTION_MAIN");
     else if (section == 2) title = LOC(@"SB_CATEGORIES_HEADER");
+    else if (section == 3) title = LOC(@"SB_USERID_HEADER");
     if (!title) return nil;
 
     UIView *header = [[UIView alloc] init];
@@ -379,6 +381,7 @@ static const void *kSBAllFlatRowsKey = &kSBAllFlatRowsKey;
         return h > 0 ? h : UITableViewAutomaticDimension;
     }
     if (indexPath.section == 1) return 70;
+    if (indexPath.section == 3) return 48;
     if (indexPath.section == 2) {
         BOOL isActionRow = (indexPath.row % 2 == 0);
         NSInteger catIndex = indexPath.row / 2;
@@ -392,6 +395,7 @@ static const void *kSBAllFlatRowsKey = &kSBAllFlatRowsKey;
     if (self.isFiltering) return self.filteredFlatRows[indexPath.row].makeCell(tableView);
     if (indexPath.section == 0) return [self toggleCellForRow:indexPath.row tableView:tableView];
     if (indexPath.section == 1) return [self sliderCellForRow:indexPath.row tableView:tableView];
+    if (indexPath.section == 3) return [self userIdCellForRow:indexPath.row tableView:tableView];
     return [self segmentCellForRow:indexPath.row tableView:tableView];
 }
 
@@ -667,6 +671,11 @@ static const void *kSBAllFlatRowsKey = &kSBAllFlatRowsKey;
         if (row.onSelect) row.onSelect(self, ^{ [weakSelf.tableView reloadData]; });
         return;
     }
+    if (indexPath.section == 3) {
+        [tableView deselectRowAtIndexPath:indexPath animated:YES];
+        [self sbPresentUserIDSheetForRow:indexPath.row];
+        return;
+    }
     if (indexPath.section != 2) return;
     if (indexPath.row % 2 != 1) return; // only color rows are tappable
 
@@ -686,6 +695,109 @@ static const void *kSBAllFlatRowsKey = &kSBAllFlatRowsKey;
     picker.delegate = self;
 
     [self presentViewController:picker animated:YES completion:nil];
+}
+
+#pragma mark - User ID Cells (Section 3)
+
+- (UITableViewCell *)userIdCellForRow:(NSInteger)row tableView:(UITableView *)tableView {
+    UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:nil];
+    cell.backgroundColor = [UIColor clearColor];
+    cell.selectionStyle = UITableViewCellSelectionStyleDefault;
+    cell.textLabel.textColor = [self sbTextColor];
+    cell.textLabel.font = [UIFont systemFontOfSize:16 weight:UIFontWeightMedium];
+    cell.detailTextLabel.textColor = [self sbSecondaryTextColor];
+    cell.detailTextLabel.font = [UIFont monospacedDigitSystemFontOfSize:13 weight:UIFontWeightRegular];
+    cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+
+    BOOL isPublic = (row == 1);
+    cell.textLabel.text = LOC(isPublic ? @"SB_PUBLIC_ID" : @"SB_PRIVATE_ID");
+    NSString *userID = isPublic ? sbPublicUserID() : sbLocalUserID();
+    NSString *detail = userID;
+    if (detail.length > 16) {
+        detail = [NSString stringWithFormat:@"%@…%@", [userID substringToIndex:10], [userID substringFromIndex:userID.length - 4]];
+    }
+    cell.detailTextLabel.text = detail;
+    return cell;
+}
+
+- (void)sbPresentUserIDSheetForRow:(NSInteger)row {
+    BOOL isPublic = (row == 1);
+    NSString *userID = isPublic ? sbPublicUserID() : sbLocalUserID();
+
+    YTDefaultSheetController *sheet = [%c(YTDefaultSheetController) sheetControllerWithParentResponder:self];
+    if (isPublic) {
+        [sheet addHeaderWithTitle:LOC(@"SB_PUBLIC_ID") subtitle:userID];
+    }
+
+    __weak typeof(self) weakSelf = self;
+
+    YTActionSheetAction *copyAction = [%c(YTActionSheetAction) actionWithTitle:LOC(@"SB_COPY_ID")
+                                                                      iconImage:[UIImage systemImageNamed:@"doc.on.doc"]
+                                                                           style:0
+                                                                        handler:^(__unused YTActionSheetAction *action) {
+        UIPasteboard.generalPasteboard.string = userID;
+        sbShowSBPill(LOC(@"SB_ID_COPIED"), YES);
+    }];
+    [sheet addAction:copyAction];
+
+    YTActionSheetAction *editAction = [%c(YTActionSheetAction) actionWithTitle:LOC(@"SB_EDIT_ID")
+                                                                      iconImage:[UIImage systemImageNamed:@"square.and.pencil"]
+                                                                           style:0
+                                                                        handler:^(__unused YTActionSheetAction *action) {
+        YMSBCardView *card = [YMSBCardView presentWithTitle:LOC(isPublic ? @"SB_PUBLIC_ID" : @"SB_PRIVATE_ID")];
+        if (!card) return;
+
+        UITextField *field = [[UITextField alloc] init];
+        field.text = userID;
+        field.font = [UIFont monospacedSystemFontOfSize:14 weight:UIFontWeightRegular];
+        field.textColor = [UIColor labelColor];
+        field.backgroundColor = [UIColor secondarySystemBackgroundColor];
+        field.layer.cornerRadius = 10;
+        field.borderStyle = UITextBorderStyleRoundedRect;
+        field.autocapitalizationType = UITextAutocapitalizationTypeNone;
+        field.autocorrectionType = UITextAutocorrectionTypeNo;
+        field.spellCheckingType = UITextSpellCheckingTypeNo;
+        field.keyboardType = UIKeyboardTypeASCIICapable;
+        field.clearButtonMode = UITextFieldViewModeWhileEditing;
+        field.translatesAutoresizingMaskIntoConstraints = NO;
+        [field.heightAnchor constraintEqualToConstant:44].active = YES;
+        [card addCustomView:field];
+
+        __weak YMSBCardView *weakCard = card;
+
+        [card addOptionRowWithSymbol:@"checkmark.circle.fill"
+                               title:LOC(@"SB_ID_SAVE")
+                            subtitle:nil
+                           tintColor:[UIColor systemGreenColor]
+                              handler:^{
+            YMSBCardView *strongCard = weakCard;
+            NSString *newValue = [field.text stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+            if (newValue.length < 30) {
+                sbShowSBPill(LOC(@"SB_ID_INVALID"), NO);
+                return;
+            }
+            if (isPublic) {
+                sbSetPublicUserIDManual(newValue);
+            } else {
+                sbSetPrivateUserID(newValue);
+            }
+            [strongCard dismissAnimated];
+            sbShowSBPill(LOC(@"SB_ID_SAVED"), YES);
+            __strong typeof(weakSelf) strongSelf = weakSelf;
+            [strongSelf.tableView reloadData];
+        }];
+
+        [card addOptionRowWithSymbol:@"xmark.circle"
+                               title:LOC(@"SB_ID_CANCEL")
+                            subtitle:nil
+                           tintColor:[UIColor secondaryLabelColor]
+                              handler:^{
+            [weakCard dismissAnimated];
+        }];
+    }];
+    [sheet addAction:editAction];
+
+    [sheet presentFromViewController:self animated:YES completion:nil];
 }
 
 #pragma mark - UIColorPickerViewControllerDelegate
@@ -901,6 +1013,7 @@ NSArray<YMSearchRow *> *sbSearchRows(UIViewController *host) {
     NSMutableDictionary *defaults = [@{
         SBEnabled: @YES,
         SBShowButton: @YES,
+        SBButtonKey: @YES,
         SBShowNotifications: @YES,
         SBSegmentsInPlayer: @YES,
         SBSegmentsInFeed: @YES,

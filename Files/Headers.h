@@ -302,6 +302,9 @@
 #define SBSkipAlertDuration @"YouModSBSkipAlertDuration"
 #define SBUnskipAlertDuration @"YouModSBUnskipAlertDuration"
 #define SBButtonKey @"YouModSBButtonKey"
+#define SBPrivateUserIDKey @"YouModSBPrivateUserID"
+#define SBPublicUserIDKey @"YouModSBPublicUserID"
+#define SBWhitelistKey @"YouModSBWhitelist"
 
 #define SB_ACTION_KEY(cat) [NSString stringWithFormat:@"YouModSBAction_%@", cat]
 #define SB_COLOR_KEY(cat) [NSString stringWithFormat:@"YouModSBColor_%@", cat]
@@ -676,6 +679,7 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 @interface YTIVideoDetails (YouMod)
 - (NSString *)title;
 - (NSString *)author;
+- (NSString *)channelId;
 - (NSString *)shortDescription;
 - (YTIThumbnailDetails *)thumbnail;
 @end
@@ -737,6 +741,7 @@ typedef NS_ENUM(NSInteger, SBSegmentAction) {
 @property (nonatomic, assign) float startTime;
 @property (nonatomic, assign) float endTime;
 @property (nonatomic, strong) NSString *actionType;
+@property (nonatomic, assign) NSInteger votes;
 + (instancetype)segmentWithUUID:(NSString *)UUID category:(NSString *)category start:(float)start end:(float)end action:(NSString *)actionType;
 - (SBSegmentAction)configuredAction;
 - (UIColor *)segmentColor;
@@ -744,6 +749,8 @@ typedef NS_ENUM(NSInteger, SBSegmentAction) {
 
 @interface SBRequest : NSObject
 + (void)fetchSegmentsForVideoID:(NSString *)videoID completion:(void (^)(NSArray<SBSegment *> *segments))completion;
++ (void)voteOnSegment:(SBSegment *)segment videoID:(NSString *)videoID type:(NSInteger)voteType completion:(void (^)(BOOL success, NSString *errorMessage))completion;
++ (void)voteCategoryOnSegment:(SBSegment *)segment videoID:(NSString *)videoID category:(NSString *)category completion:(void (^)(BOOL success, NSString *errorMessage))completion;
 @end
 
 @interface SBSkipNotificationView : UIView
@@ -772,11 +779,35 @@ extern void sbDismissAllNotifications(void);
 extern void sbUpdateOverlayInsetForPivotBar(void);
 extern void YMPresentTabOrderModally(id parentResponder);
 
+// SponsorBlock menu / voting / whitelist (SponsorBlockMenu.x)
+extern BOOL sbActiveForVideo(YTPlayerViewController *player);
+extern void sbInvalidateSegmentCache(NSString *videoID);
+extern NSString *sbLocalUserID(void);
+extern NSString *sbPublicUserID(void);
+extern void sbSetPrivateUserID(NSString *userID);
+extern void sbSetPublicUserIDManual(NSString *userID);
+extern void sbShowSBPill(NSString *message, BOOL success);
+extern void YMSBPresentWhitelistManager(void);
+
+// Centered card dialog of our own, used for segment voting, whitelist and
+// user-ID editing. Present with +presentWithTitle:, fill with option rows
+// (or custom views), dismiss with -dismissAnimated.
+@interface YMSBCardView : UIView
+@property (nonatomic, copy) NSString *cardTitle;
++ (instancetype)presentWithTitle:(NSString *)title;
+- (void)clearContent;
+- (void)addOptionRowWithImage:(UIImage *)image title:(NSString *)title subtitle:(NSString *)subtitle tintColor:(UIColor *)tint handler:(void (^)(void))handler;
+- (void)addOptionRowWithSymbol:(NSString *)symbolName title:(NSString *)title subtitle:(NSString *)subtitle tintColor:(UIColor *)tint handler:(void (^)(void))handler;
+- (void)addCustomView:(UIView *)view;
+- (void)dismissAnimated;
+@end
+
 // The ordered set of SponsorBlock categories YouMod supports. Both the core
 // (segment fetching / skipping) and the settings UI read from this single list,
 // so a category can never be fetchable without a control, or configurable
 // without being fetched.
 extern NSArray<NSString *> *sbAllCategories(void);
+extern UIColor *SBColorFromHex(NSString *hexString);
 
 // Tag stamped on every seek-bar segment marker view, used to find and remove
 // them across the player-bar layout hooks that don't hold a direct reference.
@@ -873,6 +904,10 @@ extern void YouModConfigureSharePopover(UIActivityViewController *activityVC, UI
 - (void)sbShowHighlightBannerIfNeeded:(NSArray<SBSegment *> *)segments;
 - (void)sbSkipToHighlight;
 - (void)sbRefreshMarkers:(NSArray<SBSegment *> *)segments;
+- (void)sbShowMainMenuFromView:(UIView *)sourceView;
+- (void)sbShowVoteCard;
+- (void)sbShowWhitelistCard;
+- (void)sbPopulateVoteOptions:(YMSBCardView *)card segment:(SBSegment *)segment;
 @end
 
 @interface YouModThumbnailViewController : UIViewController <UIScrollViewDelegate, UIGestureRecognizerDelegate>

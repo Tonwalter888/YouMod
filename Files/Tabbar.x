@@ -267,7 +267,13 @@ static BOOL isGestureRegistered = NO;
             UIViewController *topVC = YouModTopViewController(nil);
             YMOpenLinkFromClipboard(topVC, YES);
         }];
-        return [UIMenu menuWithTitle:@"" children:@[tabBarAction, openLinkAction]];
+        UIAction *whitelistAction = [UIAction actionWithTitle:LOC(@"SB_WHITELIST_MANAGE")
+                                                 image:[UIImage systemImageNamed:@"checkmark.seal"]
+                                            identifier:nil
+                                               handler:^(__kindof UIAction * _Nonnull action) {
+            YMSBPresentWhitelistManager();
+        }];
+        return [UIMenu menuWithTitle:@"" children:@[tabBarAction, openLinkAction, whitelistAction]];
     }];
 }
 %end
@@ -318,24 +324,12 @@ static BOOL isTabSelected = NO;
 }
 %end
 
-%hook YTScrollableNavigationController
-- (BOOL)hidePivotBarOnScroll {
-    return YES;
-}
-- (void)setHidePivotBarOnScroll:(BOOL)arg {
-    %orig(YES);
-}
-%end
-
 %hook YTAppDelegate
 - (void)appDidBecomeActive {
     %orig;
     if (IS_ENABLED(AutoOpenLink)) {
         UIViewController *topVC = YouModTopViewController(nil);
         YMOpenLinkFromClipboard(topVC, NO);
-    }
-    if (IS_ENABLED(HideSubbar)) {
-        [[NSNotificationCenter defaultCenter] postNotificationName:@"YouModReloadHeaderBar" object:nil];
     }
 }
 %end
