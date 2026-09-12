@@ -518,6 +518,7 @@ static BOOL isRelatedVideosExpanded = NO;
     YTSingleVideoController *sgvid = player.activeVideo;
     YTSingleVideo *sgvid2 = sgvid.singleVideo;
     BOOL isLive = [sgvid2 isLivePlayback];
+    BOOL peekVisible = [self isPeekableViewVisible];
 
     CGRect exitFrame = exitFullscreenButton.frame;
     CGFloat trailingCenterX = CGRectGetMidX(exitFrame);
@@ -537,6 +538,8 @@ static BOOL isRelatedVideosExpanded = NO;
             continue;
         }
         if (!btn) btn = YMCreateOverlayButton(self, spec);
+
+        btn.hidden = !peekVisible || isRelatedVideosExpanded;
 
         if (spec.tintProvider) {
             UIColor *dynamic = spec.tintProvider(player);
