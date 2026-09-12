@@ -749,6 +749,11 @@ typedef NS_ENUM(NSInteger, SBSegmentAction) {
 
 @interface SBRequest : NSObject
 + (void)fetchSegmentsForVideoID:(NSString *)videoID completion:(void (^)(NSArray<SBSegment *> *segments))completion;
+@end
+
+// Segment voting; implemented as a category in SponsorBlockMenu.x so the
+// primary @implementation in SponsorBlock.x stays fetch/skip only.
+@interface SBRequest (Vote)
 + (void)voteOnSegment:(SBSegment *)segment videoID:(NSString *)videoID type:(NSInteger)voteType completion:(void (^)(BOOL success, NSString *errorMessage))completion;
 + (void)voteCategoryOnSegment:(SBSegment *)segment videoID:(NSString *)videoID category:(NSString *)category completion:(void (^)(BOOL success, NSString *errorMessage))completion;
 @end

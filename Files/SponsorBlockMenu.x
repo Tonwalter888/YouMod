@@ -515,7 +515,7 @@ static const CGFloat kYMSwipeRevealWidth = 72.0;
             [_contentStack.bottomAnchor constraintEqualToAnchor:_scrollView.contentLayoutGuide.bottomAnchor],
             [_contentStack.leadingAnchor constraintEqualToAnchor:_scrollView.contentLayoutGuide.leadingAnchor],
             [_contentStack.trailingAnchor constraintEqualToAnchor:_scrollView.contentLayoutGuide.trailingAnchor],
-            [_contentStack.widthAnchor constraintEqualToAnchor:_scrollView.frameLayoutGuide],
+            [_contentStack.widthAnchor constraintEqualToAnchor:_scrollView.frameLayoutGuide.widthAnchor],
         ]];
     }
     return self;
@@ -700,19 +700,18 @@ static const CGFloat kYMSwipeRevealWidth = 72.0;
         voteHandler(20);
     }];
     [card addOptionRowWithSymbol:@"tag" title:LOC(@"SB_VOTE_CHANGE_CATEGORY") subtitle:segmentInfo tintColor:[UIColor labelColor] handler:^{
-        YMSBCardView *categoryCard = weakCard;
-        [categoryCard clearContent];
-        categoryCard.cardTitle = LOC(@"SB_VOTE_CHANGE_CATEGORY");
+        [weakCard clearContent];
+        weakCard.cardTitle = LOC(@"SB_VOTE_CHANGE_CATEGORY");
         for (NSString *category in sbAllCategories()) {
             NSString *hex = [[NSUserDefaults standardUserDefaults] stringForKey:SB_COLOR_KEY(category)];
             UIColor *color = hex ? SBColorFromHex(hex) : [UIColor whiteColor];
-            [categoryCard addOptionRowWithImage:sbDotImage(color)
-                                          title:sbLocalizedCategoryName(category)
-                                       subtitle:nil
-                                      tintColor:[UIColor labelColor]
-                                         handler:^{
+            [weakCard addOptionRowWithImage:sbDotImage(color)
+                                      title:sbLocalizedCategoryName(category)
+                                   subtitle:nil
+                                  tintColor:[UIColor labelColor]
+                                     handler:^{
                 __strong typeof(weakSelf) strongSelf = weakSelf;
-                [categoryCard dismissAnimated];
+                [weakCard dismissAnimated];
                 if (!strongSelf) return;
                 NSString *videoID = [strongSelf currentVideoID];
                 [SBRequest voteCategoryOnSegment:segment videoID:videoID category:category completion:^(BOOL success, NSString *errorMessage) {
