@@ -254,6 +254,12 @@ static BOOL isGestureRegistered = NO;
 %new
 - (UIContextMenuConfiguration *)contextMenuInteraction:(UIContextMenuInteraction *)interaction configurationForMenuAtLocation:(CGPoint)location {
     return [UIContextMenuConfiguration configurationWithIdentifier:nil previewProvider:nil actionProvider:^UIMenu * _Nullable(NSArray<UIMenuElement *> * _Nonnull suggestedActions) {
+        UIAction *whitelistAction = [UIAction actionWithTitle:LOC(@"SB_WHITELIST_MANAGE")
+                                                 image:[UIImage systemImageNamed:@"shield"]
+                                            identifier:nil
+                                               handler:^(__kindof UIAction * _Nonnull action) {
+            YMSBPresentWhitelistManager();
+        }];
         UIAction *tabBarAction = [UIAction actionWithTitle:LOC(@"MANAGE_TABS")
                                                      image:[UIImage systemImageNamed:@"dock.rectangle"]
                                                 identifier:nil
@@ -267,13 +273,7 @@ static BOOL isGestureRegistered = NO;
             UIViewController *topVC = YouModTopViewController(nil);
             YMOpenLinkFromClipboard(topVC, YES);
         }];
-        UIAction *whitelistAction = [UIAction actionWithTitle:LOC(@"SB_WHITELIST_MANAGE")
-                                                 image:[UIImage systemImageNamed:@"shield"]
-                                            identifier:nil
-                                               handler:^(__kindof UIAction * _Nonnull action) {
-            YMSBPresentWhitelistManager();
-        }];
-        return [UIMenu menuWithTitle:@"" children:@[tabBarAction, openLinkAction, whitelistAction]];
+        return [UIMenu menuWithTitle:@"" children:@[whitelistAction, tabBarAction, openLinkAction]];
     }];
 }
 %end
