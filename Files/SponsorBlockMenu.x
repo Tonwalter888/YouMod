@@ -493,7 +493,7 @@ static const CGFloat kYMSwipeRevealWidth = 72.0;
             [_cardView.centerXAnchor constraintEqualToAnchor:self.centerXAnchor],
             [_cardView.centerYAnchor constraintEqualToAnchor:self.centerYAnchor],
             [_cardView.widthAnchor constraintEqualToConstant:300],
-            [_cardView.widthAnchor constraintLessThanOrEqualToAnchor:self.widthAnchor constant:-32],
+            [_cardView.heightAnchor constraintLessThanOrEqualToAnchor:self.safeAreaLayoutGuide.heightAnchor constant:-48],
             [_cardView.topAnchor constraintGreaterThanOrEqualToAnchor:self.safeAreaLayoutGuide.topAnchor constant:32],
             [_cardView.bottomAnchor constraintLessThanOrEqualToAnchor:self.safeAreaLayoutGuide.bottomAnchor constant:-32],
 
@@ -511,11 +511,11 @@ static const CGFloat kYMSwipeRevealWidth = 72.0;
             [_scrollView.trailingAnchor constraintEqualToAnchor:_cardView.trailingAnchor constant:-12],
             [_scrollView.bottomAnchor constraintEqualToAnchor:_cardView.bottomAnchor constant:-16],
 
-            [_contentStack.topAnchor constraintEqualToAnchor:_scrollView.contentLayoutGuide.topAnchor],
-            [_contentStack.bottomAnchor constraintEqualToAnchor:_scrollView.contentLayoutGuide.bottomAnchor],
-            [_contentStack.leadingAnchor constraintEqualToAnchor:_scrollView.contentLayoutGuide.leadingAnchor],
-            [_contentStack.trailingAnchor constraintEqualToAnchor:_scrollView.contentLayoutGuide.trailingAnchor],
-            [_contentStack.widthAnchor constraintEqualToAnchor:_scrollView.frameLayoutGuide.widthAnchor],
+            [_contentStack.topAnchor constraintEqualToAnchor:_scrollView.topAnchor],
+            [_contentStack.bottomAnchor constraintEqualToAnchor:_scrollView.bottomAnchor],
+            [_contentStack.leadingAnchor constraintEqualToAnchor:_scrollView.leadingAnchor],
+            [_contentStack.trailingAnchor constraintEqualToAnchor:_scrollView.trailingAnchor],
+            [_contentStack.widthAnchor constraintEqualToAnchor:_scrollView.widthAnchor],
         ]];
     }
     return self;
@@ -614,12 +614,14 @@ static const CGFloat kYMSwipeRevealWidth = 72.0;
         [sheet addAction:voteAction];
     }
 
-    YTActionSheetAction *whitelistAction = [%c(YTActionSheetAction) actionWithTitle:LOC(@"SB_MENU_WHITELIST")
-                                                                            iconImage:[UIImage systemImageNamed:@"checkmark.seal"]
+    NSString *menuChannelID = sbCurrentChannelID(self);
+    BOOL channelListed = menuChannelID.length > 0 && sbIsChannelWhitelisted(menuChannelID);
+    YTActionSheetAction *whitelistAction = [%c(YTActionSheetAction) actionWithTitle:LOC(channelListed ? @"SB_WHITELIST_REMOVE" : @"SB_WHITELIST_ADD")
+                                                                            iconImage:[UIImage systemImageNamed:channelListed ? @"checkmark.seal.fill" : @"checkmark.seal"]
                                                                                  style:0
                                                                               handler:^(__unused YTActionSheetAction *action) {
         __strong typeof(weakSelf) strongSelf = weakSelf;
-        if (strongSelf) [strongSelf sbShowWhitelistCard];
+        if (strongSelf) [strongSelf sbToggleWhitelistFromMenu];
     }];
     [sheet addAction:whitelistAction];
 
@@ -738,58 +740,26 @@ static const CGFloat kYMSwipeRevealWidth = 72.0;
     }];
 }
 
-// Centered card to add/remove the current channel to/from the whitelist.
+// Adds/removes the current channel to/from the whitelist directly from the
+// video menu, with a success pill as feedback (no confirmation card).
 %new
-- (void)sbShowWhitelistCard {
+- (void)sbToggleWhitelistFromMenu {
     NSString *channelID = sbCurrentChannelID(self);
     if (channelID.length == 0) {
         sbShowSBPill(LOC(@"SB_VOTE_FAILED"), NO);
         return;
     }
     NSString *channelName = sbCurrentChannelName(self) ?: channelID;
-    BOOL listed = sbIsChannelWhitelisted(channelID);
+    BOOL wasListed = sbIsChannelWhitelisted(channelID);
+    sbSetChannelWhitelisted(channelID, channelName, !wasListed);
 
-    YMSBCardView *card = [YMSBCardView presentWithTitle:channelName];
-    if (!card) return;
-    __weak typeof(self) weakSelf = self;
-    __weak YMSBCardView *weakCard = card;
+    sbInvalidateSegmentCache([self currentVideoID]);
+    self.sbSegments = nil;
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"SBSegmentsDidLoad"
+                                                        object:self
+                                                      userInfo:@{@"segments": @[]}];
 
-    UILabel *desc = [[UILabel alloc] init];
-    desc.text = LOC(@"SB_WHITELIST_DESC");
-    desc.font = [UIFont systemFontOfSize:13];
-    desc.textColor = [UIColor secondaryLabelColor];
-    desc.numberOfLines = 0;
-    [card addCustomView:desc];
-
-    if (listed) {
-        [card addOptionRowWithSymbol:@"checkmark.seal.fill" title:LOC(@"SB_WHITELIST_REMOVE") subtitle:nil tintColor:[UIColor systemRedColor] handler:^{
-            __strong typeof(weakSelf) strongSelf = weakSelf;
-            sbSetChannelWhitelisted(channelID, channelName, NO);
-            [weakCard dismissAnimated];
-            sbShowSBPill(LOC(@"SB_WHITELIST_REMOVE"), YES);
-            if (strongSelf) {
-                sbInvalidateSegmentCache([strongSelf currentVideoID]);
-                strongSelf.sbSegments = nil;
-                [[NSNotificationCenter defaultCenter] postNotificationName:@"SBSegmentsDidLoad"
-                                                                    object:strongSelf
-                                                                  userInfo:@{@"segments": @[]}];
-            }
-        }];
-    } else {
-        [card addOptionRowWithSymbol:@"checkmark.seal" title:LOC(@"SB_WHITELIST_ADD") subtitle:nil tintColor:[UIColor systemGreenColor] handler:^{
-            __strong typeof(weakSelf) strongSelf = weakSelf;
-            sbSetChannelWhitelisted(channelID, channelName, YES);
-            [weakCard dismissAnimated];
-            sbShowSBPill(LOC(@"SB_WHITELIST_ADD"), YES);
-            if (strongSelf) {
-                sbInvalidateSegmentCache([strongSelf currentVideoID]);
-                strongSelf.sbSegments = nil;
-                [[NSNotificationCenter defaultCenter] postNotificationName:@"SBSegmentsDidLoad"
-                                                                    object:strongSelf
-                                                                  userInfo:@{@"segments": @[]}];
-            }
-        }];
-    }
+    sbShowSBPill(LOC(wasListed ? @"SB_WHITELIST_REMOVE" : @"SB_WHITELIST_ADD"), YES);
 }
 
 %end

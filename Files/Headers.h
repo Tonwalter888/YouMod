@@ -911,7 +911,7 @@ extern void YouModConfigureSharePopover(UIActivityViewController *activityVC, UI
 - (void)sbRefreshMarkers:(NSArray<SBSegment *> *)segments;
 - (void)sbShowMainMenuFromView:(UIView *)sourceView;
 - (void)sbShowVoteCard;
-- (void)sbShowWhitelistCard;
+- (void)sbToggleWhitelistFromMenu;
 - (void)sbPopulateVoteOptions:(YMSBCardView *)card segment:(SBSegment *)segment;
 @end
 

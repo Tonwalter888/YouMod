@@ -476,7 +476,7 @@ static BOOL isRelatedVideosExpanded = NO;
 
 - (id)init {
     self = %orig;
-    if (self && ![self isKindOfClass:%c(YTPivotBarViewController)]) {
+    if (self && ![self._viewControllerForAncestor isKindOfClass:%c(YTPivotBarViewController)]) {
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(ymUpdateBarButtonLabels:) name:YouModUpdateSpeedLabel object:nil];
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(ymUpdateBarButtonLabels:) name:YouModUpdateNotification object:nil];
     }
@@ -485,7 +485,7 @@ static BOOL isRelatedVideosExpanded = NO;
 
 - (void)layoutSubviews {
     %orig;
-    if ([self isKindOfClass:%c(YTPivotBarViewController)]) return;
+    if ([self._viewControllerForAncestor isKindOfClass:%c(YTPivotBarViewController)]) return;
     NSArray<YMOverlayButtonSpec *> *allRegistered = YMRegisteredOverlayButtons();
     NSMutableArray<YMOverlayButtonSpec *> *specs = [NSMutableArray array];
     for (YMOverlayButtonSpec *spec in YMOrderedOverlayButtons()) {
@@ -565,7 +565,7 @@ static BOOL isRelatedVideosExpanded = NO;
 // two via %orig.
 - (void)setPeekableViewVisible:(BOOL)visible {
     %orig;
-    if ([self isKindOfClass:%c(YTPivotBarViewController)]) return;
+    if ([self._viewControllerForAncestor isKindOfClass:%c(YTPivotBarViewController)]) return;
     for (YMOverlayButtonSpec *spec in YMRegisteredOverlayButtons()) {
         UIView *btn = [self viewWithTag:spec.viewTag];
         if ([btn isKindOfClass:%c(YTQTMButton)]) btn.hidden = !visible;
@@ -604,7 +604,7 @@ static BOOL isRelatedVideosExpanded = NO;
     }
 }
 - (void)dealloc {
-    if (![self isKindOfClass:%c(YTPivotBarViewController)]) {
+    if (![self._viewControllerForAncestor isKindOfClass:%c(YTPivotBarViewController)]) {
         [[NSNotificationCenter defaultCenter] removeObserver:self name:YouModUpdateSpeedLabel object:nil];
         [[NSNotificationCenter defaultCenter] removeObserver:self name:YouModUpdateNotification object:nil];
     }
