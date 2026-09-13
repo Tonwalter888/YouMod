@@ -288,6 +288,7 @@ static BOOL isRelatedVideosExpanded = NO;
 
 - (void)layoutSubviews {
     %orig;
+    YouModApplyPrevNextReplacement(self);
     NSArray<YMOverlayButtonSpec *> *allRegistered = YMRegisteredOverlayButtons();
     NSArray<YMOverlayButtonSpec *> *specs = YMOrderedOverlayButtons();
 

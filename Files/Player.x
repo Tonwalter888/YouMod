@@ -1,4 +1,5 @@
 #import "Headers.h"
+#import <objc/runtime.h>
 
 static BOOL isWiFiConnected() {
     struct sockaddr_in zeroAddress;
@@ -67,6 +68,84 @@ static BOOL YouModSeekByInterval(CGFloat delta) {
 // command whose handler is already installed, so it is installed only once.
 static id gYouModRewindTarget = nil;
 static id gYouModForwardTarget = nil;
+static NSMutableArray *gYouModRemoteCommandTargetProxies = nil;
+
+typedef MPRemoteCommandHandlerStatus (^YouModRemoteCommandHandler)(MPRemoteCommandEvent *event);
+
+static BOOL YouModIsPreviousTrackCommand(MPRemoteCommand *command) {
+    return command == [MPRemoteCommandCenter sharedCommandCenter].previousTrackCommand;
+}
+
+static BOOL YouModIsNextTrackCommand(MPRemoteCommand *command) {
+    return command == [MPRemoteCommandCenter sharedCommandCenter].nextTrackCommand;
+}
+
+static BOOL YouModIsPreviousNextCommand(MPRemoteCommand *command) {
+    return YouModIsPreviousTrackCommand(command) || YouModIsNextTrackCommand(command);
+}
+
+static BOOL YouModIsSkipBackwardCommand(MPRemoteCommand *command) {
+    return command == [MPRemoteCommandCenter sharedCommandCenter].skipBackwardCommand;
+}
+
+static BOOL YouModIsSkipForwardCommand(MPRemoteCommand *command) {
+    return command == [MPRemoteCommandCenter sharedCommandCenter].skipForwardCommand;
+}
+
+static MPRemoteCommandHandlerStatus YouModStatusForSeek(BOOL handled) {
+    return handled ? MPRemoteCommandHandlerStatusSuccess : MPRemoteCommandHandlerStatusNoSuchContent;
+}
+
+// When Skip Backward/Forward is on, Bluetooth/CarPlay/Lock Screen often still
+// deliver previous/next track events rather than skip events. Remap those to
+// seek using the matching per-direction preference; otherwise report unhandled
+// so the caller can fall through to YouTube's default track change.
+static BOOL YouModHandlePreviousNextRemoteCommand(MPRemoteCommandEvent *event) {
+    if (YouModIsPreviousTrackCommand(event.command) && IS_ENABLED(SkipBackwardEnabled)) {
+        return YouModSeekByInterval(-YouModRewindSecondsValue());
+    }
+    if (YouModIsNextTrackCommand(event.command) && IS_ENABLED(SkipForwardEnabled)) {
+        return YouModSeekByInterval(YouModForwardSecondsValue());
+    }
+    return NO;
+}
+
+@interface YouModRemoteCommandTargetProxy : NSObject
+@property (nonatomic, weak) MPRemoteCommand *command;
+@property (nonatomic, weak) id target;
+@property (nonatomic, assign) SEL action;
+- (MPRemoteCommandHandlerStatus)youModHandleRemoteCommandEvent:(MPRemoteCommandEvent *)event;
+@end
+
+@implementation YouModRemoteCommandTargetProxy
+- (MPRemoteCommandHandlerStatus)youModHandleRemoteCommandEvent:(MPRemoteCommandEvent *)event {
+    if (YouModIsPreviousNextCommand(event.command)) {
+        BOOL remapped = (YouModIsPreviousTrackCommand(event.command) && IS_ENABLED(SkipBackwardEnabled))
+            || (YouModIsNextTrackCommand(event.command) && IS_ENABLED(SkipForwardEnabled));
+        if (remapped) {
+            return YouModStatusForSeek(YouModHandlePreviousNextRemoteCommand(event));
+        }
+    }
+
+    if (!self.target || !self.action) return MPRemoteCommandHandlerStatusCommandFailed;
+
+    NSMethodSignature *signature = [self.target methodSignatureForSelector:self.action];
+    if (!signature) return MPRemoteCommandHandlerStatusCommandFailed;
+
+    NSInvocation *invocation = [NSInvocation invocationWithMethodSignature:signature];
+    invocation.target = self.target;
+    invocation.selector = self.action;
+    MPRemoteCommandEvent *eventArg = event;
+    if (signature.numberOfArguments > 2) [invocation setArgument:&eventArg atIndex:2];
+    [invocation invoke];
+
+    if (signature.methodReturnLength == 0) return MPRemoteCommandHandlerStatusSuccess;
+
+    MPRemoteCommandHandlerStatus status = MPRemoteCommandHandlerStatusSuccess;
+    [invocation getReturnValue:&status];
+    return status;
+}
+@end
 
 // Points the system now-playing skip controls (lock screen, Bluetooth, Control
 // Center, CarPlay) at our per-direction seek. When enabled, the OS previous/next
@@ -79,8 +158,11 @@ static id gYouModForwardTarget = nil;
 // preferred intervals are updated. Because the handlers read the seconds at press
 // time, a changed preference always seeks by the new amount immediately; the
 // interval shown on the OS controls reflects the value captured the last time this
-// ran (video change or launch).
-static void YouModConfigureRemoteSkipCommands(void) {
+// ran (settings change, video change, or launch).
+//
+// YouTube repeatedly re-enables previous/next after we configure, so
+// %hook MPRemoteCommand also forces enabled state and wraps prev/next targets.
+void YouModConfigureRemoteSkipCommands(void) {
     MPRemoteCommandCenter *cc = [MPRemoteCommandCenter sharedCommandCenter];
     BOOL back = IS_ENABLED(SkipBackwardEnabled);
     BOOL fwd = IS_ENABLED(SkipForwardEnabled);
@@ -98,14 +180,294 @@ static void YouModConfigureRemoteSkipCommands(void) {
 
     if (!gYouModRewindTarget) {
         gYouModRewindTarget = [cc.skipBackwardCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *event) {
-            return YouModSeekByInterval(-YouModRewindSecondsValue()) ? MPRemoteCommandHandlerStatusSuccess : MPRemoteCommandHandlerStatusNoSuchContent;
+            return YouModStatusForSeek(YouModSeekByInterval(-YouModRewindSecondsValue()));
         }];
     }
     if (!gYouModForwardTarget) {
         gYouModForwardTarget = [cc.skipForwardCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *event) {
-            return YouModSeekByInterval(YouModForwardSecondsValue()) ? MPRemoteCommandHandlerStatusSuccess : MPRemoteCommandHandlerStatusNoSuchContent;
+            return YouModStatusForSeek(YouModSeekByInterval(YouModForwardSecondsValue()));
         }];
     }
+}
+
+// Intercept YouTube's registration of previous/next remote targets so Bluetooth,
+// CarPlay, and Lock Screen presses seek when Skip Backward/Forward is enabled.
+// Also fight YouTube's attempts to re-enable previous/next or disable skip.
+%hook MPRemoteCommand
+- (void)addTarget:(id)target action:(SEL)action {
+    if (YouModIsPreviousNextCommand(self)) {
+        if (!gYouModRemoteCommandTargetProxies) gYouModRemoteCommandTargetProxies = [NSMutableArray array];
+
+        YouModRemoteCommandTargetProxy *proxy = [[YouModRemoteCommandTargetProxy alloc] init];
+        proxy.command = self;
+        proxy.target = target;
+        proxy.action = action;
+        [gYouModRemoteCommandTargetProxies addObject:proxy];
+        %orig(proxy, @selector(youModHandleRemoteCommandEvent:));
+        YouModConfigureRemoteSkipCommands();
+        return;
+    }
+
+    %orig;
+}
+
+- (id)addTargetWithHandler:(YouModRemoteCommandHandler)handler {
+    if (YouModIsPreviousNextCommand(self)) {
+        YouModRemoteCommandHandler wrappedHandler = ^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *event) {
+            BOOL remapped = (YouModIsPreviousTrackCommand(event.command) && IS_ENABLED(SkipBackwardEnabled))
+                || (YouModIsNextTrackCommand(event.command) && IS_ENABLED(SkipForwardEnabled));
+            if (remapped) {
+                return YouModStatusForSeek(YouModHandlePreviousNextRemoteCommand(event));
+            }
+            return handler(event);
+        };
+        id commandTarget = %orig(wrappedHandler);
+        YouModConfigureRemoteSkipCommands();
+        return commandTarget;
+    }
+
+    return %orig;
+}
+
+- (void)setEnabled:(BOOL)enabled {
+    if (YouModIsPreviousTrackCommand(self) && IS_ENABLED(SkipBackwardEnabled)) {
+        %orig(NO);
+        return;
+    }
+    if (YouModIsNextTrackCommand(self) && IS_ENABLED(SkipForwardEnabled)) {
+        %orig(NO);
+        return;
+    }
+    if (YouModIsSkipBackwardCommand(self) && IS_ENABLED(SkipBackwardEnabled)) {
+        %orig(YES);
+        return;
+    }
+    if (YouModIsSkipForwardCommand(self) && IS_ENABLED(SkipForwardEnabled)) {
+        %orig(YES);
+        return;
+    }
+
+    %orig;
+}
+
+- (void)removeTarget:(id)target action:(SEL)action {
+    if (YouModIsPreviousNextCommand(self) && gYouModRemoteCommandTargetProxies.count > 0) {
+        NSArray *proxies = [gYouModRemoteCommandTargetProxies copy];
+        for (YouModRemoteCommandTargetProxy *proxy in proxies) {
+            BOOL targetMatches = !target || proxy.target == target;
+            BOOL actionMatches = !action || proxy.action == action;
+            if (proxy.command == self && targetMatches && actionMatches) {
+                %orig(proxy, @selector(youModHandleRemoteCommandEvent:));
+                [gYouModRemoteCommandTargetProxies removeObject:proxy];
+            }
+        }
+    }
+
+    %orig;
+}
+
+- (void)removeTarget:(id)target {
+    if (YouModIsPreviousNextCommand(self) && gYouModRemoteCommandTargetProxies.count > 0) {
+        NSArray *proxies = [gYouModRemoteCommandTargetProxies copy];
+        for (YouModRemoteCommandTargetProxy *proxy in proxies) {
+            if (proxy.command == self && (!target || proxy.target == target)) {
+                %orig(proxy);
+                [gYouModRemoteCommandTargetProxies removeObject:proxy];
+            }
+        }
+    }
+
+    %orig;
+}
+%end
+
+#pragma mark - Replace prev/next paddles in playlists
+
+static const void *kYouModSeekRemapKey = &kYouModSeekRemapKey;
+static const void *kYouModSeekRefreshKey = &kYouModSeekRefreshKey;
+static const void *kYouModOverlayRefreshHandlerKey = &kYouModOverlayRefreshHandlerKey;
+static BOOL gYouModEnforcingOverlayReplacement = NO;
+
+static BOOL YouModShouldForcePrevNextReplacement(void) {
+    return IS_ENABLED(ReplacePrevNextButtons) && !IS_ENABLED(HideNextAndPrevButtons);
+}
+
+void YouModApplyPrevNextReplacement(YTMainAppControlsOverlayView *overlay);
+
+@interface YouModOverlayRefreshHandler : NSObject
+@property (nonatomic, weak) YTMainAppControlsOverlayView *overlay;
+- (void)refreshSoon;
+@end
+
+@implementation YouModOverlayRefreshHandler
+- (void)refreshSoon {
+    YTMainAppControlsOverlayView *overlay = [self overlay];
+    YouModApplyPrevNextReplacement(overlay);
+    if (!overlay) return;
+    static const NSTimeInterval kDelays[] = {0.05, 0.15, 0.35, 0.75, 1.5};
+    for (size_t i = 0; i < sizeof(kDelays) / sizeof(kDelays[0]); i++) {
+        NSTimeInterval delay = kDelays[i];
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delay * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+            YouModApplyPrevNextReplacement(overlay);
+        });
+    }
+}
+@end
+
+static YouModOverlayRefreshHandler *YouModRefreshHandlerForOverlay(YTMainAppControlsOverlayView *overlay) {
+    YouModOverlayRefreshHandler *handler = objc_getAssociatedObject(overlay, kYouModOverlayRefreshHandlerKey);
+    if (!handler) {
+        handler = [YouModOverlayRefreshHandler new];
+        handler.overlay = overlay;
+        objc_setAssociatedObject(overlay, kYouModOverlayRefreshHandlerKey, handler, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    }
+    return handler;
+}
+
+@interface YouModSeekTapHandler : NSObject
+@property (nonatomic, assign) BOOL rewind;
+@property (nonatomic, weak) YTMainAppControlsOverlayView *overlay;
+- (void)handleTap:(UITapGestureRecognizer *)gr;
+@end
+
+@implementation YouModSeekTapHandler
+- (void)handleTap:(UITapGestureRecognizer *)gr {
+    YouModSeekByInterval(self.rewind ? -YouModRewindSecondsValue() : YouModForwardSecondsValue());
+    YouModOverlayRefreshHandler *refreshHandler = YouModRefreshHandlerForOverlay([self overlay]);
+    [refreshHandler refreshSoon];
+}
+@end
+
+@interface YouModSeekRefreshTapHandler : NSObject
+@property (nonatomic, weak) YTMainAppControlsOverlayView *overlay;
+- (void)handleTap:(UITapGestureRecognizer *)gr;
+@end
+
+@implementation YouModSeekRefreshTapHandler
+- (void)handleTap:(UITapGestureRecognizer *)gr {
+    YouModOverlayRefreshHandler *refreshHandler = YouModRefreshHandlerForOverlay([self overlay]);
+    [refreshHandler refreshSoon];
+}
+@end
+
+static YouModSeekTapHandler *YouModRewindTapHandler(YTMainAppControlsOverlayView *overlay) {
+    static YouModSeekTapHandler *handler;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        handler = [YouModSeekTapHandler new];
+        handler.rewind = YES;
+    });
+    handler.overlay = overlay;
+    return handler;
+}
+
+static YouModSeekTapHandler *YouModForwardTapHandler(YTMainAppControlsOverlayView *overlay) {
+    static YouModSeekTapHandler *handler;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        handler = [YouModSeekTapHandler new];
+        handler.rewind = NO;
+    });
+    handler.overlay = overlay;
+    return handler;
+}
+
+static YouModSeekRefreshTapHandler *YouModSeekRefreshTapHandlerForOverlay(YTMainAppControlsOverlayView *overlay) {
+    YouModSeekRefreshTapHandler *handler = objc_getAssociatedObject(overlay, kYouModSeekRefreshKey);
+    if (!handler) {
+        handler = [YouModSeekRefreshTapHandler new];
+        handler.overlay = overlay;
+        objc_setAssociatedObject(overlay, kYouModSeekRefreshKey, handler, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    }
+    return handler;
+}
+
+static void YouModAttachSeekRemap(UIView *view, YouModSeekTapHandler *handler) {
+    if (!view || objc_getAssociatedObject(view, kYouModSeekRemapKey)) return;
+    view.userInteractionEnabled = YES;
+    UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:handler action:@selector(handleTap:)];
+    tap.cancelsTouchesInView = YES;
+    [view addGestureRecognizer:tap];
+    objc_setAssociatedObject(view, kYouModSeekRemapKey, @YES, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+}
+
+static void YouModAttachSeekRefresh(UIView *view, YTMainAppControlsOverlayView *overlay) {
+    static const void *kViewRefreshKey = &kViewRefreshKey;
+    if (!view || objc_getAssociatedObject(view, kViewRefreshKey)) return;
+    UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:YouModSeekRefreshTapHandlerForOverlay(overlay) action:@selector(handleTap:)];
+    tap.cancelsTouchesInView = NO;
+    [view addGestureRecognizer:tap];
+    objc_setAssociatedObject(view, kViewRefreshKey, @YES, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+}
+
+static UIView *YouModOverlayIvarView(id object, const char *name) {
+    Ivar ivar = class_getInstanceVariable(object_getClass(object), name);
+    if (!ivar) return nil;
+    return (UIView *)object_getIvar(object, ivar);
+}
+
+static void YouModSetOverlayIvarHidden(id object, const char *name, BOOL hidden) {
+    UIView *view = YouModOverlayIvarView(object, name);
+    if (view) view.hidden = hidden;
+}
+
+static YTMainAppControlsOverlayView *YouModOverlayForSubview(UIView *view) {
+    for (UIView *v = view; v; v = v.superview) {
+        if ([v isKindOfClass:%c(YTMainAppControlsOverlayView)]) return (YTMainAppControlsOverlayView *)v;
+    }
+    return nil;
+}
+
+static BOOL YouModIsPrevNextSubview(UIView *view, YTMainAppControlsOverlayView *overlay) {
+    return view == YouModOverlayIvarView(overlay, "_previousButtonView")
+        || view == YouModOverlayIvarView(overlay, "_nextButtonView")
+        || view == YouModOverlayIvarView(overlay, "_previousButton")
+        || view == YouModOverlayIvarView(overlay, "_nextButton");
+}
+
+static BOOL YouModIsSeekSubview(UIView *view, YTMainAppControlsOverlayView *overlay) {
+    return view == YouModOverlayIvarView(overlay, "_seekBackwardAccessibilityButtonView")
+        || view == YouModOverlayIvarView(overlay, "_seekForwardAccessibilityButtonView");
+}
+
+static void YouModEnforcePrevNextVisibility(YTMainAppControlsOverlayView *overlay) {
+    UIView *seekBack = YouModOverlayIvarView(overlay, "_seekBackwardAccessibilityButtonView");
+    UIView *seekFwd = YouModOverlayIvarView(overlay, "_seekForwardAccessibilityButtonView");
+    if (!seekBack || !seekFwd) return;
+
+    gYouModEnforcingOverlayReplacement = YES;
+    YouModSetOverlayIvarHidden(overlay, "_nextButton", YES);
+    YouModSetOverlayIvarHidden(overlay, "_previousButton", YES);
+    YouModSetOverlayIvarHidden(overlay, "_nextButtonView", YES);
+    YouModSetOverlayIvarHidden(overlay, "_previousButtonView", YES);
+    seekBack.hidden = NO;
+    seekFwd.hidden = NO;
+    seekBack.userInteractionEnabled = YES;
+    seekFwd.userInteractionEnabled = YES;
+    gYouModEnforcingOverlayReplacement = NO;
+}
+
+// Part B: when seek paddles are unavailable, remap prev/next taps to seek within the video.
+static void YouModRemapPrevNextToSeek(YTMainAppControlsOverlayView *overlay) {
+    YouModAttachSeekRemap(YouModOverlayIvarView(overlay, "_previousButtonView"), YouModRewindTapHandler(overlay));
+    YouModAttachSeekRemap(YouModOverlayIvarView(overlay, "_nextButtonView"), YouModForwardTapHandler(overlay));
+    YouModAttachSeekRemap(YouModOverlayIvarView(overlay, "_previousButton"), YouModRewindTapHandler(overlay));
+    YouModAttachSeekRemap(YouModOverlayIvarView(overlay, "_nextButton"), YouModForwardTapHandler(overlay));
+}
+
+void YouModApplyPrevNextReplacement(YTMainAppControlsOverlayView *overlay) {
+    if (!YouModShouldForcePrevNextReplacement()) return;
+
+    UIView *seekBack = YouModOverlayIvarView(overlay, "_seekBackwardAccessibilityButtonView");
+    UIView *seekFwd = YouModOverlayIvarView(overlay, "_seekForwardAccessibilityButtonView");
+
+    if (seekBack && seekFwd) {
+        YouModEnforcePrevNextVisibility(overlay);
+        YouModAttachSeekRefresh(seekBack, overlay);
+        YouModAttachSeekRefresh(seekFwd, overlay);
+    }
+
+    YouModRemapPrevNextToSeek(overlay);
 }
 
 static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoController *video, YTSingleVideoTime *time) {
@@ -285,6 +647,29 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
 }
 %end
 
+%hook YTTransportControlsButtonView
+- (void)setHidden:(BOOL)hidden {
+    if (!gYouModEnforcingOverlayReplacement && YouModShouldForcePrevNextReplacement()) {
+        YTMainAppControlsOverlayView *overlay = YouModOverlayForSubview(self);
+        if (overlay) {
+            if (YouModIsPrevNextSubview(self, overlay)) hidden = YES;
+            else if (YouModIsSeekSubview(self, overlay)) hidden = NO;
+        }
+    }
+    %orig(hidden);
+}
+%end
+
+%hook YTQTMButton
+- (void)setHidden:(BOOL)hidden {
+    if (!gYouModEnforcingOverlayReplacement && YouModShouldForcePrevNextReplacement()) {
+        YTMainAppControlsOverlayView *overlay = YouModOverlayForSubview(self);
+        if (overlay && YouModIsPrevNextSubview(self, overlay)) hidden = YES;
+    }
+    %orig(hidden);
+}
+%end
+
 %hook YTMainAppControlsOverlayView
 // Hide autoplay Switch
 - (void)setAutoplaySwitchButtonRenderer:(id)arg1 { if (!IS_ENABLED(HideAutoPlayToggle)) %orig; }
@@ -295,6 +680,7 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
 // Pause On Overlay
 - (void)setOverlayVisible:(BOOL)visible {
     %orig;
+    YouModApplyPrevNextReplacement(self);
     if (!IS_ENABLED(PauseOnOverlay)) return;
     YTMainAppVideoPlayerOverlayViewController *mainOverlayController = (YTMainAppVideoPlayerOverlayViewController *)self.eventsDelegate;
     YTPlayerViewController *playerViewController = mainOverlayController.parentViewController;

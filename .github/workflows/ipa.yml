@@ -360,6 +360,13 @@ jobs:
           make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
           mv packages/*.deb ${{ github.workspace }}/ytweaks.deb
           
+      # Gonerino's Makefile runs `go run scripts/generate_changelog_header.go` in before-all.
+      - name: Setup Go
+        if: ${{ inputs.gonerino }}
+        uses: actions/setup-go@v5
+        with:
+          go-version: "stable"
+
       - name: Build Gonerino
         if: ${{ inputs.gonerino }}
         run: |

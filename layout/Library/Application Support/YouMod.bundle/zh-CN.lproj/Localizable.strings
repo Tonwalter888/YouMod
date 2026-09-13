@@ -325,9 +325,9 @@
 "PAUSE_TWO_FINGERS" = "双指暂停";
 "PAUSE_TWO_FINGERS_DESC" = "双指点击屏幕暂停/恢复播放。";
 "SKIP_BACKWARD" = "快退";
-"SKIP_BACKWARD_DESC" = "将控制中心中的上一曲按钮替换为指定秒数的快退按钮。";
+"SKIP_BACKWARD_DESC" = "将控制中心、锁定屏幕、蓝牙和 CarPlay 中的上一曲按钮替换为指定秒数的快退按钮。";
 "SKIP_FORWARD" = "快进";
-"SKIP_FORWARD_DESC" = "将控制中心中的下一曲按钮替换为指定秒数的快进按钮。";
+"SKIP_FORWARD_DESC" = "将控制中心、锁定屏幕、蓝牙和 CarPlay 中的下一曲按钮替换为指定秒数的快进按钮。";
 "REWIND_SECONDS" = "快退秒数";
 "FORWARD_SECONDS" = "快进秒数";
 "HIDE_COMMENTS_SECTION" = "隐藏评论区";
