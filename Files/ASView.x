@@ -58,7 +58,11 @@ static const void *YouModASViewKey = &YouModASViewKey;
     %orig;
     if (objc_getAssociatedObject(self, YouModASViewKey)) return;
     NSString *desc = [[self valueForKey:@"_renderer"] description];
-    if ([desc containsString:@"more_drawer.eml"]) {
+    // The watermark is an ELM element rendered into one layer, so it has no
+    // subview and no identifier to filter on. The renderer name is the only handle.
+    if (IS_ENABLED(HideWaterMark) && [desc containsString:@"featured_channel_watermark_overlay.eml"]) {
+        self.view.hidden = YES;
+    } else if ([desc containsString:@"more_drawer.eml"]) {
         YouModRemoveDrawerAds(self);
         if (IS_ENABLED(OLEDTheme)) {
             self.view.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {

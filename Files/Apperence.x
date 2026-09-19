@@ -158,14 +158,55 @@ void YouModApplyOLEDCollectionView(ASCollectionView *self, NSString *iden) {
 }
 %end
 
+// the jankiest oled keyboard hack to ever jank
+// blame @ZomkaDEV for this
 %hook UIKeyboardDockView
 - (void)layoutSubviews {
     %orig;
-    if (objc_getAssociatedObject(self, kOLEDKey)) return;
-    self.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
-        return isDarkMode(self) ? [UIColor blackColor] : [UIColor clearColor];
-    }];
-    objc_setAssociatedObject(self, kOLEDKey, @YES, OBJC_ASSOCIATION_ASSIGN);
+    if (!isDarkMode(self)) return;
+
+    // pre-ios 26 and post-ios 26 keyboards are done differently because thanks tim apple
+    __block CGFloat top = CGFLOAT_MAX, btnH = 0;
+    NSMutableArray *vq = [NSMutableArray arrayWithObject:self];
+    while (vq.count) {
+        UIView *v = vq.firstObject; [vq removeObjectAtIndex:0];
+        for (UIView *c in v.subviews) [vq addObject:c];
+        if ([v isKindOfClass:NSClassFromString(@"UIKeyboardDockItemButton")]) {
+            CGRect r = [v convertRect:v.bounds toView:self];
+            top = MIN(top, CGRectGetMinY(r));
+            btnH = MAX(btnH, r.size.height);
+        }
+    }
+    if (btnH <= 0 || self.bounds.size.height <= btnH * 2.5) {
+        self.backgroundColor = [UIColor blackColor];
+        return;
+    }
+
+    __weak UIView *weakSelf = self;
+    void (^hideBackdrop)(void) = ^{
+        UIView *me = weakSelf; if (!me) return;
+        CALayer *root = me.window ? me.window.layer : me.layer; if (!root) return;
+        Class backdrop = NSClassFromString(@"CABackdropLayer"); if (!backdrop) return;
+        NSMutableArray *q = [NSMutableArray arrayWithObject:root];
+        while (q.count) {
+            CALayer *l = q.firstObject; [q removeObjectAtIndex:0];
+            for (CALayer *sub in l.sublayers) [q addObject:sub];
+            if ([l isKindOfClass:backdrop]) l.hidden = YES;
+        }
+    };
+    hideBackdrop();
+    dispatch_async(dispatch_get_main_queue(), hideBackdrop);
+
+    if (top == CGFLOAT_MAX) return;
+    UIView *strip = [self viewWithTag:0x0DEC];
+    if (!strip) {
+        strip = [[UIView alloc] init];
+        strip.tag = 0x0DEC;
+        strip.backgroundColor = [UIColor blackColor];
+        strip.userInteractionEnabled = NO;
+        [self insertSubview:strip atIndex:0];
+    }
+    strip.frame = CGRectMake(0, top, self.bounds.size.width, self.bounds.size.height - top);
 }
 %end
 
@@ -188,6 +229,7 @@ void YouModApplyOLEDCollectionView(ASCollectionView *self, NSString *iden) {
     if (isDarkMode(self)) {
         self.backgroundEffects = nil;
         self.backgroundColor = [UIColor blackColor];
+        self.hidden = NO;
     } else {
         self.backgroundColor = [UIColor clearColor];
     }

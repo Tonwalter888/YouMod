@@ -415,6 +415,11 @@ static BOOL hasSetSeekButtons = NO;
 - (void)setPaidContentWithPlayerData:(id)data { if (!IS_ENABLED(HidePaidPromoOverlay)) %orig; }
 %end
 
+// Moved out of the overlay VC in 20.21.6, so the hook above only covers 19.x now.
+%hook YTPaidContentViewController
+- (void)showPaidContentRenderer:(id)renderer { if (!IS_ENABLED(HidePaidPromoOverlay)) %orig; }
+%end
+
 // Remove Watermarks
 %hook YTAnnotationsViewController
 - (void)loadFeaturedChannelWatermark { 
@@ -528,18 +533,33 @@ static BOOL hasSetSeekButtons = NO;
 
 #define itemCount 13
 
+// Class on 19.x/20.x, protocol from 21.32.4 where the class is ...Impl. Hook both.
+static void YouModApplyExtraSpeedOptions(id controller) {
+    float speeds[] = {0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0, 5.0, 7.5, 10.0};
+    id options[itemCount];
+    Class optionClass = %c(YTVarispeedSwitchControllerOption);
+    for (int i = 0; i < itemCount; ++i) {
+        NSString *title = [NSString stringWithFormat:@"%.2fx", speeds[i]];
+        options[i] = [[optionClass alloc] initWithTitle:title rate:speeds[i]];
+    }
+    [controller setValue:[NSArray arrayWithObjects:options count:itemCount] forKey:@"_options"];
+}
+
 %hook YTVarispeedSwitchController
 
 - (id)init {
     self = %orig;
-    float speeds[] = {0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0, 5.0, 7.5, 10.0};
-    id options[itemCount];
-    Class YTVarispeedSwitchControllerOptionClass = %c(YTVarispeedSwitchControllerOption);
-    for (int i = 0; i < itemCount; ++i) {
-        NSString *title = [NSString stringWithFormat:@"%.2fx", speeds[i]];
-        options[i] = [[YTVarispeedSwitchControllerOptionClass alloc] initWithTitle:title rate:speeds[i]];
-    }
-    [self setValue:[NSArray arrayWithObjects:options count:itemCount] forKey:@"_options"];
+    YouModApplyExtraSpeedOptions(self);
+    return self;
+}
+
+%end
+
+%hook YTVarispeedSwitchControllerImpl
+
+- (id)init {
+    self = %orig;
+    YouModApplyExtraSpeedOptions(self);
     return self;
 }
 
@@ -570,6 +590,8 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
 }
 
 %hook YTMainAppVideoPlayerOverlayView
+// setPlayerResponse: sets this directly, so the YTAnnotationsViewController hooks miss it.
+- (void)setFeaturedChannelWatermarkImageView:(id)arg { if (!IS_ENABLED(HideWaterMark)) %orig; }
 - (void)setLongPressGestureRecognizer:(UILongPressGestureRecognizer *)arg {
     if (INTFORVAL(HoldToSpeedIndex) != 0) return;
     %orig;
@@ -759,6 +781,19 @@ static CGFloat remainingOverlayWidth(YTPlayerViewController *pvc, CGFloat fullWi
     return fullWidth;
 }
 
+static UISlider *YouModVolumeSlider(void) {
+    static MPVolumeView *volumeView;
+    if (!volumeView) volumeView = [[MPVolumeView alloc] initWithFrame:CGRectMake(-4000, -4000, 1, 1)];
+    if (!volumeView.superview) {
+        for (UIWindow *w in UIApplication.sharedApplication.windows) {
+            if (w.isKeyWindow) { [w addSubview:volumeView]; [volumeView layoutIfNeeded]; break; }
+        }
+    }
+    for (UIView *v in volumeView.subviews)
+        if ([v isKindOfClass:UISlider.class]) return (UISlider *)v;
+    return nil;
+}
+
 %hook YTPlayerViewController
 %property (nonatomic, retain) UIPanGestureRecognizer *YouModPanGesture;
 %property (nonatomic, retain) UITapGestureRecognizer *YouModTapGesture;
@@ -836,20 +871,6 @@ static CGFloat remainingOverlayWidth(YTPlayerViewController *pvc, CGFloat fullWi
     static int controlType = 0;
     static CGFloat deadzoneStartingTranslation;
     static CGFloat sensitivityFactor = 1.0;
-
-    static MPVolumeView *volumeView;
-    static UISlider *volumeViewSlider;
-
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        volumeView = [[MPVolumeView alloc] initWithFrame:CGRectZero];
-        for (UIView *view in volumeView.subviews) {
-            if ([view isKindOfClass:[UISlider class]]) {
-                volumeViewSlider = (UISlider *)view;
-                break;
-            }
-        }
-    });
 
     YTMainAppVideoPlayerOverlayViewController *ovcon = [self activeVideoPlayerOverlay];
 
@@ -964,8 +985,9 @@ static CGFloat remainingOverlayWidth(YTPlayerViewController *pvc, CGFloat fullWi
                 percentString = [NSString stringWithFormat:@" %d%%", (int)(newBrightness * 100)];
             } else if (controlType == 2) {
                 float newVolume = fmaxf(fminf(initialVolume + delta, 1.0), 0.0);
-                dispatch_async(dispatch_get_main_queue(), ^{
-                    volumeViewSlider.value = newVolume;
+                UISlider *volumeSlider = YouModVolumeSlider();
+                if (volumeSlider) dispatch_async(dispatch_get_main_queue(), ^{
+                    volumeSlider.value = newVolume;
                 });
                 
                 if (newVolume == 0.0f) {
