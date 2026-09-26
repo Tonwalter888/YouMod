@@ -299,6 +299,21 @@ void YMSleepTimerUpdateSlimBars(void) {
 
 #pragma mark - Picker UI
 
+static NSString *YMSleepTimerVideoTimeLeftText(void) {
+    YTPlayerViewController *player = YouModCurrentPlayerViewController;
+    if (!player) return nil;
+    CGFloat timeLeft = [player currentVideoTotalMediaTime] - [player currentVideoMediaTime];
+    if (timeLeft <= 0) return nil;
+    NSInteger secs = (NSInteger)ceil(timeLeft);
+    NSInteger hours = secs / 3600;
+    NSInteger mins = (secs % 3600) / 60;
+    NSInteger seconds = secs % 60;
+    NSString *text;
+    if (hours > 0) text = [NSString stringWithFormat:@"%ld:%02ld:%02ld", (long)hours, (long)mins, (long)seconds];
+    else text = [NSString stringWithFormat:@"%02ld:%02ld", (long)mins, (long)seconds];
+    return [NSString stringWithFormat:LOC(@"SLEEP_TIMER_VIDEO_ENDS_FMT"), text];
+}
+
 static UIViewController *YMSleepTimerPresentingViewController(void) {
     UIViewController *top = YouModTopViewController(nil);
     while (top.presentedViewController && !top.presentedViewController.isBeingDismissed) {
@@ -307,18 +322,21 @@ static UIViewController *YMSleepTimerPresentingViewController(void) {
     return top;
 }
 
+// Custom time picker inside a YT-native alert (not a system dialog).
 static void YMSleepTimerShowCustomTimeAlert(UIViewController *presenter) {
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:LOC(@"SLEEP_TIMER_CUSTOM_TIME")
-                                                                   message:nil
-                                                            preferredStyle:UIAlertControllerStyleAlert];
+    YTAlertView *alertView = [%c(YTAlertView) dialog];
+    alertView.title = LOC(@"SLEEP_TIMER_CUSTOM_TIME");
+    alertView.shouldDismissOnBackgroundTap = YES;
 
-    UIDatePicker *datePicker = [[UIDatePicker alloc] initWithFrame:CGRectMake(0, 40, 270, 160)];
+    UIDatePicker *datePicker = [[UIDatePicker alloc] initWithFrame:CGRectMake(0, 0, 238, 150)];
+    datePicker.autoresizingMask = UIViewAutoresizingFlexibleWidth;
     datePicker.datePickerMode = UIDatePickerModeTime;
     datePicker.locale = [NSLocale currentLocale]; // renders 12/24h per system setting
-    [alert.view addSubview:datePicker];
+    alertView.customContentView = datePicker;
+    alertView.customContentViewInsets = UIEdgeInsetsMake(0, 8, 4, 8);
 
-    [alert addAction:[UIAlertAction actionWithTitle:LOC(@"CANCEL") style:UIAlertActionStyleCancel handler:nil]];
-    [alert addAction:[UIAlertAction actionWithTitle:LOC(@"OK") style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+    [alertView addCancelButtonWithAction:nil];
+    [alertView addTitle:LOC(@"OK") withAction:^{
         NSCalendar *calendar = [NSCalendar currentCalendar];
         NSDateComponents *picked = [calendar componentsInTimeZone:calendar.timeZone fromDate:datePicker.date];
         NSDateComponents *target = [calendar components:(NSCalendarUnitYear | NSCalendarUnitMonth | NSCalendarUnitDay |
@@ -333,49 +351,70 @@ static void YMSleepTimerShowCustomTimeAlert(UIViewController *presenter) {
             endDate = [calendar dateByAddingUnit:NSCalendarUnitDay value:1 toDate:endDate options:0];
         }
         [[YMSleepTimer shared] startAtDate:endDate];
-    }]];
-    [presenter presentViewController:alert animated:YES completion:nil];
+    }];
+    [alertView show];
 }
 
 static void YMSleepTimerPresentPicker(UIView *sourceView) {
-    UIAlertController *sheet = [UIAlertController alertControllerWithTitle:LOC(@"SLEEP_TIMER")
-                                                                   message:nil
-                                                            preferredStyle:UIAlertControllerStyleActionSheet];
-
-    YMSleepTimer *timer = [YMSleepTimer shared];
-    if ([timer isActive]) {
-        NSString *title = [NSString stringWithFormat:LOC(@"SLEEP_TIMER_OFF_FMT"), [timer remainingText]];
-        [sheet addAction:[UIAlertAction actionWithTitle:title style:UIAlertActionStyleDestructive handler:^(UIAlertAction *action) {
-            [timer cancel];
-        }]];
-    }
-
-    NSArray<NSNumber *> *minutesOptions = @[@15, @30, @45, @60];
-    for (NSNumber *minutes in minutesOptions) {
-        NSString *title = [NSString stringWithFormat:LOC(@"SLEEP_TIMER_MINUTES_FMT"), [minutes integerValue]];
-        [sheet addAction:[UIAlertAction actionWithTitle:title style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
-            [timer startWithMinutes:[minutes integerValue]];
-        }]];
-    }
-
-    [sheet addAction:[UIAlertAction actionWithTitle:LOC(@"SLEEP_TIMER_END_OF_VIDEO") style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
-        [timer startEndOfVideo];
-    }]];
-
-    [sheet addAction:[UIAlertAction actionWithTitle:LOC(@"SLEEP_TIMER_CUSTOM_TIME") style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
-        YMSleepTimerShowCustomTimeAlert(YMSleepTimerPresentingViewController());
-    }]];
-
-    [sheet addAction:[UIAlertAction actionWithTitle:LOC(@"CANCEL") style:UIAlertActionStyleCancel handler:nil]];
-
     void (^present)(void) = ^{
         UIViewController *presenter = YMSleepTimerPresentingViewController();
         if (!presenter) return;
-        if (sourceView && sheet.popoverPresentationController) {
-            sheet.popoverPresentationController.sourceView = sourceView;
-            sheet.popoverPresentationController.sourceRect = sourceView.bounds;
+
+        YMSleepTimer *timer = [YMSleepTimer shared];
+        NSString *timeLeftText = YMSleepTimerVideoTimeLeftText();
+
+        YTDefaultSheetController *sheet = [%c(YTDefaultSheetController) sheetControllerWithParentResponder:presenter];
+
+        // Header subtitle: timer remaining + how long until the video ends.
+        NSMutableArray<NSString *> *subtitleParts = [NSMutableArray array];
+        if ([timer isActive] && timer.mode == YMSleepTimerModeCountdown) {
+            [subtitleParts addObject:[NSString stringWithFormat:LOC(@"SLEEP_TIMER_REMAINING_FMT"), [timer remainingText]]];
         }
-        [presenter presentViewController:sheet animated:YES completion:nil];
+        if (timeLeftText) [subtitleParts addObject:timeLeftText];
+        [sheet addHeaderWithTitle:LOC(@"SLEEP_TIMER") subtitle:[subtitleParts componentsJoinedByString:@" • "]];
+
+        if ([timer isActive]) {
+            YTActionSheetAction *off = [%c(YTActionSheetAction) actionWithTitle:LOC(@"SLEEP_TIMER_OFF")
+                                                                       subtitle:[NSString stringWithFormat:LOC(@"SLEEP_TIMER_REMAINING_FMT"), [timer remainingText]]
+                                                                      iconImage:nil
+                                                                       handler:^(__unused YTActionSheetAction *action) {
+                [timer cancel];
+            }];
+            [sheet addAction:off];
+        }
+
+        for (NSNumber *minutes in @[@15, @30, @45, @60]) {
+            YTActionSheetAction *duration = [%c(YTActionSheetAction) actionWithTitle:[NSString stringWithFormat:LOC(@"SLEEP_TIMER_MINUTES_FMT"), [minutes integerValue]]
+                                                                            subtitle:nil
+                                                                           iconImage:nil
+                                                                            handler:^(__unused YTActionSheetAction *action) {
+                [timer startWithMinutes:[minutes integerValue]];
+            }];
+            [sheet addAction:duration];
+        }
+
+        YTActionSheetAction *endOfVideo = [%c(YTActionSheetAction) actionWithTitle:LOC(@"SLEEP_TIMER_END_OF_VIDEO")
+                                                                          subtitle:timeLeftText
+                                                                         iconImage:nil
+                                                                          handler:^(__unused YTActionSheetAction *action) {
+            [timer startEndOfVideo];
+        }];
+        [sheet addAction:endOfVideo];
+
+        YTActionSheetAction *customTime = [%c(YTActionSheetAction) actionWithTitle:LOC(@"SLEEP_TIMER_CUSTOM_TIME")
+                                                                          subtitle:nil
+                                                                         iconImage:nil
+                                                                          handler:^(__unused YTActionSheetAction *action) {
+            YMSleepTimerShowCustomTimeAlert(YMSleepTimerPresentingViewController());
+        }];
+        [sheet addAction:customTime];
+
+        if (sourceView) {
+            [sheet presentFromView:sourceView animated:YES completion:nil];
+        } else {
+            // No anchor view — present bottom-center from the top view controller.
+            [sheet presentFromViewController:presenter animated:YES completion:nil];
+        }
     };
     if ([NSThread isMainThread]) present();
     else dispatch_async(dispatch_get_main_queue(), present);
