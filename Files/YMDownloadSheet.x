@@ -63,7 +63,9 @@ typedef NS_ENUM(NSInteger, YMDownloadSheetSection) {
 - (void)presentFrom:(UIViewController *)presenter {
     UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:self];
     nav.navigationBarHidden = YES;
-    if (@available(iOS 15, *)) {
+    // Runtime OS check instead of @available: the Linux theos toolchain ships
+    // no compiler-rt builtins lib, so __isOSVersionAtLeast can't be linked.
+    if ([NSProcessInfo processInfo].operatingSystemVersion.majorVersion >= 15) {
         nav.sheetPresentationController.detents = @[[UISheetPresentationControllerDetent largeDetent]];
         nav.sheetPresentationController.prefersGrabberVisible = YES;
         nav.sheetPresentationController.preferredCornerRadius = 16.0;

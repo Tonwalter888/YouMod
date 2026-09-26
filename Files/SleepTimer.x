@@ -190,7 +190,7 @@ static NSString *YMSleepTimerFormatClock(NSTimeInterval interval) {
             [self fire];
             return;
         }
-        if (remaining <= 5.0) [self applyFadeFraction:(remaining / 5.0)];
+        if (remaining <= 7.0) [self applyFadeFraction:(remaining / 7.0)];
     } else {
         YTPlayerViewController *player = YouModCurrentPlayerViewController;
         if (player && [player isPlaybackFinished]) {
@@ -261,17 +261,16 @@ static NSString *YMSleepTimerFormatClock(NSTimeInterval interval) {
     NSString *text = [self remainingText];
     void (^update)(void) = ^{
         if (!slimBarController) return;
-        // Theme switch happens once per activation; continuous text updates
-        // go straight to the label so the theme method isn't re-run.
         if (!slimBarThemed) {
             [slimBarController updateWithSleepTimerActiveStatus:YES];
             for (YTSlimStatusBarView *barView in slimBarSet) {
                 [barView updateAppearanceToSleepTimerActiveWithText:text];
             }
             slimBarThemed = YES;
-        }
-        for (YTSlimStatusBarView *barView in slimBarSet) {
-            [barView updateAppearanceToSleepTimerActiveWithText:text];
+        } else {
+            for (YTSlimStatusBarView *barView in slimBarSet) {
+                [barView updateAppearanceToSleepTimerActiveWithText:text];
+            }
         }
     };
     if ([NSThread isMainThread]) update();
@@ -349,25 +348,42 @@ static NSString *YMSleepTimerVideoTimeLeftText(void) {
     return text;
 }
 
+// Container that keeps the picker centered inside whatever space the dialog
+// actually gives it — the dialog's content width varies by device/locale, so a
+// fixed frame set up front drifts off-center.
+@interface YMSleepTimerPickerContainer : UIView
+@property (nonatomic, strong) UIDatePicker *datePicker;
+@end
+
+@implementation YMSleepTimerPickerContainer
+- (void)layoutSubviews {
+    [super layoutSubviews];
+    CGSize natural = self.datePicker.intrinsicContentSize;
+    CGFloat width = (natural.width > 0 && natural.width < self.bounds.size.width) ? natural.width : self.bounds.size.width;
+    CGFloat height = (natural.height > 0 && natural.height < self.bounds.size.height) ? natural.height : self.bounds.size.height;
+    self.datePicker.frame = CGRectMake(floorf((self.bounds.size.width - width) / 2.0),
+                                       floorf((self.bounds.size.height - height) / 2.0),
+                                       width, height);
+}
+@end
+
 // Custom time picker inside a YT-native alert (not a system dialog).
 static void YMSleepTimerShowCustomTimeAlert(void) {
     YTAlertView *alertView = [%c(YTAlertView) dialog];
     alertView.title = LOC(@"SLEEP_TIMER_CUSTOM_TIME");
     alertView.shouldDismissOnBackgroundTap = YES;
 
-    // Container stretches with the dialog; the picker keeps its natural width
-    // and stays centered via equal flexible margins.
-    UIView *container = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 238, 150)];
-    container.autoresizingMask = UIViewAutoresizingFlexibleWidth;
+    YMSleepTimerPickerContainer *container = [[YMSleepTimerPickerContainer alloc] initWithFrame:CGRectMake(0, 0, 238, 150)];
+    container.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
 
-    UIDatePicker *datePicker = [[UIDatePicker alloc] initWithFrame:CGRectMake(11, 0, 216, 150)];
-    datePicker.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin;
+    UIDatePicker *datePicker = [[UIDatePicker alloc] init];
     datePicker.datePickerMode = UIDatePickerModeTime;
     // Force the scrolling-wheel style: on iOS 14+ the default is compact, which
     // collapses to a button that opens a separate popover instead of sitting
     // inside this dialog.
     datePicker.preferredDatePickerStyle = UIDatePickerStyleWheels;
     datePicker.locale = [NSLocale currentLocale]; // renders 12/24h per system setting
+    container.datePicker = datePicker;
     [container addSubview:datePicker];
 
     alertView.customContentView = container;
@@ -460,12 +476,14 @@ void YMSleepTimerPresentPicker(UIView *sourceView) {
 %hook YTPlayerViewController
 - (void)singleVideo:(YTSingleVideoController *)video currentVideoTimeDidChange:(YTSingleVideoTime *)time {
     %orig;
+    if (INTFORVAL(SleepTimer) == 0) return;
     [[YMSleepTimer shared] playbackTick];
 }
 
 // Time-change hook for YouTube versions that use the renamed selector.
 - (void)potentiallyMutatedSingleVideo:(YTSingleVideoController *)video currentVideoTimeDidChange:(YTSingleVideoTime *)time {
     %orig;
+    if (INTFORVAL(SleepTimer) == 0) return;
     [[YMSleepTimer shared] playbackTick];
 }
 %end
@@ -473,7 +491,7 @@ void YMSleepTimerPresentPicker(UIView *sourceView) {
 %hook YTSlimStatusBarControllerImpl
 - (void)addSlimStatusBarView:(YTSlimStatusBarView *)barView withObserver:(NSMapTable *)observers {
     %orig;
-    if (!barView) return;
+    if (!barView || INTFORVAL(SleepTimer) == 0) return;
     if (!slimBarSet) slimBarSet = [NSHashTable weakObjectsHashTable];
     BOOL isWatch = NO;
     if ([barView._viewControllerForAncestor isKindOfClass:%c(YTWatchViewController)]) {
@@ -496,15 +514,25 @@ void YMSleepTimerPresentPicker(UIView *sourceView) {
 }
 - (void)connectionStatusDidChange:(BOOL)connected {
     %orig;
+    if (INTFORVAL(SleepTimer) == 0) return;
     YMSleepTimer *timer = [YMSleepTimer shared];
     if (connected) {
-        timer.connectionLost = NO;
-        if ([timer isActive]) {
+        if (![timer isActive]) {
+            timer.connectionLost = NO;
+            return;
+        }
+        // Give YouTube ~3s to settle its own bar before we re-apply the sleep
+        // timer theme; connectionLost stays YES so ticks don't touch the bar
+        // in the meantime.
+        NSUInteger seq = ++slimBarReconnectSequence;
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(3.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+            if (seq != slimBarReconnectSequence) return; // flapped again meanwhile
+            timer.connectionLost = NO;
             // YouTube may have reset the bar's appearance while disconnected,
             // so re-apply the sleep timer theme before updating the text.
             slimBarThemed = NO;
             [timer updateSlimBars];
-        }
+        });
     } else {
         timer.connectionLost = YES;
     }
@@ -520,10 +548,12 @@ void YMSleepTimerPresentPicker(UIView *sourceView) {
 %hook YTPlayablesFullscreenViewController
 - (void)viewDidAppear:(BOOL)animated {
     %orig;
+    if (INTFORVAL(SleepTimer) == 0) return;
     YMSleepTimerSetBarHiddenByLayout(YES);
 }
 - (void)viewDidDisappear:(BOOL)animated {
     %orig;
+    if (INTFORVAL(SleepTimer) == 0) return;
     YMSleepTimerSetBarHiddenByLayout(NO);
 }
 %end
@@ -531,6 +561,7 @@ void YMSleepTimerPresentPicker(UIView *sourceView) {
 %hook YTMainAppVideoPlayerOverlayViewController
 - (void)setPlayerViewLayout:(int)mode {
     %orig;
+    if (INTFORVAL(SleepTimer) == 0) return;
     // Fullscreen hides the bar; the inline layout brings it back.
     YMSleepTimerSetBarHiddenByLayout(self.isFullscreen);
 }

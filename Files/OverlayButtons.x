@@ -372,7 +372,7 @@ static BOOL isRelatedVideosExpanded = NO;
         }
         if (!btn) btn = YMCreateOverlayButton(self, spec);
 
-        btn.alpha = !overlayVisible || isRelatedVideosExpanded;
+        btn.alpha = overlayVisible && !isRelatedVideosExpanded;
 
         CGFloat width = (spec.title.length > 0) ? YMOverlayTextButtonWidth : YMOverlayButtonSize;
         CGFloat centerX = (prevHalfWidth == 0) ? trailingCenterX : trailingCenterX - prevHalfWidth - YMOverlayButtonGap - width / 2.0;
@@ -388,7 +388,7 @@ static BOOL isRelatedVideosExpanded = NO;
     %orig;
     for (YMOverlayButtonSpec *spec in YMRegisteredOverlayButtons()) {
         YTQTMButton *btn = (YTQTMButton *)[self viewWithTag:spec.viewTag];
-        if (btn) btn.alpha = !visible || isRelatedVideosExpanded;
+        if (btn) btn.alpha = visible && !isRelatedVideosExpanded;
     }
 }
 
@@ -631,7 +631,7 @@ static void YMFrostedBackgroundUpdate(YTInlinePlayerBarContainerView *self_, NSA
         }
         if (!btn) btn = YMCreateOverlayButton(self, spec);
 
-        btn.alpha = !peekVisible || isRelatedVideosExpanded;
+        btn.alpha = peekVisible && !isRelatedVideosExpanded;
 
         CGFloat width = (spec.title.length > 0) ? YMOverlayTextButtonWidth : YMOverlayButtonSize;
         CGFloat centerX = (prevHalfWidth == 0) ? trailingCenterX : trailingCenterX - prevHalfWidth - YMOverlayButtonGap - width / 2.0;
@@ -652,9 +652,9 @@ static void YMFrostedBackgroundUpdate(YTInlinePlayerBarContainerView *self_, NSA
     if (![self._viewControllerForAncestor isKindOfClass:%c(YTMainAppVideoPlayerOverlayViewController)]) return;
     for (YMOverlayButtonSpec *spec in YMRegisteredOverlayButtons()) {
         UIView *btn = [self viewWithTag:spec.viewTag];
-        if ([btn isKindOfClass:%c(YTQTMButton)]) btn.alpha = !visible;
+        if ([btn isKindOfClass:%c(YTQTMButton)]) btn.alpha = visible;
     }
-    [[self viewWithTag:YMFrostedBackgroundTag] setAlpha:!visible];
+    [[self viewWithTag:YMFrostedBackgroundTag] setAlpha:visible];
 }
 
 %new
