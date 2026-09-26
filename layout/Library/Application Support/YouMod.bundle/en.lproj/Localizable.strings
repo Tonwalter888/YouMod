@@ -673,7 +673,6 @@
 "SLEEP_TIMER" = "Sleep Timer";
 "SLEEP_TIMER_OFF" = "Turn off timer";
 "SLEEP_TIMER_REMAINING_FMT" = "Time left: %@";
-"SLEEP_TIMER_VIDEO_ENDS_FMT" = "Video ends in %@";
 "SLEEP_TIMER_MINUTES_FMT" = "%ld min";
 "SLEEP_TIMER_END_OF_VIDEO" = "End of video";
 "SLEEP_TIMER_TIME_UP" = "Sleep timer ended — playback paused";

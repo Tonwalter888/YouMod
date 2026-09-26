@@ -304,14 +304,15 @@ static NSString *YMSleepTimerVideoTimeLeftText(void) {
     if (!player) return nil;
     CGFloat timeLeft = [player currentVideoTotalMediaTime] - [player currentVideoMediaTime];
     if (timeLeft <= 0) return nil;
-    NSInteger secs = (NSInteger)ceil(timeLeft);
-    NSInteger hours = secs / 3600;
-    NSInteger mins = (secs % 3600) / 60;
-    NSInteger seconds = secs % 60;
-    NSString *text;
-    if (hours > 0) text = [NSString stringWithFormat:@"%ld:%02ld:%02ld", (long)hours, (long)mins, (long)seconds];
-    else text = [NSString stringWithFormat:@"%02ld:%02ld", (long)mins, (long)seconds];
-    return [NSString stringWithFormat:LOC(@"SLEEP_TIMER_VIDEO_ENDS_FMT"), text];
+
+    // System-localized units ("1 hr 20 min" / "45 minutes" / "30 seconds").
+    NSDateComponentsFormatter *formatter = [[NSDateComponentsFormatter alloc] init];
+    formatter.allowedUnits = NSCalendarUnitHour | NSCalendarUnitMinute | NSCalendarUnitSecond;
+    formatter.unitsStyle = NSDateComponentsFormatterUnitsStyleFull;
+    formatter.maximumUnitCount = 2;
+    formatter.zeroFormattingBehavior = NSDateComponentsFormatterZeroFormattingBehaviorDropAll;
+    NSString *text = [formatter stringFromTimeInterval:timeLeft];
+    return text;
 }
 
 static UIViewController *YMSleepTimerPresentingViewController(void) {

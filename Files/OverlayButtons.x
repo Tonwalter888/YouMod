@@ -486,6 +486,73 @@ static BOOL isRelatedVideosExpanded = NO;
 
 #pragma mark - Bottom Row (YTInlinePlayerBarContainerView)
 
+#pragma mark - Frosted Glass Background
+
+// View-tag for the frosted-glass pill behind the bottom button row. Sits just
+// below YMOverlayButtonBaseTag so it never collides with button tags.
+static const NSInteger YMFrostedBackgroundTag = 9905;
+
+// Padding around the button union so the pill breathes around the icons.
+static const CGFloat YMFrostedBackgroundHPadding = 8.0;
+static const CGFloat YMFrostedBackgroundVPadding = 5.0;
+
+// Applies YouTube's own frosted-glass effect to `view` (the pill that covers
+// every bottom overlay button). Pass nil for frostedGlassView and one is
+// created with YouTube's current blur style (falls back to style 16 when the
+// class-level accessor is missing, matching YouTube's own default).
+static void maybeApplyFrostedGlassToView(YTFrostedGlassView *frostedGlassView, UIView *view) {
+    Class YTFrostedGlassViewClass = %c(YTFrostedGlassView);
+    if (!YTFrostedGlassViewClass || !view) return;
+    NSInteger blurEffectStyle = [YTFrostedGlassViewClass respondsToSelector:@selector(frostedGlassBlurEffectStyle)] ? [YTFrostedGlassViewClass frostedGlassBlurEffectStyle] : 16;
+    if (!frostedGlassView) {
+        @try {
+            frostedGlassView = [[YTFrostedGlassViewClass alloc] initWithBlurEffectStyle:blurEffectStyle alpha:1.0];
+        } @catch (id ex) {
+            frostedGlassView = [[YTFrostedGlassViewClass alloc] initWithBlurEffectStyle:blurEffectStyle];
+        }
+    }
+    if (!frostedGlassView) return;
+    if ([frostedGlassView respondsToSelector:@selector(maybeApplyToView:)]) [frostedGlassView maybeApplyToView:view];
+}
+
+// Creates (once) and maintains a frosted-glass pill sized to the union of the
+// bottom overlay buttons. Kept below the buttons in the subview order so the
+// icons draw on top; removed entirely when there is nothing to cover.
+static void YMFrostedBackgroundUpdate(YTInlinePlayerBarContainerView *self_, NSArray<UIView *> *buttons) {
+    UIView *background = [self_ viewWithTag:YMFrostedBackgroundTag];
+    if (buttons.count == 0) {
+        [background removeFromSuperview];
+        return;
+    }
+
+    CGRect unionFrame = CGRectNull;
+    for (UIView *btn in buttons) {
+        unionFrame = CGRectIsNull(unionFrame) ? btn.frame : CGRectUnion(unionFrame, btn.frame);
+    }
+    unionFrame = CGRectInset(unionFrame, -YMFrostedBackgroundHPadding, -YMFrostedBackgroundVPadding);
+
+    if (!background) {
+        background = [[UIView alloc] initWithFrame:unionFrame];
+        background.tag = YMFrostedBackgroundTag;
+        background.userInteractionEnabled = NO; // taps fall through to the player
+        background.clipsToBounds = YES;
+        maybeApplyFrostedGlassToView(nil, background);
+        // The blur/overlay layers YTFrostedGlassView attaches must track the
+        // pill's frame on every relayout, since only this pill (not the frosted
+        // view itself) stays in the hierarchy.
+        for (UIView *sub in background.subviews) {
+            sub.frame = background.bounds;
+            sub.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+        }
+        background.layer.cornerRadius = CGRectGetHeight(unionFrame) / 2.0;
+        [self_ insertSubview:background belowSubview:buttons.firstObject];
+    } else {
+        background.frame = unionFrame;
+        background.layer.cornerRadius = CGRectGetHeight(unionFrame) / 2.0;
+    }
+    background.hidden = ((UIView *)buttons.firstObject).hidden;
+}
+
 %hook YTInlinePlayerBarContainerView
 
 - (id)init {
@@ -516,6 +583,7 @@ static BOOL isRelatedVideosExpanded = NO;
             UIView *btn = [self viewWithTag:spec.viewTag];
             if (btn) [btn removeFromSuperview];
         }
+        [[self viewWithTag:YMFrostedBackgroundTag] removeFromSuperview];
         return;
     }
     UIView *button = [self exitFullscreenButton];
@@ -545,6 +613,7 @@ static BOOL isRelatedVideosExpanded = NO;
     // Stack the row on top of the fullscreen button, not beside/over it.
     CGFloat rowTop = CGRectGetMinY(exitFrame) - YMOverlayButtonSize;
     CGFloat prevHalfWidth = 0;
+    NSMutableArray<UIView *> *laidOutButtons = [NSMutableArray array];
 
     for (YMOverlayButtonSpec *spec in specs) {
         BOOL isHiddenOnLive = isLive && ([spec.identifier isEqualToString:@"sponsorblock.toggle"] ||
@@ -569,7 +638,11 @@ static BOOL isRelatedVideosExpanded = NO;
         trailingCenterX = centerX;
         prevHalfWidth = width / 2.0;
         [self bringSubviewToFront:btn];
+        [laidOutButtons addObject:btn];
     }
+
+    // Wrap the whole bottom row in one frosted-glass pill.
+    YMFrostedBackgroundUpdate(self, laidOutButtons);
 }
 
 - (void)setPeekableViewVisible:(BOOL)visible {
@@ -579,6 +652,7 @@ static BOOL isRelatedVideosExpanded = NO;
         UIView *btn = [self viewWithTag:spec.viewTag];
         if ([btn isKindOfClass:%c(YTQTMButton)]) btn.hidden = !visible;
     }
+    [[self viewWithTag:YMFrostedBackgroundTag] setHidden:!visible];
 }
 
 %new

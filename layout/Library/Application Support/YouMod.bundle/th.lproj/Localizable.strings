@@ -620,7 +620,6 @@
 "SLEEP_TIMER" = "ตั้งเวลาปิด";
 "SLEEP_TIMER_OFF" = "ปิดตัวจับเวลา";
 "SLEEP_TIMER_REMAINING_FMT" = "เหลืออีก %@";
-"SLEEP_TIMER_VIDEO_ENDS_FMT" = "วิดีโอจบอีก %@";
 "SLEEP_TIMER_MINUTES_FMT" = "%ld นาที";
 "SLEEP_TIMER_END_OF_VIDEO" = "จบวิดีโอนี้";
 "SLEEP_TIMER_TIME_UP" = "ตัวจับเวลาหมดแล้ว หยุดเล่นวิดีโอแล้ว";
