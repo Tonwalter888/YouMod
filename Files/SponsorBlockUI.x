@@ -727,73 +727,119 @@ static BOOL SBDecorationViewIsInFullscreenMainPlayer(UIView *view) {
     return [(YTMainAppVideoPlayerOverlayView *)currentView isFullscreen];
 }
 
-static void SBRebuildMarkersInDecorationView(UIView *view) {
-    for (CALayer *layer in [view.layer.sublayers copy]) {
+// Every marker for one bar lives as a sublayer of a single container (a CALayer
+// named SBSegmentMarkerLayer, or a UIView tagged SBSegmentMarkerTag on the bar
+// paths that need z-ordering among subviews). Rebuilds and repositions only
+// ever touch that one container, so a host view or bar parent gains exactly one
+// marker element no matter how many segments are showing.
+
+static void SBRemoveMarkerContainerFromLayer(CALayer *hostLayer) {
+    for (CALayer *layer in [hostLayer.sublayers copy]) {
         if ([layer.name isEqualToString:SBSegmentMarkerLayerName]) {
             [layer removeFromSuperlayer];
         }
     }
+}
+
+static CALayer *SBFindMarkerContainerInLayer(CALayer *hostLayer) {
+    for (CALayer *layer in hostLayer.sublayers) {
+        if ([layer.name isEqualToString:SBSegmentMarkerLayerName]) return layer;
+    }
+    return nil;
+}
+
+// Builds one marker sublayer for a segment, clipped to the visible time range
+// [rangeStart, rangeEnd]. The layer's frame is in container coordinates; the
+// fractions are stored on it so re-layouts can recompute the frame without the
+// segment or the video duration.
+static CALayer *SBMakeMarkerLayer(SBSegment *segment, CGFloat rangeStart, CGFloat rangeEnd, CGFloat barWidth, CGFloat barHeight, BOOL rounded) {
+    CGFloat viewDuration = rangeEnd - rangeStart;
+    if (viewDuration <= 0) return nil;
+
+    BOOL isPoi = [segment.category isEqualToString:@"poi_highlight"];
+    CALayer *markerLayer = [CALayer layer];
+    markerLayer.masksToBounds = YES;
+    markerLayer.backgroundColor = [segment segmentColor].CGColor;
+
+    if (isPoi) {
+        if (segment.startTime < rangeStart || segment.startTime > rangeEnd) return nil;
+        CGFloat frac = (segment.startTime - rangeStart) / viewDuration;
+        markerLayer.frame = CGRectMake(MAX(0.0, frac * barWidth - SBPoiMarkerXOffset), 0, SBPoiMarkerWidth, barHeight);
+        objc_setAssociatedObject(markerLayer, @selector(sbSegmentData), @[@(frac), @(frac), @(YES)], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    } else {
+        CGFloat overlapStart = MAX((CGFloat)segment.startTime, rangeStart);
+        CGFloat overlapEnd = MIN((CGFloat)segment.endTime, rangeEnd);
+        if (overlapEnd <= overlapStart) return nil;
+
+        CGFloat fracStart = (overlapStart - rangeStart) / viewDuration;
+        CGFloat fracEnd = (overlapEnd - rangeStart) / viewDuration;
+        markerLayer.frame = CGRectMake(fracStart * barWidth, 0, MAX(SBMarkerMinWidth, (fracEnd - fracStart) * barWidth), barHeight);
+        objc_setAssociatedObject(markerLayer, @selector(sbSegmentData), @[@(fracStart), @(fracEnd), @(NO)], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    }
+
+    if (rounded) SBApplyMarkerRounding(markerLayer);
+    return markerLayer;
+}
+
+// Repositions the marker sublayers inside a container from their stored
+// fractions. Shared by every bar style so all markers follow the same layout
+// rules.
+static void SBLayoutMarkerLayers(CALayer *container, CGFloat barWidth, CGFloat barHeight, BOOL rounded) {
+    if (!container) return;
+    [CATransaction begin];
+    [CATransaction setDisableActions:YES];
+    for (CALayer *layer in container.sublayers) {
+        NSArray *data = objc_getAssociatedObject(layer, @selector(sbSegmentData));
+        if (!data || data.count < 3) continue;
+        CGFloat fracStart = [data[0] floatValue];
+        CGFloat fracEnd = [data[1] floatValue];
+        BOOL isPoi = [data[2] boolValue];
+
+        CGFloat x, w;
+        if (isPoi) {
+            x = MAX(0.0, fracStart * barWidth - SBPoiMarkerXOffset);
+            w = SBPoiMarkerWidth;
+        } else {
+            x = fracStart * barWidth;
+            w = MAX(SBMarkerMinWidth, (fracEnd - fracStart) * barWidth);
+        }
+        layer.frame = CGRectMake(x, 0, w, barHeight);
+        // Re-derive the radius: the bar is 2pt windowed and 4pt fullscreen, and
+        // the width changes on every re-layout.
+        if (rounded) SBApplyMarkerRounding(layer);
+    }
+    [CATransaction commit];
+}
+
+static void SBRebuildMarkersInDecorationView(UIView *view) {
+    SBRemoveMarkerContainerFromLayer(view.layer);
 
     if (!IS_ENABLED(SBEnabled) || !IS_ENABLED(SBButtonKey) || (!IS_ENABLED(SBSegmentsInPlayer) && !IS_ENABLED(SBSegmentsInFeed))) return;
 
     CGFloat start = 0.0, end = 0.0;
     if (!SBGetDecorationViewTimeRange(view, &start, &end)) return;
 
-    CGFloat viewDuration = end - start;
     CGFloat barWidth = view.bounds.size.width;
     CGFloat barHeight = view.bounds.size.height;
-    if (viewDuration <= 0 || barWidth <= 0 || barHeight <= 0) return;
+    if (barWidth <= 0 || barHeight <= 0) return;
 
     NSArray<SBSegment *> *segments = sbActivePlayerSegments;
     if (!segments || segments.count == 0) return;
 
+    BOOL rounded = SBDecorationViewIsInFullscreenMainPlayer(view);
     [CATransaction begin];
     [CATransaction setDisableActions:YES];
 
+    CALayer *container = [CALayer layer];
+    container.name = SBSegmentMarkerLayerName;
+    container.frame = view.bounds;
     for (SBSegment *segment in segments) {
         SBSegmentAction action = [segment configuredAction];
         if (action == SBSegmentActionDisable) continue;
-
-        BOOL isPoi = [segment.category isEqualToString:@"poi_highlight"];
-        if (isPoi) {
-            if (segment.startTime >= start && segment.startTime <= end) {
-                CGFloat frac = (segment.startTime - start) / viewDuration;
-                CGFloat x = MAX(0.0, frac * barWidth - SBPoiMarkerXOffset);
-                CGFloat w = SBPoiMarkerWidth;
-
-                CALayer *markerLayer = [CALayer layer];
-                markerLayer.name = SBSegmentMarkerLayerName;
-                markerLayer.frame = CGRectMake(x, 0, w, barHeight);
-                markerLayer.backgroundColor = [segment segmentColor].CGColor;
-                markerLayer.masksToBounds = YES;
-                if (SBDecorationViewIsInFullscreenMainPlayer(view)) SBApplyMarkerRounding(markerLayer);
-                objc_setAssociatedObject(markerLayer, @selector(sbSegmentData), @[@(frac), @(frac), @(YES)], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-
-                [view.layer addSublayer:markerLayer];
-            }
-        } else {
-            CGFloat overlapStart = MAX((CGFloat)segment.startTime, start);
-            CGFloat overlapEnd = MIN((CGFloat)segment.endTime, end);
-
-            if (overlapEnd > overlapStart) {
-                CGFloat fracStart = (overlapStart - start) / viewDuration;
-                CGFloat fracEnd = (overlapEnd - start) / viewDuration;
-                CGFloat x = fracStart * barWidth;
-                CGFloat w = (fracEnd - fracStart) * barWidth;
-                if (w < SBMarkerMinWidth) w = SBMarkerMinWidth;
-
-                CALayer *markerLayer = [CALayer layer];
-                markerLayer.name = SBSegmentMarkerLayerName;
-                markerLayer.frame = CGRectMake(x, 0, w, barHeight);
-                markerLayer.backgroundColor = [segment segmentColor].CGColor;
-                markerLayer.masksToBounds = YES;
-                if (SBDecorationViewIsInFullscreenMainPlayer(view)) SBApplyMarkerRounding(markerLayer);
-                objc_setAssociatedObject(markerLayer, @selector(sbSegmentData), @[@(fracStart), @(fracEnd), @(NO)], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-
-                [view.layer addSublayer:markerLayer];
-            }
-        }
+        CALayer *markerLayer = SBMakeMarkerLayer(segment, start, end, barWidth, barHeight, rounded);
+        if (markerLayer) [container addSublayer:markerLayer];
     }
+    [view.layer addSublayer:container];
 
     [CATransaction commit];
 }
@@ -803,46 +849,31 @@ static void SBRenderMarkersInDecorationView(UIView *view) {
     CGFloat barHeight = view.bounds.size.height;
     if (barWidth <= 0 || barHeight <= 0) return;
 
+    CALayer *container = SBFindMarkerContainerInLayer(view.layer);
+
+    // layoutSubviews fires on every scrub/progress pass on every decoration
+    // view, so this must stay near-free when nothing changed. Marker frames
+    // only depend on the bar's size (rounding follows the 2pt↔4pt height
+    // change), so an unchanged size means the container is already correct —
+    // skip the defaults reads, the fullscreen hierarchy walk and all layer
+    // writes below.
+    if (container && container.frame.size.width == barWidth && container.frame.size.height == barHeight) return;
+
     if (!IS_ENABLED(SBEnabled) || !IS_ENABLED(SBButtonKey) || (!IS_ENABLED(SBSegmentsInPlayer) && !IS_ENABLED(SBSegmentsInFeed))) {
-        for (CALayer *layer in [view.layer.sublayers copy]) {
-            if ([layer.name isEqualToString:SBSegmentMarkerLayerName]) {
-                [layer removeFromSuperlayer];
-            }
-        }
+        if (container) SBRemoveMarkerContainerFromLayer(view.layer);
         return;
     }
 
-    BOOL hasMarkers = NO;
-    [CATransaction begin];
-    [CATransaction setDisableActions:YES];
-    for (CALayer *layer in view.layer.sublayers) {
-        if ([layer.name isEqualToString:SBSegmentMarkerLayerName]) {
-            hasMarkers = YES;
-            NSArray *data = objc_getAssociatedObject(layer, @selector(sbSegmentData));
-            if (data && data.count >= 3) {
-                CGFloat fracStart = [data[0] floatValue];
-                CGFloat fracEnd = [data[1] floatValue];
-                BOOL isPoi = [data[2] boolValue];
-
-                if (isPoi) {
-                    CGFloat x = MAX(0.0, fracStart * barWidth - SBPoiMarkerXOffset);
-                    layer.frame = CGRectMake(x, 0, SBPoiMarkerWidth, barHeight);
-                } else {
-                    CGFloat x = fracStart * barWidth;
-                    CGFloat w = MAX(SBMarkerMinWidth, (fracEnd - fracStart) * barWidth);
-                    layer.frame = CGRectMake(x, 0, w, barHeight);
-                }
-                // Re-derive the radius: the bar is 2pt windowed and 4pt fullscreen, and
-                // the width changes on every re-layout.
-                if (SBDecorationViewIsInFullscreenMainPlayer(view)) SBApplyMarkerRounding(layer);
-            }
-        }
+    if (!container) {
+        // Fallback rebuild for bars that never got sb_updateSegmentMarkers;
+        // without segments there is nothing to rebuild and this fires on every
+        // layout pass, so gate it.
+        if (sbActivePlayerSegments.count > 0) SBRebuildMarkersInDecorationView(view);
+        return;
     }
-    [CATransaction commit];
 
-    if (!hasMarkers) {
-        SBRebuildMarkersInDecorationView(view);
-    }
+    container.frame = view.bounds;
+    SBLayoutMarkerLayers(container, barWidth, barHeight, SBDecorationViewIsInFullscreenMainPlayer(view));
 }
 
 %hook YTPlayerBarProgressDecorationView
@@ -868,26 +899,19 @@ static void SBRenderMarkersInDecorationView(UIView *view) {
 %end
 
 // YTWatchFloatingMiniplayerProgressBarView - miniplayer
+// All markers sit in one tagged container view next to the bar; layout only
+// moves that container and re-lays out the fraction-based layers inside it.
+// The bar lays out on every progress tick, so an unchanged frame skips all
+// layer writes.
 %hook YTWatchFloatingMiniplayerProgressBarView
 - (void)layoutSubviews {
     %orig;
-    CGFloat barWidth = self.bounds.size.width;
-
+    if (!self.superview) return;
     for (UIView *sub in self.superview.subviews) {
         if (sub.tag != SBSegmentMarkerTag) continue;
-        NSArray *data = objc_getAssociatedObject(sub, @selector(sbSegmentData));
-        if (!data || data.count < 3) continue;
-
-        CGFloat startFrac = [data[0] floatValue];
-        CGFloat endFrac = [data[1] floatValue];
-        BOOL isPoi = [data[2] boolValue];
-
-        CGFloat x = startFrac * barWidth;
-        CGFloat w = (endFrac - startFrac) * barWidth;
-        if (isPoi) { w = SBPoiMarkerWidth; x = MAX(0, x - SBPoiMarkerXOffset); }
-        else if (w < SBMarkerMinWidth) w = SBMarkerMinWidth;
-
-        sub.frame = CGRectMake(x, self.frame.origin.y, w, self.bounds.size.height);
+        if (CGRectEqualToRect(sub.frame, self.frame)) continue;
+        sub.frame = self.frame;
+        SBLayoutMarkerLayers(sub.layer, self.bounds.size.width, self.bounds.size.height, NO);
     }
 }
 %end
@@ -929,9 +953,7 @@ static void SBRenderMarkersInDecorationView(UIView *view) {
 
     CGFloat totalTime = [self currentVideoTotalMediaTime];
     if (totalTime <= 0) return;
-    CGFloat barWidth;
-    CGFloat h;
-    CGFloat y;
+    CGRect containerFrame = CGRectZero;
     UIView *mainView = nil;
     UIView *scrubberDot = nil;
     UIView *referenceView = nil;
@@ -958,9 +980,7 @@ static void SBRenderMarkersInDecorationView(UIView *view) {
         }
         if (!segments || segments.count == 0) return;
 
-        barWidth = referenceView.bounds.size.width;
-        h = referenceView.bounds.size.height;
-        y = referenceView.frame.origin.y;
+        containerFrame = referenceView.frame;
     } else if ([[self activeVideoPlayerOverlay] isKindOfClass:%c(YTMainAppVideoPlayerOverlayViewController)] && IS_ENABLED(SBSegmentsInPlayer)) {
         YTMainAppVideoPlayerOverlayViewController *overlay = [self activeVideoPlayerOverlay];
         YTPlayerBarController *barController = [overlay playerBarController];
@@ -1028,55 +1048,37 @@ static void SBRenderMarkersInDecorationView(UIView *view) {
             if (sub.tag == SBSegmentMarkerTag) [sub removeFromSuperview];
         }
 
-        barWidth = playerBar.bounds.size.width;
-        h = playerBar.bounds.size.height;
-        y = playerBar.frame.origin.y;
+        containerFrame = playerBar.frame;
     } else {
         return;
     }
 
     if (!IS_ENABLED(SBButtonKey)) return;
 
+    // One container view tagged SBSegmentMarkerTag holds every marker as a
+    // sublayer, so the bar's parent gains a single element instead of one view
+    // per segment. Removing and re-adding markers still goes through the tag.
+    UIView *container = [[UIView alloc] initWithFrame:containerFrame];
+    container.tag = SBSegmentMarkerTag;
+    container.userInteractionEnabled = NO;
+    container.clipsToBounds = NO;
     for (SBSegment *segment in segments) {
         SBSegmentAction action = [segment configuredAction];
         if (action == SBSegmentActionDisable) continue;
+        CALayer *markerLayer = SBMakeMarkerLayer(segment, 0.0, totalTime, containerFrame.size.width, containerFrame.size.height, NO);
+        if (markerLayer) [container.layer addSublayer:markerLayer];
+    }
 
-        CGFloat startFrac = segment.startTime / totalTime;
-        CGFloat endFrac;
-        if (segment.endTime > totalTime) {
-            endFrac = 1.0;
-        } else {
-            endFrac = segment.endTime / totalTime;
-        }
-        CGFloat x = startFrac * barWidth;
-        CGFloat w = (endFrac - startFrac) * barWidth;
-
-        // poi_highlight is a point, not a range — give it fixed width
-        BOOL isPoi = [segment.category isEqualToString:@"poi_highlight"];
-        if (isPoi) {
-            w = SBPoiMarkerWidth;
-            x = MAX(0, x - SBPoiMarkerXOffset);
-        } else {
-            if (w < SBMarkerMinWidth) w = SBMarkerMinWidth;
-        }
-
-        UIView *marker = [[UIView alloc] initWithFrame:CGRectMake(x, y, w, h)];
-        marker.backgroundColor = [segment segmentColor];
-        marker.userInteractionEnabled = NO;
-        marker.tag = SBSegmentMarkerTag;
-        objc_setAssociatedObject(marker, @selector(sbSegmentData), @[@(startFrac), @(endFrac), @(isPoi)], OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-
-        // Insert above the track (main player bar) so the marker paints on it;
-        // the dot is re-fronted after the loop. Miniplayer/feed keep dot-relative
-        // or top ordering.
-        if (referenceView && referenceView.superview == mainView) {
-            [mainView insertSubview:marker aboveSubview:referenceView];
-        } else if (scrubberDot && scrubberDot.superview == mainView) {
-            [mainView insertSubview:marker belowSubview:scrubberDot];
-        } else {
-            [mainView addSubview:marker];
-            [mainView bringSubviewToFront:marker];
-        }
+    // Insert above the track (main player bar) so the markers paint on it;
+    // the dot is re-fronted after. Miniplayer/feed keep dot-relative or top
+    // ordering.
+    if (referenceView && referenceView.superview == mainView) {
+        [mainView insertSubview:container aboveSubview:referenceView];
+    } else if (scrubberDot && scrubberDot.superview == mainView) {
+        [mainView insertSubview:container belowSubview:scrubberDot];
+    } else {
+        [mainView addSubview:container];
+        [mainView bringSubviewToFront:container];
     }
     if (scrubberDot) {
         [mainView bringSubviewToFront:scrubberDot];

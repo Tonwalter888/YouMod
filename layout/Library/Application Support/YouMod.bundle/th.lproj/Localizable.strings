@@ -583,28 +583,28 @@
 /* SponsorBlock menu / vote / whitelist / user ID */
 "SB_MENU_ENABLE" = "เปิด SponsorBlock";
 "SB_MENU_DISABLE" = "ปิด SponsorBlock";
-"SB_MENU_VOTE" = "โหวต segment";
+"SB_MENU_VOTE" = "โหวตช่วงวิดีโอ";
 "SB_MENU_WHITELIST" = "Whitelist ช่องนี้";
-"SB_VOTE_TITLE" = "รายการ Segments";
+"SB_VOTE_TITLE" = "รายการช่วงวิดีโอ";
 "SB_VOTES_COUNT" = "%ld โหวต";
 "SB_VOTE_UPVOTE" = "โหวตว่าถูกต้อง";
 "SB_VOTE_DOWNVOTE" = "โหวตว่าไม่ถูกต้อง";
 "SB_VOTE_UNDO" = "ยกเลิกโหวต";
 "SB_VOTE_CHANGE_CATEGORY" = "เปลี่ยนหมวดหมู่";
-"SB_VOTE_JUMP_START" = "กระโดดไปจุดเริ่ม segment";
-"SB_VOTE_JUMP_END" = "กระโดดไปจุดจบ segment";
+"SB_VOTE_JUMP_START" = "กระโดดไปจุดเริ่มช่วงวิดีโอ";
+"SB_VOTE_JUMP_END" = "กระโดดไปจุดจบวิดีโอ";
 "SB_VOTE_SUCCESS" = "ส่งโหวตแล้ว";
 "SB_VOTE_FAILED" = "โหวตไม่สำเร็จ";
-"SB_VOTE_NO_SEGMENTS" = "ไม่มี segment ในวิดีโอนี้";
+"SB_VOTE_NO_SEGMENTS" = "ไม่มีพบช่วงวิดีโอ";
 "SB_WHITELIST_ADD" = "เพิ่มใน whitelist";
 "SB_WHITELIST_REMOVE" = "นำออกจาก whitelist";
 "SB_WHITELIST_DESC" = "SponsorBlock จะถูกปิดสำหรับช่องนี้";
 "SB_WHITELIST_MANAGE" = "จัดการ Whitelist";
 "SB_WHITELIST_EMPTY" = "ยังไม่มีช่องใน whitelist";
 "SB_WHITELIST_DELETE" = "ลบ";
-"SB_USERID_HEADER" = "การตั้งค่า User ID";
-"SB_PRIVATE_ID" = "User ID ส่วนตัว";
-"SB_PUBLIC_ID" = "User ID สาธารณะ";
+"SB_USERID_HEADER" = "การตั้งค่า ID ผู้ใช้";
+"SB_PRIVATE_ID" = "ID ผู้ใช้ส่วนตัว";
+"SB_PUBLIC_ID" = "ID ผู้ใช้สาธารณะ";
 "SB_TAP_TO_SHOW" = "แตะเพื่อแสดง";
 "SB_COPY_ID" = "คัดลอก ID";
 "SB_EDIT_ID" = "แก้ไข ID";
@@ -616,3 +616,10 @@
 
 "AUDIO" = "เสียง";
 
+// Sleep timer
+"SLEEP_TIMER" = "ตั้งเวลาปิด";
+"SLEEP_TIMER_OFF_FMT" = "ปิดตัวจับเวลา (เหลือ %@)";
+"SLEEP_TIMER_MINUTES_FMT" = "%ld นาที";
+"SLEEP_TIMER_END_OF_VIDEO" = "จบวิดีโอนี้";
+"SLEEP_TIMER_TIME_UP" = "ตัวจับเวลาหมดแล้ว หยุดเล่นวิดีโอแล้ว";
+"SLEEP_TIMER_CUSTOM_TIME" = "เลือกเวลา...";

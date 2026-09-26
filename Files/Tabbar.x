@@ -285,7 +285,13 @@ static BOOL isGestureRegistered = NO;
             UIViewController *topVC = YouModTopViewController(nil);
             YMOpenLinkFromClipboard(topVC, YES);
         }];
-        return [UIMenu menuWithTitle:@"" children:@[whitelistAction, tabBarAction, openLinkAction]];
+        UIAction *sleepTimerAction = [UIAction actionWithTitle:LOC(@"SLEEP_TIMER")
+                                                         image:[UIImage systemImageNamed:@"moon"]
+                                                    identifier:nil
+                                                       handler:^(__kindof UIAction * _Nonnull action) {
+            YMSleepTimerShowPicker();
+        }];
+        return [UIMenu menuWithTitle:@"" children:@[whitelistAction, sleepTimerAction, tabBarAction, openLinkAction]];
     }];
 }
 %end

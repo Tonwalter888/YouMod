@@ -121,6 +121,9 @@
 #define OverlayButtonOrder @"YouModOverlayButtonOrder"
 #define GlobalSpeedLocked @"YouModGlobalSpeedLocked"
 #define GlobalSavedNormalRate @"YouModGlobalSavedNormalRate"
+// Sleep timer
+#define SleepTimerEndDate @"YouModSleepTimerEndDate"
+#define SleepTimerMode @"YouModSleepTimerMode"
 // Downloading
 #define DownloadManager @"YouModDownloadManager"
 #define DownloadButtonPosition @"YouModDownloadButtonPosition"
@@ -656,6 +659,8 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 - (void)YouModAutoQuality;
 - (NSArray *)availableCaptionTracks;
 - (MLInnerTubeCaptionTrack *)activeCaptionTrack;
+- (float)volume;
+- (void)setVolume:(float)volume;
 @end
 
 @interface YTReelPlayerViewController (YouMod)
@@ -852,8 +857,9 @@ extern YTPlayerViewController *YouModCurrentPlayerViewController;
 extern NSArray<NSString *> *sbAllCategories(void);
 extern UIColor *SBColorFromHex(NSString *hexString);
 
-// Tag stamped on every seek-bar segment marker view, used to find and remove
-// them across the player-bar layout hooks that don't hold a direct reference.
+// Tag stamped on the single seek-bar marker container view (all segment
+// markers live on it as sublayers), used to find and remove it across the
+// player-bar layout hooks that don't hold a direct reference.
 static const NSInteger SBSegmentMarkerTag = 9900;
 
 // Supported range and default for the skip/unskip banner duration (seconds).
@@ -997,6 +1003,16 @@ extern NSURL *YouModThumbnailURL(YTPlayerViewController *player);
 extern void YouModSendToast(NSString *message);
 extern void YouModSendSuccess(NSString *message);
 extern void YouModSendError(NSString *message);
+
+// Sleep timer (SleepTimer.x)
+extern void YMSleepTimerStartWithMinutes(NSInteger minutes);
+extern void YMSleepTimerStartEndOfVideo(void);
+extern void YMSleepTimerCancel(void);
+extern BOOL YMSleepTimerIsActive(void);
+extern NSString *YMSleepTimerRemainingText(void);
+extern void YMSleepTimerShowPicker(void);
+extern void YMSleepTimerShowPickerFromView(UIView *sourceView);
+extern void YMSleepTimerUpdateSlimBars(void);
 
 extern NSString *YouModSanitizedFileName(NSString *name);
 extern NSURL *YouModDownloadsDirectoryURL(void);

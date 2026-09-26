@@ -268,6 +268,14 @@ static UIImage *YMOverlayButtonIcon(NSString *symbolName) {
     return [symbol imageWithTintColor:[UIColor whiteColor]];
 }
 
+// Sleep timer button: red moon (not filled) while a timer is running, white otherwise.
+static UIImage *YMSleepTimerOverlayIcon(void) {
+    UIImageSymbolConfiguration *config = [UIImageSymbolConfiguration configurationWithPointSize:20 weight:UIImageSymbolWeightMedium];
+    UIImage *symbol = [UIImage systemImageNamed:@"moon" withConfiguration:config];
+    UIColor *tint = YMSleepTimerIsActive() ? [UIColor systemRedColor] : [UIColor whiteColor];
+    return [symbol imageWithTintColor:tint];
+}
+
 static YTQTMButton *YMCreateOverlayButton(UIView *parent, YMOverlayButtonSpec *spec) {
     YTQTMButton *button;
     if (spec.title.length > 0) {
@@ -399,6 +407,7 @@ static BOOL isRelatedVideosExpanded = NO;
     [self updateSpeedButton:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(updateSpeedButton:) name:YouModUpdateSpeedLabel object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(updateQualityButton:) name:YouModUpdateNotification object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(ymUpdateSleepButtonIcon:) name:YouModUpdateNotification object:nil];
     return self;
 }
 
@@ -407,6 +416,7 @@ static BOOL isRelatedVideosExpanded = NO;
     [self updateSpeedButton:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(updateSpeedButton:) name:YouModUpdateSpeedLabel object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(updateQualityButton:) name:YouModUpdateNotification object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(ymUpdateSleepButtonIcon:) name:YouModUpdateNotification object:nil];
     return self;
 }
 
@@ -437,12 +447,25 @@ static BOOL isRelatedVideosExpanded = NO;
     for (YMOverlayButtonSpec *spec in YMRegisteredOverlayButtons()) {
         if ([spec.identifier isEqualToString:@"quality.video"]) {
             spec.title = currentQualityLabel;
-            
+
             YTQTMButton *btn = (YTQTMButton *)[self viewWithTag:spec.viewTag];
             if (btn) {
                 [btn setTitle:currentQualityLabel forState:UIControlStateNormal];
                 btn.titleLabel.font = YMOverlayTextButtonFont(currentQualityLabel, CGSizeMake(25, 25));
             }
+            break;
+        }
+    }
+}
+
+// Refresh the sleep timer icon (white/red) when the timer state changes
+// outside the button itself — start/cancel from the tab menu, expiry, etc.
+%new
+- (void)ymUpdateSleepButtonIcon:(id)arg {
+    for (YMOverlayButtonSpec *spec in YMRegisteredOverlayButtons()) {
+        if ([spec.identifier isEqualToString:@"sleep.timer"]) {
+            YTQTMButton *btn = (YTQTMButton *)[self viewWithTag:spec.viewTag];
+            if (btn) [btn setImage:YMSleepTimerOverlayIcon() forState:UIControlStateNormal];
             break;
         }
     }
@@ -470,6 +493,7 @@ static BOOL isRelatedVideosExpanded = NO;
     if (self && [self._viewControllerForAncestor isKindOfClass:%c(YTMainAppVideoPlayerOverlayViewController)]) {
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(ymUpdateBarButtonLabels:) name:YouModUpdateSpeedLabel object:nil];
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(ymUpdateBarButtonLabels:) name:YouModUpdateNotification object:nil];
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(ymUpdateSleepButtonIcon:) name:YouModUpdateNotification object:nil];
         if (IS_ENABLED(SBShowButton)) {
             [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(updateTimeLabels) name:@"YouModUpdateTimeLabel" object:nil];
         }
@@ -583,6 +607,17 @@ static BOOL isRelatedVideosExpanded = NO;
         if (btn) {
             [btn setTitle:label forState:UIControlStateNormal];
             btn.titleLabel.font = YMOverlayTextButtonFont(label, CGSizeMake(25, 25));
+        }
+    }
+}
+
+%new
+- (void)ymUpdateSleepButtonIcon:(id)arg {
+    for (YMOverlayButtonSpec *spec in YMRegisteredOverlayButtons()) {
+        if ([spec.identifier isEqualToString:@"sleep.timer"]) {
+            YTQTMButton *btn = (YTQTMButton *)[self viewWithTag:spec.viewTag];
+            if (btn) [btn setImage:YMSleepTimerOverlayIcon() forState:UIControlStateNormal];
+            break;
         }
     }
 }
@@ -801,5 +836,19 @@ static NSString *getCompactQualityLabel(MLFormat *format) {
         showTranscript(cvc);
     };
     YMRegisterOverlayButton(caption);
+    YMOverlayButtonSpec *sleep = [[YMOverlayButtonSpec alloc] init];
+    sleep.identifier = @"sleep.timer";
+    sleep.symbolName = @"moon"; // drawn red via YMSleepTimerOverlayIcon while active
+    sleep.settingsSymbolName = @"moon";
+    sleep.displayName = LOC(@"SLEEP_TIMER");
+    sleep.sortOrder = 900;
+    sleep.isVisible = ^BOOL(YTPlayerViewController *player) {
+        return YMIsOverlayButtonEnabled(@"sleep.timer");
+    };
+    sleep.onTap = ^(YTPlayerViewController *player, YTQTMButton *button) {
+        YMSleepTimerShowPickerFromView(button);
+        [button setImage:YMSleepTimerOverlayIcon() forState:UIControlStateNormal];
+    };
+    YMRegisterOverlayButton(sleep);
     %init;
 }
