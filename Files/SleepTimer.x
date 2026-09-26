@@ -29,6 +29,7 @@ typedef NS_ENUM(NSInteger, YMSleepTimerMode) {
 static NSHashTable<YTSlimStatusBarView *> *slimBarSet = nil;
 static YTSlimStatusBarControllerImpl *slimBarController = nil;
 static BOOL slimBarThemed = NO;
+static NSUInteger slimBarReconnectSequence = 0;
 
 // While a playable game is up or the player is fullscreen, the bar is hidden
 // and text updates stop until the layout comes back.
@@ -476,14 +477,14 @@ void YMSleepTimerPresentPicker(UIView *sourceView) {
 %hook YTPlayerViewController
 - (void)singleVideo:(YTSingleVideoController *)video currentVideoTimeDidChange:(YTSingleVideoTime *)time {
     %orig;
-    if (INTFORVAL(SleepTimer) == 0) return;
+    if (INTFORVAL(SleepTimerEntry) == 0) return;
     [[YMSleepTimer shared] playbackTick];
 }
 
 // Time-change hook for YouTube versions that use the renamed selector.
 - (void)potentiallyMutatedSingleVideo:(YTSingleVideoController *)video currentVideoTimeDidChange:(YTSingleVideoTime *)time {
     %orig;
-    if (INTFORVAL(SleepTimer) == 0) return;
+    if (INTFORVAL(SleepTimerEntry) == 0) return;
     [[YMSleepTimer shared] playbackTick];
 }
 %end
@@ -491,7 +492,7 @@ void YMSleepTimerPresentPicker(UIView *sourceView) {
 %hook YTSlimStatusBarControllerImpl
 - (void)addSlimStatusBarView:(YTSlimStatusBarView *)barView withObserver:(NSMapTable *)observers {
     %orig;
-    if (!barView || INTFORVAL(SleepTimer) == 0) return;
+    if (!barView || INTFORVAL(SleepTimerEntry) == 0) return;
     if (!slimBarSet) slimBarSet = [NSHashTable weakObjectsHashTable];
     BOOL isWatch = NO;
     if ([barView._viewControllerForAncestor isKindOfClass:%c(YTWatchViewController)]) {
@@ -514,7 +515,7 @@ void YMSleepTimerPresentPicker(UIView *sourceView) {
 }
 - (void)connectionStatusDidChange:(BOOL)connected {
     %orig;
-    if (INTFORVAL(SleepTimer) == 0) return;
+    if (INTFORVAL(SleepTimerEntry) == 0) return;
     YMSleepTimer *timer = [YMSleepTimer shared];
     if (connected) {
         if (![timer isActive]) {
@@ -548,12 +549,12 @@ void YMSleepTimerPresentPicker(UIView *sourceView) {
 %hook YTPlayablesFullscreenViewController
 - (void)viewDidAppear:(BOOL)animated {
     %orig;
-    if (INTFORVAL(SleepTimer) == 0) return;
+    if (INTFORVAL(SleepTimerEntry) == 0) return;
     YMSleepTimerSetBarHiddenByLayout(YES);
 }
 - (void)viewDidDisappear:(BOOL)animated {
     %orig;
-    if (INTFORVAL(SleepTimer) == 0) return;
+    if (INTFORVAL(SleepTimerEntry) == 0) return;
     YMSleepTimerSetBarHiddenByLayout(NO);
 }
 %end
@@ -561,7 +562,7 @@ void YMSleepTimerPresentPicker(UIView *sourceView) {
 %hook YTMainAppVideoPlayerOverlayViewController
 - (void)setPlayerViewLayout:(int)mode {
     %orig;
-    if (INTFORVAL(SleepTimer) == 0) return;
+    if (INTFORVAL(SleepTimerEntry) == 0) return;
     // Fullscreen hides the bar; the inline layout brings it back.
     YMSleepTimerSetBarHiddenByLayout(self.isFullscreen);
 }
