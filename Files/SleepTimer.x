@@ -471,20 +471,29 @@ void YMSleepTimerPresentPicker(UIView *sourceView) {
 %end
 
 %hook YTSlimStatusBarControllerImpl
-
 - (void)addSlimStatusBarView:(YTSlimStatusBarView *)barView withObserver:(NSMapTable *)observers {
     %orig;
     if (!barView) return;
     if (!slimBarSet) slimBarSet = [NSHashTable weakObjectsHashTable];
-    if (![barView._viewControllerForAncestor isKindOfClass:%c(YTWatchViewController)]) [slimBarSet addObject:barView];
+    BOOL isWatch = NO;
+    if ([barView._viewControllerForAncestor isKindOfClass:%c(YTWatchViewController)]) {
+        isWatch = YES;
+        for (YTSlimStatusBarView *view in slimBarSet) {
+            if ([view._viewControllerForAncestor isKindOfClass:%c(YTWatchViewController)]) {
+                [slimBarSet removeObject:view];
+                break;
+            }
+        }
+    }
+    [slimBarSet addObject:barView];
     slimBarController = self;
     // If the timer is already running (e.g. started before this bar existed),
     // theme the new bar right away.
-    if ([[YMSleepTimer shared] isActive]) [[YMSleepTimer shared] updateSlimBars];
+    if ([[YMSleepTimer shared] isActive]) {
+        if (isWatch) slimBarThemed = NO;
+        [[YMSleepTimer shared] updateSlimBars];
+    }
 }
-
-// While the "No connection" bar is up, YouTube owns the slim bar — stop
-// drawing our countdown over it and pick back up once connected again.
 - (void)connectionStatusDidChange:(BOOL)connected {
     %orig;
     YMSleepTimer *timer = [YMSleepTimer shared];
@@ -500,13 +509,10 @@ void YMSleepTimerPresentPicker(UIView *sourceView) {
         timer.connectionLost = YES;
     }
 }
-
-// Don't let the slim bar auto-dismiss itself while the countdown is running.
 - (void)setDismissTimer:(id)arg {
     if ([[YMSleepTimer shared] isActive]) return;
     %orig;
 }
-
 %end
 
 // While a playable game is up, hide the bar and stop updating the text until
@@ -530,27 +536,11 @@ void YMSleepTimerPresentPicker(UIView *sourceView) {
 }
 %end
 
-// Opening a new video builds a fresh bar that isn't themed yet — re-apply.
-%hook YTWatchSingleItemView
-- (YTSlimStatusBarView *)slimStatusBarView {
-    YTSlimStatusBarView *orig = %orig;
-    if (orig && [[YMSleepTimer shared] isActive]) {
-        dispatch_async(dispatch_get_main_queue(), ^{
-            slimBarThemed = NO;
-            [[YMSleepTimer shared] updateSlimBars];
-        });
-    }
-    return orig;
-}
-%end
-
 #pragma mark - Constructor
 
 %ctor {
     %init;
-
     if (!slimBarSet) slimBarSet = [NSHashTable weakObjectsHashTable];
-
     // Resume a timer persisted before the app was suspended or relaunched.
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     double savedEnd = [defaults doubleForKey:SleepTimerEndDate];
@@ -560,7 +550,6 @@ void YMSleepTimerPresentPicker(UIView *sourceView) {
         timer.endDate = [NSDate dateWithTimeIntervalSince1970:savedEnd];
         [timer scheduleTimer];
     }
-
     __weak YMSleepTimer *weakTimer = [YMSleepTimer shared];
     [[NSNotificationCenter defaultCenter] addObserverForName:UIApplicationWillEnterForegroundNotification
                                                       object:nil
