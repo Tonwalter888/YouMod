@@ -44,13 +44,6 @@ static NSString *YMSleepTimerFormatClock(NSTimeInterval interval) {
     return [NSString stringWithFormat:@"%02ld:%02ld", (long)mins, (long)seconds];
 }
 
-@interface YTWatchSingleItemView : UIView
-- (YTSlimStatusBarView *)slimStatusBarView;
-@end
-
-@interface YTPlayablesFullscreenViewController : UIViewController
-@end
-
 #pragma mark - YMSleepTimer
 
 @interface YMSleepTimer : NSObject
@@ -278,15 +271,7 @@ static NSString *YMSleepTimerFormatClock(NSTimeInterval interval) {
             slimBarThemed = YES;
         }
         for (YTSlimStatusBarView *barView in slimBarSet) {
-            YTLabel *label = [barView valueForKey:@"_statusLabel"];
-            if ([label isKindOfClass:[UILabel class]]) {
-                label.text = text;
-            } else {
-                // KVC lookup failed on this version — fall back to the native
-                // appearance method so the label never sits on its ".."
-                // placeholder text.
-                [barView updateAppearanceToSleepTimerActiveWithText:text];
-            }
+            [barView updateAppearanceToSleepTimerActiveWithText:text];
         }
     };
     if ([NSThread isMainThread]) update();
@@ -404,7 +389,7 @@ static void YMSleepTimerShowCustomTimeAlert(void) {
     [alertView show];
 }
 
-static void YMSleepTimerPresentPicker(UIView *sourceView) {
+void YMSleepTimerPresentPicker(UIView *sourceView) {
     void (^present)(void) = ^{
         id parentResponder = [sourceView._viewControllerForAncestor valueForKey:@"_parentResponder"];
 

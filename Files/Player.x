@@ -1930,7 +1930,7 @@ void YouModFilterVideoButtons(_ASDisplayView *view, NSString *iden) {
 %hook YTMenuController
 - (NSMutableArray <YTActionSheetAction *> *)actionsForRenderers:(NSMutableArray <YTIMenuItemSupportedRenderers *> *)renderers fromView:(UIView *)fromView entry:(id)entry shouldLogItems:(BOOL)shouldLogItems firstResponder:(id)firstResponder {
     NSMutableArray <YTActionSheetAction *> *actions = %orig;
-    if (!IS_ENABLED(ExtraSpeed) && !IS_ENABLED(OldQualityPicker)) return actions;
+    if (!IS_ENABLED(ExtraSpeed) && !IS_ENABLED(OldQualityPicker) && INTFORVAL(SleepTimerEntry) == 0) return actions;
     NSUInteger speedIndex = [renderers indexOfObjectPassingTest:^BOOL(YTIMenuItemSupportedRenderers *renderer, NSUInteger idx, BOOL *stop) {
         YTIMenuItemSupportedRenderersElementRendererCompatibilityOptionsExtension *extension = (YTIMenuItemSupportedRenderersElementRendererCompatibilityOptionsExtension *)[renderer.elementRenderer.compatibilityOptions messageForFieldNumber:396644439];
         BOOL isVideoSpeed = [extension.menuItemIdentifier isEqualToString:@"menu_item_playback_speed"];
@@ -1942,6 +1942,12 @@ void YouModFilterVideoButtons(_ASDisplayView *view, NSString *iden) {
         BOOL isVideoQuality = [extension.menuItemIdentifier isEqualToString:@"menu_item_video_quality"];
         if (isVideoQuality) *stop = YES;
         return isVideoQuality;
+    }];
+    NSUInteger sleepTimerIndex = [renderers indexOfObjectPassingTest:^BOOL(YTIMenuItemSupportedRenderers *renderer, NSUInteger idx, BOOL *stop) {
+        YTIMenuItemSupportedRenderersElementRendererCompatibilityOptionsExtension *extension = (YTIMenuItemSupportedRenderersElementRendererCompatibilityOptionsExtension *)[renderer.elementRenderer.compatibilityOptions messageForFieldNumber:396644439];
+        BOOL isSleepTimer = [extension.menuItemIdentifier isEqualToString:@"menu_item_sleep_timer"];
+        if (isSleepTimer) *stop = YES;
+        return isSleepTimer;
     }];
     if (speedIndex != NSNotFound && IS_ENABLED(ExtraSpeed)) {
         YTActionSheetAction *action = actions[speedIndex];
@@ -1955,6 +1961,14 @@ void YouModFilterVideoButtons(_ASDisplayView *view, NSString *iden) {
         YTActionSheetAction *action = actions[qualityIndex];
         action.handler = ^{
             [firstResponder didPressVideoQuality:fromView];
+        };
+        UIView *elementView = [action.button valueForKey:@"_elementView"];
+        elementView.userInteractionEnabled = NO;
+    }
+    if (sleepTimerIndex != NSNotFound && INTFORVAL(SleepTimerEntry) != 0) {
+        YTActionSheetAction *action = actions[sleepTimerIndex];
+        action.handler = ^{
+            YMSleepTimerPresentPicker(action.button);
         };
         UIView *elementView = [action.button valueForKey:@"_elementView"];
         elementView.userInteractionEnabled = NO;

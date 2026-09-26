@@ -285,13 +285,20 @@ static BOOL isGestureRegistered = NO;
             UIViewController *topVC = YouModTopViewController(nil);
             YMOpenLinkFromClipboard(topVC, YES);
         }];
-        UIAction *sleepTimerAction = [UIAction actionWithTitle:LOC(@"SLEEP_TIMER")
-                                                         image:[UIImage systemImageNamed:@"moon"]
-                                                    identifier:nil
-                                                       handler:^(__kindof UIAction * _Nonnull action) {
-            YMSleepTimerPresentPicker(self);
-        }];
-        return [UIMenu menuWithTitle:@"" children:@[whitelistAction, sleepTimerAction, tabBarAction, openLinkAction]];
+        UIAction *sleepTimerAction = nil;
+        NSInteger sleepEntry = INTFORVAL(SleepTimerEntry);
+        if (sleepEntry == 1 || sleepEntry == 3) { // tab bar / both
+            sleepTimerAction = [UIAction actionWithTitle:LOC(@"SLEEP_TIMER")
+                                                   image:[UIImage systemImageNamed:@"moon"]
+                                              identifier:nil
+                                                 handler:^(__kindof UIAction * _Nonnull action) {
+                YMSleepTimerPresentPicker(self);
+            }];
+        }
+        NSMutableArray<UIMenuElement *> *menuChildren = [NSMutableArray arrayWithArray:@[whitelistAction]];
+        if (sleepTimerAction) [menuChildren addObject:sleepTimerAction];
+        [menuChildren addObjectsFromArray:@[tabBarAction, openLinkAction]];
+        return [UIMenu menuWithTitle:@"" children:menuChildren];
     }];
 }
 %end

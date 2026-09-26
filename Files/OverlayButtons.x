@@ -917,7 +917,8 @@ static NSString *getCompactQualityLabel(MLFormat *format) {
     sleep.displayName = LOC(@"SLEEP_TIMER");
     sleep.sortOrder = 900;
     sleep.isVisible = ^BOOL(YTPlayerViewController *player) {
-        return YMIsOverlayButtonEnabled(@"sleep.timer");
+        NSInteger sleepEntry = INTFORVAL(SleepTimerEntry);
+        return (sleepEntry == 2 || sleepEntry == 3) && YMIsOverlayButtonEnabled(@"sleep.timer"); // overlay / both
     };
     sleep.onTap = ^(YTPlayerViewController *player, YTQTMButton *button) {
         YMSleepTimerPresentPicker(button);

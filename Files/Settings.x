@@ -295,6 +295,7 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
                 (void)vc;
                 YMPushOverlayButtonOrder(settingsViewController, [self parentResponder]);
             }),
+            YMPicker(YMLOC(@"SLEEP_TIMER_ENTRY"), YMLOC(@"SLEEP_TIMER_ENTRY_DESC"), SleepTimerEntry, (@[YMLOC(@"DISABLED"), YMLOC(@"SLEEP_TIMER_ENTRY_TABBAR"), YMLOC(@"SLEEP_TIMER_ENTRY_OVERLAY"), YMLOC(@"SLEEP_TIMER_ENTRY_BOTH")]), 0),
             YMToggle(YMLOC(@"HIDE_AUTOPLAY"), YMLOC(@"HIDE_AUTOPLAY_DESC"), HideAutoPlayToggle),
             YMToggle(YMLOC(@"HIDE_FULL_VID_TITLE"), YMLOC(@"HIDE_FULL_VID_TITLE_DESC"), HideFullvidTitle),
             YMToggle(YMLOC(@"HIDE_CAPTIONS_BUTTON"), YMLOC(@"HIDE_CAPTIONS_BUTTON_DESC"), HideCaptionsButton),

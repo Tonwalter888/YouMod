@@ -677,3 +677,8 @@
 "SLEEP_TIMER_END_OF_VIDEO" = "End of video";
 "SLEEP_TIMER_TIME_UP" = "Sleep timer ended — playback paused";
 "SLEEP_TIMER_CUSTOM_TIME" = "Pick a time...";
+"SLEEP_TIMER_ENTRY" = "Sleep Timer";
+"SLEEP_TIMER_ENTRY_DESC" = "Where the Sleep Timer entry point appears.";
+"SLEEP_TIMER_ENTRY_TABBAR" = "Tab bar";
+"SLEEP_TIMER_ENTRY_OVERLAY" = "Player overlay";
+"SLEEP_TIMER_ENTRY_BOTH" = "Both";

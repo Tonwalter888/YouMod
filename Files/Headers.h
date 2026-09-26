@@ -125,6 +125,8 @@
 // Sleep timer
 #define SleepTimerEndDate @"YouModSleepTimerEndDate"
 #define SleepTimerMode @"YouModSleepTimerMode"
+// 0 = off, 1 = tab bar menu, 2 = overlay button, 3 = both
+#define SleepTimerEntry @"YouModSleepTimerEntry"
 // Downloading
 #define DownloadManager @"YouModDownloadManager"
 #define DownloadButtonPosition @"YouModDownloadButtonPosition"
@@ -1011,8 +1013,7 @@ extern void YMSleepTimerStartEndOfVideo(void);
 extern void YMSleepTimerCancel(void);
 extern BOOL YMSleepTimerIsActive(void);
 extern NSString *YMSleepTimerRemainingText(void);
-extern void YMSleepTimerShowPicker(void);
-extern void YMSleepTimerShowPickerFromView(UIView *sourceView);
+extern void YMSleepTimerPresentPicker(UIView *sourceView);
 extern void YMSleepTimerUpdateSlimBars(void);
 
 extern NSString *YouModSanitizedFileName(NSString *name);
