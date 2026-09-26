@@ -1967,7 +1967,7 @@ void YouModFilterVideoButtons(_ASDisplayView *view, NSString *iden) {
     }
     if (sleepTimerIndex != NSNotFound && INTFORVAL(SleepTimerEntry) != 0) {
         YTActionSheetAction *action = actions[sleepTimerIndex];
-        YTQTMButton *overflowButton = [[[[action.button valueForKey:@"_responder"] performSelector:@selector(view)] valurForKey:@"_controlsOverlayView"] valurForKey:@"_overflowButton"];
+        YTQTMButton *overflowButton = [[[[action.button valueForKey:@"_responder"] performSelector:@selector(view)] valueForKey:@"_controlsOverlayView"] valueForKey:@"_overflowButton"];
         action.handler = ^{
             YMSleepTimerPresentPicker(overflowButton);
         };
