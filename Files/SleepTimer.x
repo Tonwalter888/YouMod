@@ -10,14 +10,11 @@
 @class YTSlimStatusBarControllerImpl;
 
 @interface YTSlimStatusBarView : UIView
-- (void)updateApperanceToSleepTimerActiveWithText:(NSString *)text;
+- (void)updateAppearanceToSleepTimerActiveWithText:(NSString *)text;
 @end
 
 @interface YTSlimStatusBarControllerImpl : NSObject
 - (void)updateWithSleepTimerActiveStatus:(BOOL)arg;
-- (void)addSlimStatusBarView:(YTSlimStatusBarView *)barView withObserver:(NSMapTable *)observers;
-- (void)connectionStatusDidChange:(BOOL)connected;
-- (void)setDismissTimer:(id)arg;
 @end
 
 #pragma mark - State
@@ -247,7 +244,7 @@ static BOOL slimBarThemed = NO;
         if (!slimBarThemed) {
             [slimBarController updateWithSleepTimerActiveStatus:YES];
             for (YTSlimStatusBarView *barView in slimBarSet) {
-                [barView updateApperanceToSleepTimerActiveWithText:text];
+                [barView updateAppearanceToSleepTimerActiveWithText:text];
             }
             slimBarThemed = YES;
         }
@@ -372,7 +369,6 @@ static void YMSleepTimerPresentPicker(UIView *sourceView) {
             [subtitleParts addObject:[NSString stringWithFormat:LOC(@"SLEEP_TIMER_REMAINING_FMT"), [timer remainingText]]];
         }
         if (timeLeftText) [subtitleParts addObject:timeLeftText];
-        [sheet addHeaderWithTitle:LOC(@"SLEEP_TIMER") subtitle:[subtitleParts componentsJoinedByString:@" • "]];
 
         if ([timer isActive]) {
             YTActionSheetAction *off = [%c(YTActionSheetAction) actionWithTitle:LOC(@"SLEEP_TIMER_OFF")
