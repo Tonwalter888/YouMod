@@ -261,7 +261,7 @@ jobs:
         if: ${{ inputs.youslider }}
         run: |
           git clone --quiet --depth=1 https://github.com/PoomSmart/YouSlider.git
-          wget --no-verbose --quiet https://github.com/Tonwalter888/Tonwalter888.github.io/raw/refs/heads/main/deb/alderis.deb
+          wget --no-verbose --quiet https://github.com/Tonwalter888/Tonwalter888.github.io/raw/refs/heads/main/debs/alderis.deb
 
       - name: Clone YTweaks
         if: ${{ inputs.ytweaks }}
