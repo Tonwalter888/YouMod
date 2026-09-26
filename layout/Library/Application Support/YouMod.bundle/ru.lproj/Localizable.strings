@@ -52,7 +52,7 @@
 
 "DOWNLOADING" = "Скачивание";
 "DOWNLOAD_MANAGER" = "Менеджер загрузок";
-"DOWNLOAD_MANAGER_DESC" = "Заменяет загрузчик видео YouTube на загрузчик YouMod. Позволяет скачивать видео, аудио, субтитры и обложки.";
+"DOWNLOAD_MANAGER_DESC" = "Заменяет загрузчик видео YouTube на загрузчик YouMod. Позволяет скачивать видео, аудио, субтитры и превью.";
 "DOWNLOAD_BUTTON_POSITION" = "Расположение кнопки скачивания";
 "UNDER_THE_PLAYER" = "Под плеером";
 "OVERLAY" = "Оверлей";
@@ -72,7 +72,7 @@
 "COPIED_DESCRIPTION" = "Описание видео скопировано";
 "COPY_AUTHOR" = "Скопировать автора";
 "COPIED_AUTHOR" = "Автор видео скопирован";
-"SAVE_THUMBNAIL" = "Сохранить обложку";
+"SAVE_THUMBNAIL" = "Сохранить превью";
 "DOWNLOAD_CAPTIONS" = "Скачать субтитры";
 "DOWNLOAD_AUDIO" = "Скачать аудио";
 "DOWNLOAD_VIDEO" = "Скачать видео";
@@ -88,12 +88,12 @@
 "SAVED_TO_PHOTOS" = "Сохранено в Фото";
 "SAVE_FAILED" = "Не удалось сохранить";
 "PHOTO_ACCESS_DENINED" = "Доступ к Фото запрещён";
-"THUMBNAIL_FAILED" = "Не удалось обработать обложку";
-"DOWNLOADING_THUMBNAIL" = "Скачивание обложки...";
+"THUMBNAIL_FAILED" = "Не удалось обработать превью";
+"DOWNLOADING_THUMBNAIL" = "Скачивание превью...";
 "DOWNLOADING_AUDIO" = "Скачивание аудио...";
 "DOWNLOADING_VIDEO" = "Скачивание видео...";
 "DOWNLOADING_CAPTIONS" = "Скачивание субтитров...";
-"NO_THUMBNAIL_FOUND" = "Обложка не найдена";
+"NO_THUMBNAIL_FOUND" = "Превью не найдено";
 "DOWNLOAD_FAILED" = "Не удалось скачать";
 "AUDIO_SAVED" = "Аудио сохранено";
 "DOWNLOAD_COMPLETED" = "Загрузка завершена";
@@ -105,9 +105,9 @@
 "ALREADY_DOWNLOADING" = "Загрузка уже выполняется";
 "DOWNLOAD_CANCELLED" = "Загрузка отменена";
 "TRIMMING_AUDIO" = "Обрезка аудио...";
-"SHOW_THUMBNAIL" = "Показать обложку";
-"COPY_THUMBNAIL" = "Скопировать обложку";
-"THUMBNAIL_OPTIONS" = "Скачать обложку";
+"SHOW_THUMBNAIL" = "Показать превью";
+"COPY_THUMBNAIL" = "Скопировать превью";
+"THUMBNAIL_OPTIONS" = "Скачать превью";
 "COPY" = "Копировать";
 "COPIED_TO_CLIPBOARD" = "Скопировано в буфер обмена";
 "COPY_COMMENT_TEXT" = "Скопировать текст комментария";
