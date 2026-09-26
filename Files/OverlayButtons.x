@@ -372,8 +372,7 @@ static BOOL isRelatedVideosExpanded = NO;
         }
         if (!btn) btn = YMCreateOverlayButton(self, spec);
 
-        btn.hidden = !overlayVisible || isRelatedVideosExpanded;
-
+        btn.alpha = !overlayVisible || isRelatedVideosExpanded;
 
         CGFloat width = (spec.title.length > 0) ? YMOverlayTextButtonWidth : YMOverlayButtonSize;
         CGFloat centerX = (prevHalfWidth == 0) ? trailingCenterX : trailingCenterX - prevHalfWidth - YMOverlayButtonGap - width / 2.0;
@@ -389,7 +388,7 @@ static BOOL isRelatedVideosExpanded = NO;
     %orig;
     for (YMOverlayButtonSpec *spec in YMRegisteredOverlayButtons()) {
         YTQTMButton *btn = (YTQTMButton *)[self viewWithTag:spec.viewTag];
-        if (btn) btn.hidden = !visible || isRelatedVideosExpanded;
+        if (btn) btn.alpha = !visible || isRelatedVideosExpanded;
     }
 }
 
@@ -554,7 +553,7 @@ static void YMFrostedBackgroundUpdate(YTInlinePlayerBarContainerView *self_, NSA
         background.frame = unionFrame;
         background.layer.cornerRadius = CGRectGetHeight(unionFrame) / 2.0;
     }
-    background.hidden = ((UIView *)buttons.firstObject).hidden;
+    background.alpha = ((UIView *)buttons.firstObject).alpha;
 }
 
 %hook YTInlinePlayerBarContainerView
@@ -632,8 +631,7 @@ static void YMFrostedBackgroundUpdate(YTInlinePlayerBarContainerView *self_, NSA
         }
         if (!btn) btn = YMCreateOverlayButton(self, spec);
 
-        btn.hidden = !peekVisible || isRelatedVideosExpanded;
-
+        btn.alpha = !peekVisible || isRelatedVideosExpanded;
 
         CGFloat width = (spec.title.length > 0) ? YMOverlayTextButtonWidth : YMOverlayButtonSize;
         CGFloat centerX = (prevHalfWidth == 0) ? trailingCenterX : trailingCenterX - prevHalfWidth - YMOverlayButtonGap - width / 2.0;
@@ -654,9 +652,9 @@ static void YMFrostedBackgroundUpdate(YTInlinePlayerBarContainerView *self_, NSA
     if (![self._viewControllerForAncestor isKindOfClass:%c(YTMainAppVideoPlayerOverlayViewController)]) return;
     for (YMOverlayButtonSpec *spec in YMRegisteredOverlayButtons()) {
         UIView *btn = [self viewWithTag:spec.viewTag];
-        if ([btn isKindOfClass:%c(YTQTMButton)]) btn.hidden = !visible;
+        if ([btn isKindOfClass:%c(YTQTMButton)]) btn.alpha = !visible;
     }
-    [[self viewWithTag:YMFrostedBackgroundTag] setHidden:!visible];
+    [[self viewWithTag:YMFrostedBackgroundTag] setAlpha:!visible];
 }
 
 %new

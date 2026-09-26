@@ -366,7 +366,7 @@ static void YMSleepTimerShowCustomTimeAlert(void) {
     // Force the scrolling-wheel style: on iOS 14+ the default is compact, which
     // collapses to a button that opens a separate popover instead of sitting
     // inside this dialog.
-    if (@available(iOS 13.4, *)) datePicker.preferredDatePickerStyle = UIDatePickerStyleWheels;
+    datePicker.preferredDatePickerStyle = UIDatePickerStyleWheels;
     datePicker.locale = [NSLocale currentLocale]; // renders 12/24h per system setting
     [container addSubview:datePicker];
 
