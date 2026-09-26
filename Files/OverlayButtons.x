@@ -269,11 +269,12 @@ static UIImage *YMOverlayButtonIcon(NSString *symbolName) {
 }
 
 // Sleep timer button: red moon (not filled) while a timer is running, white otherwise.
+// AlwaysOriginal so YTQTMButton's own white tint can't repaint the icon.
 static UIImage *YMSleepTimerOverlayIcon(void) {
     UIImageSymbolConfiguration *config = [UIImageSymbolConfiguration configurationWithPointSize:20 weight:UIImageSymbolWeightMedium];
     UIImage *symbol = [UIImage systemImageNamed:@"moon" withConfiguration:config];
     UIColor *tint = YMSleepTimerIsActive() ? [UIColor systemRedColor] : [UIColor whiteColor];
-    return [symbol imageWithTintColor:tint];
+    return [[symbol imageWithTintColor:tint] imageWithRenderingMode:UIImageRenderingModeAlwaysOriginal];
 }
 
 static YTQTMButton *YMCreateOverlayButton(UIView *parent, YMOverlayButtonSpec *spec) {
@@ -293,7 +294,9 @@ static YTQTMButton *YMCreateOverlayButton(UIView *parent, YMOverlayButtonSpec *s
         button.contentVerticalAlignment = UIControlContentVerticalAlignmentCenter;
         button.contentHorizontalAlignment = UIControlContentHorizontalAlignmentCenter;
     } else {
-        UIImage *icon = YMOverlayButtonIcon(spec.symbolName);
+        // The sleep button bakes its own state color (red while active), so a
+        // freshly created button reflects the timer without waiting for a notification.
+        UIImage *icon = [spec.identifier isEqualToString:@"sleep.timer"] ? YMSleepTimerOverlayIcon() : YMOverlayButtonIcon(spec.symbolName);
         button = [%c(YTQTMButton) iconButton];
         [button setImage:icon forState:UIControlStateNormal];
         button.imageView.contentMode = UIViewContentModeScaleAspectFit;
@@ -492,9 +495,10 @@ static BOOL isRelatedVideosExpanded = NO;
 // below YMOverlayButtonBaseTag so it never collides with button tags.
 static const NSInteger YMFrostedBackgroundTag = 9905;
 
-// Padding around the button union so the pill breathes around the icons.
+// Padding around the button union. Vertical padding stays 0 — the pill must
+// match the button height exactly (30pt) rather than grow taller than it.
 static const CGFloat YMFrostedBackgroundHPadding = 8.0;
-static const CGFloat YMFrostedBackgroundVPadding = 5.0;
+static const CGFloat YMFrostedBackgroundVPadding = 0.0;
 
 // Applies YouTube's own frosted-glass effect to `view` (the pill that covers
 // every bottom overlay button). Pass nil for frostedGlassView and one is

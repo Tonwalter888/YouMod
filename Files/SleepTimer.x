@@ -363,6 +363,10 @@ static void YMSleepTimerShowCustomTimeAlert(void) {
     UIDatePicker *datePicker = [[UIDatePicker alloc] initWithFrame:CGRectMake(11, 0, 216, 150)];
     datePicker.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin;
     datePicker.datePickerMode = UIDatePickerModeTime;
+    // Force the scrolling-wheel style: on iOS 14+ the default is compact, which
+    // collapses to a button that opens a separate popover instead of sitting
+    // inside this dialog.
+    if (@available(iOS 13.4, *)) datePicker.preferredDatePickerStyle = UIDatePickerStyleWheels;
     datePicker.locale = [NSLocale currentLocale]; // renders 12/24h per system setting
     [container addSubview:datePicker];
 
@@ -472,7 +476,7 @@ void YMSleepTimerPresentPicker(UIView *sourceView) {
     %orig;
     if (!barView) return;
     if (!slimBarSet) slimBarSet = [NSHashTable weakObjectsHashTable];
-    [slimBarSet addObject:barView];
+    if (![barView._viewControllerForAncestor isKindOfClass:%c(YTWatchViewController)]) [slimBarSet addObject:barView];
     slimBarController = self;
     // If the timer is already running (e.g. started before this bar existed),
     // theme the new bar right away.
