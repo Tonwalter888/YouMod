@@ -920,7 +920,7 @@ static NSString *getCompactQualityLabel(MLFormat *format) {
         return YMIsOverlayButtonEnabled(@"sleep.timer");
     };
     sleep.onTap = ^(YTPlayerViewController *player, YTQTMButton *button) {
-        YMSleepTimerShowPickerFromView(button);
+        YMSleepTimerPresentPicker(button);
         [button setImage:YMSleepTimerOverlayIcon() forState:UIControlStateNormal];
     };
     YMRegisterOverlayButton(sleep);

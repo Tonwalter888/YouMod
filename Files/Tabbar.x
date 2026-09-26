@@ -289,7 +289,7 @@ static BOOL isGestureRegistered = NO;
                                                          image:[UIImage systemImageNamed:@"moon"]
                                                     identifier:nil
                                                        handler:^(__kindof UIAction * _Nonnull action) {
-            YMSleepTimerShowPicker();
+            YMSleepTimerPresentPicker(self);
         }];
         return [UIMenu menuWithTitle:@"" children:@[whitelistAction, sleepTimerAction, tabBarAction, openLinkAction]];
     }];

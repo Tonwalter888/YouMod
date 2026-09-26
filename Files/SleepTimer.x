@@ -30,6 +30,27 @@ static NSHashTable<YTSlimStatusBarView *> *slimBarSet = nil;
 static YTSlimStatusBarControllerImpl *slimBarController = nil;
 static BOOL slimBarThemed = NO;
 
+// While a playable game is up or the player is fullscreen, the bar is hidden
+// and text updates stop until the layout comes back.
+static BOOL layoutHidesBar = NO;
+
+static NSString *YMSleepTimerFormatClock(NSTimeInterval interval) {
+    NSInteger secs = (NSInteger)ceil(interval);
+    if (secs < 0) secs = 0;
+    NSInteger hours = secs / 3600;
+    NSInteger mins = (secs % 3600) / 60;
+    NSInteger seconds = secs % 60;
+    if (hours > 0) return [NSString stringWithFormat:@"%ld:%02ld:%02ld", (long)hours, (long)mins, (long)seconds];
+    return [NSString stringWithFormat:@"%02ld:%02ld", (long)mins, (long)seconds];
+}
+
+@interface YTWatchSingleItemView : UIView
+- (YTSlimStatusBarView *)slimStatusBarView;
+@end
+
+@interface YTPlayablesFullscreenViewController : UIViewController
+@end
+
 #pragma mark - YMSleepTimer
 
 @interface YMSleepTimer : NSObject
@@ -77,13 +98,13 @@ static BOOL slimBarThemed = NO;
 }
 
 - (NSString *)remainingText {
-    if (self.mode == YMSleepTimerModeEndOfVideo) return LOC(@"SLEEP_TIMER_END_OF_VIDEO");
-    NSInteger secs = (NSInteger)ceil([self remainingSeconds]);
-    NSInteger hours = secs / 3600;
-    NSInteger mins = (secs % 3600) / 60;
-    NSInteger seconds = secs % 60;
-    if (hours > 0) return [NSString stringWithFormat:@"%ld:%02ld:%02ld", (long)hours, (long)mins, (long)seconds];
-    return [NSString stringWithFormat:@"%02ld:%02ld", (long)mins, (long)seconds];
+    if (self.mode == YMSleepTimerModeEndOfVideo) {
+        // Count down the remaining playback time of the current video.
+        YTPlayerViewController *player = YouModCurrentPlayerViewController;
+        if (!player) return @"0:00";
+        return YMSleepTimerFormatClock([player currentVideoTotalMediaTime] - [player currentVideoMediaTime]);
+    }
+    return YMSleepTimerFormatClock([self remainingSeconds]);
 }
 
 - (void)persist {
@@ -139,7 +160,15 @@ static BOOL slimBarThemed = NO;
     [self deactivateSlimBars];
     [self notifyButtons];
     [self pausePlayer];
-    YouModSendToast(LOC(@"SLEEP_TIMER_TIME_UP"));
+    void (^alert)(void) = ^{
+        YTAlertView *alertView = [%c(YTAlertView) infoDialog];
+        alertView.title = LOC(@"SLEEP_TIMER");
+        alertView.subtitle = LOC(@"SLEEP_TIMER_TIME_UP");
+        alertView.shouldDismissOnBackgroundTap = YES;
+        [alertView show];
+    };
+    if ([NSThread isMainThread]) alert();
+    else dispatch_async(dispatch_get_main_queue(), alert);
 }
 
 #pragma mark Timer
@@ -234,7 +263,7 @@ static BOOL slimBarThemed = NO;
 }
 
 - (void)updateSlimBars {
-    if (![self isActive] || self.connectionLost) return;
+    if (![self isActive] || self.connectionLost || layoutHidesBar) return;
 
     NSString *text = [self remainingText];
     void (^update)(void) = ^{
@@ -250,7 +279,14 @@ static BOOL slimBarThemed = NO;
         }
         for (YTSlimStatusBarView *barView in slimBarSet) {
             YTLabel *label = [barView valueForKey:@"_statusLabel"];
-            if (label) label.text = text;
+            if ([label isKindOfClass:[UILabel class]]) {
+                label.text = text;
+            } else {
+                // KVC lookup failed on this version — fall back to the native
+                // appearance method so the label never sits on its ".."
+                // placeholder text.
+                [barView updateAppearanceToSleepTimerActiveWithText:text];
+            }
         }
     };
     if ([NSThread isMainThread]) update();
@@ -269,6 +305,22 @@ static BOOL slimBarThemed = NO;
 @end
 
 #pragma mark - Public C API
+
+// Hide/restore the bar from layout changes (fullscreen, playable games).
+static void YMSleepTimerSetBarHiddenByLayout(BOOL hidden) {
+    layoutHidesBar = hidden;
+    void (^apply)(void) = ^{
+        if (hidden) {
+            [slimBarController updateWithSleepTimerActiveStatus:NO];
+            slimBarThemed = NO;
+        } else if ([[YMSleepTimer shared] isActive]) {
+            slimBarThemed = NO;
+            [[YMSleepTimer shared] updateSlimBars];
+        }
+    };
+    if ([NSThread isMainThread]) apply();
+    else dispatch_async(dispatch_get_main_queue(), apply);
+}
 
 void YMSleepTimerStartWithMinutes(NSInteger minutes) {
     [[YMSleepTimer shared] startWithMinutes:minutes];
@@ -312,25 +364,24 @@ static NSString *YMSleepTimerVideoTimeLeftText(void) {
     return text;
 }
 
-static UIViewController *YMSleepTimerPresentingViewController(void) {
-    UIViewController *top = YouModTopViewController(nil);
-    while (top.presentedViewController && !top.presentedViewController.isBeingDismissed) {
-        top = top.presentedViewController;
-    }
-    return top;
-}
-
 // Custom time picker inside a YT-native alert (not a system dialog).
-static void YMSleepTimerShowCustomTimeAlert(UIViewController *presenter) {
+static void YMSleepTimerShowCustomTimeAlert(void) {
     YTAlertView *alertView = [%c(YTAlertView) dialog];
     alertView.title = LOC(@"SLEEP_TIMER_CUSTOM_TIME");
     alertView.shouldDismissOnBackgroundTap = YES;
 
-    UIDatePicker *datePicker = [[UIDatePicker alloc] initWithFrame:CGRectMake(0, 0, 238, 150)];
-    datePicker.autoresizingMask = UIViewAutoresizingFlexibleWidth;
+    // Container stretches with the dialog; the picker keeps its natural width
+    // and stays centered via equal flexible margins.
+    UIView *container = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 238, 150)];
+    container.autoresizingMask = UIViewAutoresizingFlexibleWidth;
+
+    UIDatePicker *datePicker = [[UIDatePicker alloc] initWithFrame:CGRectMake(11, 0, 216, 150)];
+    datePicker.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin;
     datePicker.datePickerMode = UIDatePickerModeTime;
     datePicker.locale = [NSLocale currentLocale]; // renders 12/24h per system setting
-    alertView.customContentView = datePicker;
+    [container addSubview:datePicker];
+
+    alertView.customContentView = container;
     alertView.customContentViewInsets = UIEdgeInsetsMake(0, 8, 4, 8);
 
     [alertView addCancelButtonWithAction:nil];
@@ -355,13 +406,12 @@ static void YMSleepTimerShowCustomTimeAlert(UIViewController *presenter) {
 
 static void YMSleepTimerPresentPicker(UIView *sourceView) {
     void (^present)(void) = ^{
-        UIViewController *presenter = YMSleepTimerPresentingViewController();
-        if (!presenter) return;
+        id parentResponder = [sourceView._viewControllerForAncestor valueForKey:@"_parentResponder"];
 
         YMSleepTimer *timer = [YMSleepTimer shared];
         NSString *timeLeftText = YMSleepTimerVideoTimeLeftText();
 
-        YTDefaultSheetController *sheet = [%c(YTDefaultSheetController) sheetControllerWithParentResponder:presenter];
+        YTDefaultSheetController *sheet = [%c(YTDefaultSheetController) sheetControllerWithParentResponder:parentResponder];
 
         // Header subtitle: timer remaining + how long until the video ends.
         NSMutableArray<NSString *> *subtitleParts = [NSMutableArray array];
@@ -390,39 +440,27 @@ static void YMSleepTimerPresentPicker(UIView *sourceView) {
             [sheet addAction:duration];
         }
 
-        YTActionSheetAction *endOfVideo = [%c(YTActionSheetAction) actionWithTitle:LOC(@"SLEEP_TIMER_END_OF_VIDEO")
-                                                                          subtitle:timeLeftText
-                                                                         iconImage:nil
-                                                                          handler:^(__unused YTActionSheetAction *action) {
-            [timer startEndOfVideo];
-        }];
-        [sheet addAction:endOfVideo];
+        if (YouModCurrentPlayerViewController) {
+            YTActionSheetAction *endOfVideo = [%c(YTActionSheetAction) actionWithTitle:LOC(@"SLEEP_TIMER_END_OF_VIDEO")
+                                                                            subtitle:timeLeftText
+                                                                            iconImage:nil
+                                                                            handler:^(__unused YTActionSheetAction *action) {
+                [timer startEndOfVideo];
+            }];
+            [sheet addAction:endOfVideo];
+        }
 
         YTActionSheetAction *customTime = [%c(YTActionSheetAction) actionWithTitle:LOC(@"SLEEP_TIMER_CUSTOM_TIME")
                                                                           subtitle:nil
                                                                          iconImage:nil
                                                                           handler:^(__unused YTActionSheetAction *action) {
-            YMSleepTimerShowCustomTimeAlert(YMSleepTimerPresentingViewController());
+            YMSleepTimerShowCustomTimeAlert();
         }];
         [sheet addAction:customTime];
-
-        if (sourceView) {
-            [sheet presentFromView:sourceView animated:YES completion:nil];
-        } else {
-            // No anchor view — present bottom-center from the top view controller.
-            [sheet presentFromViewController:presenter animated:YES completion:nil];
-        }
+        [sheet presentFromView:sourceView animated:YES completion:nil];
     };
     if ([NSThread isMainThread]) present();
     else dispatch_async(dispatch_get_main_queue(), present);
-}
-
-void YMSleepTimerShowPicker(void) {
-    YMSleepTimerPresentPicker(nil);
-}
-
-void YMSleepTimerShowPickerFromView(UIView *sourceView) {
-    YMSleepTimerPresentPicker(sourceView);
 }
 
 #pragma mark - Hooks
@@ -480,6 +518,41 @@ void YMSleepTimerShowPickerFromView(UIView *sourceView) {
     %orig;
 }
 
+%end
+
+// While a playable game is up, hide the bar and stop updating the text until
+// the game screen goes away.
+%hook YTPlayablesFullscreenViewController
+- (void)viewDidAppear:(BOOL)animated {
+    %orig;
+    YMSleepTimerSetBarHiddenByLayout(YES);
+}
+- (void)viewDidDisappear:(BOOL)animated {
+    %orig;
+    YMSleepTimerSetBarHiddenByLayout(NO);
+}
+%end
+
+%hook YTMainAppVideoPlayerOverlayViewController
+- (void)setPlayerViewLayout:(int)mode {
+    %orig;
+    // Fullscreen hides the bar; the inline layout brings it back.
+    YMSleepTimerSetBarHiddenByLayout(self.isFullscreen);
+}
+%end
+
+// Opening a new video builds a fresh bar that isn't themed yet — re-apply.
+%hook YTWatchSingleItemView
+- (YTSlimStatusBarView *)slimStatusBarView {
+    YTSlimStatusBarView *orig = %orig;
+    if (orig && [[YMSleepTimer shared] isActive]) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            slimBarThemed = NO;
+            [[YMSleepTimer shared] updateSlimBars];
+        });
+    }
+    return orig;
+}
 %end
 
 #pragma mark - Constructor
