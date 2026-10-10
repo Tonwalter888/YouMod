@@ -22,8 +22,6 @@ static float SBClampedAlertDuration(NSString *key) {
     return duration;
 }
 
-@interface SBPassthroughView : UIView
-@end
 @implementation SBPassthroughView
 - (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event {
     UIView *hit = [super hitTest:point withEvent:event];
@@ -31,8 +29,6 @@ static float SBClampedAlertDuration(NSString *key) {
 }
 @end
 
-@interface SBPassthroughWindow : UIWindow
-@end
 @implementation SBPassthroughWindow
 - (BOOL)_canBecomeKeyWindow { return NO; }
 - (BOOL)_canAffectStatusBarAppearance { return NO; }
@@ -109,23 +105,44 @@ void sbUpdateOverlayInsetForPivotBar() {
 
 static const NSTimeInterval SBOverlayRestoreFadeDuration = 0.15;
 
-// Hide the pill overlay instantly (non-animated): iOS captures the app-switcher
-// snapshot synchronously as the app deactivates, so an animated hide wouldn't
-// land in time and the pill would leak into the switcher card.
+void sbDismissAllNotifications(void) {
+    if (!sbOverlayWindow) return;
+    UIViewController *rootVC = sbOverlayWindow.rootViewController;
+    UIView *rootView = rootVC ? rootVC.view : nil;
+    if (!rootView) return;
+    for (UIView *sub in [rootView.subviews copy]) {
+        [sub.layer removeAllAnimations];
+        if ([sub isKindOfClass:[SBSkipNotificationView class]]) {
+            [((SBSkipNotificationView *)sub).progressOverlay.layer removeAllAnimations];
+        }
+        [sub removeFromSuperview];
+    }
+}
+
+// Hide the pill overlay instantly (non-animated) and dismiss active notifications
+// so stale pills never persist into app-switcher or upon re-entering the app.
 static void sbHideOverlayForSnapshot(void) {
+    sbDismissAllNotifications();
     if (sbOverlayWindow) sbOverlayWindow.hidden = YES;
 }
 
-// Restore the overlay, fading it back in so the reappearance isn't a hard pop.
+// Restore the overlay only if active notification subviews are present.
 // Guarded to the hidden state so the two "became active" notifications don't
 // each re-trigger the fade.
 static void sbRestoreOverlayAfterSnapshot(void) {
-    if (!sbOverlayWindow || !sbOverlayWindow.hidden) return;
-    sbOverlayWindow.alpha = 0.0;
-    sbOverlayWindow.hidden = NO;
-    [UIView animateWithDuration:SBOverlayRestoreFadeDuration animations:^{
-        sbOverlayWindow.alpha = 1.0;
-    }];
+    if (!sbOverlayWindow) return;
+    UIView *rootView = sbOverlayWindow.rootViewController.view;
+    if (!rootView || rootView.subviews.count == 0) {
+        sbOverlayWindow.hidden = YES;
+        return;
+    }
+    if (sbOverlayWindow.hidden) {
+        sbOverlayWindow.alpha = 0.0;
+        sbOverlayWindow.hidden = NO;
+        [UIView animateWithDuration:SBOverlayRestoreFadeDuration animations:^{
+            sbOverlayWindow.alpha = 1.0;
+        }];
+    }
 }
 
 // Tracks which scene's lifecycle is currently observed. When sbOverlayWindow is
@@ -220,18 +237,34 @@ UIView *sbGetNotificationParent(void) {
 
         sbRegisterOverlayLifecycleObservers(activeScene);
         sbUpdateOverlayInsetForPivotBar();
+    } else {
+        if (sbOverlayWindow.hidden) {
+            sbOverlayWindow.alpha = 1.0;
+            sbOverlayWindow.hidden = NO;
+        }
+        sbUpdateOverlayInsetForPivotBar();
     }
     return sbOverlayWindow.rootViewController.view;
 }
 
 static NSMutableDictionary<NSString *, NSArray<SBSegment *> *> *sbSegmentCache;
 
+// Drops the cached segments for a video (e.g. after a vote changed server-side
+// data) so the next activation refetches.
+void sbInvalidateSegmentCache(NSString *videoID) {
+    if (!videoID) return;
+    @synchronized(sbSegmentCache) {
+        [sbSegmentCache removeObjectForKey:videoID];
+    }
+}
+
 NSArray<NSString *> *sbAllCategories(void) {
     static NSArray *cats;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         cats = @[@"sponsor", @"intro", @"outro", @"interaction", @"selfpromo",
-                 @"music_offtopic", @"preview", @"hook", @"poi_highlight", @"filler"];
+                 @"music_offtopic", @"preview", @"hook", @"poi_highlight", @"filler",
+                 @"exclusive_access"];
     });
     return cats;
 }
@@ -256,6 +289,15 @@ UIColor *SBColorFromHex(NSString *hexString) {
                            green:((hex >> 8) & 0xFF) / 255.0
                             blue:(hex & 0xFF) / 255.0
                            alpha:1.0];
+}
+
+// Credits the segment's submitter with a view (SponsorBlock stats), as intended by API spec
+static void sbSendViewedSegment(SBSegment *segment) {
+    if (segment.UUID.length == 0) return;
+    NSString *uuid = [segment.UUID stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:[@"https://sponsor.ajay.app/api/viewedVideoSponsorTime?UUID=" stringByAppendingString:uuid]]];
+    request.HTTPMethod = @"POST";
+    [[[NSURLSession sharedSession] dataTaskWithRequest:request] resume];
 }
 
 #pragma mark - SBSegment Implementation
@@ -310,7 +352,8 @@ UIColor *SBColorFromHex(NSString *hexString) {
     NSData *catJSON = [NSJSONSerialization dataWithJSONObject:categories options:0 error:nil];
     NSString *catString = [[NSString alloc] initWithData:catJSON encoding:NSUTF8StringEncoding];
     NSString *encoded = [catString stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
-    NSString *urlStr = [NSString stringWithFormat:@"https://sponsor.ajay.app/api/skipSegments?videoID=%@&categories=%@", videoID, encoded];
+    NSString *actionTypes = [@"[\"skip\",\"mute\",\"poi\",\"full\"]" stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
+    NSString *urlStr = [NSString stringWithFormat:@"https://sponsor.ajay.app/api/skipSegments?videoID=%@&categories=%@&actionTypes=%@", videoID, encoded, actionTypes];
     NSURL *url = [NSURL URLWithString:urlStr];
 
     NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithURL:url completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
@@ -329,6 +372,7 @@ UIColor *SBColorFromHex(NSString *hexString) {
                                                                  start:[segment[0] floatValue]
                                                                    end:[segment[1] floatValue]
                                                                 action:item[@"actionType"] ?: @"skip"];
+                            seg.votes = [item[@"votes"] integerValue];
                             [segments addObject:seg];
                         }
                     }
@@ -355,13 +399,21 @@ UIColor *SBColorFromHex(NSString *hexString) {
 %property (nonatomic, strong) NSArray *sbSegments;
 %property (nonatomic, strong) NSMutableSet *sbSkippedSegments;
 %property (nonatomic, strong) SBSkipNotificationView *sbNotificationView;
+%property (nonatomic, strong) NSMutableSet *sbAcceptedMutes;
+%property (nonatomic, assign) BOOL sbMutedBySegment;
 - (void)playbackController:(id)playbackController didActivateVideo:(id)video withPlaybackData:(id)playbackData {
     %orig;
     if (!IS_ENABLED(SBEnabled) || self.isPlayingAd) return;
     if ([self.parentViewController isKindOfClass:%c(YTShortsPlayerViewController)]) return;
 
     self.sbSkippedSegments = [NSMutableSet set];
+    self.sbAcceptedMutes = [NSMutableSet set];
     self.sbSegments = nil;
+    // Never carry a segment mute into the next video.
+    if (self.sbMutedBySegment) {
+        self.sbMutedBySegment = NO;
+        [self.activeVideo setMuted:NO];
+    }
 
     [self.sbNotificationView dismiss];
 
@@ -369,52 +421,82 @@ UIColor *SBColorFromHex(NSString *hexString) {
     if ([self.sbLastVideoID isEqualToString:videoID] && self.sbSegments.count > 0) return;
     self.sbLastVideoID = videoID;
 
+    // Skip fetching (and clear markers) while disabled via the menu toggle or
+    // a whitelisted channel.
+    if (!sbActiveForVideo(self)) {
+        [[NSNotificationCenter defaultCenter] postNotificationName:@"SBSegmentsDidLoad"
+                                                            object:self
+                                                          userInfo:@{@"segments": @[]}];
+        return;
+    }
+
+    // Clear the previous video's markers right away — the fetch below repopulates
+    // them when it lands.
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"SBSegmentsDidLoad"
+                                                        object:self
+                                                      userInfo:@{@"segments": @[]}];
+
     __weak typeof(self) weakSelf = self;
     [SBRequest fetchSegmentsForVideoID:videoID completion:^(NSArray<SBSegment *> *segments) {
         __strong typeof(weakSelf) strongSelf = weakSelf;
         if (!strongSelf) return;
+        // The player may have moved on to another video while this request was
+        // in flight; drop the late result so it can't overwrite the newer one.
+        // The newer video's own fetch posts when it lands.
+        if (![[strongSelf currentVideoID] isEqualToString:videoID]) return;
         strongSelf.sbSegments = segments;
         [[NSNotificationCenter defaultCenter] postNotificationName:@"SBSegmentsDidLoad"
                                                             object:strongSelf
-                                                            userInfo:@{@"segments": segments ?: @[]}];
+                                                          userInfo:@{@"segments": segments ?: @[]}];
 
         [strongSelf sbShowHighlightBannerIfNeeded:segments];
+        [strongSelf sbShowFullVideoLabelIfNeeded:segments];
     }];
 }
-
 - (void)singleVideo:(YTSingleVideoController *)video currentVideoTimeDidChange:(YTSingleVideoTime *)time {
     %orig;
     [self sbCheckSegmentsAtCurrentTime];
 }
-
 // Time-change hook for YouTube versions that use the renamed selector.
 - (void)potentiallyMutatedSingleVideo:(YTSingleVideoController *)video currentVideoTimeDidChange:(YTSingleVideoTime *)time {
     %orig;
     [self sbCheckSegmentsAtCurrentTime];
 }
-
 // Evaluates the loaded segments against the current playback time and performs
 // the configured skip / ask action for the first matching segment. Shared by
 // both time-change hooks so the skip logic lives in one place.
 %new
 - (void)sbCheckSegmentsAtCurrentTime {
-    if (!IS_ENABLED(SBEnabled) || !IS_ENABLED(SBButtonKey) || self.isPlayingAd) return;
+    if (!sbActiveForVideo(self) || self.isPlayingAd) {
+        // SponsorBlock switched off (or an ad started) mid-mute: restore audio.
+        if (self.sbMutedBySegment) {
+            self.sbMutedBySegment = NO;
+            [self.activeVideo setMuted:NO];
+        }
+        return;
+    }
     if ([self.parentViewController isKindOfClass:%c(YTShortsPlayerViewController)]) return;
 
     CGFloat currentTime = [self currentVideoMediaTime];
     float minDuration = FLOAT_FOR_KEY(SBMinDuration);
 
+    [self sbUpdateMuteAtTime:currentTime];
+
     for (SBSegment *segment in self.sbSegments) {
         SBSegmentAction action = [segment configuredAction];
         if (action == SBSegmentActionDisable || action == SBSegmentActionDisplay) continue;
+        if ([segment.actionType isEqualToString:@"mute"] || [segment.actionType isEqualToString:@"full"]) continue;
 
         BOOL isPoi = [segment.category isEqualToString:@"poi_highlight"];
+        // "Always auto-skip" acts like auto-skip but ignores the
+        // once-per-segment set, so re-entering a segment skips again.
+        BOOL repeatSkip = (action == SBSegmentActionAlwaysSkip);
 
         if (isPoi) {
-            if (action == SBSegmentActionSkipTo) {
+            if (action == SBSegmentActionSkipTo || repeatSkip) {
                 NSString *segID = segment.UUID;
-                if (![self.sbSkippedSegments containsObject:segID] && currentTime < segment.startTime) {
-                    [self.sbSkippedSegments addObject:segID];
+                if ((repeatSkip || ![self.sbSkippedSegments containsObject:segID]) && currentTime < segment.startTime) {
+                    if (!repeatSkip) [self.sbSkippedSegments addObject:segID];
                     [self sbSkipToHighlight];
                     break;
                 }
@@ -429,9 +511,9 @@ UIColor *SBColorFromHex(NSString *hexString) {
 
         if (currentTime >= segment.startTime && currentTime < segment.endTime - SBSegmentEndGuardSeconds) {
             NSString *segID = segment.UUID;
-            if ([self.sbSkippedSegments containsObject:segID]) continue;
+            if (!repeatSkip && [self.sbSkippedSegments containsObject:segID]) continue;
 
-            if (action == SBSegmentActionAutoSkip) {
+            if (action == SBSegmentActionAutoSkip || repeatSkip) {
                 [self sbPerformSkip:segment];
             } else if (action == SBSegmentActionAsk) {
                 [self sbShowAskNotification:segment];
@@ -440,11 +522,53 @@ UIColor *SBColorFromHex(NSString *hexString) {
         }
     }
 }
+%new
+- (void)sbUpdateMuteAtTime:(CGFloat)currentTime {
+    SBSegment *muting = nil;
+    for (SBSegment *segment in self.sbSegments) {
+        if (![segment.actionType isEqualToString:@"mute"]) continue;
+        if (currentTime < segment.startTime || currentTime >= segment.endTime) continue;
+        SBSegmentAction action = [segment configuredAction];
+        if (action == SBSegmentActionAutoSkip || action == SBSegmentActionAlwaysSkip || [self.sbAcceptedMutes containsObject:segment.UUID]) {
+            muting = segment;
+            break;
+        }
+        if (action == SBSegmentActionAsk && ![self.sbSkippedSegments containsObject:segment.UUID]) {
+            [self sbShowAskNotification:segment];
+        }
+    }
 
+    YTSingleVideoController *video = self.activeVideo;
+    if (muting && !self.sbMutedBySegment && ![video isMuted]) {
+        self.sbMutedBySegment = YES;
+        [video setMuted:YES];
+        sbSendViewedSegment(muting);
+    } else if (!muting && self.sbMutedBySegment) {
+        self.sbMutedBySegment = NO;
+        [video setMuted:NO];
+    }
+}
+%new
+- (void)sbShowFullVideoLabelIfNeeded:(NSArray<SBSegment *> *)segments {
+    if (!IS_ENABLED(SBShowFullVideoLabel)) return;
+    if (!sbActiveForVideo(self) || self.isPlayingAd) return;
+    for (SBSegment *segment in segments) {
+        if (![segment.actionType isEqualToString:@"full"]) continue;
+        if ([segment configuredAction] == SBSegmentActionDisable) continue;
+        NSString *catName = [YouModBundle() localizedStringForKey:[NSString stringWithFormat:@"SB_CAT_%@", segment.category] value:segment.category table:nil];
+        [SBSkipNotificationView showSuccessInView:sbGetNotificationParent()
+                                          message:[NSString stringWithFormat:LOC(@"SB_FULL_VIDEO_LABEL"), catName]
+                                         duration:SBClampedAlertDuration(SBSkipAlertDuration)];
+        return;
+    }
+}
 %new
 - (void)sbPerformSkip:(SBSegment *)segment {
-    [self.sbSkippedSegments addObject:segment.UUID];
+    // "Always auto-skip" segments stay out of the once-per-segment set so
+    // encountering them again skips again.
+    if ([segment configuredAction] != SBSegmentActionAlwaysSkip) [self.sbSkippedSegments addObject:segment.UUID];
     [self seekToTime:(CGFloat)segment.endTime];
+    sbSendViewedSegment(segment);
 
     if (IS_ENABLED(SBAudioNotification)) {
         AudioServicesPlaySystemSound(SBSkipHapticSoundID);
@@ -465,6 +589,7 @@ UIColor *SBColorFromHex(NSString *hexString) {
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(SBSkipNotificationDelaySeconds * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
             __strong typeof(weakSelf) strongSelf = weakSelf;
             if (!strongSelf) return;
+            if ([UIApplication sharedApplication].applicationState != UIApplicationStateActive) return;
             UIView *parentView = sbGetNotificationParent();
             strongSelf.sbNotificationView = [SBSkipNotificationView showInView:parentView
                 message:message
@@ -477,7 +602,6 @@ UIColor *SBColorFromHex(NSString *hexString) {
         });
     }
 }
-
 %new
 - (void)sbShowAskNotification:(SBSegment *)segment {
     [self.sbSkippedSegments addObject:segment.UUID];
@@ -485,7 +609,8 @@ UIColor *SBColorFromHex(NSString *hexString) {
     useBackwardIconForButton = NO;
     NSBundle *bundle = YouModBundle();
     NSString *catName = [bundle localizedStringForKey:[NSString stringWithFormat:@"SB_CAT_%@", segment.category] value:segment.category table:nil];
-    NSString *message = [NSString stringWithFormat:[bundle localizedStringForKey:@"SB_DETECTED" value:@"%@ detected" table:nil], catName];
+    BOOL isMute = [segment.actionType isEqualToString:@"mute"];
+    NSString *message = [NSString stringWithFormat:[bundle localizedStringForKey:isMute ? @"SB_DETECTED_MUTE" : @"SB_DETECTED" value:@"%@ detected" table:nil], catName];
 
     float alertDuration = SBClampedAlertDuration(SBSkipAlertDuration);
 
@@ -493,17 +618,23 @@ UIColor *SBColorFromHex(NSString *hexString) {
     __weak typeof(self) weakSelf = self;
     self.sbNotificationView = [SBSkipNotificationView showInView:parentView
         message:message
-        buttonTitle:[bundle localizedStringForKey:@"SB_SKIP_NOW" value:@"Skip" table:nil]
+        buttonTitle:isMute ? LOC(@"SB_MUTE_NOW") : [bundle localizedStringForKey:@"SB_SKIP_NOW" value:@"Skip" table:nil]
         action:^{
             __strong typeof(weakSelf) ss = weakSelf;
-            if (ss) [ss seekToTime:(CGFloat)segment.endTime];
+            if (!ss) return;
+            if (isMute) {
+                [ss.sbAcceptedMutes addObject:segment.UUID];
+                [ss sbUpdateMuteAtTime:[ss currentVideoMediaTime]];
+            } else {
+                [ss seekToTime:(CGFloat)segment.endTime];
+                sbSendViewedSegment(segment);
+            }
         }
         duration:alertDuration];
 }
-
 %new
 - (void)sbShowHighlightBannerIfNeeded:(NSArray<SBSegment *> *)segments {
-    if (!IS_ENABLED(SBEnabled) || !IS_ENABLED(SBButtonKey) || self.isPlayingAd) return;
+    if (!sbActiveForVideo(self) || self.isPlayingAd) return;
     if ([self.parentViewController isKindOfClass:%c(YTShortsPlayerViewController)]) return;
 
     for (SBSegment *seg in segments) {
@@ -541,7 +672,6 @@ UIColor *SBColorFromHex(NSString *hexString) {
         }
     }
 }
-
 %new
 - (void)sbSkipToHighlight {
     self.sbNotificationView.isHighlightPill = NO;
@@ -577,44 +707,23 @@ UIColor *SBColorFromHex(NSString *hexString) {
         }
     }
 }
-
 %end
-
-// SponsorBlock's accent blue, reused for the toggle button's enabled state.
-static UIColor *SBAccentColor() {
-    return [UIColor colorWithRed:0.4 green:0.8 blue:1.0 alpha:1.0];
-}
 
 %ctor {
     sbSegmentCache = [NSMutableDictionary dictionary];
     %init;
-
-    // Register the SponsorBlock toggle in the player overlay's custom button row.
-    // sortOrder 100 keeps it right-most (directly under YouTube's settings gear).
     YMOverlayButtonSpec *toggle = [[YMOverlayButtonSpec alloc] init];
     toggle.identifier = @"sponsorblock.toggle";
-    toggle.symbolName = @"shield.fill";
-    toggle.settingsSymbolName = @"shield.fill";
+    toggle.symbolName = @"shield";
+    toggle.settingsSymbolName = @"shield";
     toggle.displayName = LOC(@"SPONSORBLOCK_BUTTON");
-    toggle.tintColor = SBAccentColor();
     toggle.sortOrder = 100;
     toggle.isVisible = ^BOOL(YTPlayerViewController *player) {
         return IS_ENABLED(SBEnabled) && YMIsOverlayButtonEnabled(@"sponsorblock.toggle");
     };
-    toggle.tintProvider = ^UIColor *(YTPlayerViewController *player) {
-        return IS_ENABLED(SBButtonKey) ? SBAccentColor() : [UIColor grayColor];
-    };
     toggle.onTap = ^(YTPlayerViewController *player, UIButton *button) {
         if (!player) return;
-        BOOL newState = !IS_ENABLED(SBButtonKey);
-        [[NSUserDefaults standardUserDefaults] setBool:newState forKey:SBButtonKey];
-        button.tintColor = newState ? SBAccentColor() : [UIColor grayColor];
-
-        NSArray *segments = newState ? (player.sbSegments ?: @[]) : @[];
-        if (newState && segments.count == 0) return;
-        [[NSNotificationCenter defaultCenter] postNotificationName:@"SBSegmentsDidLoad"
-                                                            object:player
-                                                          userInfo:@{@"segments": segments}];
+        [player sbShowMainMenuFromView:button];
     };
     YMRegisterOverlayButton(toggle);
 }

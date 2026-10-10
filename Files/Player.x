@@ -1,32 +1,33 @@
 #import "Headers.h"
 
-static BOOL isWiFiConnected() {
-    struct sockaddr_in zeroAddress;
-    bzero(&zeroAddress, sizeof(zeroAddress));
-    zeroAddress.sin_len = sizeof(zeroAddress);
-    zeroAddress.sin_family = AF_INET;
-    
-    SCNetworkReachabilityRef reachability = SCNetworkReachabilityCreateWithAddress(kCFAllocatorDefault, (const struct sockaddr *)&zeroAddress);
-    if (!reachability) return NO;
-    
-    SCNetworkReachabilityFlags flags;
-    BOOL retrievedFlags = SCNetworkReachabilityGetFlags(reachability, &flags);
-    CFRelease(reachability);
-    
-    if (!retrievedFlags) return NO;
-    
-    BOOL isReachable = (flags & kSCNetworkReachabilityFlagsReachable) != 0;
-    BOOL needsConnection = (flags & kSCNetworkReachabilityFlagsConnectionRequired) != 0;
-    BOOL canConnect = isReachable && !needsConnection;
-    
-    if (!canConnect) return NO;
-    
-    BOOL isCellular = (flags & kSCNetworkReachabilityFlagsIsWWAN) != 0;
-    return !isCellular;
-}
+static int gNetworkType = 0;
 
-extern void YouModDownloadSetCurrentPlayer(YTPlayerViewController *player);
-extern YTPlayerViewController *YouModDownloadGetCurrentPlayer(void);
+static void startNetworkMonitoring(void) {
+    static nw_path_monitor_t monitor;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        monitor = nw_path_monitor_create();
+        dispatch_queue_t queue = dispatch_queue_create("com.youmod.network", DISPATCH_QUEUE_SERIAL);
+        
+        nw_path_monitor_set_update_handler(monitor, ^(nw_path_t path) {
+            nw_path_status_t status = nw_path_get_status(path);
+            if (status == nw_path_status_satisfied) {
+                if (nw_path_uses_interface_type(path, nw_interface_type_wifi)) {
+                    gNetworkType = 1;
+                } else if (nw_path_uses_interface_type(path, nw_interface_type_cellular)) {
+                    gNetworkType = 2;
+                } else {
+                    gNetworkType = 0;
+                }
+            } else {
+                gNetworkType = 0;
+            }
+        });
+        
+        nw_path_monitor_set_queue(monitor, queue);
+        nw_path_monitor_start(monitor);
+    });
+}
 
 #pragma mark - Rewind / Fast-forward on iOS media controls
 
@@ -50,7 +51,7 @@ static CGFloat YouModForwardSecondsValue(void) {
 // off the main thread (notably from Bluetooth and CarPlay), while seekToTime: and
 // the player's time accessors are main-thread-only.
 static BOOL YouModSeekByInterval(CGFloat delta) {
-    YTPlayerViewController *player = YouModDownloadGetCurrentPlayer();
+    YTPlayerViewController *player = YouModCurrentPlayerViewController;
     if (!player || ![player respondsToSelector:@selector(seekToTime:)]) return NO;
     dispatch_async(dispatch_get_main_queue(), ^{
         CGFloat cur = [player currentVideoMediaTime];
@@ -67,6 +68,84 @@ static BOOL YouModSeekByInterval(CGFloat delta) {
 // command whose handler is already installed, so it is installed only once.
 static id gYouModRewindTarget = nil;
 static id gYouModForwardTarget = nil;
+static NSMutableArray *gYouModRemoteCommandTargetProxies = nil;
+
+typedef MPRemoteCommandHandlerStatus (^YouModRemoteCommandHandler)(MPRemoteCommandEvent *event);
+
+static BOOL YouModIsPreviousTrackCommand(MPRemoteCommand *command) {
+    return command == [MPRemoteCommandCenter sharedCommandCenter].previousTrackCommand;
+}
+
+static BOOL YouModIsNextTrackCommand(MPRemoteCommand *command) {
+    return command == [MPRemoteCommandCenter sharedCommandCenter].nextTrackCommand;
+}
+
+static BOOL YouModIsPreviousNextCommand(MPRemoteCommand *command) {
+    return YouModIsPreviousTrackCommand(command) || YouModIsNextTrackCommand(command);
+}
+
+static BOOL YouModIsSkipBackwardCommand(MPRemoteCommand *command) {
+    return command == [MPRemoteCommandCenter sharedCommandCenter].skipBackwardCommand;
+}
+
+static BOOL YouModIsSkipForwardCommand(MPRemoteCommand *command) {
+    return command == [MPRemoteCommandCenter sharedCommandCenter].skipForwardCommand;
+}
+
+static MPRemoteCommandHandlerStatus YouModStatusForSeek(BOOL handled) {
+    return handled ? MPRemoteCommandHandlerStatusSuccess : MPRemoteCommandHandlerStatusNoSuchContent;
+}
+
+// When Skip Backward/Forward is on, Bluetooth/CarPlay/Lock Screen often still
+// deliver previous/next track events rather than skip events. Remap those to
+// seek using the matching per-direction preference; otherwise report unhandled
+// so the caller can fall through to YouTube's default track change.
+static BOOL YouModHandlePreviousNextRemoteCommand(MPRemoteCommandEvent *event) {
+    if (YouModIsPreviousTrackCommand(event.command) && IS_ENABLED(SkipBackwardEnabled)) {
+        return YouModSeekByInterval(-YouModRewindSecondsValue());
+    }
+    if (YouModIsNextTrackCommand(event.command) && IS_ENABLED(SkipForwardEnabled)) {
+        return YouModSeekByInterval(YouModForwardSecondsValue());
+    }
+    return NO;
+}
+
+@interface YouModRemoteCommandTargetProxy : NSObject
+@property (nonatomic, weak) MPRemoteCommand *command;
+@property (nonatomic, weak) id target;
+@property (nonatomic, assign) SEL action;
+- (MPRemoteCommandHandlerStatus)youModHandleRemoteCommandEvent:(MPRemoteCommandEvent *)event;
+@end
+
+@implementation YouModRemoteCommandTargetProxy
+- (MPRemoteCommandHandlerStatus)youModHandleRemoteCommandEvent:(MPRemoteCommandEvent *)event {
+    if (YouModIsPreviousNextCommand(event.command)) {
+        BOOL remapped = (YouModIsPreviousTrackCommand(event.command) && IS_ENABLED(SkipBackwardEnabled))
+            || (YouModIsNextTrackCommand(event.command) && IS_ENABLED(SkipForwardEnabled));
+        if (remapped) {
+            return YouModStatusForSeek(YouModHandlePreviousNextRemoteCommand(event));
+        }
+    }
+
+    if (!self.target || !self.action) return MPRemoteCommandHandlerStatusCommandFailed;
+
+    NSMethodSignature *signature = [self.target methodSignatureForSelector:self.action];
+    if (!signature) return MPRemoteCommandHandlerStatusCommandFailed;
+
+    NSInvocation *invocation = [NSInvocation invocationWithMethodSignature:signature];
+    invocation.target = self.target;
+    invocation.selector = self.action;
+    MPRemoteCommandEvent *eventArg = event;
+    if (signature.numberOfArguments > 2) [invocation setArgument:&eventArg atIndex:2];
+    [invocation invoke];
+
+    if (signature.methodReturnLength == 0) return MPRemoteCommandHandlerStatusSuccess;
+
+    MPRemoteCommandHandlerStatus status = MPRemoteCommandHandlerStatusSuccess;
+    [invocation getReturnValue:&status];
+    return status;
+}
+@end
 
 // Points the system now-playing skip controls (lock screen, Bluetooth, Control
 // Center, CarPlay) at our per-direction seek. When enabled, the OS previous/next
@@ -79,8 +158,11 @@ static id gYouModForwardTarget = nil;
 // preferred intervals are updated. Because the handlers read the seconds at press
 // time, a changed preference always seeks by the new amount immediately; the
 // interval shown on the OS controls reflects the value captured the last time this
-// ran (video change or launch).
-static void YouModConfigureRemoteSkipCommands(void) {
+// ran (settings change, video change, or launch).
+//
+// YouTube repeatedly re-enables previous/next after we configure, so
+// %hook MPRemoteCommand also forces enabled state and wraps prev/next targets.
+void YouModConfigureRemoteSkipCommands() {
     MPRemoteCommandCenter *cc = [MPRemoteCommandCenter sharedCommandCenter];
     BOOL back = IS_ENABLED(SkipBackwardEnabled);
     BOOL fwd = IS_ENABLED(SkipForwardEnabled);
@@ -98,47 +180,320 @@ static void YouModConfigureRemoteSkipCommands(void) {
 
     if (!gYouModRewindTarget) {
         gYouModRewindTarget = [cc.skipBackwardCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *event) {
-            return YouModSeekByInterval(-YouModRewindSecondsValue()) ? MPRemoteCommandHandlerStatusSuccess : MPRemoteCommandHandlerStatusNoSuchContent;
+            return YouModStatusForSeek(YouModSeekByInterval(-YouModRewindSecondsValue()));
         }];
     }
     if (!gYouModForwardTarget) {
         gYouModForwardTarget = [cc.skipForwardCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *event) {
-            return YouModSeekByInterval(YouModForwardSecondsValue()) ? MPRemoteCommandHandlerStatusSuccess : MPRemoteCommandHandlerStatusNoSuchContent;
+            return YouModStatusForSeek(YouModSeekByInterval(YouModForwardSecondsValue()));
         }];
     }
 }
 
-static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoController *video, YTSingleVideoTime *time) {
-    if (!IS_ENABLED(ShowExtraTimeRemaining) && !IS_ENABLED(SBShowDuration)) return;
+// Intercept YouTube's registration of previous/next remote targets so Bluetooth,
+// CarPlay, and Lock Screen presses seek when Skip Backward/Forward is enabled.
+// Also fight YouTube's attempts to re-enable previous/next or disable skip.
+%hook MPRemoteCommand
+- (void)addTarget:(id)target action:(SEL)action {
+    if (YouModIsPreviousNextCommand(self)) {
+        if (!gYouModRemoteCommandTargetProxies) gYouModRemoteCommandTargetProxies = [NSMutableArray array];
 
-    YTMainAppVideoPlayerOverlayViewController *con = [self activeVideoPlayerOverlay];
-    if (![con isKindOfClass:%c(YTMainAppVideoPlayerOverlayViewController)]) return;
+        YouModRemoteCommandTargetProxy *proxy = [[YouModRemoteCommandTargetProxy alloc] init];
+        proxy.command = self;
+        proxy.target = target;
+        proxy.action = action;
+        [gYouModRemoteCommandTargetProxies addObject:proxy];
+        %orig(proxy, @selector(youModHandleRemoteCommandEvent:));
+        YouModConfigureRemoteSkipCommands();
+        return;
+    }
+
+    %orig;
+}
+
+- (id)addTargetWithHandler:(YouModRemoteCommandHandler)handler {
+    if (YouModIsPreviousNextCommand(self)) {
+        YouModRemoteCommandHandler wrappedHandler = ^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *event) {
+            BOOL remapped = (YouModIsPreviousTrackCommand(event.command) && IS_ENABLED(SkipBackwardEnabled))
+                || (YouModIsNextTrackCommand(event.command) && IS_ENABLED(SkipForwardEnabled));
+            if (remapped) {
+                return YouModStatusForSeek(YouModHandlePreviousNextRemoteCommand(event));
+            }
+            return handler(event);
+        };
+        id commandTarget = %orig(wrappedHandler);
+        YouModConfigureRemoteSkipCommands();
+        return commandTarget;
+    }
+
+    return %orig;
+}
+
+- (void)setEnabled:(BOOL)enabled {
+    if (YouModIsPreviousTrackCommand(self) && IS_ENABLED(SkipBackwardEnabled)) {
+        %orig(NO);
+        return;
+    }
+    if (YouModIsNextTrackCommand(self) && IS_ENABLED(SkipForwardEnabled)) {
+        %orig(NO);
+        return;
+    }
+    if (YouModIsSkipBackwardCommand(self) && IS_ENABLED(SkipBackwardEnabled)) {
+        %orig(YES);
+        return;
+    }
+    if (YouModIsSkipForwardCommand(self) && IS_ENABLED(SkipForwardEnabled)) {
+        %orig(YES);
+        return;
+    }
+
+    %orig;
+}
+
+- (void)removeTarget:(id)target action:(SEL)action {
+    if (YouModIsPreviousNextCommand(self) && gYouModRemoteCommandTargetProxies.count > 0) {
+        NSArray *proxies = [gYouModRemoteCommandTargetProxies copy];
+        for (YouModRemoteCommandTargetProxy *proxy in proxies) {
+            BOOL targetMatches = !target || proxy.target == target;
+            BOOL actionMatches = !action || proxy.action == action;
+            if (proxy.command == self && targetMatches && actionMatches) {
+                %orig(proxy, @selector(youModHandleRemoteCommandEvent:));
+                [gYouModRemoteCommandTargetProxies removeObject:proxy];
+            }
+        }
+    }
+
+    %orig;
+}
+
+- (void)removeTarget:(id)target {
+    if (YouModIsPreviousNextCommand(self) && gYouModRemoteCommandTargetProxies.count > 0) {
+        NSArray *proxies = [gYouModRemoteCommandTargetProxies copy];
+        for (YouModRemoteCommandTargetProxy *proxy in proxies) {
+            if (proxy.command == self && (!target || proxy.target == target)) {
+                %orig(proxy);
+                [gYouModRemoteCommandTargetProxies removeObject:proxy];
+            }
+        }
+    }
+
+    %orig;
+}
+%end
+
+#pragma mark - Replace prev/next paddles in playlists
+
+static const void *kYouModSeekRemapKey = &kYouModSeekRemapKey;
+static const void *kYouModSeekRefreshKey = &kYouModSeekRefreshKey;
+static const void *kYouModOverlayRefreshHandlerKey = &kYouModOverlayRefreshHandlerKey;
+static BOOL gYouModEnforcingOverlayReplacement = NO;
+
+static BOOL YouModShouldForcePrevNextReplacement(void) {
+    return IS_ENABLED(ReplacePrevNextButtons) && !IS_ENABLED(HideNextAndPrevButtons);
+}
+
+@interface YouModOverlayRefreshHandler : NSObject
+@property (nonatomic, weak) YTMainAppControlsOverlayView *overlay;
+- (void)refreshSoon;
+@end
+
+@implementation YouModOverlayRefreshHandler
+- (void)refreshSoon {
+    YTMainAppControlsOverlayView *overlay = [self overlay];
+    YouModApplyPrevNextReplacement(overlay);
+    if (!overlay) return;
+    static const NSTimeInterval kDelays[] = {0.05, 0.15, 0.35, 0.75, 1.5};
+    for (size_t i = 0; i < sizeof(kDelays) / sizeof(kDelays[0]); i++) {
+        NSTimeInterval delay = kDelays[i];
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delay * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+            YouModApplyPrevNextReplacement(overlay);
+        });
+    }
+}
+@end
+
+static YouModOverlayRefreshHandler *YouModRefreshHandlerForOverlay(YTMainAppControlsOverlayView *overlay) {
+    YouModOverlayRefreshHandler *handler = objc_getAssociatedObject(overlay, kYouModOverlayRefreshHandlerKey);
+    if (!handler) {
+        handler = [YouModOverlayRefreshHandler new];
+        handler.overlay = overlay;
+        objc_setAssociatedObject(overlay, kYouModOverlayRefreshHandlerKey, handler, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    }
+    return handler;
+}
+
+@interface YouModSeekTapHandler : NSObject
+@property (nonatomic, assign) BOOL rewind;
+@property (nonatomic, weak) YTMainAppControlsOverlayView *overlay;
+- (void)handleTap:(UITapGestureRecognizer *)gr;
+@end
+
+@implementation YouModSeekTapHandler
+- (void)handleTap:(UITapGestureRecognizer *)gr {
+    YouModSeekByInterval(self.rewind ? -YouModRewindSecondsValue() : YouModForwardSecondsValue());
+    YouModOverlayRefreshHandler *refreshHandler = YouModRefreshHandlerForOverlay([self overlay]);
+    [refreshHandler refreshSoon];
+}
+@end
+
+@interface YouModSeekRefreshTapHandler : NSObject
+@property (nonatomic, weak) YTMainAppControlsOverlayView *overlay;
+- (void)handleTap:(UITapGestureRecognizer *)gr;
+@end
+
+@implementation YouModSeekRefreshTapHandler
+- (void)handleTap:(UITapGestureRecognizer *)gr {
+    YouModOverlayRefreshHandler *refreshHandler = YouModRefreshHandlerForOverlay([self overlay]);
+    [refreshHandler refreshSoon];
+}
+@end
+
+static YouModSeekTapHandler *YouModRewindTapHandler(YTMainAppControlsOverlayView *overlay) {
+    static YouModSeekTapHandler *handler;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        handler = [YouModSeekTapHandler new];
+        handler.rewind = YES;
+    });
+    handler.overlay = overlay;
+    return handler;
+}
+
+static YouModSeekTapHandler *YouModForwardTapHandler(YTMainAppControlsOverlayView *overlay) {
+    static YouModSeekTapHandler *handler;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        handler = [YouModSeekTapHandler new];
+        handler.rewind = NO;
+    });
+    handler.overlay = overlay;
+    return handler;
+}
+
+static YouModSeekRefreshTapHandler *YouModSeekRefreshTapHandlerForOverlay(YTMainAppControlsOverlayView *overlay) {
+    YouModSeekRefreshTapHandler *handler = objc_getAssociatedObject(overlay, kYouModSeekRefreshKey);
+    if (!handler) {
+        handler = [YouModSeekRefreshTapHandler new];
+        handler.overlay = overlay;
+        objc_setAssociatedObject(overlay, kYouModSeekRefreshKey, handler, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    }
+    return handler;
+}
+
+static void YouModAttachSeekRemap(UIView *view, YouModSeekTapHandler *handler) {
+    if (!view || objc_getAssociatedObject(view, kYouModSeekRemapKey)) return;
+    view.userInteractionEnabled = YES;
+    UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:handler action:@selector(handleTap:)];
+    tap.cancelsTouchesInView = YES;
+    [view addGestureRecognizer:tap];
+    objc_setAssociatedObject(view, kYouModSeekRemapKey, @YES, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+}
+
+static void YouModAttachSeekRefresh(UIView *view, YTMainAppControlsOverlayView *overlay) {
+    static const void *kViewRefreshKey = &kViewRefreshKey;
+    if (!view || objc_getAssociatedObject(view, kViewRefreshKey)) return;
+    UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:YouModSeekRefreshTapHandlerForOverlay(overlay) action:@selector(handleTap:)];
+    tap.cancelsTouchesInView = NO;
+    [view addGestureRecognizer:tap];
+    objc_setAssociatedObject(view, kViewRefreshKey, @YES, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+}
+
+static UIView *YouModOverlayIvarView(id object, const char *name) {
+    Ivar ivar = class_getInstanceVariable(object_getClass(object), name);
+    if (!ivar) return nil;
+    return (UIView *)object_getIvar(object, ivar);
+}
+
+static void YouModSetOverlayIvarHidden(id object, const char *name, BOOL hidden) {
+    UIView *view = YouModOverlayIvarView(object, name);
+    if (view) view.hidden = hidden;
+}
+
+static YTMainAppControlsOverlayView *YouModOverlayForSubview(UIView *view) {
+    for (UIView *v = view; v; v = v.superview) {
+        if ([v isKindOfClass:%c(YTMainAppControlsOverlayView)]) return (YTMainAppControlsOverlayView *)v;
+    }
+    return nil;
+}
+
+static BOOL YouModIsPrevNextSubview(UIView *view, YTMainAppControlsOverlayView *overlay) {
+    return view == YouModOverlayIvarView(overlay, "_previousButtonView")
+        || view == YouModOverlayIvarView(overlay, "_nextButtonView")
+        || view == YouModOverlayIvarView(overlay, "_previousButton")
+        || view == YouModOverlayIvarView(overlay, "_nextButton");
+}
+
+static BOOL YouModIsSeekSubview(UIView *view, YTMainAppControlsOverlayView *overlay) {
+    return view == YouModOverlayIvarView(overlay, "_seekBackwardAccessibilityButtonView")
+        || view == YouModOverlayIvarView(overlay, "_seekForwardAccessibilityButtonView");
+}
+
+static void YouModEnforcePrevNextVisibility(YTMainAppControlsOverlayView *overlay) {
+    UIView *seekBack = YouModOverlayIvarView(overlay, "_seekBackwardAccessibilityButtonView");
+    UIView *seekFwd = YouModOverlayIvarView(overlay, "_seekForwardAccessibilityButtonView");
+    if (!seekBack || !seekFwd) return;
+
+    gYouModEnforcingOverlayReplacement = YES;
+    YouModSetOverlayIvarHidden(overlay, "_nextButton", YES);
+    YouModSetOverlayIvarHidden(overlay, "_previousButton", YES);
+    YouModSetOverlayIvarHidden(overlay, "_nextButtonView", YES);
+    YouModSetOverlayIvarHidden(overlay, "_previousButtonView", YES);
+    seekBack.hidden = NO;
+    seekFwd.hidden = NO;
+    seekBack.userInteractionEnabled = YES;
+    seekFwd.userInteractionEnabled = YES;
+    gYouModEnforcingOverlayReplacement = NO;
+}
+
+// Part B: when seek paddles are unavailable, remap prev/next taps to seek within the video.
+static void YouModRemapPrevNextToSeek(YTMainAppControlsOverlayView *overlay) {
+    YouModAttachSeekRemap(YouModOverlayIvarView(overlay, "_previousButtonView"), YouModRewindTapHandler(overlay));
+    YouModAttachSeekRemap(YouModOverlayIvarView(overlay, "_nextButtonView"), YouModForwardTapHandler(overlay));
+    YouModAttachSeekRemap(YouModOverlayIvarView(overlay, "_previousButton"), YouModRewindTapHandler(overlay));
+    YouModAttachSeekRemap(YouModOverlayIvarView(overlay, "_nextButton"), YouModForwardTapHandler(overlay));
+}
+
+void YouModApplyPrevNextReplacement(YTMainAppControlsOverlayView *overlay) {
+    if (!YouModShouldForcePrevNextReplacement()) return;
+
+    UIView *seekBack = YouModOverlayIvarView(overlay, "_seekBackwardAccessibilityButtonView");
+    UIView *seekFwd = YouModOverlayIvarView(overlay, "_seekForwardAccessibilityButtonView");
+
+    if (seekBack && seekFwd) {
+        YouModEnforcePrevNextVisibility(overlay);
+        YouModAttachSeekRefresh(seekBack, overlay);
+        YouModAttachSeekRefresh(seekFwd, overlay);
+    }
+
+    YouModRemapPrevNextToSeek(overlay);
+}
+
+static void YouModAddEndTime(YTInlinePlayerBarContainerView *playerbar, YTPlayerViewController *self, YTMainAppVideoPlayerOverlayViewController *con) {
     CGFloat rate = [con currentPlaybackRate] != 0 ? [con currentPlaybackRate] : 1.0;
-    NSTimeInterval remainingSeconds = (lround(video.totalMediaTime) - lround(time.time)) / rate;
+    CGFloat totalVideo = self.currentVideoTotalMediaTime;
+    NSTimeInterval remainingSeconds = (lround(totalVideo) - lround(self.currentVideoMediaTime)) / rate;
 
     NSString *remainingTimeText;
     NSString *SBTimeRemaining = nil;
     NSTimeInterval SBTotalTimeRemaining = 0.0;
     
-    if (IS_ENABLED(SBShowDuration)) {
-        if (self.sbSegments && self.sbSegments.count > 0 && IS_ENABLED(SBButtonKey)) {
-            for (SBSegment *segment in self.sbSegments) {
-                SBSegmentAction action = [segment configuredAction];
-                if (action == SBSegmentActionDisable) continue;
+    if (IS_ENABLED(SBShowDuration) && self.sbSegments && self.sbSegments.count > 0 && IS_ENABLED(SBButtonKey)) {
+        for (SBSegment *segment in self.sbSegments) {
+            SBSegmentAction action = [segment configuredAction];
+            if (action == SBSegmentActionDisable) continue;
 
-                CGFloat timeValue = segment.endTime - segment.startTime;
-                SBTotalTimeRemaining = SBTotalTimeRemaining + timeValue;
-            }
-            if (SBTotalTimeRemaining != 0.0) { 
-                NSTimeInterval SBRemaining = video.totalMediaTime - SBTotalTimeRemaining;
-                int hours = (int)(SBRemaining / 3600);
-                int minutes = (int)(((int)SBRemaining % 3600) / 60);
-                int seconds = (int)((int)SBRemaining % 60);
-                if (hours > 0) {
-                    SBTimeRemaining = [NSString stringWithFormat:@"%d:%02d:%02d", hours, minutes, seconds];
-                } else {
-                    SBTimeRemaining = [NSString stringWithFormat:@"%d:%02d", minutes, seconds];
-                }
+            CGFloat timeValue = segment.endTime - segment.startTime;
+            SBTotalTimeRemaining = SBTotalTimeRemaining + timeValue;
+        }
+        if (SBTotalTimeRemaining != 0.0) { 
+            NSTimeInterval SBRemaining = totalVideo - SBTotalTimeRemaining;
+            int hours = (int)(SBRemaining / 3600);
+            int minutes = (int)(((int)SBRemaining % 3600) / 60);
+            int seconds = (int)((int)SBRemaining % 60);
+            if (hours > 0) {
+                SBTimeRemaining = [NSString stringWithFormat:@"%d:%02d:%02d", hours, minutes, seconds];
+            } else {
+                SBTimeRemaining = [NSString stringWithFormat:@"%d:%02d", minutes, seconds];
             }
         }
     }
@@ -154,13 +509,9 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
     NSString *safeRemainingTimeText = remainingTimeText ?: @"";
     NSString *safeSBTimeRemaining = SBTimeRemaining ?: @"";
 
-    YTPlayerView *playerView = (YTPlayerView *)self.playerView;
-    if (![playerView.overlayView isKindOfClass:%c(YTMainAppVideoPlayerOverlayView)]) return;
-
-    YTMainAppVideoPlayerOverlayView *overlay = (YTMainAppVideoPlayerOverlayView*)playerView.overlayView;
-    YTLabel *durationLabel = overlay.playerBar.durationLabel;
+    YTLabel *durationLabel2 = playerbar.durationLabel;
     
-    NSString *labelText = durationLabel.text ?: @"";
+    NSString *labelText = durationLabel2.text ?: @"";
 
     NSString *baseText = labelText;
     NSRange extraTimeRange = [baseText rangeOfString:@" • "];
@@ -181,9 +532,9 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
     }
 
     if (![labelText isEqualToString:newLabelText]) {
-        durationLabel.text = newLabelText;
-        overlay.playerBar.endTimeString = newLabelText;
-        [durationLabel sizeToFit];
+        durationLabel2.text = newLabelText;
+        playerbar.endTimeString = newLabelText;
+        [durationLabel2 sizeToFit];
     }
 }
 
@@ -191,7 +542,7 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
 %property (nonatomic, strong) NSString *endTimeString;
 - (void)didMoveToWindow {
     %orig;
-    if (!IS_ENABLED(TapToSeek) || [self._viewControllerForAncestor isKindOfClass:%c(YTPivotBarViewController)]) return;
+    if (!IS_ENABLED(TapToSeek) || ![self._viewControllerForAncestor isKindOfClass:%c(YTMainAppVideoPlayerOverlayViewController)]) return;
     for (UIView *subview in self.subviews) {
         if ([subview isKindOfClass:%c(YTInlineScrubGestureView)]) {
             BOOL hasCustomTap = NO;
@@ -238,11 +589,11 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
                 percentage = 1.0;
             } else {
                 if (percentage < 0.0) percentage = 0.0;
-                if (percentage > 1.0) percentage = 1.0;
+                else if (percentage > 1.0) percentage = 1.0;
             }
 
             YTMainAppVideoPlayerOverlayViewController *ovcon = (YTMainAppVideoPlayerOverlayViewController *)self._viewControllerForAncestor;
-            YTPlayerViewController *pvcon = ovcon.parentViewController;
+            YTPlayerViewController *pvcon = (YTPlayerViewController *)ovcon.parentViewController;
             CGFloat totalDuration = [pvcon currentVideoTotalMediaTime];
             CGFloat targetTime = totalDuration * percentage;    
             [pvcon seekToTime:targetTime];
@@ -250,26 +601,20 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
     }
 }
 // Disable toggle time remaining - @bhackel
-- (void)setShouldDisplayTimeRemaining:(BOOL)arg1 {
-    BOOL temp;
-    if (IS_ENABLED(DisablesShowRemaining)) {
-        temp = NO;
-    } else if (IS_ENABLED(AlwaysShowRemaining)) {
-        temp = YES;
-    } else {
-        temp = arg1;
-    }
-    %orig(temp);
+- (void)setShouldDisplayTimeRemaining:(BOOL)arg {
+    if (IS_ENABLED(DisablesShowRemaining)) arg = NO;
+    else if (IS_ENABLED(AlwaysShowRemaining)) arg = YES;
+    %orig(arg);
 }
 // Always show seekbar
 - (void)setPlayerBarAlpha:(CGFloat)alpha { 
-    CGFloat temp = IS_ENABLED(AlwaysShowSeekbar) ? 1.0 : alpha;
-    %orig(temp);
+    if (IS_ENABLED(AlwaysShowSeekbar)) alpha = 1.0;
+    %orig(alpha);
 }
 // Disables snap to chapter
 - (void)inlinePlayerBarView:(id)arg1 didScrubToChapteredTime:(CGFloat)arg2 shouldSnap:(BOOL)arg3 { 
-    BOOL temp = IS_ENABLED(DontSnapToChapter) ? NO : arg3;
-    %orig(arg1, arg2, temp);
+    if (IS_ENABLED(DontSnapToChapter)) arg3 = NO;
+    %orig(arg1, arg2, arg3);
 }
 - (void)setPeekableViewVisible:(BOOL)visible {
     %orig;
@@ -283,6 +628,14 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
         }
     }
 }
+- (void)updateCurrentTimeTitleLabel {
+    %orig;
+    if (!IS_ENABLED(ShowExtraTimeRemaining) && !IS_ENABLED(SBShowDuration)) return;
+    YTMainAppVideoPlayerOverlayViewController *ovcon = (YTMainAppVideoPlayerOverlayViewController *)self._viewControllerForAncestor;
+    if (![ovcon isKindOfClass:%c(YTMainAppVideoPlayerOverlayViewController)]) return;
+    YTPlayerViewController *pvc = (YTPlayerViewController *)ovcon.parentViewController;
+    YouModAddEndTime(self, pvc, ovcon);
+}
 %end
 
 %hook YTMainAppControlsOverlayView
@@ -295,18 +648,42 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
 // Pause On Overlay
 - (void)setOverlayVisible:(BOOL)visible {
     %orig;
+    YouModApplyPrevNextReplacement(self);
     if (!IS_ENABLED(PauseOnOverlay)) return;
     YTMainAppVideoPlayerOverlayViewController *mainOverlayController = (YTMainAppVideoPlayerOverlayViewController *)self.eventsDelegate;
-    YTPlayerViewController *playerViewController = mainOverlayController.parentViewController;
+    YTPlayerViewController *playerViewController = (YTPlayerViewController *)mainOverlayController.parentViewController;
     visible ? [playerViewController pause] : [playerViewController play];
+}
+%end
+
+%hook YTTransportControlsButtonView
+- (void)setHidden:(BOOL)hidden {
+    if (!gYouModEnforcingOverlayReplacement && YouModShouldForcePrevNextReplacement()) {
+        YTMainAppControlsOverlayView *overlay = YouModOverlayForSubview(self);
+        if (overlay) {
+            if (YouModIsPrevNextSubview(self, overlay)) hidden = YES;
+            else if (YouModIsSeekSubview(self, overlay)) hidden = NO;
+        }
+    }
+    %orig(hidden);
+}
+%end
+
+%hook YTQTMButton
+- (void)setHidden:(BOOL)hidden {
+    if (!gYouModEnforcingOverlayReplacement && YouModShouldForcePrevNextReplacement()) {
+        YTMainAppControlsOverlayView *overlay = YouModOverlayForSubview(self);
+        if (overlay && YouModIsPrevNextSubview(self, overlay)) hidden = YES;
+    }
+    %orig(hidden);
 }
 %end
 
 %hook YTAutonavEndscreenController
 - (void)showEndscreen { if (!IS_ENABLED(HideSuggestedVideo)) %orig; }
 - (void)showEndscreenControlsInPlayerBar:(BOOL)arg {
-    BOOL temp = IS_ENABLED(HideSuggestedVideo) ? NO : arg;
-    %orig(temp);
+    if (IS_ENABLED(HideSuggestedVideo)) arg = NO;
+    %orig(arg);
 }
 %end
 
@@ -322,20 +699,20 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
 - (BOOL)isLandscapeEngagementPanelEnabled { return IS_ENABLED(DisablesEngagementPanel) ? NO : %orig; }
 - (BOOL)removeNextPaddleForAllVideos { return IS_ENABLED(HideNextAndPrevButtons) ? YES : %orig; }
 - (BOOL)removePreviousPaddleForAllVideos { return IS_ENABLED(HideNextAndPrevButtons) ? YES : %orig; }
-// Replace previous/next buttons with back and forward
+// Helper for seek buttons
 - (BOOL)replaceNextPaddleWithFastForwardButtonForSingletonVods { return IS_ENABLED(ReplacePrevNextButtons) ? YES : %orig; }
 - (BOOL)replacePreviousPaddleWithRewindButtonForSingletonVods { return IS_ENABLED(ReplacePrevNextButtons) ? YES : %orig; }
 %end
 
 // No Endscreen Cards
 %hook YTCreatorEndscreenView
-- (void)setHidden:(BOOL)arg1 { 
-    BOOL temp = IS_ENABLED(HideEndScreenCards) ? YES : arg1;
-    %orig(temp);
+- (void)setHidden:(BOOL)arg { 
+    if (IS_ENABLED(HideEndScreenCards)) arg = YES;
+    %orig(arg);
 }
 - (void)setHoverCardHidden:(BOOL)arg { 
-    BOOL temp = IS_ENABLED(HideEndScreenCards) ? YES : arg;
-    %orig(temp);
+    if (IS_ENABLED(HideEndScreenCards)) arg = YES;
+    %orig(arg);
 }
 - (void)setHoverCardRenderer:(id)arg { if (!IS_ENABLED(HideEndScreenCards)) %orig; }
 %end
@@ -375,6 +752,11 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
 - (void)setPaidContentWithPlayerData:(id)data { if (!IS_ENABLED(HidePaidPromoOverlay)) %orig; }
 %end
 
+// Moved out of the overlay VC in 20.21.6, so the hook above only covers 19.x now.
+%hook YTPaidContentViewController
+- (void)showPaidContentRenderer:(id)renderer { if (!IS_ENABLED(HidePaidPromoOverlay)) %orig; }
+%end
+
 // Remove Watermarks
 %hook YTAnnotationsViewController
 - (void)loadFeaturedChannelWatermark { 
@@ -386,23 +768,24 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
 }
 - (void)setWatermarkImage:(id)arg1 height:(NSUInteger)arg2 { 
     if (IS_ENABLED(HideWaterMark)) {
-        arg1 = nil;
-        arg2 = 0;
         [self setValue:nil forKey:@"_watermarkView"];
+        return;
     }
-    %orig(arg1, arg2);
+    %orig;
 }
 %end
 
-%hook YTInlineMutedPlaybackScrubberViewController
-- (void)setActiveSingleVideoObservable:(YTSingleVideoController *)singleVideoController {
-    %orig;
-    if (singleVideoController && IS_ENABLED(AutoFeedMute)) {
-        [singleVideoController setMuted:YES];
-        UIView *soundView = [self.view.superview valueForKey:@"_audioSoundIconView"];
-        [soundView performSelector:@selector(setAudioOn:) withObject:@NO];
-    }
-}
+// Automatically mute video if user wants to
+%hook YTInlineMutedPlaybackStateController // 19.x-20.x
+- (BOOL)inlinePlaybackUnmutedAtStart { return IS_ENABLED(AutoFeedMute) ? NO : %orig; }
+%end
+
+%hook YTInlineMutedPlaybackStateControllerImpl // 21.x+
+- (BOOL)inlinePlaybackUnmutedAtStart { return IS_ENABLED(AutoFeedMute) ? NO : %orig; }
+%end
+
+%hook YTCollectionGlobalManagerController // 19.x keeps a second copy here
+- (BOOL)inlinePlaybackUnmutedAtStart { return IS_ENABLED(AutoFeedMute) ? NO : %orig; }
 %end
 
 // Exit Fullscreen on Finish
@@ -410,29 +793,21 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
 - (BOOL)shouldExitFullScreenOnFinish { return IS_ENABLED(AutoExitFullScreen) ? YES : %orig; }
 %end
 
-// Always use remaining time in the video player - @bhackel
 %hook YTPlayerBarController
-// When a new video is played, enable time remaining flag
-- (void)setActiveSingleVideo:(id)arg1 {
+- (void)setActiveSingleVideo:(YTSingleVideoController *)singleVideoController {
     %orig;
     if (IS_ENABLED(AlwaysShowRemaining) && !IS_ENABLED(DisablesShowRemaining)) {
-        // Get the player bar view
         YTInlinePlayerBarContainerView *playerBar = self.playerBar;
-        if (playerBar) {
-            // Enable the time remaining flag
-            playerBar.shouldDisplayTimeRemaining = YES;
-        }
+        if (playerBar) playerBar.shouldDisplayTimeRemaining = YES;
     }
-    YTSingleVideoController *sgvid = [self valueForKey:@"_currentSingleVideo"];
-    YTPlayerView *playerview = [sgvid valueForKey:@"_playerView"];
+    if (!singleVideoController) return;
+    YTPlayerView *playerview = [singleVideoController valueForKey:@"_playerView"];
     YTPlayerViewController *playerviewController = [playerview valueForKey:@"_playerViewDelegate"];
-    YouModDownloadSetCurrentPlayer(playerviewController);
     YouModConfigureRemoteSkipCommands();
     if (INTFORVAL(AutoDRCAudioIndex) != 0) [playerviewController YouModAutoDRCAudio];
-    if (INTFORVAL(AudioTrack) != 0) [playerviewController performSelector:@selector(YouModAutoAudioTrack) withObject:nil afterDelay:0.1];
-    if (YMIsOverlayButtonEnabled(@"mute.video")) [playerviewController YouModAutoMute];
-    if (IS_ENABLED(AutoFullScreen)) [playerviewController performSelector:@selector(YouModAutoFullscreen) withObject:nil afterDelay:0.4];
-    if (INTFORVAL(CaptionTrack) != 0) [playerviewController performSelector:@selector(YouModAutoCaptions) withObject:nil afterDelay:0.2];
+    if (INTFORVAL(AudioTrack) != 0 || IS_ENABLED(NoDubbedAudioTrack)) [playerviewController performSelector:@selector(YouModAutoAudioTrack) withObject:nil afterDelay:0.5];
+    if (IS_ENABLED(AutoFullScreen)) [playerviewController performSelector:@selector(YouModAutoFullscreen) withObject:nil afterDelay:0.5];
+    if (INTFORVAL(CaptionTrack) != 0) [playerviewController performSelector:@selector(YouModAutoCaptions) withObject:nil afterDelay:0.5];
     if (INTFORVAL(AutoSpeedIndex) != 0) [playerviewController YouModSetAutoSpeed];
 }
 %end
@@ -440,23 +815,23 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
 // Disable Fullscreen Actions
 %hook YTFullscreenActionsView
 - (CGSize)sizeThatFits:(CGSize)size { 
-    if (IS_ENABLED(HideFullAction)) {
-        self.hidden = YES;
-    }
+    if (IS_ENABLED(HideFullAction)) self.hidden = YES;
     return IS_ENABLED(HideFullAction) ? CGSizeMake(1, 35) : %orig;
 }
 %end
 
 // Disable Ambiant mode (Hide the lights)
 %hook YTWatchView
-- (void)setCinematicContainerView:(id)arg { if (!IS_ENABLED(RemoveAmbiant)) %orig; }
+- (void)setCinematicContainerView:(UIView *)view { if (!IS_ENABLED(RemoveAmbiant)) %orig; }
+- (void)setPlaylistMiniBarView:(UIView *)view { if (!IS_ENABLED(HideRelatedVideos)) %orig; }
 %end
 
 // Disable Autoplay 
 %hook YTPlaybackConfig
-- (void)setStartPlayback:(BOOL)arg1 { 
-    BOOL temp = IS_ENABLED(StopAutoplayVideo) ? NO : arg1;
-    %orig(temp);
+- (BOOL)startPlayback { return IS_ENABLED(StopAutoplayVideo) ? NO : %orig; }
+- (void)setStartPlayback:(BOOL)arg { 
+    if (IS_ENABLED(StopAutoplayVideo)) arg = NO;
+    %orig(arg);
 }
 %end
 
@@ -485,115 +860,114 @@ static void YouModAddEndTime(YTPlayerViewController *self, YTSingleVideoControll
 
 // Extra speed - adapted from YouSpeed
 %group Speed
-
 #define itemCount 13
-
-%hook YTMenuController
-
-- (NSMutableArray <YTActionSheetAction *> *)actionsForRenderers:(NSMutableArray <YTIMenuItemSupportedRenderers *> *)renderers fromView:(UIView *)fromView entry:(id)entry shouldLogItems:(BOOL)shouldLogItems firstResponder:(id)firstResponder {
-    NSUInteger index = [renderers indexOfObjectPassingTest:^BOOL(YTIMenuItemSupportedRenderers *renderer, NSUInteger idx, BOOL *stop) {
-        YTIMenuItemSupportedRenderersElementRendererCompatibilityOptionsExtension *extension = (YTIMenuItemSupportedRenderersElementRendererCompatibilityOptionsExtension *)[renderer.elementRenderer.compatibilityOptions messageForFieldNumber:396644439];
-        BOOL isVideoSpeed = [extension.menuItemIdentifier isEqualToString:@"menu_item_playback_speed"];
-        if (isVideoSpeed) *stop = YES;
-        return isVideoSpeed;
-    }];
-    NSMutableArray <YTActionSheetAction *> *actions = %orig;
-    if (index != NSNotFound) {
-        YTActionSheetAction *action = actions[index];
-        action.handler = ^{
-            [firstResponder didPressVarispeed:fromView];
-        };
-        UIView *elementView = [action.button valueForKey:@"_elementView"];
-        elementView.userInteractionEnabled = NO;
-    }
-    return actions;
-}
-
-%end
-
-%hook YTVarispeedSwitchController
-
-- (id)init {
-    self = %orig;
+// Class on 19.x/20.x, protocol from 21.32.4 where the class is ...Impl. Hook both.
+static void YouModApplyExtraSpeedOptions(id controller) {
     float speeds[] = {0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0, 5.0, 7.5, 10.0};
     id options[itemCount];
-    Class YTVarispeedSwitchControllerOptionClass = %c(YTVarispeedSwitchControllerOption);
+    Class optionClass = %c(YTVarispeedSwitchControllerOption);
     for (int i = 0; i < itemCount; ++i) {
         NSString *title = [NSString stringWithFormat:@"%.2fx", speeds[i]];
-        options[i] = [[YTVarispeedSwitchControllerOptionClass alloc] initWithTitle:title rate:speeds[i]];
+        options[i] = [[optionClass alloc] initWithTitle:title rate:speeds[i]];
     }
-    [self setValue:[NSArray arrayWithObjects:options count:itemCount] forKey:@"_options"];
-    return self;
+    [controller setValue:[NSArray arrayWithObjects:options count:itemCount] forKey:@"_options"];
 }
 
+%hook YTVarispeedSwitchController
+- (id)init {
+    self = %orig;
+    YouModApplyExtraSpeedOptions(self);
+    return self;
+}
+%end
+
+%hook YTVarispeedSwitchControllerImpl
+- (id)init {
+    self = %orig;
+    YouModApplyExtraSpeedOptions(self);
+    return self;
+}
 %end
 
 %hook YTIPlayerHotConfig
-
 %new(f@:)
 - (float)maximumPlaybackRate {
     return 10.0;
 }
-
 %end
 
 %hook YTIGranularVariableSpeedConfig
-
 %new(d@:)
 - (int)maximumPlaybackRate {
     return 10.0 * 100;
 }
-
 %end
 %end
-
-static NSArray *YouModHoldSpeedValues(void) {
-    return @[@0.0, @0.25, @0.5, @0.75, @1.0, @1.25, @1.5, @1.75, @2.0, @3.0, @4.0, @5.0];
-}
 
 static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
-    NSArray *values = YouModHoldSpeedValues();
+    NSArray *values = @[@1.0, @0.25, @0.5, @0.75, @1.0, @1.25, @1.5, @1.75, @2.0, @3.0, @4.0, @5.0];
     return [values[index] floatValue];
 }
 
 %hook YTMainAppVideoPlayerOverlayView
-- (void)setLongPressGestureRecognizer:(id)arg {
+// setPlayerResponse: sets this directly, so the YTAnnotationsViewController hooks miss it.
+- (void)setFeaturedChannelWatermarkImageView:(id)arg { if (!IS_ENABLED(HideWaterMark)) %orig; }
+- (void)setLongPressGestureRecognizer:(UILongPressGestureRecognizer *)arg {
     if (INTFORVAL(HoldToSpeedIndex) != 0) return;
     %orig;
 }
 // Remove Dark Background in Overlay
 - (void)setBackgroundVisible:(BOOL)arg1 isGradientBackground:(BOOL)arg2 {
-    BOOL temp = IS_ENABLED(RemoveDarkOverlay) ? NO : arg1;
-    %orig(temp, arg2);
+    if (IS_ENABLED(RemoveDarkOverlay)) arg1 = NO;
+    %orig(arg1, arg2);
 }
 // Hide Watermarks
 - (BOOL)isWatermarkEnabled { return IS_ENABLED(HideWaterMark) ? NO : %orig; }
 - (void)setWatermarkEnabled:(BOOL)arg { 
-    BOOL temp = IS_ENABLED(HideWaterMark) ? NO : arg;
-    %orig(temp);
+    if (IS_ENABLED(HideWaterMark)) arg = NO;
+    %orig(arg);
 }
 - (void)layoutSubviews {
     %orig;
-    if (IS_ENABLED(HideCastButtonPlayer)) self.playbackRouteButton.hidden = YES;
+    if (IS_ENABLED(HideCastButtonPlayer) && self.playbackRouteButton != nil) self.playbackRouteButton.hidden = YES;
+}
+- (void)setFullscreenActionsView:(YTFullscreenActionsView *)actionsView {
+    if (IS_ENABLED(HideFullAction) && actionsView == nil) {
+        if (self.fullscreenActionsView) return;
+        else actionsView = [%c(YTFullscreenActionsView) new];
+    }
+    %orig(actionsView);
+}
+%end
+
+// Hide related videos in fullscreen
+%hook YTFullscreenEngagementOverlayController
+- (void)setEnabled:(BOOL)enabled { 
+    if (IS_ENABLED(HideRelatedVideos)) enabled = NO;
+    %orig(enabled);
 }
 %end
 
 %hook YTSingleVideoController
-
 - (void)playerItem:(id)arg1 hasSelectableVideoFormats:(id)arg2 {
     %orig;
     if (!arg2) return;
     [self YouModAutoQuality];
 }
-
 %new
 - (void)YouModAutoQuality {
     NSArray *videoFormats = self.selectableVideoFormats;
     // Return early if there aren't any video formats available
     // eg. Voice comments and others
     if (!videoFormats || videoFormats.count == 0) return;
-    NSInteger kQualityIndex = isWiFiConnected() ? INTFORVAL(WifiQualityIndex) : INTFORVAL(CellQualityIndex);
-    if ([NSProcessInfo processInfo].lowPowerModeEnabled) kQualityIndex = INTFORVAL(LowPowerQualityIndex);
+    NSInteger kQualityIndex = 0;
+    if ([NSProcessInfo processInfo].lowPowerModeEnabled) {
+        kQualityIndex = INTFORVAL(LowPowerQualityIndex);
+    } else if (gNetworkType == 1) {
+        kQualityIndex = INTFORVAL(WifiQualityIndex);
+    } else if (gNetworkType == 2) {
+        kQualityIndex = INTFORVAL(CellQualityIndex);
+    }
     if (kQualityIndex == 0) return;
 
     NSString *bestQualityLabel;
@@ -671,30 +1045,8 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
     %orig;
 }
 %end
-
-%hook YTMenuController
-- (NSMutableArray <YTActionSheetAction *> *)actionsForRenderers:(NSMutableArray <YTIMenuItemSupportedRenderers *> *)renderers fromView:(UIView *)fromView entry:(id)entry shouldLogItems:(BOOL)shouldLogItems firstResponder:(id)firstResponder {
-    NSUInteger index = [renderers indexOfObjectPassingTest:^BOOL(YTIMenuItemSupportedRenderers *renderer, NSUInteger idx, BOOL *stop) {
-        YTIMenuItemSupportedRenderersElementRendererCompatibilityOptionsExtension *extension = (YTIMenuItemSupportedRenderersElementRendererCompatibilityOptionsExtension *)[renderer.elementRenderer.compatibilityOptions messageForFieldNumber:396644439];
-        BOOL isVideoQuality = [extension.menuItemIdentifier isEqualToString:@"menu_item_video_quality"];
-        if (isVideoQuality) *stop = YES;
-        return isVideoQuality;
-    }];
-    NSMutableArray <YTActionSheetAction *> *actions = %orig;
-    if (index != NSNotFound) {
-        YTActionSheetAction *action = actions[index];
-        action.handler = ^{
-            [firstResponder didPressVideoQuality:fromView];
-        };
-        UIView *elementView = [action.button valueForKey:@"_elementView"];
-        elementView.userInteractionEnabled = NO;
-    }
-    return actions;
-}
-%end
 %end
 
-// Gestures - @bhackel (YTLitePlus)
 %hook YTWatchLayerViewController
 // invoked when the player view controller is either created or destroyed
 - (void)watchController:(YTWatchController *)watchController didSetPlayerViewController:(YTPlayerViewController *)playerViewController {
@@ -714,7 +1066,9 @@ static CGFloat YouModSpeedForHoldIndex(NSInteger index) {
         if (!playerViewController.YouModHoldGesture && INTFORVAL(HoldToSpeedIndex) != 0) {
             playerViewController.YouModHoldGesture = [[UILongPressGestureRecognizer alloc] initWithTarget:playerViewController action:@selector(YouModHoldToSpeed:)];
             playerViewController.YouModHoldGesture.minimumPressDuration = 0.4;
-            [pv addGestureRecognizer:playerViewController.YouModHoldGesture];   
+            playerViewController.YouModHoldGesture.numberOfTouchesRequired = 1;
+            playerViewController.YouModHoldGesture.delegate = playerViewController;
+            [pv addGestureRecognizer:playerViewController.YouModHoldGesture];
         }
     }
     %orig;
@@ -759,6 +1113,19 @@ static CGFloat remainingOverlayWidth(YTPlayerViewController *pvc, CGFloat fullWi
         }
     }
     return fullWidth;
+}
+
+static UISlider *YouModVolumeSlider(void) {
+    static MPVolumeView *volumeView;
+    if (!volumeView) volumeView = [[MPVolumeView alloc] initWithFrame:CGRectMake(-4000, -4000, 1, 1)];
+    if (!volumeView.superview) {
+        for (UIWindow *w in UIApplication.sharedApplication.windows) {
+            if (w.isKeyWindow) { [w addSubview:volumeView]; [volumeView layoutIfNeeded]; break; }
+        }
+    }
+    for (UIView *v in volumeView.subviews)
+        if ([v isKindOfClass:UISlider.class]) return (UISlider *)v;
+    return nil;
 }
 
 %hook YTPlayerViewController
@@ -815,15 +1182,6 @@ static CGFloat remainingOverlayWidth(YTPlayerViewController *pvc, CGFloat fullWi
             return YES;
         }
     }
-    if (gestureRecognizer == self.YouModHoldGesture) {
-        if (self.YouModPanGesture && (self.YouModPanGesture.state == UIGestureRecognizerStateBegan || self.YouModPanGesture.state == UIGestureRecognizerStateChanged)) {
-            return NO;
-        }
-        if (isRelatedVideosPanelEnabled(self)) return NO;
-        CGPoint touchLocation = [gestureRecognizer locationInView:self.view];
-        CGFloat activeWidth = remainingOverlayWidth(self, self.view.bounds.size.width);
-        if (touchLocation.x > activeWidth) return NO;
-    }
     return YES;
 }
 
@@ -838,20 +1196,6 @@ static CGFloat remainingOverlayWidth(YTPlayerViewController *pvc, CGFloat fullWi
     static int controlType = 0;
     static CGFloat deadzoneStartingTranslation;
     static CGFloat sensitivityFactor = 1.0;
-
-    static MPVolumeView *volumeView;
-    static UISlider *volumeViewSlider;
-
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        volumeView = [[MPVolumeView alloc] initWithFrame:CGRectZero];
-        for (UIView *view in volumeView.subviews) {
-            if ([view isKindOfClass:[UISlider class]]) {
-                volumeViewSlider = (UISlider *)view;
-                break;
-            }
-        }
-    });
 
     YTMainAppVideoPlayerOverlayViewController *ovcon = [self activeVideoPlayerOverlay];
 
@@ -966,8 +1310,9 @@ static CGFloat remainingOverlayWidth(YTPlayerViewController *pvc, CGFloat fullWi
                 percentString = [NSString stringWithFormat:@" %d%%", (int)(newBrightness * 100)];
             } else if (controlType == 2) {
                 float newVolume = fmaxf(fminf(initialVolume + delta, 1.0), 0.0);
-                dispatch_async(dispatch_get_main_queue(), ^{
-                    volumeViewSlider.value = newVolume;
+                UISlider *volumeSlider = YouModVolumeSlider();
+                if (volumeSlider) dispatch_async(dispatch_get_main_queue(), ^{
+                    volumeSlider.value = newVolume;
                 });
                 
                 if (newVolume == 0.0f) {
@@ -1048,23 +1393,12 @@ static CGFloat remainingOverlayWidth(YTPlayerViewController *pvc, CGFloat fullWi
     if (gestureRecognizer == self.YouModPanGesture && [otherGestureRecognizer isKindOfClass:[UIPanGestureRecognizer class]]) {
         return YES;
     }
-    if (gestureRecognizer == self.YouModHoldGesture && ![otherGestureRecognizer isKindOfClass:[UIPanGestureRecognizer class]]) {
-        return YES;
-    }
     return NO;
 }
 
 %new
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
-    if (gestureRecognizer == self.YouModPanGesture) {
-        return NO; 
-    }
-    if (gestureRecognizer == self.YouModHoldGesture || otherGestureRecognizer == self.YouModHoldGesture) {
-        if ([gestureRecognizer isKindOfClass:[UIPanGestureRecognizer class]] || [otherGestureRecognizer isKindOfClass:[UIPanGestureRecognizer class]]) {
-            return NO;
-        }
-        return YES;
-    }
+    if (gestureRecognizer == self.YouModPanGesture) return NO;
     return YES;
 }
 
@@ -1078,10 +1412,13 @@ static CGFloat remainingOverlayWidth(YTPlayerViewController *pvc, CGFloat fullWi
     if (startLocation.x > remainingWidth) return;
 
     if (tapGestureRecognizer.state == UIGestureRecognizerStateEnded) {
-        if (self.playerState == 3) {
+        NSInteger state = self.playerState;
+        if (state == 3) {
             [self pause];
-        } else if (self.playerState == 4) {
+        } else if (state == 4) {
             [self play];
+        } else if (self.isPlaybackFinished) {
+            [self didPressReplay];
         }
     }
 }
@@ -1103,26 +1440,16 @@ static CGFloat remainingOverlayWidth(YTPlayerViewController *pvc, CGFloat fullWi
         [self setPlaybackRate:speed];
         return;
     }
-    if (INTFORVAL(AutoSpeedIndex) == 0) return;
+    NSInteger speedIndex = [self.parentViewController isKindOfClass:%c(YTShortsPlayerViewController)] ? INTFORVAL(ShortsAutoSpeedIndex) : INTFORVAL(AutoSpeedIndex);
+    if (speedIndex == 0) return;
     NSArray *speedLabels = @[@0.01, @0.25, @0.5, @0.75, @1.0, @1.25, @1.5, @1.75, @2.0, @3.0, @4.0, @5.0];
-    [self setPlaybackRate:[speedLabels[INTFORVAL(AutoSpeedIndex)] floatValue]];
+    [self setPlaybackRate:[speedLabels[speedIndex] floatValue]];
 }
 
-- (void)singleVideo:(YTSingleVideoController *)video currentVideoTimeDidChange:(YTSingleVideoTime *)time {
-    %orig;
-    YouModAddEndTime(self, video, time);
-}
-
-- (void)potentiallyMutatedSingleVideo:(YTSingleVideoController *)video currentVideoTimeDidChange:(YTSingleVideoTime *)time {
-    %orig;
-    YouModAddEndTime(self, video, time);
-}
-
-%new
-- (void)YouModAutoMute {
-    YTSingleVideoController *sgvid = self.activeVideo;
-    BOOL muted = [sgvid isMuted];
-    [sgvid setMuted:[self isInlinePlaybackActive] ? muted : IS_ENABLED(KeepMutedKey)];
+- (void)setMuted:(BOOL)muted { 
+    if ([self.activeVideoPlayerOverlay isKindOfClass:%c(YTMainAppVideoPlayerOverlayViewController)]
+        && YMIsOverlayButtonEnabled(@"mute.video")) muted = IS_ENABLED(KeepMutedKey);
+    %orig(muted);
 }
 
 %new
@@ -1163,12 +1490,21 @@ static CGFloat remainingOverlayWidth(YTPlayerViewController *pvc, CGFloat fullWi
                 }
             }
         }
+    } else if (IS_ENABLED(NoDubbedAudioTrack)) {
+        YTIAudioTrack *defaultTrack = nil;
+        for (YTIAudioTrack *track in availableTracks) if (track.audioIsDefault) { defaultTrack = track; break; }
+        if (defaultTrack && [defaultTrack isAutoDubbed]) {
+            for (YTIAudioTrack *track in availableTracks) {
+                if ([track.id_p hasSuffix:@".4"]) {
+                    matchedTrack = track;
+                    break;
+                }
+            }
+        }
     }
 
     // If found, change to it
-    if (matchedTrack) {
-        [self setAudioTrack:matchedTrack source:0];
-    }
+    if (matchedTrack) [self setAudioTrack:matchedTrack source:0];
 }
 
 %new
@@ -1183,9 +1519,7 @@ static CGFloat remainingOverlayWidth(YTPlayerViewController *pvc, CGFloat fullWi
     MLInnerTubeCaptionTrack *matchedTrack;
 
     if (INTFORVAL(CaptionTrack) == 1) {
-        if (currentTrack != nil) {
-            [self YouModCaptionsHelper:nil];
-        }
+        if (currentTrack != nil) [self setActiveCaptionTrack:nil source:0];
         return;
     }
 
@@ -1195,33 +1529,26 @@ static CGFloat remainingOverlayWidth(YTPlayerViewController *pvc, CGFloat fullWi
             break;
         }
     }
-    if (matchedTrack && ([matchedTrack.VSSID hasPrefix:@"a."] || [matchedTrack.VSSID hasPrefix:@"ta."]) && IS_ENABLED(DisablesCaptionTrack)) {
+
+    if (matchedTrack && ([matchedTrack.VSSID hasPrefix:@"a."] || [matchedTrack.VSSID hasPrefix:@"ta."] || [matchedTrack.VSSID hasPrefix:@"t."]) && IS_ENABLED(DisablesCaptionTrack)) {
         matchedTrack = nil;
-        [self YouModCaptionsHelper:nil];
+        [self setActiveCaptionTrack:nil source:0];
         return;
     } else if (!matchedTrack && IS_ENABLED(DisablesCaptionTrack)) {
-        [self YouModCaptionsHelper:nil];
+        [self setActiveCaptionTrack:nil source:0];
         return;
     }
-    if (matchedTrack && matchedTrack != currentTrack) {
-        [self YouModCaptionsHelper:matchedTrack];
-    }
+
+    if (matchedTrack && matchedTrack != currentTrack) [self setActiveCaptionTrack:matchedTrack source:0];
 }
 
-%new
-- (void)YouModCaptionsHelper:(MLInnerTubeCaptionTrack *)track {
-    if ([self respondsToSelector:@selector(setActiveCaptionTrack:source:)]) {
-        [self setActiveCaptionTrack:track source:0];
-    } else {
-        [self setActiveCaptionTrack:track];
-    }
-}
 %new
 - (void)YouModHideSpeedToast {
     [UIView animateWithDuration:0.2 animations:^{
         self.YouModSpeedToastView.alpha = 0.0;
     }];
 }
+
 %new
 - (void)YouModShowSpeedToast:(CGFloat)speed isLocked:(BOOL)isLocked {
     UIColor *themeTextColor = [UIColor labelColor];
@@ -1327,6 +1654,7 @@ static CGFloat remainingOverlayWidth(YTPlayerViewController *pvc, CGFloat fullWi
     static CGPoint startLocation;
     static BOOL initialLockState;
     static BOOL isPendingToggle;
+    static BOOL holdGestureActive = NO;
 
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 
@@ -1357,8 +1685,9 @@ static CGFloat remainingOverlayWidth(YTPlayerViewController *pvc, CGFloat fullWi
             [self setPlaybackRate:speed];
             [self YouModShowSpeedToast:speed isLocked:YES];
         }
+        holdGestureActive = YES;
     } else if (gesture.state == UIGestureRecognizerStateChanged) {
-        if (!IS_ENABLED(LockSpeed)) return;
+        if (!holdGestureActive || !IS_ENABLED(LockSpeed)) return;
         
         CGPoint currentLocation = [gesture locationInView:self.playerView];
         CGFloat dragDistanceY = currentLocation.y - startLocation.y;
@@ -1397,6 +1726,10 @@ static CGFloat remainingOverlayWidth(YTPlayerViewController *pvc, CGFloat fullWi
                gesture.state == UIGestureRecognizerStateCancelled || 
                gesture.state == UIGestureRecognizerStateFailed) {
 
+        // Began never ran (gesture failed or was suppressed): nothing was applied, so
+        // restoring/applying a rate here would flash the speed on touch-up
+        if (!holdGestureActive) return;
+
         BOOL finalLockState = initialLockState;
         if (gesture.state == UIGestureRecognizerStateEnded || (gesture.state == UIGestureRecognizerStateCancelled && isPendingToggle)) {
             if (IS_ENABLED(LockSpeed) && isPendingToggle) {
@@ -1412,172 +1745,185 @@ static CGFloat remainingOverlayWidth(YTPlayerViewController *pvc, CGFloat fullWi
             [self setPlaybackRate:targetRate];
         }
         isPendingToggle = NO;
+        holdGestureActive = NO;
         [self YouModHideSpeedToast];
     }
 }
+
 %new
 - (void)YouModAutoDRCAudio {
     BOOL value = NO;
-    if (INTFORVAL(AutoDRCAudioIndex) == 1) {
-        value = YES;
-    }
+    if (INTFORVAL(AutoDRCAudioIndex) == 1) value = YES;
     [self setAudioDRCEnabled:value];
 }
 %end
 
-// Video buttons filtering
-static void YouModFilterVideoButtons(_ASDisplayView *view, NSString *iden) {
-    UIViewController *con = view._viewControllerForAncestor;
-    if ([con isKindOfClass:%c(YTELMViewController)]) {
-        _ASDisplayView *mainView = (_ASDisplayView *)view.superview;
-        ASDisplayNode *node = mainView.keepalive_node;
-        BOOL done = NO;
-        for (ASDisplayNode *child in [node.yogaChildren copy]) {
-            for (id child2 in [child.yogaChildren copy]) {
-                if ([[child2 description] containsString:iden]) {
-                    [node removeYogaChild:child];
-                    [view removeFromSuperview];
-                    done = YES;
+void YouModRemoveFullscreenActionsButtons(YTELMViewController *controller) {
+    _ASDisplayView *view = (_ASDisplayView *)controller.view.subviews[0];
+    ASDisplayNode *node = view.keepalive_node;
+    NSDictionary *buttonsList = @{
+        @"id.video.like.button": @(IS_ENABLED(RemoveVideoLikeButton)),
+        @"id.video.dislike.button": @(IS_ENABLED(RemoveVideoDislikeButton)),
+        @"id.video.share.button": @(IS_ENABLED(RemoveVideoShareButton)),
+        @"id.video.add_to.button": @(IS_ENABLED(RemoveVideoSaveButton)),
+        @"clip_button.eml": @(IS_ENABLED(RemoveVideoClipButton)),
+        @"id.video.remix.button": @(IS_ENABLED(RemoveVideoRemixButton)),
+        @"id.ui.add_to.offline.button": @(IS_ENABLED(RemoveVideoDownloadButton)),
+        @"id.player.chat.toggle.button" : @(IS_ENABLED(RemoveVideoLiveChatButton))
+    };
+    for (NSString *button in buttonsList) {
+        if ([buttonsList[button] boolValue]) {
+            for (UIView *sub in view.subviews) {
+                if ([sub.accessibilityIdentifier isEqualToString:button]) {
+                    [sub removeFromSuperview];
                     break;
                 }
-            }
-            if (done) break;
-        }
-    } else if ([con isKindOfClass:%c(YTWatchNextResultsViewController)]) {
-        BOOL isNewActionBar = NO;
-        UIView *test = view.superview;
-        while (test != nil) {
-            if ([test.accessibilityIdentifier isEqualToString:@"id.video.non_scrollable_action_bar"]) {
-                isNewActionBar = YES;
-                break;
-            }
-            test = test.superview;
-        }
-        
-        BOOL isSpecialButton = ([iden isEqualToString:@"id.video.like.button"] || [iden isEqualToString:@"id.video.dislike.button"]);
-        
-        if (!isSpecialButton) {
-            if (isNewActionBar) {
-                _ASDisplayView *dpView = (_ASDisplayView *)view.superview;
-                
-                ASDisplayNode *node = dpView.keepalive_node;
-                NSArray *children = [node.yogaChildren copy];
-                for (UIView *child in children) {
-                    if ([[child description] containsString:iden]) {
+            }    
+            BOOL found = NO;
+            for (ASDisplayNode *child in node.yogaChildren) {
+                for (id child2 in child.yogaChildren) {
+                    if ([[child2 description] containsString:button]) {
                         [node removeYogaChild:child];
+                        found = YES;
                         break;
                     }
                 }
-                
-                BOOL isFounded = NO;
-                _ASDisplayView *targetDpView = dpView;
-                while (targetDpView != nil && targetDpView.superview != nil) {
-                    if ([targetDpView.superview.accessibilityIdentifier isEqualToString:@"id.video.non_scrollable_action_bar"]) {
-                        isFounded = YES;
-                        break;
-                    }
-                    targetDpView = (_ASDisplayView *)targetDpView.superview;
-                }
-                
-                if (isFounded && targetDpView) {
-                    ASDisplayNode *node2 = targetDpView.keepalive_node;
-                    NSArray *children2 = [node2.yogaChildren copy];
-                    for (UIView *child in children2) {
-                        [node2 removeYogaChild:child];
-                    }
-                    [targetDpView removeFromSuperview];
-                }
-            } else {
-                UIView *actualMainView = view.superview;
-                while (actualMainView != nil && ![actualMainView isKindOfClass:%c(_ASCollectionViewCell)]) {
-                    actualMainView = actualMainView.superview;
-                }
-                
-                if (actualMainView) {
-                    ASCellNode *node = ((_ASCollectionViewCell *)actualMainView).node;
-                    NSArray *children = [node.yogaChildren copy];
-                    for (UIView *child in children) {
-                        [node removeYogaChild:child];
-                    }
-                    [actualMainView removeFromSuperview];
-                }
+                if (found) break;
             }
-        } else {
+        }
+    }
+    if (IS_ENABLED(HideRelatedVideos) && view.superview.subviews.count > 1) {
+        int count = 0;
+        for (UIView *sub in view.superview.subviews) {
+            if (count == 0) {
+                count++;
+                continue;
+            }
+            sub.hidden = YES;
+        }
+    }
+}
+
+/*
+// Video buttons filtering
+void YouModFilterVideoButtons(_ASDisplayView *view, NSString *iden) {
+    if (!iden || iden.length == 0) return;
+    int boolCount = 0;
+    if (IS_ENABLED(RemoveVideoLikeButton)) boolCount++;
+    if (IS_ENABLED(RemoveVideoDislikeButton)) boolCount++;
+    NSDictionary *buttonsList = @{
+        @"id.video.like.button": @(IS_ENABLED(RemoveVideoLikeButton)),
+        @"id.video.dislike.button": @(IS_ENABLED(RemoveVideoDislikeButton)),
+        @"id.video.share.button": @(IS_ENABLED(RemoveVideoShareButton)),
+        @"id.video.add_to.button": @(IS_ENABLED(RemoveVideoSaveButton)),
+        @"clip_button.eml": @(IS_ENABLED(RemoveVideoClipButton)),
+        @"id.video.remix.button": @(IS_ENABLED(RemoveVideoRemixButton)),
+        @"id.ui.add_to.offline.button": @(IS_ENABLED(RemoveVideoDownloadButton)),
+        @"id.player.chat.toggle.button" : @(IS_ENABLED(RemoveVideoLiveChatButton))
+    };
+    for (NSString *button in buttonsList) {
+        if ([iden isEqualToString:button] && [buttonsList[button] boolValue]) {
+            BOOL isSpecialButton = ([iden isEqualToString:@"id.video.like.button"] || [iden isEqualToString:@"id.video.dislike.button"]);
             _ASDisplayView *dpView = (_ASDisplayView *)view.superview;
-            if (dpView) {
-                ASDisplayNode *node = dpView.keepalive_node;
-                NSArray *children = [node.yogaChildren copy];
-                for (UIView *child in children) {
-                    NSString *desc = [child description];
-                    if ([desc containsString:iden]) {
-                        [node removeYogaChild:child];
-                        [view removeFromSuperview];
-                    } else if (![desc containsString:@"id.video.like.button"] && ![desc containsString:@"id.video.dislike.button"]) {
-                        [node removeYogaChild:child];
-                    }
-                }
-                
-                if (isNewActionBar) {
-                    BOOL isFounded = NO;
-                    _ASDisplayView *targetDpView = dpView;
-                    while (targetDpView != nil && targetDpView.superview != nil) {
-                        if ([targetDpView.superview.accessibilityIdentifier isEqualToString:@"id.video.non_scrollable_action_bar"]) {
-                            isFounded = YES;
+            ASDisplayNode *node = dpView.keepalive_node;
+            for (ASDisplayNode *child in node.yogaChildren) {
+                if ([child.description containsString:button]) {
+                    [node removeYogaChild:child];
+                    BOOL isNonScrollable = NO;
+                    while (dpView != nil && dpView.superview != nil) {
+                        if ([dpView.superview.accessibilityIdentifier isEqualToString:@"id.video.non_scrollable_action_bar"]) {
+                            isNonScrollable = YES;
                             break;
-                        }
-                        targetDpView = (_ASDisplayView *)targetDpView.superview;
+                        } else if ([dpView.superview.accessibilityIdentifier isEqualToString:@"id.video.scrollable_action_bar"]) {
+                            break;
+                        } 
+                        dpView = (_ASDisplayView *)dpView.superview;
                     }
-                    
-                    if (isFounded && targetDpView) {
-                        ASDisplayNode *node2 = targetDpView.keepalive_node;
-                        NSArray *children2 = [node2.yogaChildren copy];
-                        for (UIView *child in children2) {
-                            [node2 removeYogaChild:child];
-                        }
-                        [targetDpView removeFromSuperview];
+                    ASDisplayNode *superNode;
+                    if (isNonScrollable) {
+                        superNode = dpView.keepalive_node;
+                    } else if (isSpecialButton) {
+                        if (boolCount == 1) continue;
+                        for (int i=0; i<3; i++) dpView = dpView.subviews.firstObject;
+                        superNode = dpView.keepalive_node;
+                    } else {
+                        superNode = [dpView performSelector:@selector(node)];
+                    }
+                    for (ASDisplayNode *child in superNode.yogaChildren) [superNode removeYogaChild:child];
+                    [dpView removeFromSuperview];
+                    break;
+                } else if (boolCount == 1) {
+                    if ([child containsString:@"id.video."]) continue;
+                    NSString *desc = nil;
+                    @try {
+                        desc = [[[[[[node nodeController] performSelector:@selector(parent)] performSelector:@selector(parent)] performSelector:@selector(owningComponent)] performSelector:@selector(owningComponent)] description];
+                    } @catch (id ex) {
+                        continue;
+                    }
+                    if (desc != nil && [desc containsString:@"segmented_like_dislike_button_inner.eml"]) {
+                        [node removeYogaChild:child];
+                        break;
                     }
                 }
             }
         }
     }
 }
+*/
 
-%hook _ASDisplayView
-- (void)didMoveToWindow {
-    %orig;
-    NSString *iden = self.accessibilityIdentifier;
-    if (!iden || iden.length == 0) return;
-    BOOL shouldFilter = NO;
-    if ([iden isEqualToString:@"id.video.share.button"] && IS_ENABLED(RemoveVideoShareButton)) {
-        shouldFilter = YES;
-    } else if ([iden isEqualToString:@"id.video.add_to.button"] && IS_ENABLED(RemoveVideoSaveButton)) {
-        shouldFilter = YES;
-    } else if ([iden isEqualToString:@"id.ui.add_to.offline.button"] && IS_ENABLED(RemoveVideoDownloadButton)) {
-        shouldFilter = YES;
-    } else if ([iden isEqualToString:@"clip_button.eml"] && IS_ENABLED(RemoveVideoClipButton)) {
-        shouldFilter = YES;
-    } else if ([iden isEqualToString:@"id.video.remix.button"] && IS_ENABLED(RemoveVideoRemixButton)) {
-        shouldFilter = YES;
-    } else if ([iden isEqualToString:@"id.video.like.button"] && IS_ENABLED(RemoveVideoLikeButton)) {
-        shouldFilter = YES;
-    } else if ([iden isEqualToString:@"id.video.dislike.button"] && IS_ENABLED(RemoveVideoDislikeButton)) {
-        shouldFilter = YES;
-    } else if ([iden isEqualToString:@"id.player.chat.toggle.button"] && IS_ENABLED(RemoveVideoLiveChatButton)) {
-        shouldFilter = YES;
+%hook YTMenuController
+- (NSMutableArray <YTActionSheetAction *> *)actionsForRenderers:(NSMutableArray <YTIMenuItemSupportedRenderers *> *)renderers fromView:(UIView *)fromView entry:(id)entry shouldLogItems:(BOOL)shouldLogItems firstResponder:(id)firstResponder {
+    NSMutableArray <YTActionSheetAction *> *actions = %orig;
+    if (!IS_ENABLED(ExtraSpeed) && !IS_ENABLED(OldQualityPicker) && INTFORVAL(SleepTimerEntry) == 0) return actions;
+    NSUInteger speedIndex = [renderers indexOfObjectPassingTest:^BOOL(YTIMenuItemSupportedRenderers *renderer, NSUInteger idx, BOOL *stop) {
+        YTIMenuItemSupportedRenderersElementRendererCompatibilityOptionsExtension *extension = (YTIMenuItemSupportedRenderersElementRendererCompatibilityOptionsExtension *)[renderer.elementRenderer.compatibilityOptions messageForFieldNumber:396644439];
+        BOOL isVideoSpeed = [extension.menuItemIdentifier isEqualToString:@"menu_item_playback_speed"];
+        if (isVideoSpeed) *stop = YES;
+        return isVideoSpeed;
+    }];
+    NSUInteger qualityIndex = [renderers indexOfObjectPassingTest:^BOOL(YTIMenuItemSupportedRenderers *renderer, NSUInteger idx, BOOL *stop) {
+        YTIMenuItemSupportedRenderersElementRendererCompatibilityOptionsExtension *extension = (YTIMenuItemSupportedRenderersElementRendererCompatibilityOptionsExtension *)[renderer.elementRenderer.compatibilityOptions messageForFieldNumber:396644439];
+        BOOL isVideoQuality = [extension.menuItemIdentifier isEqualToString:@"menu_item_video_quality"];
+        if (isVideoQuality) *stop = YES;
+        return isVideoQuality;
+    }];
+    NSUInteger sleepTimerIndex = [renderers indexOfObjectPassingTest:^BOOL(YTIMenuItemSupportedRenderers *renderer, NSUInteger idx, BOOL *stop) {
+        YTIMenuItemSupportedRenderersElementRendererCompatibilityOptionsExtension *extension = (YTIMenuItemSupportedRenderersElementRendererCompatibilityOptionsExtension *)[renderer.elementRenderer.compatibilityOptions messageForFieldNumber:396644439];
+        BOOL isSleepTimer = [extension.menuItemIdentifier isEqualToString:@"menu_item_sleep_timer"];
+        if (isSleepTimer) *stop = YES;
+        return isSleepTimer;
+    }];
+    if (speedIndex != NSNotFound && IS_ENABLED(ExtraSpeed)) {
+        YTActionSheetAction *action = actions[speedIndex];
+        action.handler = ^{
+            [firstResponder didPressVarispeed:fromView];
+        };
+        UIView *elementView = [action.button valueForKey:@"_elementView"];
+        elementView.userInteractionEnabled = NO;
     }
-    if (shouldFilter) {
-        YouModFilterVideoButtons(self, iden);
+    if (qualityIndex != NSNotFound && IS_ENABLED(OldQualityPicker)) {
+        YTActionSheetAction *action = actions[qualityIndex];
+        action.handler = ^{
+            [firstResponder didPressVideoQuality:fromView];
+        };
+        UIView *elementView = [action.button valueForKey:@"_elementView"];
+        elementView.userInteractionEnabled = NO;
     }
+    if (sleepTimerIndex != NSNotFound && INTFORVAL(SleepTimerEntry) != 0) [actions removeObjectAtIndex:sleepTimerIndex];
+    return actions;
 }
 %end
 
 %ctor {
     %init;
     YouModConfigureRemoteSkipCommands();
+    if (INTFORVAL(WifiQualityIndex) != 0 || INTFORVAL(CellQualityIndex) != 0) {
+        startNetworkMonitoring();
+    }
     if (IS_ENABLED(OldQualityPicker)) {
         %init(OldVideoQuality);
     }
-    if (IS_ENABLED(ExtraSpeed) || IS_ENABLED(GestureControls) || INTFORVAL(HoldToSpeedIndex) >= 9 || INTFORVAL(AutoSpeedIndex) >= 9) {
+    if (IS_ENABLED(ExtraSpeed) || IS_ENABLED(GestureControls) || INTFORVAL(HoldToSpeedIndex) >= 9 || INTFORVAL(AutoSpeedIndex) >= 9 || INTFORVAL(ShortsAutoSpeedIndex) >= 9) {
         %init(Speed);
     }
     if (IS_ENABLED(ForceMiniPlayer)) {

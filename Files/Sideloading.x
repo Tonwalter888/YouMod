@@ -13,9 +13,7 @@ static NSString *accessGroupID() {
     OSStatus status = SecItemCopyMatching((__bridge CFDictionaryRef)query, (CFTypeRef *)&result);
     if (status == errSecItemNotFound) {
         status = SecItemAdd((__bridge CFDictionaryRef)query, (CFTypeRef *)&result);
-        if (status != errSecSuccess) {
-            return nil;
-        }
+        if (status != errSecSuccess) return nil;
     }
     NSString *accessGroup = [(__bridge NSDictionary *)result objectForKey:(__bridge NSString *)kSecAttrAccessGroup];
     return accessGroup;
@@ -41,10 +39,6 @@ static NSString *accessGroupID() {
 
 %hook GVROverlayView
 + (NSString *)appName { return YT_NAME; }
-%end
-
-%hook OGLPhenotypeFlagServiceImpl
-- (NSString *)bundleId { return YT_BUNDLE_ID; }
 %end
 
 %hook APMAEU
@@ -74,17 +68,13 @@ static NSString *accessGroupID() {
 
 %hook NSBundle
 + (NSBundle *)bundleWithIdentifier:(NSString *)identifier {
-    if ([identifier isEqualToString:YT_BUNDLE_ID])
-        return NSBundle.mainBundle;
-    return %orig(identifier);
+    if ([identifier isEqualToString:YT_BUNDLE_ID]) return NSBundle.mainBundle;
+    return %orig;
 }
-- (NSString *)bundleIdentifier {
-    return [self isEqual:NSBundle.mainBundle] ? YT_BUNDLE_ID : %orig;
-}
+- (NSString *)bundleIdentifier { return [self isEqual:NSBundle.mainBundle] ? YT_BUNDLE_ID : %orig; }
 - (NSDictionary *)infoDictionary {
     NSDictionary *dict = %orig;
-    if (![self isEqual:NSBundle.mainBundle])
-        return %orig;
+    if (![self isEqual:NSBundle.mainBundle]) return dict;
     NSMutableDictionary *info = [dict mutableCopy];
     if (info[@"CFBundleIdentifier"]) info[@"CFBundleIdentifier"] = YT_BUNDLE_ID;
     if (info[@"CFBundleDisplayName"]) info[@"CFBundleDisplayName"] = YT_NAME;
@@ -92,12 +82,9 @@ static NSString *accessGroupID() {
     return info;
 }
 - (id)objectForInfoDictionaryKey:(NSString *)key {
-    if (![self isEqual:NSBundle.mainBundle])
-        return %orig;
-    if ([key isEqualToString:@"CFBundleIdentifier"])
-        return YT_BUNDLE_ID;
-    if ([key isEqualToString:@"CFBundleDisplayName"] || [key isEqualToString:@"CFBundleName"])
-        return YT_NAME;
+    if (![self isEqual:NSBundle.mainBundle]) return %orig;
+    else if ([key isEqualToString:@"CFBundleIdentifier"]) return YT_BUNDLE_ID;
+    else if ([key isEqualToString:@"CFBundleDisplayName"] || [key isEqualToString:@"CFBundleName"]) return YT_NAME;
     return %orig;
 }
 %end

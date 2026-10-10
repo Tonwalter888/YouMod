@@ -4,8 +4,10 @@ static NSString *YouModUpdateSpeedLabel = @"YouModUpdateSpeedLabel";
 static NSString *currentSpeedLabel = @"1x";
 static float currentPlaybackRate = 1.0;
 
-static NSString *YouModUpdateNotification = @"YouModUpdateNotification";
+static NSString *YouModUpdateQualityLabel = @"YouModUpdateQualityLabel";
 static NSString *currentQualityLabel = @"Auto";
+
+static NSString *YouModUpdateSleepTimerButton = @"YouModUpdateSleepTimerButton";
 
 static NSString *speedLabel(float rate) {
     NSNumberFormatter *formatter = [[NSNumberFormatter alloc] init];
@@ -107,8 +109,11 @@ NSArray<YMOverlayButtonSpec *> *YMRegisteredOverlayButtons(void) {
 
 BOOL YMIsOverlayButtonEnabled(NSString *identifier) {
     if (!identifier || identifier.length == 0) return NO;
-    if ([identifier isEqualToString:@"download.video"] && !IS_ENABLED(DownloadManager)) return NO;
-    if ([identifier isEqualToString:@"sponsorblock.toggle"] && !IS_ENABLED(SBEnabled)) return NO;
+    if ([identifier isEqualToString:@"download.video"]) {
+        if (!IS_ENABLED(DownloadManager)) return NO;
+        return INTFORVAL(DownloadButtonPosition) != DownloadButtonPositionUnderPlayer;
+    }
+    if ([identifier isEqualToString:@"sponsorblock.toggle"]) return IS_ENABLED(SBEnabled) && IS_ENABLED(SBShowButton);
     NSArray *savedOrder = [[NSUserDefaults standardUserDefaults] arrayForKey:OverlayButtonOrder];
     if (savedOrder.count > 0) {
         for (NSDictionary *entry in savedOrder) {
@@ -120,14 +125,27 @@ BOOL YMIsOverlayButtonEnabled(NSString *identifier) {
     }
     // Fallback migration for legacy keys if custom order is not saved yet
     if ([identifier isEqualToString:@"mute.video"]) return IS_ENABLED(MuteButton);
-    if ([identifier isEqualToString:@"speed.video"]) return IS_ENABLED(SpeedButton);
-    if ([identifier isEqualToString:@"quality.video"]) return IS_ENABLED(QualityButton);
-    if ([identifier isEqualToString:@"share.video"]) return IS_ENABLED(ShareButton);
-    if ([identifier isEqualToString:@"loop.video"]) return IS_ENABLED(LoopButton);
-    if ([identifier isEqualToString:@"caption.video"]) return IS_ENABLED(CaptionButton);
-    if ([identifier isEqualToString:@"download.video"]) return IS_ENABLED(DownloadManager);
-    if ([identifier isEqualToString:@"sponsorblock.toggle"]) return IS_ENABLED(SBEnabled) && IS_ENABLED(SBShowButton);
+    else if ([identifier isEqualToString:@"speed.video"]) return IS_ENABLED(SpeedButton);
+    else if ([identifier isEqualToString:@"quality.video"]) return IS_ENABLED(QualityButton);
+    else if ([identifier isEqualToString:@"share.video"]) return IS_ENABLED(ShareButton);
+    else if ([identifier isEqualToString:@"loop.video"]) return IS_ENABLED(LoopButton);
+    else if ([identifier isEqualToString:@"caption.video"]) return IS_ENABLED(CaptionButton);
+    else if ([identifier isEqualToString:@"download.video"]) return IS_ENABLED(DownloadManager) && INTFORVAL(DownloadButtonPosition) != DownloadButtonPositionUnderPlayer;
     return YES;
+}
+
+// Whether a button is placed in the bottom bar (YTInlinePlayerBarContainerView)
+// instead of the top overlay row. Persisted per-entry as "bottom" in the
+// OverlayButtonOrder prefs array; defaults to NO (top row).
+BOOL YMIsOverlayButtonBottom(NSString *identifier) {
+    if (!identifier || identifier.length == 0) return NO;
+    NSArray *savedOrder = [[NSUserDefaults standardUserDefaults] arrayForKey:OverlayButtonOrder];
+    for (NSDictionary *entry in savedOrder) {
+        if ([entry[@"id"] isEqualToString:identifier]) {
+            return [entry[@"bottom"] boolValue];
+        }
+    }
+    return NO;
 }
 
 NSArray<YMOverlayButtonSpec *> *YMOrderedOverlayButtons(void) {
@@ -144,7 +162,12 @@ NSArray<YMOverlayButtonSpec *> *YMOrderedOverlayButtons(void) {
     if (savedOrder.count > 0) {
         for (NSDictionary *entry in savedOrder) {
             NSString *ident = entry[@"id"];
-            BOOL enabled = [entry[@"enabled"] boolValue];
+            BOOL enabled;
+            if ([ident isEqualToString:@"sponsorblock.toggle"] || [ident isEqualToString:@"download.video"]) {
+                enabled = YMIsOverlayButtonEnabled(ident);
+            } else {
+                enabled = [entry[@"enabled"] boolValue];
+            }
             if (!enabled) continue;
             YMOverlayButtonSpec *spec = lookup[ident];
             if (spec) [ordered addObject:spec];
@@ -159,7 +182,9 @@ NSArray<YMOverlayButtonSpec *> *YMOrderedOverlayButtons(void) {
                 }
             }
             if (!found) {
-                [ordered addObject:spec];
+                if (YMIsOverlayButtonEnabled(spec.identifier)) {
+                    [ordered addObject:spec];
+                }
             }
         }
     } else {
@@ -179,7 +204,7 @@ NSArray<YMOverlayButtonSpec *> *YMOrderedOverlayButtons(void) {
 // overlay's events delegate. Button handlers use it to act on the current video.
 static YTPlayerViewController *YMPlayerVCFromOverlay(YTMainAppControlsOverlayView *overlay) {
     YTMainAppVideoPlayerOverlayViewController *mainOverlayController = (YTMainAppVideoPlayerOverlayViewController *)overlay.eventsDelegate;
-    return mainOverlayController.parentViewController;
+    return (YTPlayerViewController *)mainOverlayController.parentViewController;
 }
 
 // Recursively find the right-most YTQTMButton in the overlay's top region. YouTube
@@ -189,7 +214,9 @@ static void YMScanForGearFrame(UIView *view, YTMainAppControlsOverlayView *overl
     for (UIView *sub in view.subviews) {
         if ([sub isKindOfClass:%c(YTQTMButton)]) {
             CGRect f = [sub convertRect:sub.bounds toView:overlay];
-            if (CGRectGetMidY(f) <= topRegionMaxY) { // in the top button row
+            // Zero-size frames show up transiently while the overlay is
+            // animating; anchoring to one parks the row at a garbage spot.
+            if (!CGRectIsEmpty(f) && CGRectGetMidY(f) <= topRegionMaxY) { // in the top button row
                 // The CGRectIsNull check must stay first: CGRectGetMidX(CGRectNull) is
                 // infinite, so the > comparison alone would never accept the first match.
                 if (CGRectIsNull(*bestFrame) || CGRectGetMidX(f) > CGRectGetMidX(*bestFrame)) *bestFrame = f;
@@ -206,7 +233,8 @@ static void YMScanForGearFrame(UIView *view, YTMainAppControlsOverlayView *overl
 static CGRect YMGearFrameInOverlay(YTMainAppControlsOverlayView *overlay) {
     YTQTMButton *overflow = [overlay valueForKey:@"_overflowButton"];
     if (overflow.window) {
-        return [overflow convertRect:overflow.bounds toView:overlay];
+        CGRect frame = [overflow convertRect:overflow.bounds toView:overlay];
+        if (!CGRectIsEmpty(frame)) return frame;
     }
 
     CGFloat topRegionMaxY = overlay.bounds.size.height * 0.25;
@@ -215,8 +243,6 @@ static CGRect YMGearFrameInOverlay(YTMainAppControlsOverlayView *overlay) {
     return bestFrame;
 }
 
-// The font for a text button's label, in YouTube Sans to match native controls,
-// with a plain system-font fallback on versions lacking the YouTube Sans style API.
 static UIFont *YMOverlayTextButtonFont(NSString *text, CGSize maxSize) {
     if (text.length == 0) return [UIFont systemFontOfSize:15 weight:UIFontWeightSemibold];
     
@@ -238,17 +264,21 @@ static UIFont *YMOverlayTextButtonFont(NSString *text, CGSize maxSize) {
     return hasYTFont ? [typeStyle ytSansFontOfSize:(CGFloat)bestSize weight:UIFontWeightSemibold] : [UIFont systemFontOfSize:(CGFloat)bestSize weight:UIFontWeightSemibold];
 }
 
-static YTQTMButton *YMCreateOverlayButton(YTMainAppControlsOverlayView *overlay, YMOverlayButtonSpec *spec) {
-    YTQTMButton *button;
-    UIColor *tint = spec.tintColor ?: [UIColor whiteColor];
+static void setOverlayButtonIcon(YTQTMButton *button, NSString *symbolName) {
+    UIColor *color = [UIColor whiteColor];
+    if ([symbolName isEqualToString:@"moon"]) color = YMSleepTimerIsActive() ? [UIColor systemRedColor] : [UIColor whiteColor];
+    UIImageSymbolConfiguration *config = [UIImageSymbolConfiguration configurationWithPointSize:20 weight:UIImageSymbolWeightMedium];
+    UIImage *image = [UIImage systemImageNamed:symbolName withConfiguration:config];
+    [button setImage:image forState:UIControlStateNormal];
+    button.imageView.contentMode = UIViewContentModeScaleAspectFit;
+    [button setTintColor:color];
+}
 
+static YTQTMButton *YMCreateOverlayButton(UIView *parent, YMOverlayButtonSpec *spec) {
+    YTQTMButton *button;
     if (spec.title.length > 0) {
-        // Text button: a label instead of an icon. customTitleColor is YTQTMButton's
-        // own text-colour channel; sizeWithPaddingAndInsets is disabled so the width
-        // stays fixed rather than expanding to fit the text.
         button = [%c(YTQTMButton) textButton];
         [button setTitle:spec.title forState:UIControlStateNormal];
-        button.customTitleColor = tint;
         button.titleLabel.font = YMOverlayTextButtonFont(spec.title, CGSizeMake(25, 25));
         button.titleLabel.textAlignment = NSTextAlignmentCenter;
         button.sizeWithPaddingAndInsets = NO;
@@ -261,22 +291,15 @@ static YTQTMButton *YMCreateOverlayButton(YTMainAppControlsOverlayView *overlay,
         button.contentVerticalAlignment = UIControlContentVerticalAlignmentCenter;
         button.contentHorizontalAlignment = UIControlContentHorizontalAlignmentCenter;
     } else {
-        UIImageSymbolConfiguration *config = [UIImageSymbolConfiguration configurationWithPointSize:20 weight:UIImageSymbolWeightMedium];
-        // Template rendering so YTQTMButton's tint colours the glyph reliably.
-        UIImage *icon = [[UIImage systemImageNamed:spec.symbolName withConfiguration:config] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
         button = [%c(YTQTMButton) iconButton];
-        [button setImage:icon forState:UIControlStateNormal];
-        button.tintColor = tint;
-        button.imageView.contentMode = UIViewContentModeScaleAspectFit;
+        setOverlayButtonIcon(button, spec.symbolName);
     }
-
+    if ([button respondsToSelector:@selector(enableNewTouchFeedback)]) [button enableNewTouchFeedback];
     button.exclusiveTouch = YES;
     button.tag = spec.viewTag;
-    // The row's frame is assigned authoritatively in layoutSubviews.
     button.frame = CGRectMake(0, 0, YMOverlayButtonSize, YMOverlayButtonSize);
-    [button enableNewTouchFeedback];
-    [button addTarget:overlay action:@selector(ymOverlayButtonTapped:) forControlEvents:UIControlEventTouchUpInside];
-    [overlay addSubview:button];
+    [button addTarget:parent action:@selector(ymOverlayButtonTapped:) forControlEvents:UIControlEventTouchUpInside];
+    [parent addSubview:button];
     return button;
 }
 
@@ -285,11 +308,25 @@ static YTQTMButton *YMCreateOverlayButton(YTMainAppControlsOverlayView *overlay,
 static BOOL isRelatedVideosExpanded = NO;
 
 %hook YTMainAppControlsOverlayView
-
 - (void)layoutSubviews {
     %orig;
+    YouModApplyPrevNextReplacement(self);
     NSArray<YMOverlayButtonSpec *> *allRegistered = YMRegisteredOverlayButtons();
-    NSArray<YMOverlayButtonSpec *> *specs = YMOrderedOverlayButtons();
+    // Bottom-placed buttons live in YTInlinePlayerBarContainerView, not here.
+    NSMutableArray<YMOverlayButtonSpec *> *specs = [NSMutableArray array];
+    for (YMOverlayButtonSpec *spec in YMOrderedOverlayButtons()) {
+        if (!YMIsOverlayButtonBottom(spec.identifier)) [specs addObject:spec];
+    }
+
+    // Nothing enabled on this side — drop any leftovers and bail before the
+    // gear lookup / player resolution.
+    if (specs.count == 0) {
+        for (YMOverlayButtonSpec *spec in allRegistered) {
+            UIView *btn = [self viewWithTag:spec.viewTag];
+            if (btn) [btn removeFromSuperview];
+        }
+        return;
+    }
 
     NSMutableSet<NSNumber *> *activeTags = [NSMutableSet set];
     for (YMOverlayButtonSpec *spec in specs) {
@@ -301,8 +338,6 @@ static BOOL isRelatedVideosExpanded = NO;
             if (btn) [btn removeFromSuperview];
         }
     }
-
-    if (specs.count == 0) return;
 
     YTPlayerViewController *player = YMPlayerVCFromOverlay(self);
     YTSingleVideoController *sgvid = player.activeVideo;
@@ -328,13 +363,7 @@ static BOOL isRelatedVideosExpanded = NO;
         }
         if (!btn) btn = YMCreateOverlayButton(self, spec);
 
-        btn.hidden = !overlayVisible || isRelatedVideosExpanded;
-
-        if (spec.tintProvider) {
-            UIColor *dynamic = spec.tintProvider(player);
-            if (spec.title.length > 0) btn.customTitleColor = dynamic;
-            else btn.tintColor = dynamic;
-        }
+        btn.alpha = overlayVisible && !isRelatedVideosExpanded;
 
         CGFloat width = (spec.title.length > 0) ? YMOverlayTextButtonWidth : YMOverlayButtonSize;
         CGFloat centerX = (prevHalfWidth == 0) ? trailingCenterX : trailingCenterX - prevHalfWidth - YMOverlayButtonGap - width / 2.0;
@@ -345,15 +374,13 @@ static BOOL isRelatedVideosExpanded = NO;
         [self bringSubviewToFront:btn];
     }
 }
-
 - (void)setOverlayVisible:(BOOL)visible {
     %orig;
     for (YMOverlayButtonSpec *spec in YMRegisteredOverlayButtons()) {
         YTQTMButton *btn = (YTQTMButton *)[self viewWithTag:spec.viewTag];
-        if (btn) btn.hidden = !visible || isRelatedVideosExpanded;
+        if (btn) btn.alpha = visible && !isRelatedVideosExpanded;
     }
 }
-
 %new
 - (void)ymOverlayButtonTapped:(YTQTMButton *)sender {
     YMOverlayButtonSpec *matched = nil;
@@ -365,37 +392,28 @@ static BOOL isRelatedVideosExpanded = NO;
     YTPlayerViewController *player = YMPlayerVCFromOverlay(self);
     matched.onTap(player, sender);
 }
-
-%new
-- (void)ymUpdateOverlayButtons:(id)arg {
-    [self setNeedsLayout];
-}
-
 - (id)initWithDelegate:(id)delegate {
     self = %orig;
     [self updateSpeedButton:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(updateSpeedButton:) name:YouModUpdateSpeedLabel object:nil];
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(updateQualityButton:) name:YouModUpdateNotification object:nil];
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(ymUpdateOverlayButtons:) name:@"YouModUpdateOverlayButtons" object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(updateQualityButton:) name:YouModUpdateQualityLabel object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(updateSleepButtonIcon:) name:YouModUpdateSleepTimerButton object:nil];
     return self;
 }
-
 - (id)initWithDelegate:(id)delegate autoplaySwitchEnabled:(BOOL)autoplaySwitchEnabled {
     self = %orig;
     [self updateSpeedButton:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(updateSpeedButton:) name:YouModUpdateSpeedLabel object:nil];
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(updateQualityButton:) name:YouModUpdateNotification object:nil];
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(ymUpdateOverlayButtons:) name:@"YouModUpdateOverlayButtons" object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(updateQualityButton:) name:YouModUpdateQualityLabel object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(updateSleepButtonIcon:) name:YouModUpdateSleepTimerButton object:nil];
     return self;
 }
-
 - (void)dealloc {
     [[NSNotificationCenter defaultCenter] removeObserver:self name:YouModUpdateSpeedLabel object:nil];
-    [[NSNotificationCenter defaultCenter] removeObserver:self name:YouModUpdateNotification object:nil];
-    [[NSNotificationCenter defaultCenter] removeObserver:self name:@"YouModUpdateOverlayButtons" object:nil];
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:YouModUpdateQualityLabel object:nil];
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:YouModUpdateSleepTimerButton object:nil];
     %orig;
 }
-
 %new
 - (void)updateSpeedButton:(id)arg {
     for (YMOverlayButtonSpec *spec in YMRegisteredOverlayButtons()) {
@@ -411,18 +429,27 @@ static BOOL isRelatedVideosExpanded = NO;
         }
     }
 }
-
 %new
 - (void)updateQualityButton:(id)arg {
     for (YMOverlayButtonSpec *spec in YMRegisteredOverlayButtons()) {
         if ([spec.identifier isEqualToString:@"quality.video"]) {
             spec.title = currentQualityLabel;
-            
+
             YTQTMButton *btn = (YTQTMButton *)[self viewWithTag:spec.viewTag];
             if (btn) {
                 [btn setTitle:currentQualityLabel forState:UIControlStateNormal];
                 btn.titleLabel.font = YMOverlayTextButtonFont(currentQualityLabel, CGSizeMake(25, 25));
             }
+            break;
+        }
+    }
+}
+%new
+- (void)updateSleepButtonIcon:(id)arg {
+    for (YMOverlayButtonSpec *spec in YMRegisteredOverlayButtons()) {
+        if ([spec.identifier isEqualToString:@"sleep.timer"]) {
+            YTQTMButton *btn = (YTQTMButton *)[self viewWithTag:spec.viewTag];
+            if (btn) setOverlayButtonIcon(btn, @"moon");
             break;
         }
     }
@@ -441,13 +468,224 @@ static BOOL isRelatedVideosExpanded = NO;
 }
 %end
 
+#pragma mark - Bottom Row (YTInlinePlayerBarContainerView)
+
+#pragma mark - Frosted Glass Background
+
+static const NSInteger YMFrostedBackgroundTag = 9905;
+
+static void maybeApplyFrostedGlassToView(YTFrostedGlassView *frostedGlassView, UIView *view) {
+    Class YTFrostedGlassViewClass = %c(YTFrostedGlassView);
+    if (!YTFrostedGlassViewClass || !view) return;
+    NSInteger blurEffectStyle = [YTFrostedGlassViewClass respondsToSelector:@selector(frostedGlassBlurEffectStyle)] ? [YTFrostedGlassViewClass frostedGlassBlurEffectStyle] : 16;
+    if (!frostedGlassView) {
+        @try {
+            frostedGlassView = [[YTFrostedGlassViewClass alloc] initWithBlurEffectStyle:blurEffectStyle alpha:1.0];
+        } @catch (id ex) {
+            frostedGlassView = [[YTFrostedGlassViewClass alloc] initWithBlurEffectStyle:blurEffectStyle];
+        }
+    }
+    if (!frostedGlassView) return;
+    if ([frostedGlassView respondsToSelector:@selector(maybeApplyToView:)]) [frostedGlassView maybeApplyToView:view];
+}
+
+// Creates (once) and maintains a frosted-glass pill sized to the union of the
+// bottom overlay buttons. Kept below the buttons in the subview order so the
+// icons draw on top; removed entirely when there is nothing to cover.
+static void YMFrostedBackgroundUpdate(YTInlinePlayerBarContainerView *self_, NSArray<UIView *> *buttons) {
+    UIView *background = [self_ viewWithTag:YMFrostedBackgroundTag];
+    if (buttons.count == 0) {
+        [background removeFromSuperview];
+        return;
+    }
+
+    CGRect unionFrame = CGRectNull;
+    for (UIView *btn in buttons) {
+        unionFrame = CGRectIsNull(unionFrame) ? btn.frame : CGRectUnion(unionFrame, btn.frame);
+    }
+    unionFrame = CGRectInset(unionFrame, 0, 0);
+
+    if (!background) {
+        background = [[UIView alloc] initWithFrame:unionFrame];
+        background.tag = YMFrostedBackgroundTag;
+        background.userInteractionEnabled = NO; // taps fall through to the player
+        background.clipsToBounds = YES;
+        maybeApplyFrostedGlassToView(nil, background);
+        // The blur/overlay layers YTFrostedGlassView attaches must track the
+        // pill's frame on every relayout, since only this pill (not the frosted
+        // view itself) stays in the hierarchy.
+        for (UIView *sub in background.subviews) {
+            sub.frame = background.bounds;
+            sub.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+        }
+        background.layer.cornerRadius = CGRectGetHeight(unionFrame) / 2.0;
+        [self_ insertSubview:background belowSubview:buttons.firstObject];
+    } else {
+        background.frame = unionFrame;
+        background.layer.cornerRadius = CGRectGetHeight(unionFrame) / 2.0;
+    }
+    background.alpha = ((UIView *)buttons.firstObject).alpha;
+}
+
+%hook YTInlinePlayerBarContainerView
+- (id)init {
+    self = %orig;
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(updateSpeedButton:) name:YouModUpdateSpeedLabel object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(updateQualityButton:) name:YouModUpdateQualityLabel object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(updateSleepButtonIcon:) name:YouModUpdateSleepTimerButton object:nil];
+    if (IS_ENABLED(SBShowButton)) {
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(updateTimeLabels) name:@"YouModUpdateTimeLabel" object:nil];
+    }
+    return self;
+}
+- (void)layoutSubviews {
+    %orig;
+    if (![self._viewControllerForAncestor isKindOfClass:%c(YTMainAppVideoPlayerOverlayViewController)]) return;
+    NSArray<YMOverlayButtonSpec *> *allRegistered = YMRegisteredOverlayButtons();
+    NSMutableArray<YMOverlayButtonSpec *> *specs = [NSMutableArray array];
+    for (YMOverlayButtonSpec *spec in YMOrderedOverlayButtons()) {
+        if (YMIsOverlayButtonBottom(spec.identifier)) [specs addObject:spec];
+    }
+    // Nothing enabled on this side — drop any leftovers and bail before the
+    // anchor lookup / player resolution.
+    if (specs.count == 0) {
+        for (YMOverlayButtonSpec *spec in allRegistered) {
+            UIView *btn = [self viewWithTag:spec.viewTag];
+            if (btn) [btn removeFromSuperview];
+        }
+        [[self viewWithTag:YMFrostedBackgroundTag] removeFromSuperview];
+        return;
+    }
+    UIView *button = [self exitFullscreenButton];
+    if (button == nil) button = [[self valueForKey:@"_enterExitFullscreenButton"] valueForKey:@"_enterExitFullscreenButton"];
+    // A mid-transition anchor can report a zero rect; anchoring to it would
+    // stack the row on a garbage frame, so wait for a real one.
+    BOOL hasAnchor = button && button.window && !CGRectIsEmpty(button.bounds);
+    if (!hasAnchor) return;
+    NSMutableSet<NSNumber *> *activeTags = [NSMutableSet set];
+    for (YMOverlayButtonSpec *spec in specs) [activeTags addObject:@(spec.viewTag)];
+    // Remove stale buttons — all of them when the anchor is unavailable.
+    for (YMOverlayButtonSpec *spec in allRegistered) {
+        if (![activeTags containsObject:@(spec.viewTag)]) {
+            UIView *btn = [self viewWithTag:spec.viewTag];
+            if (btn) [btn removeFromSuperview];
+        }
+    }
+
+    YTPlayerViewController *player = (YTPlayerViewController *)(((YTMainAppVideoPlayerOverlayViewController *)self._viewControllerForAncestor).parentViewController);
+    YTSingleVideoController *sgvid = player.activeVideo;
+    YTSingleVideo *sgvid2 = sgvid.singleVideo;
+    BOOL isLive = [sgvid2 isLivePlayback];
+    BOOL peekVisible = [self isPeekableViewVisible];
+
+    CGRect exitFrame = [button convertRect:button.bounds toView:self];
+    CGFloat trailingCenterX = CGRectGetMidX(exitFrame);
+    // Stack the row on top of the fullscreen button, not beside/over it.
+    CGFloat rowTop = CGRectGetMinY(exitFrame) - YMOverlayButtonSize;
+    CGFloat prevHalfWidth = 0;
+    NSMutableArray<UIView *> *laidOutButtons = [NSMutableArray array];
+
+    for (YMOverlayButtonSpec *spec in specs) {
+        BOOL isHiddenOnLive = isLive && ([spec.identifier isEqualToString:@"sponsorblock.toggle"] ||
+                                         [spec.identifier isEqualToString:@"loop.video"] ||
+                                         [spec.identifier isEqualToString:@"caption.video"]);
+        BOOL visible = !isHiddenOnLive && ((spec.isVisible == nil) || spec.isVisible(player));
+        YTQTMButton *btn = (YTQTMButton *)[self viewWithTag:spec.viewTag];
+
+        if (!visible) {
+            if (btn) [btn removeFromSuperview];
+            continue;
+        }
+        if (!btn) btn = YMCreateOverlayButton(self, spec);
+
+        btn.alpha = peekVisible && !isRelatedVideosExpanded;
+
+        CGFloat width = (spec.title.length > 0) ? YMOverlayTextButtonWidth : YMOverlayButtonSize;
+        CGFloat centerX = (prevHalfWidth == 0) ? trailingCenterX : trailingCenterX - prevHalfWidth - YMOverlayButtonGap - width / 2.0;
+
+        btn.frame = CGRectMake(centerX - width / 2.0, rowTop, width, YMOverlayButtonSize);
+        trailingCenterX = centerX;
+        prevHalfWidth = width / 2.0;
+        [self bringSubviewToFront:btn];
+        [laidOutButtons addObject:btn];
+    }
+
+    // Wrap the whole bottom row in one frosted-glass pill.
+    YMFrostedBackgroundUpdate(self, laidOutButtons);
+}
+- (void)setPeekableViewVisible:(BOOL)visible {
+    %orig;
+    if (![self._viewControllerForAncestor isKindOfClass:%c(YTMainAppVideoPlayerOverlayViewController)]) return;
+    for (YMOverlayButtonSpec *spec in YMRegisteredOverlayButtons()) {
+        UIView *btn = [self viewWithTag:spec.viewTag];
+        if ([btn isKindOfClass:%c(YTQTMButton)]) btn.alpha = visible;
+    }
+    [[self viewWithTag:YMFrostedBackgroundTag] setAlpha:visible];
+}
+%new
+- (void)ymOverlayButtonTapped:(YTQTMButton *)sender {
+    YMOverlayButtonSpec *matched = nil;
+    for (YMOverlayButtonSpec *spec in YMRegisteredOverlayButtons()) {
+        if (spec.viewTag == sender.tag) { matched = spec; break; }
+    }
+    if (!matched || !matched.onTap) return;
+
+    YTMainAppVideoPlayerOverlayViewController *ovcon = (YTMainAppVideoPlayerOverlayViewController *)self._viewControllerForAncestor;
+    YTPlayerViewController *player = (YTPlayerViewController *)ovcon.parentViewController;
+    if (player) matched.onTap(player, sender);
+}
+%new
+- (void)updateQualityButton:(id)arg {
+    if (![self._viewControllerForAncestor isKindOfClass:%c(YTMainAppVideoPlayerOverlayViewController)]) return;
+    for (YMOverlayButtonSpec *spec in YMRegisteredOverlayButtons()) {
+        if ([spec.identifier isEqualToString:@"quality.video"]) {
+            spec.title = currentQualityLabel;
+            YTQTMButton *btn = (YTQTMButton *)[self viewWithTag:spec.viewTag];
+            if (btn) {
+                [btn setTitle:currentQualityLabel forState:UIControlStateNormal];
+                btn.titleLabel.font = YMOverlayTextButtonFont(currentQualityLabel, CGSizeMake(25, 25));
+            }
+        }
+    }
+}
+%new
+- (void)updateSpeedButton:(id)arg {
+    if (![self._viewControllerForAncestor isKindOfClass:%c(YTMainAppVideoPlayerOverlayViewController)]) return;
+    for (YMOverlayButtonSpec *spec in YMRegisteredOverlayButtons()) {
+        if ([spec.identifier isEqualToString:@"speed.video"]) {
+            spec.title = currentSpeedLabel;
+            YTQTMButton *btn = (YTQTMButton *)[self viewWithTag:spec.viewTag];
+            if (btn) {
+                [btn setTitle:currentSpeedLabel forState:UIControlStateNormal];
+                btn.titleLabel.font = YMOverlayTextButtonFont(currentSpeedLabel, CGSizeMake(25, 25));
+            }
+        }
+    }
+}
+%new
+- (void)updateSleepButtonIcon:(id)arg {
+    if (![self._viewControllerForAncestor isKindOfClass:%c(YTMainAppVideoPlayerOverlayViewController)]) return;
+    for (YMOverlayButtonSpec *spec in YMRegisteredOverlayButtons()) {
+        if ([spec.identifier isEqualToString:@"sleep.timer"]) {
+            YTQTMButton *btn = (YTQTMButton *)[self viewWithTag:spec.viewTag];
+            if (btn) setOverlayButtonIcon(btn, @"moon");
+            break;
+        }
+    }
+}
+- (void)dealloc {
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:YouModUpdateSpeedLabel object:nil];
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:YouModUpdateQualityLabel object:nil];
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:YouModUpdateSleepTimerButton object:nil];
+    if (IS_ENABLED(SBShowButton)) [[NSNotificationCenter defaultCenter] removeObserver:self name:@"YouModUpdateTimeLabel" object:nil];
+    %orig;
+}
+%end
+
 static void YouModShowShareNotification(NSString *message, BOOL success) {
     UIView *parent = sbGetNotificationParent();
-    if (success) {
-        [SBSkipNotificationView showSuccessInView:parent message:message duration:3.0];
-    } else {
-        [SBSkipNotificationView showErrorInView:parent message:message duration:4.0];
-    }
+    if (success) [SBSkipNotificationView showSuccessInView:parent message:message duration:3.0];
+    else [SBSkipNotificationView showErrorInView:parent message:message duration:4.0];
 }
 
 %hook YTPlayerViewController
@@ -464,9 +702,7 @@ static void YouModShowShareNotification(NSString *message, BOOL success) {
     NSString *videoURL = [NSString stringWithFormat:@"https://youtube.com/watch?v=%@", self.currentVideoID];
     NSInteger seconds = (NSInteger)floor(self.currentVideoMediaTime);
     NSString *timestampURL = [NSString stringWithFormat:@"%@&t=%lds", videoURL, (long)seconds];
-
-    UIViewController *presenter = (UIViewController *)[self activeVideoPlayerOverlay];
-    YTDefaultSheetController *sheet = [%c(YTDefaultSheetController) sheetControllerWithParentResponder:presenter];
+    YTDefaultSheetController *sheet = [%c(YTDefaultSheetController) sheetControllerWithParentResponder:self];
 
     YTActionSheetAction *copyURL = [%c(YTActionSheetAction) actionWithTitle:LOC(@"COPY_URL") iconImage:YouModYTIconImage(250, NO, nil) style:0 handler:^(__unused YTActionSheetAction *action) {
         UIPasteboard.generalPasteboard.string = videoURL;
@@ -501,14 +737,12 @@ static void YouModShowShareNotification(NSString *message, BOOL success) {
 %hook YTAutoplayAutonavController
 - (id)initWithParentResponder:(id)arg {
     self = %orig;
-    if (self && IS_ENABLED(KeepLoopKey)) {
-        [self setLoopMode:2];
-    }
+    if (self && IS_ENABLED(KeepLoopKey)) [self setLoopMode:2];
     return self;
 }
 - (void)setLoopMode:(NSInteger)arg {
-    NSInteger set = IS_ENABLED(KeepLoopKey) ? 2 : arg;
-    %orig(set);
+    if (IS_ENABLED(KeepLoopKey)) arg = 2;
+    %orig(arg);
 }
 %end
 
@@ -531,23 +765,19 @@ static NSString *getCompactQualityLabel(MLFormat *format) {
 }
 
 %hook YTVideoQualitySwitchOriginalController
-
 - (void)singleVideo:(id)singleVideo didSelectVideoFormat:(MLFormat *)format {
     currentQualityLabel = getCompactQualityLabel(format);
-    [[NSNotificationCenter defaultCenter] postNotificationName:YouModUpdateNotification object:nil];
+    [[NSNotificationCenter defaultCenter] postNotificationName:YouModUpdateQualityLabel object:nil];
     %orig;
 }
-
 %end
 
 %hook YTVideoQualitySwitchRedesignedController
-
 - (void)singleVideo:(id)singleVideo didSelectVideoFormat:(MLFormat *)format {
     currentQualityLabel = getCompactQualityLabel(format);
-    [[NSNotificationCenter defaultCenter] postNotificationName:YouModUpdateNotification object:nil];
+    [[NSNotificationCenter defaultCenter] postNotificationName:YouModUpdateQualityLabel object:nil];
     %orig;
 }
-
 %end
 
 %ctor {
@@ -556,7 +786,6 @@ static NSString *getCompactQualityLabel(MLFormat *format) {
     mute.symbolName = IS_ENABLED(KeepMutedKey) ? @"speaker.slash" : @"speaker.wave.2";
     mute.settingsSymbolName = @"speaker.wave.2";
     mute.displayName = LOC(@"MUTE_BUTTON");
-    mute.tintColor = [UIColor whiteColor];
     mute.sortOrder = 300;
     mute.isVisible = ^BOOL(YTPlayerViewController *player) {
         return YMIsOverlayButtonEnabled(@"mute.video");
@@ -566,9 +795,7 @@ static NSString *getCompactQualityLabel(MLFormat *format) {
         BOOL muteStatus = ![sgvid isMuted];
         [[NSUserDefaults standardUserDefaults] setBool:muteStatus forKey:KeepMutedKey];
         [sgvid setMuted:muteStatus];
-        UIImageSymbolConfiguration *config = [UIImageSymbolConfiguration configurationWithPointSize:20 weight:UIImageSymbolWeightMedium];
-        UIImage *newIcon = [UIImage systemImageNamed:muteStatus ? @"speaker.slash" : @"speaker.wave.2" withConfiguration:config];
-        [button setImage:newIcon forState:UIControlStateNormal];
+        setOverlayButtonIcon(button, muteStatus ? @"speaker.slash" : @"speaker.wave.2");
     };
     YMRegisterOverlayButton(mute);
     YMOverlayButtonSpec *speed = [[YMOverlayButtonSpec alloc] init];
@@ -610,7 +837,6 @@ static NSString *getCompactQualityLabel(MLFormat *format) {
     share.symbolName = @"arrowshape.turn.up.right";
     share.settingsSymbolName = @"arrowshape.turn.up.right";
     share.displayName = LOC(@"SHARE_BUTTON");
-    share.tintColor = [UIColor whiteColor];
     share.sortOrder = 600;
     share.isVisible = ^BOOL(YTPlayerViewController *player) {
         return YMIsOverlayButtonEnabled(@"share.video");
@@ -624,16 +850,13 @@ static NSString *getCompactQualityLabel(MLFormat *format) {
     loop.symbolName = IS_ENABLED(KeepLoopKey) ? @"repeat.1" : @"repeat";
     loop.settingsSymbolName = @"repeat";
     loop.displayName = LOC(@"LOOP_BUTTON");
-    loop.tintColor = [UIColor whiteColor];
     loop.sortOrder = 700;
     loop.isVisible = ^BOOL(YTPlayerViewController *player) {
         return YMIsOverlayButtonEnabled(@"loop.video");
     };
     loop.onTap = ^(YTPlayerViewController *player, YTQTMButton *button) {
         [player YouModLoopButton];
-        UIImageSymbolConfiguration *config = [UIImageSymbolConfiguration configurationWithPointSize:20 weight:UIImageSymbolWeightMedium];
-        UIImage *newIcon = [UIImage systemImageNamed:IS_ENABLED(KeepLoopKey) ? @"repeat.1" : @"repeat" withConfiguration:config];
-        [button setImage:newIcon forState:UIControlStateNormal];
+        setOverlayButtonIcon(button, IS_ENABLED(KeepLoopKey) ? @"repeat.1" : @"repeat");
     };
     YMRegisterOverlayButton(loop);
     YMOverlayButtonSpec *caption = [[YMOverlayButtonSpec alloc] init];
@@ -641,7 +864,6 @@ static NSString *getCompactQualityLabel(MLFormat *format) {
     caption.symbolName = @"captions.bubble";
     caption.settingsSymbolName = @"captions.bubble";
     caption.displayName = LOC(@"CAPTION_BUTTON");
-    caption.tintColor = [UIColor whiteColor];
     caption.sortOrder = 800;
     caption.isVisible = ^BOOL(YTPlayerViewController *player) {
         return YMIsOverlayButtonEnabled(@"caption.video");
@@ -652,5 +874,19 @@ static NSString *getCompactQualityLabel(MLFormat *format) {
         showTranscript(cvc);
     };
     YMRegisterOverlayButton(caption);
+    YMOverlayButtonSpec *sleep = [[YMOverlayButtonSpec alloc] init];
+    sleep.identifier = @"sleep.timer";
+    sleep.symbolName = @"moon";
+    sleep.settingsSymbolName = @"moon";
+    sleep.displayName = LOC(@"SLEEP_TIMER");
+    sleep.sortOrder = 900;
+    sleep.isVisible = ^BOOL(YTPlayerViewController *player) {
+        NSInteger sleepEntry = INTFORVAL(SleepTimerEntry);
+        return (sleepEntry == 2 || sleepEntry == 3) && YMIsOverlayButtonEnabled(@"sleep.timer"); // overlay / both
+    };
+    sleep.onTap = ^(YTPlayerViewController *player, YTQTMButton *button) {
+        YMSleepTimerPresentPicker(button);
+    };
+    YMRegisterOverlayButton(sleep);
     %init;
 }

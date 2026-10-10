@@ -29,6 +29,11 @@
 - (BOOL)enableIosFloatingMiniplayerDoubleTapToResize { return IS_ENABLED(FixesSlowMiniPlayer) ? NO : %orig; }
 // Use old miniplayer
 - (BOOL)enableIosFloatingMiniplayer { return IS_ENABLED(DisablesNewMiniPlayer) ? NO : %orig; }
+// Fixes the old dialog (the rectangular style) layout incorrectly
+- (BOOL)uiSystemsClientGlobalConfigIosEnableActionSheetViewLayoutRefactor { return NO; }
+// Remove the new contextual dialog layout styles
+- (BOOL)crossPlatformCoreClientGlobalConfigIosEnableBottomSheetPaddingFix { return NO; }
+- (BOOL)iosEnableMuteButtonPlayerControl { return NO; }
 %end
 
 %hook YTHotConfig
@@ -51,25 +56,25 @@
 // Disable Hints
 %hook YTSettings
 - (BOOL)areHintsDisabled { return IS_ENABLED(DisableHints) ? YES : %orig; }
-- (void)setHintsDisabled:(BOOL)arg1 {
-    BOOL temp = IS_ENABLED(DisableHints) ? YES : arg1;
-    %orig(temp);
+- (void)setHintsDisabled:(BOOL)arg {
+    if (IS_ENABLED(DisableHints)) arg = YES;
+    %orig(arg);
 }
 %end
 
 %hook YTSettingsImpl
 - (BOOL)areHintsDisabled { return IS_ENABLED(DisableHints) ? YES : %orig; }
-- (void)setHintsDisabled:(BOOL)arg1 {
-    BOOL temp = IS_ENABLED(DisableHints) ? YES : arg1;
-    %orig(temp);
+- (void)setHintsDisabled:(BOOL)arg {
+    if (IS_ENABLED(DisableHints)) arg = YES;
+    %orig(arg);
 }
 %end
 
 %hook YTUserDefaults
 - (BOOL)areHintsDisabled { return IS_ENABLED(DisableHints) ? YES : %orig; }
-- (void)setHintsDisabled:(BOOL)arg1 {
-    BOOL temp = IS_ENABLED(DisableHints) ? YES : arg1;
-    %orig(temp);
+- (void)setHintsDisabled:(BOOL)arg {
+    if (IS_ENABLED(DisableHints)) arg = YES;
+    %orig(arg);
 }
 %end
 
@@ -93,7 +98,6 @@
 
 // Disables Snackbar
 %hook GOOHUDManagerInternal
-- (id)sharedInstance { return IS_ENABLED(DisablesSnackBar) ? nil : %orig; }
 - (void)showMessageMainThread:(id)arg { if (!IS_ENABLED(DisablesSnackBar)) %orig; }
 - (void)activateOverlay:(id)arg { if (!IS_ENABLED(DisablesSnackBar)) %orig; }
 - (void)displayHUDViewForMessage:(id)arg { if (!IS_ENABLED(DisablesSnackBar)) %orig; }
@@ -103,12 +107,8 @@
 %hook YTMenuItemVisibilityHandler
 - (BOOL)shouldShowServiceItemRenderer:(YTIMenuConditionalServiceItemRenderer *)renderer {
     int iconnum = renderer.icon.iconType;
-    if (iconnum == 251 && IS_ENABLED(RemovePlayInNextQueueOption)) {
-        return NO;
-    }
-    if (iconnum == 895 && IS_ENABLED(RemoveAddToLastQueueOption)) {
-        return NO;
-    }
+    if (iconnum == 251 && IS_ENABLED(RemovePlayInNextQueueOption)) return NO;
+    else if (iconnum == 895 && IS_ENABLED(RemoveAddToLastQueueOption)) return NO;
     return %orig;
 }
 %end
@@ -116,12 +116,8 @@
 %hook YTMenuItemVisibilityHandlerImpl
 - (BOOL)shouldShowServiceItemRenderer:(YTIMenuConditionalServiceItemRenderer *)renderer {
     int iconnum = renderer.icon.iconType;
-    if (iconnum == 251 && IS_ENABLED(RemovePlayInNextQueueOption)) {
-        return NO;
-    }
-    if (iconnum == 895 && IS_ENABLED(RemoveAddToLastQueueOption)) {
-        return NO;
-    }
+    if (iconnum == 251 && IS_ENABLED(RemovePlayInNextQueueOption)) return NO;
+    else if (iconnum == 895 && IS_ENABLED(RemoveAddToLastQueueOption)) return NO;
     return %orig;
 }
 %end
@@ -180,10 +176,11 @@
 // YTSlientVote (https://github.com/PoomSmart/YTSilentVote)
 %hook YTInnerTubeResponseWrapper
 - (id)initWithResponse:(id)response cacheContext:(id)arg2 requestStatistics:(id)arg3 mutableSharedData:(id)arg4 {
-    if (!IS_ENABLED(HideLikeDislikeVotes)) return %orig;
-    if ([response isKindOfClass:%c(YTILikeResponse)]
-        || [response isKindOfClass:%c(YTIDislikeResponse)]
-        || [response isKindOfClass:%c(YTIRemoveLikeResponse)]) return nil;
+    if (IS_ENABLED(HideLikeDislikeVotes)) {
+        if ([response isKindOfClass:%c(YTILikeResponse)]
+            || [response isKindOfClass:%c(YTIDislikeResponse)]
+            || [response isKindOfClass:%c(YTIRemoveLikeResponse)]) return nil;
+    }
     return %orig;
 }
 %end
@@ -195,12 +192,8 @@
 
 %hook UIDevice
 - (UIUserInterfaceIdiom)userInterfaceIdiom {
-    if (INTFORVAL(DeviceUIIndex) == 1) {
-        return UIUserInterfaceIdiomPad;
-    }
-    if (INTFORVAL(DeviceUIIndex) == 2) {
-        return UIUserInterfaceIdiomPhone;
-    }
+    if (INTFORVAL(DeviceUIIndex) == 1) return UIUserInterfaceIdiomPad;
+    else if (INTFORVAL(DeviceUIIndex) == 2) return UIUserInterfaceIdiomPhone;
     return %orig;
 }
 %end
@@ -211,4 +204,20 @@
 
 %hook YTEngagementPanelHeaderView
 - (void)setSubheader:(UIView *)view { if (!IS_ENABLED(HideEngagementSubbar)) %orig; }
+- (void)layoutSubviews {
+    %orig;
+    if (IS_ENABLED(HideInfoButtonPanel) && self.informationButton != nil) self.informationButton.hidden = YES;
+    if (IS_ENABLED(HideSortFilerPanel) && self.sortFilterMenuButton != nil) self.sortFilterMenuButton.hidden = YES;
+    for (UIView *button in self.subviews) {
+        if ([button isKindOfClass:%c(YTQTMButton)]) {
+            YTIButtonRenderer *renderer = [button valueForKey:@"_buttonRenderer"];
+            if (renderer == nil) continue;
+            NSString *desc = [renderer description];
+            if ([desc containsString:@"FEcommunity_page"] && IS_ENABLED(HideCommunityButtonPanel)) {
+                button.hidden = YES;
+                break;
+            }
+        }
+    }
+}
 %end

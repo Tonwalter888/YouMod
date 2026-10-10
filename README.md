@@ -10,7 +10,7 @@
 
 A tweak that's try to recreate features like in YTLite as much as possible. Contributions are welcome! ^^
 
-Thanks for 600 stars and 1,400 forks! This might be the best project I've done.
+Thanks for 650 stars and 1.6k forks! This might be the best project I've done.
 
 If you want to contribute this project, scroll down to `How to contribute this project?` part.
 
@@ -19,7 +19,7 @@ The reason is because of YTLite no longer free. So I'll try my best to recreate 
 
 ## Features
 This tweak add a lot of QoL feature and can hide elements in YouTube. Such as:
-- Downloading (Video, Audio, Captions, Thumbnail, Video datails, etc. Currently supports up to 1080p60)
+- Downloading (Video, Audio, Captions, Thumbnail, Video datails, etc.)
 - Appearance (OLED theme and keyboard)
 - Navigation bar (Hiding buttons)
 - Player (Hiding elements, buttons, and Add custom actions, etc.)
@@ -62,7 +62,7 @@ This project uses GPLv3 license. See [LICENSE](https://github.com/Tonwalter888/Y
 - [uYouEnhanced](https://github.com/arichornlover/uYouEnhanced) - arichornlover
 - [YTweaks](https://github.com/fosterbarnes/YTweaks) - fosterbarnes
 - [jefemagril](https://github.com/jefemagril) - Implemented rewind/fast forward buttons to system Control Center
-- [grohit1810](https://github.com/grohit1810) - Implemented built-in SponsorBlock, whole new settings logic, and others
+- [AppropriateNet2928](https://github.com/AppropriateNet2928) - Experimental playback fix
 - [SponsorBlock](https://sponsor.ajay.app) - SponsorBlock segments API
 - [Google Fonts](https://fonts.google.com/icons) - Icons for custom tabs
 - And [PoomSmart](https://github.com/PoomSmart)'s tweaks

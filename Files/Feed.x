@@ -2,27 +2,14 @@
 
 // Hide Subbar
 %hook YTHeaderContentComboView
-- (void)enableSubheaderBarWithView:(id)arg1 { if (!IS_ENABLED(HideSubbar)) %orig; }
-- (void)setFeedHeaderScrollMode:(int)arg1 { 
-    int temp = IS_ENABLED(HideSubbar) ? 0 : arg1;
-    %orig(temp);
-}
-- (id)initWithChildView:(id)arg1 headerView:(id)arg2 {
-    self = %orig;
-    if (self && IS_ENABLED(HideSubbar)) {
-        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(setNeedsLayout) name:@"YouModReloadHeaderBar" object:nil];
-    }
-    return self;
-}
+- (void)enableSubheaderBarWithView:(UIView *)view { IS_ENABLED(HideSubbar) ? [self disableSubheaderBar] : %orig; }
 %end
 
 // Hide voice search button
 %hook YTSearchViewController
 - (void)viewDidLoad {
     %orig;
-    if (IS_ENABLED(HideVoiceSearch)) {
-        [self setValue:@(NO) forKey:@"_isVoiceSearchAllowed"];
-    }
+    if (IS_ENABLED(HideVoiceSearch)) [self setValue:@(NO) forKey:@"_isVoiceSearchAllowed"];
 }
 - (void)setSuggestions:(id)arg1 { if (!IS_ENABLED(HideSearchHis)) %orig; }
 %end
@@ -32,66 +19,24 @@
 - (id)activeCache { return IS_ENABLED(HideSearchHis) ? nil : %orig; }
 %end
 
-// Hide related videos in the player
+// Hide related videos in the feed
 %hook YTWatchNextResultsViewController
 - (void)setVisibleSections:(NSInteger)sections {
-    if (![self.parentViewController isKindOfClass:%c(YTWatchNextResponseViewController)]) {
-        %orig;
-        return;
+    if ([self.parentViewController isKindOfClass:%c(YTWatchNextResponseViewController)] && IS_ENABLED(HideRelatedVideos)) {
+        sections = 1;
     }
-    NSInteger value = IS_ENABLED(HideRelatedVideos) ? 1 : sections;
-    %orig(value);
+    %orig(sections);
 }
 %end
 
-static void YouModFilterChannelButtons(_ASDisplayView *self, NSString *iden) {
-    UIView *sup = self.superview;
-    if ([sup isKindOfClass:%c(ASScrollView)]) {
-        ASScrollView *scroll = (ASScrollView *)sup;
-        ASDisplayNode *node = scroll.scrollNode;
-        for (_ASDisplayView *view in node.yogaChildren) {
-            if ([[view description] containsString:iden]) {
-                [node removeYogaChild:view];
-                [self removeFromSuperview];
-                break;
-            }
-        }
-    } else {
-        UIViewController *con = self._viewControllerForAncestor;
-        if ([con isKindOfClass:%c(YTPageHeaderViewController)]) {
-            _ASDisplayView *dpv = (_ASDisplayView *)sup;
-            ASDisplayNode *node = dpv.keepalive_node;
-            _ASDisplayView *maindpv = (_ASDisplayView *)dpv.superview;
-            ASDisplayNode *mainNode = maindpv.keepalive_node;
-            [mainNode removeYogaChild:node];
-            [dpv removeFromSuperview];
-        } else if ([con isKindOfClass:%c(YTWatchNextResultsViewController)]) {
-            _ASDisplayView *dpv = (_ASDisplayView *)sup;
-            ASDisplayNode *node = dpv.keepalive_node;
-            for (id child in [node.yogaChildren copy]) {
-                if ([[child description] containsString:iden]) {
-                    [node removeYogaChild:child];
-                    [self removeFromSuperview];
-                    break;
-                }
-            }
-        }
+// Original (untranslated) titles: the server ships the untranslated title next to the
+// auto-translated one on video renderers (search results, video lists).
+%hook YTIVideoWithContextRenderer
+- (YTIFormattedString *)title {
+    if (IS_ENABLED(NoTranslatedTitles) && [self hasUntranslatedTitle]) {
+        YTIFormattedString *original = [self untranslatedTitle];
+        if (original) return original;
     }
-}
-
-%hook _ASDisplayView
-- (void)didMoveToWindow {
-    %orig;
-    NSString *iden = self.accessibilityIdentifier;
-    if (!iden || iden.length == 0) return;
-    BOOL remove = NO;
-    if ([iden isEqualToString:@"eml.header_community_button"] && IS_ENABLED(RemoveChannelCommunityButton)) {
-        remove = YES;
-    } else if ([iden isEqualToString:@"id.sponsor_button"] && IS_ENABLED(RemoveChannelSponsorAll)) {
-        remove = YES;
-    }
-    if (remove) {
-        YouModFilterChannelButtons(self, iden);
-    }
+    return %orig;
 }
 %end

@@ -282,9 +282,7 @@ static void YouModTranslateText(NSString *text, NSString *targetLang, void (^com
 
     self.reloadButton = [UIButton buttonWithType:UIButtonTypeSystem];
     self.reloadButton.translatesAutoresizingMaskIntoConstraints = NO;
-    UIImageSymbolConfiguration *reloadConfig = [UIImageSymbolConfiguration configurationWithPointSize:15 weight:UIFontWeightMedium];
-    UIImage *reloadImage = [UIImage systemImageNamed:@"arrow.clockwise" withConfiguration:reloadConfig];
-    [self.reloadButton setImage:reloadImage forState:UIControlStateNormal];
+    [self.reloadButton setImage:YouModSymbolImageInCanvas(@"arrow.clockwise", 24, 15, UIImageSymbolWeightMedium) forState:UIControlStateNormal];
     self.reloadButton.tintColor = [UIColor systemRedColor];
     self.reloadButton.hidden = YES;
     [self.reloadButton addTarget:self action:@selector(performTranslation) forControlEvents:UIControlEventTouchUpInside];
@@ -330,9 +328,7 @@ static void YouModTranslateText(NSString *text, NSString *targetLang, void (^com
 
 - (UIBarButtonItem *)createEqualBarButtonWithSymbol:(NSString *)symbolName action:(SEL)action {
     UIButton *button = [UIButton buttonWithType:UIButtonTypeSystem];
-    UIImageSymbolConfiguration *config = [UIImageSymbolConfiguration configurationWithPointSize:15 weight:UIFontWeightMedium];
-    UIImage *image = [UIImage systemImageNamed:symbolName withConfiguration:config];
-    [button setImage:image forState:UIControlStateNormal];
+    [button setImage:YouModSymbolImageInCanvas(symbolName, 24, 15, UIImageSymbolWeightMedium) forState:UIControlStateNormal];
     button.tintColor = [UIColor labelColor];
     
     button.translatesAutoresizingMaskIntoConstraints = NO;
@@ -388,18 +384,11 @@ static void YouModTranslateText(NSString *text, NSString *targetLang, void (^com
     }
 }
 
-- (void)shareTapped:(id)sender {
+- (void)shareTapped:(UIView *)sender {
     if (self.translationState != YouModTranslationStateSuccess || self.resultTextView.text.length == 0) return;
     
     UIActivityViewController *activityVC = [[UIActivityViewController alloc] initWithActivityItems:@[self.resultTextView.text] applicationActivities:nil];
-    if (activityVC.popoverPresentationController) {
-        if ([sender isKindOfClass:[UIBarButtonItem class]]) {
-            activityVC.popoverPresentationController.barButtonItem = (UIBarButtonItem *)sender;
-        } else if ([sender isKindOfClass:[UIView class]]) {
-            activityVC.popoverPresentationController.sourceView = (UIView *)sender;
-            activityVC.popoverPresentationController.sourceRect = ((UIView *)sender).bounds;
-        }
-    }
+    YouModConfigureSharePopover(activityVC, self.view);
     [self presentViewController:activityVC animated:YES completion:nil];
 }
 

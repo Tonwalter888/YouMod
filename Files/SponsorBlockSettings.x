@@ -20,6 +20,7 @@ static const NSInteger SBSliderValueLabelTagBase = 100;
 static NSString *SBActionLocKey(SBSegmentAction action) {
     switch (action) {
         case SBSegmentActionAutoSkip: return @"SB_ACTION_AUTO_SKIP";
+        case SBSegmentActionAlwaysSkip: return @"SB_ACTION_ALWAYS_SKIP";
         case SBSegmentActionAsk:      return @"SB_ACTION_ASK";
         case SBSegmentActionDisplay:  return @"SB_ACTION_DISPLAY";
         case SBSegmentActionSkipTo:   return @"SB_ACTION_SKIP_TO";
@@ -49,6 +50,7 @@ static NSArray<SBToggleRow *> *sbToggleRows() {
         [SBToggleRow key:SBEnabled title:@"SB_ENABLE" desc:@"SB_ENABLE_DESC"],
         [SBToggleRow key:SBShowButton title:@"SB_SHOW_BUTTON" desc:@"SB_SHOW_BUTTON_DESC"],
         [SBToggleRow key:SBShowNotifications title:@"SB_SHOW_NOTIFICATIONS" desc:@"SB_SHOW_NOTIFICATIONS_DESC"],
+        [SBToggleRow key:SBShowFullVideoLabel title:@"SB_SHOW_FULL_VIDEO_LABEL" desc:@"SB_SHOW_FULL_VIDEO_LABEL_DESC"],
         [SBToggleRow key:SBSegmentsInPlayer title:@"SB_SEGMENTS_IN_PLAYER" desc:@"SB_SEGMENTS_IN_PLAYER_DESC"],
         [SBToggleRow key:SBSegmentsInFeed title:@"SB_SEGMENTS_IN_FEED" desc:@"SB_SEGMENTS_IN_FEED_DESC"],
         [SBToggleRow key:SBSegmentsInMiniPlayer title:@"SB_SEGMENTS_IN_MINIPLAYER" desc:@"SB_SEGMENTS_IN_MINIPLAYER_DESC"],
@@ -332,16 +334,17 @@ static const void *kSBAllFlatRowsKey = &kSBAllFlatRowsKey;
     return [UIColor colorWithWhite:0.55 alpha:1.0];
 }
 
-#pragma mark - Sections: 0=Main, 1=Sliders, 2=Segments
+#pragma mark - Sections: 0=Main, 1=Sliders, 2=Segments, 3=User ID
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
-    return self.isFiltering ? 1 : 3;  // one flat section of matches while searching
+    return self.isFiltering ? 1 : 4;  // one flat section of matches while searching
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
     if (self.isFiltering) return self.filteredFlatRows.count;
     if (section == 0) return sbToggleRows().count;  // toggles
     if (section == 1) return 3;  // sliders (skip alert, unskip alert, min duration)
+    if (section == 3) return 2;  // private / public user ID
     return sbAllCategories().count * 2;  // action + color per category
 }
 
@@ -350,6 +353,7 @@ static const void *kSBAllFlatRowsKey = &kSBAllFlatRowsKey;
     NSString *title = nil;
     if (section == 0) title = LOC(@"SB_SECTION_MAIN");
     else if (section == 2) title = LOC(@"SB_CATEGORIES_HEADER");
+    else if (section == 3) title = LOC(@"SB_USERID_HEADER");
     if (!title) return nil;
 
     UIView *header = [[UIView alloc] init];
@@ -379,6 +383,7 @@ static const void *kSBAllFlatRowsKey = &kSBAllFlatRowsKey;
         return h > 0 ? h : UITableViewAutomaticDimension;
     }
     if (indexPath.section == 1) return 70;
+    if (indexPath.section == 3) return 48;
     if (indexPath.section == 2) {
         BOOL isActionRow = (indexPath.row % 2 == 0);
         NSInteger catIndex = indexPath.row / 2;
@@ -392,6 +397,7 @@ static const void *kSBAllFlatRowsKey = &kSBAllFlatRowsKey;
     if (self.isFiltering) return self.filteredFlatRows[indexPath.row].makeCell(tableView);
     if (indexPath.section == 0) return [self toggleCellForRow:indexPath.row tableView:tableView];
     if (indexPath.section == 1) return [self sliderCellForRow:indexPath.row tableView:tableView];
+    if (indexPath.section == 3) return [self userIdCellForRow:indexPath.row tableView:tableView];
     return [self segmentCellForRow:indexPath.row tableView:tableView];
 }
 
@@ -427,6 +433,10 @@ static const void *kSBAllFlatRowsKey = &kSBAllFlatRowsKey;
     if (sender.tag < 0 || sender.tag >= (NSInteger)rows.count) return;
     NSString *key = rows[sender.tag].key;
     [[NSUserDefaults standardUserDefaults] setBool:sender.on forKey:key];
+    [[NSUserDefaults standardUserDefaults] synchronize];
+    if ([key isEqualToString:SBShowButton] || [key isEqualToString:SBEnabled]) {
+        [[NSNotificationCenter defaultCenter] postNotificationName:@"YouModUpdateOverlayButtons" object:nil];
+    }
 }
 
 #pragma mark - Slider Cells (Section 1)
@@ -551,7 +561,7 @@ static const void *kSBAllFlatRowsKey = &kSBAllFlatRowsKey;
     NSInteger currentAction = [[NSUserDefaults standardUserDefaults] integerForKey:actionKey];
     NSString *currentTitle = SBActionName(currentAction);
 
-    if (@available(iOS 15.0, *)) {
+    if ([UIButtonConfiguration class] && [menuButton respondsToSelector:@selector(setConfiguration:)]) {
         UIButtonConfiguration *config = [UIButtonConfiguration plainButtonConfiguration];
         config.title = currentTitle;
         config.image = [UIImage systemImageNamed:@"chevron.up.chevron.down" withConfiguration:[UIImageSymbolConfiguration configurationWithPointSize:11 weight:UIImageSymbolWeightMedium]];
@@ -571,10 +581,12 @@ static const void *kSBAllFlatRowsKey = &kSBAllFlatRowsKey;
     }
 
     NSArray<NSNumber *> *actionOptions;
-    if (isHighlight) {
+    if ([category isEqualToString:@"exclusive_access"]) {
+        actionOptions = @[@(SBSegmentActionDisable), @(SBSegmentActionDisplay)];
+    } else if (isHighlight) {
         actionOptions = @[@(SBSegmentActionDisable), @(SBSegmentActionSkipTo), @(SBSegmentActionAsk), @(SBSegmentActionDisplay)];
     } else {
-        actionOptions = @[@(SBSegmentActionDisable), @(SBSegmentActionAutoSkip), @(SBSegmentActionAsk), @(SBSegmentActionDisplay)];
+        actionOptions = @[@(SBSegmentActionDisable), @(SBSegmentActionAutoSkip), @(SBSegmentActionAlwaysSkip), @(SBSegmentActionAsk), @(SBSegmentActionDisplay)];
     }
 
     NSMutableArray<UIMenuElement *> *menuActions = [NSMutableArray array];
@@ -663,6 +675,11 @@ static const void *kSBAllFlatRowsKey = &kSBAllFlatRowsKey;
         if (row.onSelect) row.onSelect(self, ^{ [weakSelf.tableView reloadData]; });
         return;
     }
+    if (indexPath.section == 3) {
+        [tableView deselectRowAtIndexPath:indexPath animated:YES];
+        [self sbPresentUserIDDialogForRow:indexPath.row];
+        return;
+    }
     if (indexPath.section != 2) return;
     if (indexPath.row % 2 != 1) return; // only color rows are tappable
 
@@ -682,6 +699,89 @@ static const void *kSBAllFlatRowsKey = &kSBAllFlatRowsKey;
     picker.delegate = self;
 
     [self presentViewController:picker animated:YES completion:nil];
+}
+
+#pragma mark - User ID Cells (Section 3)
+
+- (UITableViewCell *)userIdCellForRow:(NSInteger)row tableView:(UITableView *)tableView {
+    UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:nil];
+    cell.backgroundColor = [UIColor clearColor];
+    cell.selectionStyle = UITableViewCellSelectionStyleDefault;
+    cell.textLabel.textColor = [self sbTextColor];
+    cell.textLabel.font = [UIFont systemFontOfSize:16 weight:UIFontWeightMedium];
+    cell.detailTextLabel.textColor = [self sbSecondaryTextColor];
+    cell.detailTextLabel.font = [UIFont monospacedDigitSystemFontOfSize:13 weight:UIFontWeightRegular];
+    cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+
+    BOOL isPublic = (row == 1);
+    cell.textLabel.text = LOC(isPublic ? @"SB_PUBLIC_ID" : @"SB_PRIVATE_ID");
+    if (!isPublic) {
+        // Private ID stays masked in the row; it is revealed inside the dialog.
+        cell.detailTextLabel.text = LOC(@"SB_TAP_TO_SHOW");
+        return cell;
+    }
+    NSString *userID = sbPublicUserID();
+    NSString *detail = userID;
+    if (detail.length > 16) {
+        detail = [NSString stringWithFormat:@"%@…%@", [userID substringToIndex:10], [userID substringFromIndex:userID.length - 4]];
+    }
+    cell.detailTextLabel.text = detail;
+    return cell;
+}
+
+// All user-ID actions live in one system alert: a plain text field with the
+// Cancel / Copy / Save actions in order.
+- (void)sbPresentUserIDDialogForRow:(NSInteger)row {
+    BOOL isPublic = (row == 1);
+    NSString *userID = isPublic ? sbPublicUserID() : sbLocalUserID();
+    __weak typeof(self) weakSelf = self;
+
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:LOC(isPublic ? @"SB_PUBLIC_ID" : @"SB_PRIVATE_ID")
+                                                                  message:nil
+                                                           preferredStyle:UIAlertControllerStyleAlert];
+
+    [alert addTextFieldWithConfigurationHandler:^(UITextField *field) {
+        field.text = userID;
+        field.font = [UIFont monospacedSystemFontOfSize:14 weight:UIFontWeightRegular];
+        field.clearButtonMode = UITextFieldViewModeWhileEditing;
+        field.autocapitalizationType = UITextAutocapitalizationTypeNone;
+        field.autocorrectionType = UITextAutocorrectionTypeNo;
+        field.spellCheckingType = UITextSpellCheckingTypeNo;
+        field.keyboardType = UIKeyboardTypeASCIICapable;
+        field.returnKeyType = UIReturnKeyDone;
+    }];
+
+    [alert addAction:[UIAlertAction actionWithTitle:LOC(@"CANCEL") style:UIAlertActionStyleCancel handler:nil]];
+
+    [alert addAction:[UIAlertAction actionWithTitle:LOC(@"SB_COPY_ID") style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+        UIPasteboard.generalPasteboard.string = userID;
+        sbShowSBPill(LOC(@"SB_ID_COPIED"), YES);
+    }]];
+
+    UIAlertAction *saveAction = [UIAlertAction actionWithTitle:LOC(@"SB_ID_SAVE") style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+        NSString *newValue = [alert.textFields.firstObject.text stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+        if (newValue.length < 30) {
+            sbShowSBPill(LOC(@"SB_ID_INVALID"), NO);
+            return;
+        }
+        if (isPublic) {
+            sbSetPublicUserIDManual(newValue);
+        } else {
+            sbSetPrivateUserID(newValue);
+        }
+        sbShowSBPill(LOC(@"SB_ID_SAVED"), YES);
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+        [strongSelf.tableView reloadData];
+    }];
+    [alert addAction:saveAction];
+    alert.preferredAction = saveAction;
+
+    [self presentViewController:alert animated:YES completion:nil];
+
+    // Focus the field once the alert has finished fading in.
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.35 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        [alert.textFields.firstObject becomeFirstResponder];
+    });
 }
 
 #pragma mark - UIColorPickerViewControllerDelegate
@@ -892,11 +992,13 @@ NSArray<YMSearchRow *> *sbSearchRows(UIViewController *host) {
         @"hook":           @[@(SBSegmentActionDisable),  @"#395699"],
         @"poi_highlight":  @[@(SBSegmentActionDisable),  @"#FF006A"],
         @"filler":         @[@(SBSegmentActionDisable),  @"#7300FF"],
+        @"exclusive_access": @[@(SBSegmentActionDisable), @"#008A5C"],
     };
 
     NSMutableDictionary *defaults = [@{
         SBEnabled: @YES,
         SBShowButton: @YES,
+        SBButtonKey: @YES,
         SBShowNotifications: @YES,
         SBSegmentsInPlayer: @YES,
         SBSegmentsInFeed: @YES,

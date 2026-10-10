@@ -1,5 +1,7 @@
 #import "Headers.h"
 
+static const void *kFilteredSectionKey = &kFilteredSectionKey;
+
 // YouTube-X (https://github.com/PoomSmart/YouTube-X)
 static BOOL isProductList(YTICommand *command) {
     if ([command respondsToSelector:@selector(yt_showEngagementPanelEndpoint)]) {
@@ -68,9 +70,7 @@ static NSString *getAdString(NSString *description) {
 }
 
 static BOOL isAdRenderer(YTIElementRenderer *elementRenderer, int kind) {
-    if ([elementRenderer respondsToSelector:@selector(hasCompatibilityOptions)] && elementRenderer.hasCompatibilityOptions && elementRenderer.compatibilityOptions.hasAdLoggingData) {
-        return YES;
-    }
+    if (elementRenderer.hasCompatibilityOptions && elementRenderer.compatibilityOptions.hasAdLoggingData) return YES;
     NSString *description = [elementRenderer description];
     NSString *adString = getAdString(description);
     if (adString) return YES;
@@ -90,26 +90,43 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
 
     NSMutableArray <YTIItemSectionRenderer *> *newArray = [array mutableCopy];
     NSIndexSet *removeIndexes = [newArray indexesOfObjectsPassingTest:^BOOL(YTIItemSectionRenderer *sectionRenderer, NSUInteger idx, BOOL *stop) {
+        if (objc_getAssociatedObject(sectionRenderer, kFilteredSectionKey)) return NO;
         if ([sectionRenderer isKindOfClass:%c(YTIShelfRenderer)]) {
             NSString *description = [sectionRenderer description];
-            if ([description containsString:@"community-tab-chip-posts-section"]) return NO;
+            if ([description containsString:@"community-tab-chip-posts-section"]) {
+                objc_setAssociatedObject(sectionRenderer, kFilteredSectionKey, @YES, OBJC_ASSOCIATION_ASSIGN);
+                return NO;
+            }
             if (hideShorts) {
-                if (keepShortsSub && [description containsString:@"subscriptions-shorts-shelf-item"]) return NO;
-                else if ([description containsString:@"shorts_video_cell.eml"]) return YES;
-                else if ([description containsString:@"shelf_header.eml"] && [description containsString:@"youtube_shorts_24_cairo"]) return YES;
+                if (keepShortsSub && [description containsString:@"subscriptions-shorts-shelf-item"]) {
+                    objc_setAssociatedObject(sectionRenderer, kFilteredSectionKey, @YES, OBJC_ASSOCIATION_ASSIGN);
+                    return NO;
+                } else if ([description containsString:@"shorts_video_cell.eml"]) {
+                    return YES;
+                } else if ([description containsString:@"shelf_header.eml"] && [description containsString:@"youtube_shorts_24_cairo"]) {
+                    return YES;
+                }
             }
             if (hideFeedPost && getPostString(description) != nil) return YES;
+
             YTIShelfSupportedRenderers *content = ((YTIShelfRenderer *)sectionRenderer).content;
             YTIHorizontalListRenderer *horizontalListRenderer = content.horizontalListRenderer;
             NSMutableArray <YTIHorizontalListSupportedRenderers *> *itemsArray = horizontalListRenderer.itemsArray;
-            NSIndexSet *removeItemsArrayIndexes = [itemsArray indexesOfObjectsPassingTest:^BOOL(YTIHorizontalListSupportedRenderers *horizontalListSupportedRenderers, NSUInteger idx2, BOOL *stop2) {
-                YTIElementRenderer *elementRenderer = horizontalListSupportedRenderers.elementRenderer;
-                return isAdRenderer(elementRenderer, 4);
-            }];
-            [itemsArray removeObjectsAtIndexes:removeItemsArrayIndexes];
+            if (itemsArray.count > 0) {
+                NSIndexSet *removeItemsArrayIndexes = [itemsArray indexesOfObjectsPassingTest:^BOOL(YTIHorizontalListSupportedRenderers *horizontalListSupportedRenderers, NSUInteger idx2, BOOL *stop2) {
+                    YTIElementRenderer *elementRenderer = horizontalListSupportedRenderers.elementRenderer;
+                    return isAdRenderer(elementRenderer, 4);
+                }];
+                [itemsArray removeObjectsAtIndexes:removeItemsArrayIndexes];
+            }
+            objc_setAssociatedObject(sectionRenderer, kFilteredSectionKey, @YES, OBJC_ASSOCIATION_ASSIGN);
+            return NO;
         } else if ([sectionRenderer isKindOfClass:%c(YTIItemSectionRenderer)]) {
             NSString *description = [sectionRenderer description];
-            if ([description containsString:@"community-tab-chip-posts-section"]) return NO;
+            if ([description containsString:@"community-tab-chip-posts-section"]) {
+                objc_setAssociatedObject(sectionRenderer, kFilteredSectionKey, @YES, OBJC_ASSOCIATION_ASSIGN);
+                return NO;
+            }
             if ([description containsString:@"UNLIMITED"] && [description containsString:@"SPunlimited"]) {
                 NSMutableArray <YTIItemSectionSupportedRenderers *> *contentsArray = sectionRenderer.contentsArray;
                 NSMutableIndexSet *indexesToRemove = [NSMutableIndexSet indexSet];
@@ -127,9 +144,10 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
                     }
                 }];
                 [contentsArray removeObjectsAtIndexes:indexesToRemove];
+                objc_setAssociatedObject(sectionRenderer, kFilteredSectionKey, @YES, OBJC_ASSOCIATION_ASSIGN);
                 return NO;
             }
-            
+
             const BOOL isShortsShelf = [description containsString:@"shorts_shelf.eml"];
             const BOOL isHistory = [description containsString:@"history-shorts-shelf-item"];
             const BOOL isShortsOverlay = [description containsString:@"video_lockup_overlay"];
@@ -153,8 +171,8 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
             }
             
             if (hideFeedPost && getPostString(description) != nil) return YES;
-            if (hideGenMusic && [description containsString:@"feed_nudge.eml"]) return YES;
-            if (hideSurveys && [description containsString:@"in_feed_survey.eml"]) return YES;
+            else if (hideGenMusic && [description containsString:@"feed_nudge.eml"]) return YES;
+            else if (hideSurveys && [description containsString:@"in_feed_survey.eml"]) return YES;
             if (hideComments && [description containsString:@"comment-item-section"] && [description containsString:@"comments-entry-point"]) {
                 return YES;
             }
@@ -170,12 +188,25 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
             YTIItemSectionSupportedRenderers *firstObject = [contentsArray firstObject];
             YTIElementRenderer *elementRenderer = firstObject.elementRenderer;
             if (isAdRenderer(elementRenderer, 2)) return YES;
+
+            objc_setAssociatedObject(sectionRenderer, kFilteredSectionKey, @YES, OBJC_ASSOCIATION_ASSIGN);
+            return NO;
         }
+
+        objc_setAssociatedObject(sectionRenderer, kFilteredSectionKey, @YES, OBJC_ASSOCIATION_ASSIGN);
         return NO;
     }];
     [newArray removeObjectsAtIndexes:removeIndexes];
     return newArray;
 }
+
+// Filering new ads
+%hook YTIElementRenderer
+- (NSData *)elementData {
+    if (self.compatibilityOptions.hasAdLoggingData) return nil;
+    return %orig;
+}
+%end
 
 %hook YTPlayerResponse
 %new(@@:)
@@ -201,15 +232,15 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
 
 %hook YTAdsInnerTubeContextDecorator
 - (void)decorateContext:(id)context { 
-    id temp = nil;
-    %orig(temp);
+    context = nil;
+    %orig(context);
 }
 %end
 
 %hook YTAccountScopedAdsInnerTubeContextDecorator
 - (void)decorateContext:(id)context { 
-    id temp = nil;
-    %orig(temp);
+    context = nil;
+    %orig(context);
 }
 %end
 
@@ -225,56 +256,58 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
 - (void)adPlaying:(id)ad {}
 %end
 
+static BOOL isAdsReelContentModel(YTReelContentModel *model) {
+    if ([model respondsToSelector:@selector(videoType)])
+        return ((YTReelModel *)model).videoType == 3;
+    else if ([model isKindOfClass:%c(YTReelNonVideoContentModel)])
+        return [[[(YTReelNonVideoContentModel *)model renderer].customData description] containsString:@"YTIReelNonVideoAdsCustomData_reelNonVideoAdsCustomData"];
+    return NO;
+}
+
 // Live video type = 4 and Live preview = 7, 9 is Playables ads, 10 posts
 %hook YTReelDataSource
-- (YTReelModel *)makeContentModelForEntry:(id)entry {
-    YTReelModel *model = %orig;
-    if ([model respondsToSelector:@selector(videoType)] && model.videoType == 3)
-        return nil;
-    if ([model isKindOfClass:%c(YTReelNonVideoContentModel)])
-        return nil;
-    if ([model respondsToSelector:@selector(videoType)] && model.videoType == 10 && IS_ENABLED(RemoveShortsPosts))
-        return nil;
-    if ([model respondsToSelector:@selector(videoType)] && (model.videoType == 4 || model.videoType == 7) && IS_ENABLED(RemoveShortsLive))
-        return nil;
+- (YTReelContentModel *)makeContentModelForEntry:(id)entry {
+    YTReelContentModel *model = %orig;
+    if (isAdsReelContentModel(model)) return nil;
+    else if ([model respondsToSelector:@selector(videoType)] && ((YTReelModel *)model).videoType == 10 && IS_ENABLED(RemoveShortsPosts)) return nil;
+    else if ([model respondsToSelector:@selector(videoType)] && (((YTReelModel *)model).videoType == 4 || ((YTReelModel *)model).videoType == 7) && IS_ENABLED(RemoveShortsLive)) return nil;
     return model;
+}
+// setReels: moved here from YTReelInfinitePlaybackDataSource, which is 19.x only.
+- (void)setReels:(NSMutableOrderedSet <YTReelContentModel *> *)reels {
+    [reels removeObjectsAtIndexes:[reels indexesOfObjectsPassingTest:^BOOL(YTReelContentModel *obj, NSUInteger idx, BOOL *stop) {
+        if (isAdsReelContentModel(obj)) return YES;
+        else if ([obj respondsToSelector:@selector(videoType)] && ((YTReelModel *)obj).videoType == 10 && IS_ENABLED(RemoveShortsPosts)) return YES;
+        else if ([obj respondsToSelector:@selector(videoType)] && (((YTReelModel *)obj).videoType == 4 || ((YTReelModel *)obj).videoType == 7) && IS_ENABLED(RemoveShortsLive)) return YES;
+        return NO;
+    }]];
+    %orig;
 }
 %end
 
 %hook YTReelContentModel
-+ (YTReelModel *)makeContentModelForEntry:(id)entry {
-    YTReelModel *model = %orig;
-    if ([model respondsToSelector:@selector(videoType)] && model.videoType == 3)
-        return nil;
-    if ([model isKindOfClass:%c(YTReelNonVideoContentModel)])
-        return nil;
-    if ([model respondsToSelector:@selector(videoType)] && model.videoType == 10 && IS_ENABLED(RemoveShortsPosts))
-        return nil;
-    if ([model respondsToSelector:@selector(videoType)] && (model.videoType == 4 || model.videoType == 7) && IS_ENABLED(RemoveShortsLive))
-        return nil;
++ (YTReelContentModel *)makeContentModelForEntry:(id)entry {
+    YTReelContentModel *model = %orig;
+    if (isAdsReelContentModel(model)) return nil;
+    else if ([model respondsToSelector:@selector(videoType)] && ((YTReelModel *)model).videoType == 10 && IS_ENABLED(RemoveShortsPosts)) return nil;
+    else if ([model respondsToSelector:@selector(videoType)] && (((YTReelModel *)model).videoType == 4 || ((YTReelModel *)model).videoType == 7) && IS_ENABLED(RemoveShortsLive)) return nil;
     return model;
 }
 %end
 
 %hook YTReelInfinitePlaybackDataSource
-- (YTReelModel *)makeContentModelForEntry:(id)entry {
-    YTReelModel *model = %orig;
-    if ([model respondsToSelector:@selector(videoType)] && model.videoType == 3)
-        return nil;
-    if ([model isKindOfClass:%c(YTReelNonVideoContentModel)])
-        return nil;
-    if ([model respondsToSelector:@selector(videoType)] && model.videoType == 10 && IS_ENABLED(RemoveShortsPosts))
-        return nil;
-    if ([model respondsToSelector:@selector(videoType)] && (model.videoType == 4 || model.videoType == 7) && IS_ENABLED(RemoveShortsLive))
-        return nil;
+- (YTReelContentModel *)makeContentModelForEntry:(id)entry {
+    YTReelContentModel *model = %orig;
+    if (isAdsReelContentModel(model)) return nil;
+    else if ([model respondsToSelector:@selector(videoType)] && ((YTReelModel *)model).videoType == 10 && IS_ENABLED(RemoveShortsPosts)) return nil;
+    else if ([model respondsToSelector:@selector(videoType)] && (((YTReelModel *)model).videoType == 4 || ((YTReelModel *)model).videoType == 7) && IS_ENABLED(RemoveShortsLive)) return nil;
     return model;
 }
-- (void)setReels:(NSMutableOrderedSet <YTReelModel *> *)reels {
-    [reels removeObjectsAtIndexes:[reels indexesOfObjectsPassingTest:^BOOL(YTReelModel *obj, NSUInteger idx, BOOL *stop) {
-        if ([obj respondsToSelector:@selector(videoType)] && obj.videoType == 3) return YES;
-        if ([obj isKindOfClass:%c(YTReelNonVideoContentModel)]) return YES;
-        if ([obj respondsToSelector:@selector(videoType)] && obj.videoType == 10 && IS_ENABLED(RemoveShortsPosts)) return YES;
-        if ([obj respondsToSelector:@selector(videoType)] && (obj.videoType == 4 || obj.videoType == 7) && IS_ENABLED(RemoveShortsLive)) return YES;
+- (void)setReels:(NSMutableOrderedSet <YTReelContentModel *> *)reels {
+    [reels removeObjectsAtIndexes:[reels indexesOfObjectsPassingTest:^BOOL(YTReelContentModel *obj, NSUInteger idx, BOOL *stop) {
+        if (isAdsReelContentModel(obj)) return YES;
+        else if ([obj respondsToSelector:@selector(videoType)] && ((YTReelModel *)obj).videoType == 10 && IS_ENABLED(RemoveShortsPosts)) return YES;
+        else if ([obj respondsToSelector:@selector(videoType)] && (((YTReelModel *)obj).videoType == 4 || ((YTReelModel *)obj).videoType == 7) && IS_ENABLED(RemoveShortsLive)) return YES;
         return NO;
     }]];
     %orig;
@@ -291,8 +324,7 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
             return isProductList(command);
         }]];
     }
-    if (isProductList(onUiReady))
-        model.onUiReady = nil;
+    if (isProductList(onUiReady)) model.onUiReady = nil;
     %orig;
 }
 %end
@@ -300,10 +332,14 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
 %hook YTMainAppVideoPlayerOverlayViewController
 - (void)playerOverlayProvider:(YTPlayerOverlayProvider *)provider didInsertPlayerOverlay:(YTPlayerOverlay *)overlay {
     NSString *iden = [overlay overlayIdentifier];
-    if ([iden isEqualToString:@"player_overlay_product_in_video"]) return;
-    if ([iden isEqualToString:@"player_overlay_paid_content"] && IS_ENABLED(HidePaidPromoOverlay)) return;
+    if ([iden isEqualToString:@"player_overlay_product_in_video"] || [iden isEqualToString:@"player_overlay_timely_shelf"]) return;
+    else if ([iden isEqualToString:@"player_overlay_paid_content"] && IS_ENABLED(HidePaidPromoOverlay)) return;
     %orig;
 }
+%end
+
+%hook YTTimelyShelfStateManager
+- (BOOL)isTablet { return YES; }
 %end
 
 %hook YTWatchFloatingMiniplayerBadgeView
@@ -311,9 +347,7 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
     %orig;
     if (IS_ENABLED(HidePaidPromoOverlay)) {
         UIView *badge = [self valueForKey:@"_overlayBadge"];
-        if (badge && badge.superview) {
-            [badge removeFromSuperview];
-        }
+        if (badge) [badge removeFromSuperview];
     }
 }
 %end
@@ -324,34 +358,53 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
     [self setValue:filteredArray(sectionRenderers) forKey:@"_sectionRenderers"];
     %orig;
 }
-- (void)addSectionsFromArray:(NSArray <YTIItemSectionRenderer *> *)array {
-    %orig(filteredArray(array));
-}
+- (void)addSectionsFromArray:(NSArray <YTIItemSectionRenderer *> *)array { %orig(filteredArray(array)); }
 %end
 
-%hook _ASDisplayView
-- (void)didMoveToWindow {
-    %orig;
-    NSString *iden = self.accessibilityIdentifier;
-    if ([iden isEqualToString:@"eml.expandable_metadata.vpp"]) [self removeFromSuperview];
-    if (IS_ENABLED(HideCommentsPreview) && [iden isEqualToString:@"id.ui.comments_entry_point_teaser"]) [self removeFromSuperview];
-    if ([self.accessibilityLabel containsString:@"Premium"] && [self._viewControllerForAncestor isKindOfClass:%c(YTPageHeaderViewController)]) {
-        [self removeFromSuperview];
-    }
-    // Filter new ads in newer YT versions
-    if ([iden containsString:@"eml.ad_layout."]) {
-        _ASCollectionViewCell *mainView = (_ASCollectionViewCell *)self.superview;
-        while (mainView != nil && ![mainView isKindOfClass:%c(_ASCollectionViewCell)]) {
-            mainView = (_ASCollectionViewCell *)mainView.superview;
-        }
-        ASDisplayNode *node = mainView.node;
-        for (id child in [node.yogaChildren copy]) {
-            [node removeYogaChild:child];
-        }
-        // [mainView removeFromSuperview]; Sometimes running this crashes the app.
+void YouModFilterAdsDisplayView(_ASDisplayView *view, NSString *iden) {
+    if ([iden isEqualToString:@"eml.expandable_metadata.vpp"]) {
+        _ASDisplayView *spview = (_ASDisplayView *)view.superview;
+        ASDisplayNode *node = spview.keepalive_node;
+        [node removeYogaChild:node.yogaChildren.firstObject];
+        [view removeFromSuperview];
+    } else if (IS_ENABLED(HideCommentsPreview) && [iden isEqualToString:@"id.ui.comments_entry_point_teaser"]) {
+        view.hidden = YES;
+    } else if ([view.accessibilityLabel containsString:@"Premium"] && [view._viewControllerForAncestor isKindOfClass:%c(YTPageHeaderViewController)]) {
+        _ASDisplayView *spview = (_ASDisplayView *)view.superview;
+        ASDisplayNode *node = spview.keepalive_node;
+        if (node.yogaChildren.count == 1) node = node.yogaChildren[0];
+        [node removeYogaChild:node.yogaChildren.lastObject];
+        [view removeFromSuperview];
     }
 }
-%end
+
+void YouModRemoveDrawerAds(YTELMViewController *self) {
+    UIView *coll = nil;
+    for (UIView *view in self.view.subviews) {
+        if ([view isKindOfClass:%c(ASCollectionView)]) {
+            coll = view;
+            break;
+        }
+    }
+    if (coll == nil) return;
+    _ASCollectionViewCell *premiumCell = nil;
+    for (_ASCollectionViewCell *vc in coll.subviews) {
+        if ([vc isKindOfClass:%c(_ASCollectionViewCell)]) {
+            UIView *svtemp = vc.subviews[0];
+            while (svtemp != nil && svtemp.subviews.count == 1) {
+                svtemp = svtemp.subviews[0];
+            }
+            if ([svtemp.accessibilityLabel containsString:@"Premium"]) {
+                premiumCell = vc;
+                break;
+            }
+        }
+    }
+    if (premiumCell == nil) return;
+    ASDisplayNode *node = premiumCell.node;
+    for (ASDisplayNode *child in node.yogaChildren) [node removeYogaChild:child];
+    [premiumCell removeFromSuperview];
+}
 
 // NoYTPremium - @PoomSmart https://github.com/PoomSmart/NoYTPremium
 // Alert
@@ -382,19 +435,41 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
 
 %hook YTIShowFullscreenInterstitialCommand
 - (BOOL)shouldThrottleInterstitial {
-    if (self.hasModalClientThrottlingRules)
-        self.modalClientThrottlingRules.oncePerTimeWindow = YES;
+    if (self.hasModalClientThrottlingRules) self.modalClientThrottlingRules.oncePerTimeWindow = YES;
     return %orig;
 }
 %end
 
 // Settings
 %hook YTSettingsSectionItemManager
-// - (void)updatePremiumEarlyAccessSectionWithEntry:(id)arg1 {}
+- (void)updatePremiumEarlyAccessSectionWithEntry:(id)arg {}
 - (void)updateUnlimitedSectionWithEntry:(id)arg {}
+%end
+
+%hook YTSettingsSectionController
+- (NSArray <YTSettingsSectionItem *> *)items {
+    NSArray <YTSettingsSectionItem *> *orig = %orig;
+    if (orig && orig.count > 0) {
+        for (YTSettingsSectionItem *item in orig) {
+            if ([item.categoryId integerValue] == 31) {
+                [orig removeObject:item];
+                break;
+            }
+        }
+    }
+    return orig;
+}
 %end
 
 // Survey
 %hook YTSurveyController
 - (void)showSurveyWithRenderer:(id)arg1 surveyParentResponder:(id)arg2 {}
 %end
+
+%ctor {
+    [[NSUserDefaults standardUserDefaults] registerDefaults:@{
+        RemoveAds: @YES
+    }];
+    if (!IS_ENABLED(RemoveAds)) return;
+    %init;
+}
