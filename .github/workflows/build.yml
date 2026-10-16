@@ -33,7 +33,7 @@ jobs:
           path: YouMod
 
       - name: Install dependencies
-        run: brew install make ldid
+        run: brew install make ldid gnu-sed autoconf automake libtool pkg-config
 
       - name: Set PATH environment variables
         run: |
@@ -89,6 +89,13 @@ jobs:
       - name: Fix Theos od broken pipe issue
         run: sed -i '' 's/od -c "$i" | head/od -c "$i" 2>\/dev\/null | head/g' $THEOS/bin/convert_xml_plist.sh || true
 
+      - name: Restore FFmpegKit cache
+        id: cache-ffmpegkit
+        uses: actions/cache/restore@v6
+        with:
+          path: YouMod/modules/ffmpegkit
+          key: ffmpegkit-${{ runner.os }}-${{ hashFiles('YouMod/tools/fetch-ffmpegkit.sh') }}
+
       - name: Build YouMod
         run: |
           cd YouMod
@@ -97,6 +104,13 @@ jobs:
           make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
           make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=roothide
           mv packages/*.deb ${{ github.workspace }}
+
+      - name: Save FFmpegKit cache
+        if: ${{ steps.cache-ffmpegkit.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v6
+        with:
+          path: YouMod/modules/ffmpegkit
+          key: ${{ steps.cache-ffmpegkit.outputs.cache-primary-key }}
 
       - name: Upload the tweak .deb(s)
         uses: actions/upload-artifact@v7

@@ -135,6 +135,7 @@ typedef NS_ENUM(NSInteger, YMVisibilityOperator) {
 @property (nonatomic, strong) NSArray<NSString *> *pickerOptions;
 @property (nonatomic, assign) NSInteger pickerDefault;
 @property (nonatomic, copy) void (^action)(UIViewController *vc);
+@property (nonatomic, assign) BOOL opensPage; // YES -> row pushes another page, gets a disclosure chevron
 @property (nonatomic, strong) NSArray<NSNumber *> *segmentIcons;
 @property (nonatomic, strong) NSArray<NSString *> *segmentLabels;
 @property (nonatomic, strong) NSArray<UIImage *> *segmentImages;
@@ -151,6 +152,7 @@ typedef NS_ENUM(NSInteger, YMVisibilityOperator) {
 + (instancetype)sliderWithTitle:(NSString *)title subtitle:(NSString *)subtitle key:(NSString *)key min:(float)min max:(float)max step:(float)step defaultValue:(float)defaultValue;
 + (instancetype)pickerWithTitle:(NSString *)title subtitle:(NSString *)subtitle key:(NSString *)key options:(NSArray<NSString *> *)options defaultValue:(NSInteger)defaultValue;
 + (instancetype)actionWithTitle:(NSString *)title subtitle:(NSString *)subtitle action:(void (^)(UIViewController *vc))action;
++ (instancetype)navActionWithTitle:(NSString *)title subtitle:(NSString *)subtitle action:(void (^)(UIViewController *vc))action;
 + (instancetype)headerWithTitle:(NSString *)title;
 + (instancetype)segmentWithTitle:(NSString *)title key:(NSString *)key icons:(NSArray<NSNumber *> *)icons defaultValue:(NSInteger)defaultValue;
 + (instancetype)textSegmentWithTitle:(NSString *)title key:(NSString *)key labels:(NSArray<NSString *> *)labels defaultValue:(NSInteger)defaultValue;
@@ -233,6 +235,12 @@ typedef NS_ENUM(NSInteger, YMVisibilityOperator) {
     item.title = title;
     item.subtitle = subtitle;
     item.action = action;
+    return item;
+}
+
++ (instancetype)navActionWithTitle:(NSString *)title subtitle:(NSString *)subtitle action:(void (^)(UIViewController *vc))action {
+    YMSettingsItem *item = [self actionWithTitle:title subtitle:subtitle action:action];
+    item.opensPage = YES;
     return item;
 }
 
@@ -780,6 +788,9 @@ static const void *kYMCachedDisplayedItemsKey = &kYMCachedDisplayedItemsKey;
     if (key) {
         [[NSUserDefaults standardUserDefaults] setBool:sender.on forKey:key];
         [self updateDisplayedItemsAnimated:YES];
+        if ([key isEqualToString:SkipBackwardEnabled] || [key isEqualToString:SkipForwardEnabled]) {
+            YouModConfigureRemoteSkipCommands();
+        }
     }
 }
 
@@ -854,6 +865,9 @@ static const void *kYMCachedDisplayedItemsKey = &kYMCachedDisplayedItemsKey;
     formatter.unitsStyle = NSDateComponentsFormatterUnitsStyleAbbreviated;
     
     valueLabel.text = [formatter stringFromTimeInterval:snapped];
+    if ([key isEqualToString:RewindSeconds] || [key isEqualToString:ForwardSeconds]) {
+        YouModConfigureRemoteSkipCommands();
+    }
 }
 
 #pragma mark - Action Cell
@@ -865,6 +879,10 @@ static const void *kYMCachedDisplayedItemsKey = &kYMCachedDisplayedItemsKey;
     cell.textLabel.text = item.title;
     cell.textLabel.textColor = [self ymTextColor];
     cell.textLabel.font = [UIFont systemFontOfSize:16 weight:UIFontWeightMedium];
+
+    if (item.opensPage) {
+        cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+    }
 
     if (item.subtitle.length > 0) {
         cell.detailTextLabel.text = item.subtitle;
@@ -1072,7 +1090,7 @@ static const void *kYMCachedDisplayedItemsKey = &kYMCachedDisplayedItemsKey;
         ? item.pickerOptions[currentValue]
         : item.pickerOptions[safeDefault];
 
-    if (@available(iOS 15.0, *)) {
+    if ([UIButtonConfiguration class] && [menuButton respondsToSelector:@selector(setConfiguration:)]) {
         UIButtonConfiguration *config = [UIButtonConfiguration plainButtonConfiguration];
         config.title = currentTitle;
         config.image = [UIImage systemImageNamed:@"chevron.up.chevron.down" withConfiguration:[UIImageSymbolConfiguration configurationWithPointSize:11 weight:UIImageSymbolWeightMedium]];
@@ -1099,6 +1117,29 @@ static const void *kYMCachedDisplayedItemsKey = &kYMCachedDisplayedItemsKey;
         NSString *itemKey = item.key;
         UIAction *action = [UIAction actionWithTitle:optionTitle image:nil identifier:nil handler:^(__kindof UIAction *a) {
             [[NSUserDefaults standardUserDefaults] setInteger:i forKey:itemKey];
+            if ([itemKey isEqualToString:SleepTimerEntry]) {
+                // Keep the locked sleep.timer overlay-button toggle and the
+                // player in sync with the picker. Entries coming back from
+                // NSUserDefaults are immutable dictionaries, so deep-copy each
+                // one — mutating a shared entry would crash on an immutable
+                // object ("mutating method sent to immutable object").
+                NSMutableArray *order = [NSMutableArray array];
+                for (NSDictionary *entry in [[NSUserDefaults standardUserDefaults] arrayForKey:OverlayButtonOrder] ?: @[]) {
+                    if ([entry isKindOfClass:[NSDictionary class]]) [order addObject:[entry mutableCopy]];
+                }
+                NSMutableDictionary *sleepEntry = nil;
+                for (NSMutableDictionary *d in order) {
+                    if ([d[@"id"] isEqualToString:@"sleep.timer"]) { sleepEntry = d; break; }
+                }
+                if (!sleepEntry) {
+                    sleepEntry = [NSMutableDictionary dictionaryWithDictionary:@{@"id": @"sleep.timer", @"bottom": @(NO)}];
+                    [order addObject:sleepEntry];
+                }
+                sleepEntry[@"enabled"] = @(i == 2 || i == 3);
+                [[NSUserDefaults standardUserDefaults] setObject:order forKey:OverlayButtonOrder];
+                [[NSUserDefaults standardUserDefaults] synchronize];
+                [[NSNotificationCenter defaultCenter] postNotificationName:@"YouModUpdateOverlayButtons" object:nil];
+            }
             if (weakButton) {
                 [weakSelf updatePickerButton:weakButton item:item];
             }
@@ -1357,6 +1398,10 @@ YMSettingsItem *YMAction(NSString *title, NSString *subtitle, void (^action)(UIV
     return [YMSettingsItem actionWithTitle:title subtitle:subtitle action:action];
 }
 
+YMSettingsItem *YMNavAction(NSString *title, NSString *subtitle, void (^action)(UIViewController *vc)) {
+    return [YMSettingsItem navActionWithTitle:title subtitle:subtitle action:action];
+}
+
 YMSettingsItem *YMHeader(NSString *title) {
     return [YMSettingsItem headerWithTitle:title];
 }
@@ -1376,9 +1421,9 @@ YMSettingsItem *YMImageSegment(NSString *title, NSString *key, NSArray<UIImage *
 #pragma mark - YMTabOrderViewController
 
 static NSString * const kYMTabIDs[] = {
-    @"home", @"shorts", @"create", @"subscriptions", @"library", @"history", @"gaming", @"sports", @"notifications", @"news", @"music", @"watchlater", @"playlist", @"like", @"live", @"post", @"video", @"movie", @"course", @"minigame", @"fashion", @"learning"
+    @"home", @"shorts", @"create", @"subscriptions", @"library", @"history", @"gaming", @"sports", @"notifications", @"news", @"music", @"watchlater", @"playlist", @"like", @"live", @"post", @"video", @"movie", @"course", @"minigame", @"fashion", @"learning", @"download"
 };
-static const NSInteger kYMTabCount = 22;
+static const NSInteger kYMTabCount = 23;
 static const NSInteger kYMTabMaxEnabled = 6;
 static const NSInteger kYMTabMinEnabled = 1;
 
@@ -1433,6 +1478,7 @@ static const void *kYMTabSavedScrollEdgeAppearanceKey = &kYMTabSavedScrollEdgeAp
     if ([tabID isEqualToString:@"minigame"]) return LOC(@"MINIGAME_TAB");
     if ([tabID isEqualToString:@"fashion"]) return LOC(@"FASHION_TAB");
     if ([tabID isEqualToString:@"learning"]) return LOC(@"LEARNING_TAB");
+    if ([tabID isEqualToString:@"download"]) return LOC(@"DOWNLOAD_LIBRARY_TAB");
     return tabID;
 }
 
@@ -1448,7 +1494,7 @@ static const void *kYMTabSavedScrollEdgeAppearanceKey = &kYMTabSavedScrollEdgeAp
         return [[UIImage systemImageNamed:@"plus" withConfiguration:config] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
     }
     NSDictionary *ytIconTypes = @{@"home": @(65), @"shorts": @(769), @"subscriptions": @(66), @"library": @(61)};
-    NSDictionary *bundleIcons = @{@"history": @"icons/history", @"gaming": @"icons/gaming", @"sports": @"icons/sports", @"notifications": @"icons/noti", @"news": @"icons/news", @"music": @"icons/music", @"watchlater": @"icons/watchlater", @"playlist": @"icons/playlist", @"like": @"icons/like", @"live": @"icons/live", @"post": @"icons/post", @"video": @"icons/video", @"movie": @"icons/movie", @"course": @"icons/course", @"minigame": @"icons/minigame", @"fashion": @"icons/fashion", @"learning": @"icons/learning"};
+    NSDictionary *bundleIcons = @{@"history": @"icons/history", @"gaming": @"icons/gaming", @"sports": @"icons/sports", @"notifications": @"icons/noti", @"news": @"icons/news", @"music": @"icons/music", @"watchlater": @"icons/watchlater", @"playlist": @"icons/playlist", @"like": @"icons/like", @"live": @"icons/live", @"post": @"icons/post", @"video": @"icons/video", @"movie": @"icons/movie", @"course": @"icons/course", @"minigame": @"icons/minigame", @"fashion": @"icons/fashion", @"learning": @"icons/learning", @"download": @"icons/download"};
 
     NSNumber *iconType = ytIconTypes[tabID];
     if (iconType) {
@@ -1570,10 +1616,12 @@ static const void *kYMTabSavedScrollEdgeAppearanceKey = &kYMTabSavedScrollEdgeAp
 
 - (void)loadTabData {
     NSArray *savedOrder = [[NSUserDefaults standardUserDefaults] arrayForKey:TabOrder];
+    BOOL downloadTabEnabled = [[NSUserDefaults standardUserDefaults] boolForKey:DownloadLibraryTab];
     NSMutableArray *data = [NSMutableArray array];
 
     if (savedOrder.count > 0) {
         for (NSDictionary *entry in savedOrder) {
+            if (![entry isKindOfClass:[NSDictionary class]]) continue;
             NSString *tabID = entry[@"id"];
             BOOL enabled = [entry[@"enabled"] boolValue];
             if (tabID) {
@@ -1588,14 +1636,17 @@ static const void *kYMTabSavedScrollEdgeAppearanceKey = &kYMTabSavedScrollEdgeAp
                 if ([d[@"id"] isEqualToString:tabID]) { found = YES; break; }
             }
             if (!found) {
-                [data addObject:[@{@"id": tabID, @"enabled": @NO} mutableCopy]];
+                BOOL defaultEnabled = [tabID isEqualToString:@"download"] ? downloadTabEnabled : NO;
+                [data addObject:[@{@"id": tabID, @"enabled": @(defaultEnabled)} mutableCopy]];
             }
         }
     } else {
         // Default: Home, Shorts, Create, Subscriptions, Library enabled
         for (NSInteger i = 0; i < kYMTabCount; i++) {
+            NSString *tabID = kYMTabIDs[i];
             BOOL defaultEnabled = i < 5;
-            [data addObject:[@{@"id": kYMTabIDs[i], @"enabled": @(defaultEnabled)} mutableCopy]];
+            if ([tabID isEqualToString:@"download"]) defaultEnabled = downloadTabEnabled;
+            [data addObject:[@{@"id": tabID, @"enabled": @(defaultEnabled)} mutableCopy]];
         }
     }
 
@@ -1605,7 +1656,13 @@ static const void *kYMTabSavedScrollEdgeAppearanceKey = &kYMTabSavedScrollEdgeAp
 - (void)saveTabData {
     NSMutableArray *toSave = [NSMutableArray array];
     for (NSMutableDictionary *entry in self.tabData) {
-        [toSave addObject:@{@"id": entry[@"id"], @"enabled": entry[@"enabled"]}];
+        if ([entry[@"id"] isEqualToString:@"download"]) {
+            // The download tab's on/off state lives in the Downloading settings
+            // (DownloadLibraryTab), not here — keep the saved entry in sync with it.
+            [toSave addObject:@{@"id": entry[@"id"], @"enabled": @([[NSUserDefaults standardUserDefaults] boolForKey:DownloadLibraryTab])}];
+        } else {
+            [toSave addObject:@{@"id": entry[@"id"], @"enabled": entry[@"enabled"]}];
+        }
     }
     [[NSUserDefaults standardUserDefaults] setObject:toSave forKey:TabOrder];
     [[NSUserDefaults standardUserDefaults] synchronize];
@@ -1623,6 +1680,9 @@ static const void *kYMTabSavedScrollEdgeAppearanceKey = &kYMTabSavedScrollEdgeAp
 - (NSInteger)enabledCount {
     NSInteger count = 0;
     for (NSDictionary *entry in self.tabData) {
+        // The download tab is governed by the Downloading settings, not by the
+        // per-tab limit here — same as before it joined this list.
+        if ([entry[@"id"] isEqualToString:@"download"]) continue;
         if ([entry[@"enabled"] boolValue]) count++;
     }
     return count;
@@ -1673,7 +1733,16 @@ static const void *kYMTabSavedScrollEdgeAppearanceKey = &kYMTabSavedScrollEdgeAp
     cell.imageView.image = tabIcon;
     cell.imageView.tintColor = [UIColor labelColor];
 
-    sw.on = enabled;
+    BOOL isDownloadTab = [tabID isEqualToString:@"download"];
+    if (isDownloadTab) {
+        // The download tab can only be turned on/off from the Downloading
+        // settings section — the switch here just mirrors that state.
+        sw.on = [[NSUserDefaults standardUserDefaults] boolForKey:DownloadLibraryTab];
+        sw.enabled = NO;
+    } else {
+        sw.on = enabled;
+        sw.enabled = YES;
+    }
     objc_setAssociatedObject(sw, kYMSwitchKeyAssoc, tabID, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 
     return cell;
@@ -1682,6 +1751,10 @@ static const void *kYMTabSavedScrollEdgeAppearanceKey = &kYMTabSavedScrollEdgeAp
 - (void)tabToggleChanged:(UISwitch *)sender {
     NSString *tabID = objc_getAssociatedObject(sender, kYMSwitchKeyAssoc);
     if (!tabID) return;
+    if ([tabID isEqualToString:@"download"]) {
+        sender.on = [[NSUserDefaults standardUserDefaults] boolForKey:DownloadLibraryTab];
+        return;
+    }
 
     NSMutableDictionary *entry = nil;
     for (NSMutableDictionary *d in self.tabData) {
@@ -1818,6 +1891,13 @@ void YMPresentTabOrderModally(id parentResponder) {
 
 #pragma mark - YMOverlayButtonOrderViewController
 
+// The sleep.timer toggle is locked in the manage screen; its state is derived
+// from the SleepTimerEntry picker (2 = overlay, 3 = both) instead.
+static BOOL YMSleepTimerOverlayEnabled(void) {
+    NSInteger entry = INTFORVAL(SleepTimerEntry);
+    return entry == 2 || entry == 3;
+}
+
 static NSString * const kYMOverlayButtonIDs[] = {
     @"sponsorblock.toggle",
     @"download.video",
@@ -1826,9 +1906,10 @@ static NSString * const kYMOverlayButtonIDs[] = {
     @"quality.video",
     @"share.video",
     @"loop.video",
-    @"caption.video"
+    @"caption.video",
+    @"sleep.timer"
 };
-static const NSInteger kYMOverlayButtonCount = 8;
+static const NSInteger kYMOverlayButtonCount = 9;
 
 @interface YMOverlayButtonOrderViewController : UIViewController <UITableViewDelegate, UITableViewDataSource>
 - (UITableView *)tableView;
@@ -1844,6 +1925,7 @@ static const void *kYMOverlayButtonDataKey = &kYMOverlayButtonDataKey;
 static const void *kYMOverlayButtonSnapshotKey = &kYMOverlayButtonSnapshotKey;
 static const void *kYMOverlaySavedStdAppearanceKey = &kYMOverlaySavedStdAppearanceKey;
 static const void *kYMOverlaySavedScrollEdgeAppearanceKey = &kYMOverlaySavedScrollEdgeAppearanceKey;
+static const void *kYMOverlayMoveInFlightKey = &kYMOverlayMoveInFlightKey;
 
 @implementation YMOverlayButtonOrderViewController
 
@@ -1863,6 +1945,7 @@ static const void *kYMOverlaySavedScrollEdgeAppearanceKey = &kYMOverlaySavedScro
     if ([buttonID isEqualToString:@"share.video"]) return LOC(@"SHARE_BUTTON");
     if ([buttonID isEqualToString:@"loop.video"]) return LOC(@"LOOP_BUTTON");
     if ([buttonID isEqualToString:@"caption.video"]) return LOC(@"CAPTION_BUTTON");
+    if ([buttonID isEqualToString:@"sleep.timer"]) return LOC(@"SLEEP_TIMER");
     return buttonID;
 }
 
@@ -1888,6 +1971,7 @@ static const void *kYMOverlaySavedScrollEdgeAppearanceKey = &kYMOverlaySavedScro
     else if ([buttonID isEqualToString:@"share.video"]) symbol = @"arrowshape.turn.up.right";
     else if ([buttonID isEqualToString:@"loop.video"]) symbol = @"repeat";
     else if ([buttonID isEqualToString:@"caption.video"]) symbol = @"captions.bubble";
+    else if ([buttonID isEqualToString:@"sleep.timer"]) symbol = @"moon";
 
     UIImageSymbolConfiguration *config = [UIImageSymbolConfiguration configurationWithPointSize:18 weight:UIImageSymbolWeightMedium];
     return [[UIImage systemImageNamed:symbol withConfiguration:config] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
@@ -1932,6 +2016,28 @@ static const void *kYMOverlaySavedScrollEdgeAppearanceKey = &kYMOverlaySavedScro
     }
 
     [self.view addSubview:self.tableView];
+
+    // Hint lives above both sections so each section header can carry its title.
+    UIView *hintHeader = [[UIView alloc] init];
+    UILabel *hintLabel = [[UILabel alloc] init];
+    hintLabel.text = LOC(@"OVERLAY_BUTTON_REORDER_HINT");
+    hintLabel.textColor = [self ymSecondaryColor];
+    hintLabel.font = [UIFont systemFontOfSize:13];
+    hintLabel.numberOfLines = 0;
+    hintLabel.translatesAutoresizingMaskIntoConstraints = NO;
+    [hintHeader addSubview:hintLabel];
+    [NSLayoutConstraint activateConstraints:@[
+        [hintLabel.leadingAnchor constraintEqualToAnchor:hintHeader.leadingAnchor constant:16],
+        [hintLabel.trailingAnchor constraintEqualToAnchor:hintHeader.trailingAnchor constant:-16],
+        [hintLabel.topAnchor constraintEqualToAnchor:hintHeader.topAnchor constant:8],
+        [hintLabel.bottomAnchor constraintEqualToAnchor:hintHeader.bottomAnchor constant:-4]
+    ]];
+    CGFloat headerWidth = self.view.bounds.size.width > 0 ? self.view.bounds.size.width : 320;
+    CGSize headerFit = [hintHeader systemLayoutSizeFittingSize:CGSizeMake(headerWidth, 0)
+                                 withHorizontalFittingPriority:UILayoutPriorityRequired
+                                   verticalFittingPriority:UILayoutPriorityFittingSizeLevel];
+    hintHeader.frame = CGRectMake(0, 0, headerWidth, ceil(headerFit.height));
+    self.tableView.tableHeaderView = hintHeader;
 }
 
 - (void)traitCollectionDidChange:(UITraitCollection *)previousTraitCollection {
@@ -1990,10 +2096,15 @@ static const void *kYMOverlaySavedScrollEdgeAppearanceKey = &kYMOverlaySavedScro
 
     if (savedOrder.count > 0) {
         for (NSDictionary *entry in savedOrder) {
+            if (![entry isKindOfClass:[NSDictionary class]]) continue;
             NSString *buttonID = entry[@"id"];
             BOOL enabled = [entry[@"enabled"] boolValue];
+            BOOL bottom = [entry[@"bottom"] boolValue];
+            if ([buttonID isEqualToString:@"sponsorblock.toggle"]) {
+                enabled = YMIsOverlayButtonEnabled(buttonID);
+            }
             if (buttonID) {
-                [data addObject:[@{@"id": buttonID, @"enabled": @(enabled)} mutableCopy]];
+                [data addObject:[@{@"id": buttonID, @"enabled": @(enabled), @"bottom": @(bottom)} mutableCopy]];
             }
         }
         for (NSInteger i = 0; i < kYMOverlayButtonCount; i++) {
@@ -2003,14 +2114,21 @@ static const void *kYMOverlaySavedScrollEdgeAppearanceKey = &kYMOverlaySavedScro
                 if ([d[@"id"] isEqualToString:buttonID]) { found = YES; break; }
             }
             if (!found) {
-                [data addObject:[@{@"id": buttonID, @"enabled": @(YMIsOverlayButtonEnabled(buttonID))} mutableCopy]];
+                [data addObject:[@{@"id": buttonID, @"enabled": @(YMIsOverlayButtonEnabled(buttonID)), @"bottom": @(NO)} mutableCopy]];
             }
         }
     } else {
         for (NSInteger i = 0; i < kYMOverlayButtonCount; i++) {
             NSString *buttonID = kYMOverlayButtonIDs[i];
             BOOL defaultEnabled = YMIsOverlayButtonEnabled(buttonID);
-            [data addObject:[@{@"id": buttonID, @"enabled": @(defaultEnabled)} mutableCopy]];
+            [data addObject:[@{@"id": buttonID, @"enabled": @(defaultEnabled), @"bottom": @(NO)} mutableCopy]];
+        }
+    }
+
+    // sleep.timer tracks the SleepTimerEntry picker, never the stored flag.
+    for (NSMutableDictionary *d in data) {
+        if ([d[@"id"] isEqualToString:@"sleep.timer"]) {
+            d[@"enabled"] = @(YMSleepTimerOverlayEnabled());
         }
     }
 
@@ -2020,7 +2138,15 @@ static const void *kYMOverlaySavedScrollEdgeAppearanceKey = &kYMOverlaySavedScro
 - (void)saveButtonData {
     NSMutableArray *toSave = [NSMutableArray array];
     for (NSMutableDictionary *entry in self.buttonData) {
-        [toSave addObject:@{@"id": entry[@"id"], @"enabled": entry[@"enabled"]}];
+        NSString *buttonID = entry[@"id"];
+        BOOL enabled = [entry[@"enabled"] boolValue];
+        if ([buttonID isEqualToString:@"sponsorblock.toggle"]) {
+            enabled = YMIsOverlayButtonEnabled(buttonID);
+        }
+        if ([buttonID isEqualToString:@"sleep.timer"]) {
+            enabled = YMSleepTimerOverlayEnabled();
+        }
+        [toSave addObject:@{@"id": buttonID, @"enabled": @(enabled), @"bottom": @([entry[@"bottom"] boolValue])}];
     }
     [[NSUserDefaults standardUserDefaults] setObject:toSave forKey:OverlayButtonOrder];
     [[NSUserDefaults standardUserDefaults] synchronize];
@@ -2030,23 +2156,63 @@ static const void *kYMOverlaySavedScrollEdgeAppearanceKey = &kYMOverlaySavedScro
 - (void)takeSnapshot {
     NSMutableArray *snap = [NSMutableArray array];
     for (NSDictionary *entry in self.buttonData) {
-        [snap addObject:@{@"id": entry[@"id"], @"enabled": entry[@"enabled"]}];
+        [snap addObject:@{@"id": entry[@"id"], @"enabled": entry[@"enabled"], @"bottom": entry[@"bottom"]}];
     }
     self.initialSnapshot = [snap copy];
 }
 
 #pragma mark - UITableViewDataSource
 
-- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView { return 1; }
+// Section 0 = buttons on the top overlay row, section 1 = buttons on the
+// bottom bar. Both derive from the single buttonData array via the "bottom"
+// flag, so the saved format (and the player side) is unchanged.
+- (NSArray<NSNumber *> *)flatIndexesForSection:(NSInteger)section {
+    BOOL wantBottom = (section == 1);
+    NSMutableArray<NSNumber *> *indexes = [NSMutableArray array];
+    [self.buttonData enumerateObjectsUsingBlock:^(NSMutableDictionary *entry, NSUInteger idx, BOOL *stop) {
+        if ([entry[@"bottom"] boolValue] == wantBottom) [indexes addObject:@(idx)];
+    }];
+    return indexes;
+}
+
+- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView { return 2; }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
-    return self.buttonData.count;
+    NSInteger count = [self flatIndexesForSection:section].count;
+    return count > 0 ? count : 1; // empty section keeps one "no buttons" row
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
+    NSArray<NSNumber *> *flatIndexes = [self flatIndexesForSection:indexPath.section];
+
+    if (flatIndexes.count == 0) {
+        static NSString *emptyCellID = @"YMOverlayEmptyCell";
+        UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:emptyCellID];
+        if (!cell) {
+            cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:emptyCellID];
+            cell.backgroundColor = [UIColor clearColor];
+            cell.selectionStyle = UITableViewCellSelectionStyleNone;
+
+            UILabel *emptyLabel = [[UILabel alloc] init];
+            emptyLabel.tag = 996;
+            emptyLabel.text = LOC(@"OVERLAY_BUTTONS_EMPTY");
+            emptyLabel.textColor = [self ymSecondaryColor];
+            emptyLabel.font = [UIFont systemFontOfSize:14];
+            emptyLabel.textAlignment = NSTextAlignmentCenter;
+            emptyLabel.translatesAutoresizingMaskIntoConstraints = NO;
+            [cell.contentView addSubview:emptyLabel];
+            [NSLayoutConstraint activateConstraints:@[
+                [emptyLabel.centerXAnchor constraintEqualToAnchor:cell.contentView.centerXAnchor],
+                [emptyLabel.centerYAnchor constraintEqualToAnchor:cell.contentView.centerYAnchor]
+            ]];
+        }
+        return cell;
+    }
+
     static NSString *cellID = @"YMOverlayButtonCell";
     UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:cellID];
     UISwitch *sw;
+    UIButton *moveButton;
 
     if (!cell) {
         cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:cellID];
@@ -2060,15 +2226,32 @@ static const void *kYMOverlaySavedScrollEdgeAppearanceKey = &kYMOverlaySavedScro
         sw.tag = 999;
         [cell.contentView addSubview:sw];
 
+        // Arrow button: moves the button to the other row (down from the top
+        // row, up from the bottom row) — replaces the old top/bottom segment.
+        moveButton = [UIButton buttonWithType:UIButtonTypeSystem];
+        moveButton.backgroundColor = [UIColor secondarySystemBackgroundColor];
+        moveButton.tintColor = [UIColor labelColor];
+        moveButton.layer.cornerRadius = 15;
+        moveButton.layer.masksToBounds = YES;
+        [moveButton addTarget:self action:@selector(moveButtonTapped:) forControlEvents:UIControlEventTouchUpInside];
+        moveButton.translatesAutoresizingMaskIntoConstraints = NO;
+        moveButton.tag = 998;
+        [cell.contentView addSubview:moveButton];
+
         [NSLayoutConstraint activateConstraints:@[
             [sw.centerYAnchor constraintEqualToAnchor:cell.contentView.centerYAnchor],
-            [sw.trailingAnchor constraintEqualToAnchor:cell.contentView.trailingAnchor constant:-16]
+            [sw.trailingAnchor constraintEqualToAnchor:cell.contentView.trailingAnchor constant:-16],
+            [moveButton.centerYAnchor constraintEqualToAnchor:cell.contentView.centerYAnchor],
+            [moveButton.trailingAnchor constraintEqualToAnchor:sw.leadingAnchor constant:-12],
+            [moveButton.widthAnchor constraintEqualToConstant:30],
+            [moveButton.heightAnchor constraintEqualToConstant:30]
         ]];
     } else {
         sw = [cell.contentView viewWithTag:999];
+        moveButton = [cell.contentView viewWithTag:998];
     }
 
-    NSMutableDictionary *entry = self.buttonData[indexPath.row];
+    NSMutableDictionary *entry = self.buttonData[flatIndexes[indexPath.row].integerValue];
     NSString *buttonID = entry[@"id"];
     BOOL enabled = [entry[@"enabled"] boolValue];
 
@@ -2080,14 +2263,19 @@ static const void *kYMOverlaySavedScrollEdgeAppearanceKey = &kYMOverlaySavedScro
     cell.imageView.image = btnIcon;
     cell.imageView.tintColor = [UIColor labelColor];
 
-    if ([buttonID isEqualToString:@"download.video"]) {
-        sw.hidden = !IS_ENABLED(DownloadManager);
-    } else {
-        sw.hidden = NO;
+    if ([buttonID isEqualToString:@"download.video"] 
+        || [buttonID isEqualToString:@"sponsorblock.toggle"] 
+        || [buttonID isEqualToString:@"sleep.timer"]) {
+        sw.enabled = NO;
     }
 
     sw.on = enabled;
     objc_setAssociatedObject(sw, kYMSwitchKeyAssoc, buttonID, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+
+    UIImageSymbolConfiguration *arrowConfig = [UIImageSymbolConfiguration configurationWithPointSize:15 weight:UIImageSymbolWeightSemibold];
+    UIImage *arrow = [UIImage systemImageNamed:(indexPath.section == 0 ? @"arrow.down" : @"arrow.up") withConfiguration:arrowConfig];
+    [moveButton setImage:arrow forState:UIControlStateNormal];
+    objc_setAssociatedObject(moveButton, kYMSwitchKeyAssoc, buttonID, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 
     return cell;
 }
@@ -2106,14 +2294,100 @@ static const void *kYMOverlaySavedScrollEdgeAppearanceKey = &kYMOverlaySavedScro
     [self saveButtonData];
 }
 
+- (void)moveButtonTapped:(UIButton *)sender {
+    NSString *buttonID = objc_getAssociatedObject(sender, kYMSwitchKeyAssoc);
+    if (!buttonID) return;
+
+    NSMutableDictionary *entry = nil;
+    for (NSMutableDictionary *d in self.buttonData) {
+        if ([d[@"id"] isEqualToString:buttonID]) { entry = d; break; }
+    }
+    if (!entry) return;
+
+    NSInteger fromSection = [entry[@"bottom"] boolValue] ? 1 : 0;
+    NSInteger toSection = 1 - fromSection;
+    NSArray<NSNumber *> *fromFlat = [self flatIndexesForSection:fromSection];
+    NSArray<NSNumber *> *toFlat = [self flatIndexesForSection:toSection];
+    NSInteger fromRow = -1;
+    for (NSInteger i = 0; i < (NSInteger)fromFlat.count; i++) {
+        if (self.buttonData[fromFlat[i].integerValue] == entry) { fromRow = i; break; }
+    }
+    if (fromRow < 0) return;
+    // The moved entry is appended to its new section, so its new row equals
+    // the target section's current row count (0 when that section was empty).
+    NSInteger toRow = (NSInteger)toFlat.count;
+    BOOL fromBecomesEmpty = (fromFlat.count == 1);
+    BOOL toWasEmpty = (toFlat.count == 0);
+
+    // Stacking a batch update on top of the previous move's animation leaves
+    // ghost rows (the same button painted in several places) because the
+    // placeholder delete/insert dance runs against cells that are still fading
+    // out with stale buttonIDs. Serialize: one move in flight at a time.
+    if ([objc_getAssociatedObject(self, kYMOverlayMoveInFlightKey) boolValue]) return;
+    objc_setAssociatedObject(self, kYMOverlayMoveInFlightKey, @(YES), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+
+    [self.tableView performBatchUpdates:^{
+        // Rebuild buttonData as top group followed by bottom group so the
+        // entry lands at the end of its new section; relative order within
+        // each side (what the player renders) is preserved.
+        entry[@"bottom"] = @(toSection == 1);
+        NSMutableArray *top = [NSMutableArray array];
+        NSMutableArray *bottom = [NSMutableArray array];
+        for (NSMutableDictionary *d in self.buttonData) {
+            [([d[@"bottom"] boolValue] ? bottom : top) addObject:d];
+        }
+        [self.buttonData removeAllObjects];
+        [self.buttonData addObjectsFromArray:top];
+        [self.buttonData addObjectsFromArray:bottom];
+
+        // Slide in from the direction of the move; placeholders swap with a fade.
+        UITableViewRowAnimation rowAnim = (toSection == 1) ? UITableViewRowAnimationBottom : UITableViewRowAnimationTop;
+        [self.tableView deleteRowsAtIndexPaths:@[[NSIndexPath indexPathForRow:fromRow inSection:fromSection]] withRowAnimation:UITableViewRowAnimationFade];
+        if (fromBecomesEmpty) {
+            [self.tableView insertRowsAtIndexPaths:@[[NSIndexPath indexPathForRow:0 inSection:fromSection]] withRowAnimation:UITableViewRowAnimationFade];
+        }
+        if (toWasEmpty) {
+            [self.tableView deleteRowsAtIndexPaths:@[[NSIndexPath indexPathForRow:0 inSection:toSection]] withRowAnimation:UITableViewRowAnimationFade];
+        }
+        [self.tableView insertRowsAtIndexPaths:@[[NSIndexPath indexPathForRow:toRow inSection:toSection]] withRowAnimation:rowAnim];
+
+        [self saveButtonData];
+    } completion:^(BOOL finished) {
+        objc_setAssociatedObject(self, kYMOverlayMoveInFlightKey, @(NO), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+        // Self-sizing rows + batch updates can leave stale cells behind; pin the
+        // table back to the real data once the animation settles.
+        [self.tableView reloadData];
+    }];
+}
+
 #pragma mark - Reordering
 
-- (BOOL)tableView:(UITableView *)tableView canMoveRowAtIndexPath:(NSIndexPath *)indexPath { return YES; }
+- (BOOL)tableView:(UITableView *)tableView canMoveRowAtIndexPath:(NSIndexPath *)indexPath {
+    // The lone row of an empty section is a placeholder, not draggable.
+    return [self flatIndexesForSection:indexPath.section].count > 0;
+}
+
+- (NSIndexPath *)tableView:(UITableView *)tableView targetIndexPathForMoveFromRowAtIndexPath:(NSIndexPath *)sourceIndexPath toProposedIndexPath:(NSIndexPath *)proposedIndexPath {
+    // Dragging only reorders within a section; switching sides is the arrow
+    // button's job, so redirect any cross-section drop back into the source.
+    if (proposedIndexPath.section == sourceIndexPath.section) return proposedIndexPath;
+    NSInteger rows = [self tableView:tableView numberOfRowsInSection:sourceIndexPath.section];
+    NSInteger row = MIN(proposedIndexPath.row, rows - 1);
+    if (row < 0) row = 0;
+    return [NSIndexPath indexPathForRow:row inSection:sourceIndexPath.section];
+}
 
 - (void)tableView:(UITableView *)tableView moveRowAtIndexPath:(NSIndexPath *)from toIndexPath:(NSIndexPath *)to {
-    NSMutableDictionary *item = self.buttonData[from.row];
-    [self.buttonData removeObjectAtIndex:from.row];
-    [self.buttonData insertObject:item atIndex:to.row];
+    if (from.section != to.section) return; // prevented by the clamp above
+    NSArray<NSNumber *> *fromFlat = [self flatIndexesForSection:from.section];
+    NSArray<NSNumber *> *toFlat = [self flatIndexesForSection:to.section];
+    if (from.row >= (NSInteger)fromFlat.count || to.row >= (NSInteger)toFlat.count) return;
+    NSInteger fromIndex = fromFlat[from.row].integerValue;
+    NSInteger toIndex = toFlat[to.row].integerValue;
+    if (fromIndex == toIndex) return;
+    NSMutableDictionary *item = self.buttonData[fromIndex];
+    [self.buttonData removeObjectAtIndex:fromIndex];
+    [self.buttonData insertObject:item atIndex:toIndex];
     [self saveButtonData];
 }
 
@@ -2125,7 +2399,12 @@ static const void *kYMOverlaySavedScrollEdgeAppearanceKey = &kYMOverlaySavedScro
     return NO;
 }
 
-#pragma mark - Section Header/Footer
+#pragma mark - Row & Section Heights
+
+- (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath {
+    if ([self flatIndexesForSection:indexPath.section].count == 0) return 44; // "no buttons" row
+    return UITableViewAutomaticDimension;
+}
 
 - (CGFloat)tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)section {
     return UITableViewAutomaticDimension;
@@ -2138,22 +2417,22 @@ static const void *kYMOverlaySavedScrollEdgeAppearanceKey = &kYMOverlaySavedScro
 - (UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section {
     UIView *headerView = [[UIView alloc] init];
     headerView.backgroundColor = [UIColor clearColor];
-    
-    UILabel *hintLabel = [[UILabel alloc] init];
-    hintLabel.text = LOC(@"OVERLAY_BUTTON_REORDER_HINT");
-    hintLabel.textColor = [self ymSecondaryColor];
-    hintLabel.font = [UIFont systemFontOfSize:13];
-    hintLabel.numberOfLines = 0;
-    hintLabel.translatesAutoresizingMaskIntoConstraints = NO;
-    [headerView addSubview:hintLabel];
-    
+
+    UILabel *titleLabel = [[UILabel alloc] init];
+    titleLabel.text = LOC(section == 0 ? @"OVERLAY_BUTTONS_TOP" : @"OVERLAY_BUTTONS_BOTTOM");
+    titleLabel.textColor = [self ymSecondaryColor];
+    titleLabel.font = [UIFont systemFontOfSize:15 weight:UIFontWeightSemibold];
+    titleLabel.numberOfLines = 0;
+    titleLabel.translatesAutoresizingMaskIntoConstraints = NO;
+    [headerView addSubview:titleLabel];
+
     [NSLayoutConstraint activateConstraints:@[
-        [hintLabel.leadingAnchor constraintEqualToAnchor:headerView.leadingAnchor constant:16],
-        [hintLabel.trailingAnchor constraintEqualToAnchor:headerView.trailingAnchor constant:-16],
-        [hintLabel.topAnchor constraintEqualToAnchor:headerView.topAnchor constant:12],
-        [hintLabel.bottomAnchor constraintEqualToAnchor:headerView.bottomAnchor constant:-12]
+        [titleLabel.leadingAnchor constraintEqualToAnchor:headerView.leadingAnchor constant:16],
+        [titleLabel.trailingAnchor constraintEqualToAnchor:headerView.trailingAnchor constant:-16],
+        [titleLabel.topAnchor constraintEqualToAnchor:headerView.topAnchor constant:12],
+        [titleLabel.bottomAnchor constraintEqualToAnchor:headerView.bottomAnchor constant:-4]
     ]];
-    
+
     return headerView;
 }
 
@@ -2250,11 +2529,7 @@ static void ymRegisterStyledSubclass(Class sourceClass, const char *name) {
 %hook YTPivotBarViewController
 - (void)viewDidLoad {
     %orig;
-    [[NSNotificationCenter defaultCenter] removeObserver:self name:@"YouModUpdateTabBar" object:nil];
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(YouModReloadTabBar:)
-                                                 name:@"YouModUpdateTabBar"
-                                               object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(YouModReloadTabBar:) name:@"YouModUpdateTabBar" object:nil];
 }
 %new
 - (void)YouModReloadTabBar:(id)arg {
