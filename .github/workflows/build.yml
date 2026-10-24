@@ -33,7 +33,7 @@ jobs:
           path: YouMod
 
       - name: Install dependencies
-        run: brew install make ldid
+        run: brew install make ldid gnu-sed autoconf automake libtool pkg-config
 
       - name: Set PATH environment variables
         run: |

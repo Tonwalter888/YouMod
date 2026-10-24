@@ -9,7 +9,7 @@ NSBundle *YouModBundle() {
         if (tweakBundlePath) {
             bundle = [NSBundle bundleWithPath:tweakBundlePath];
         } else {
-            bundle = [NSBundle bundleWithPath:[NSString stringWithFormat:jbroot(@"/Library/Application Support/%@.bundle"), @"YouMod"]];
+            bundle = [NSBundle bundleWithPath:jbroot(@"/Library/Application Support/YouMod.bundle")];
         }
     });
     return bundle;
@@ -20,7 +20,29 @@ UIImage *YouModYTIconImage(NSInteger iconType, BOOL useCustomColor, UIColor *cus
     YTIIcon *icon = [%c(YTIIcon) new];
     icon.iconType = iconType;
     UIColor *targetColor = (useCustomColor && customColor) ? customColor : [UIColor labelColor];
-    return [icon iconImageWithColor:targetColor];
+    return [[icon iconImageWithColor:targetColor] imageWithTintColor:targetColor];
+}
+
+// Render an SF Symbol into an exact square canvas (aspect-fit, centered), so
+// every icon box is identical regardless of the symbol's natural proportions.
+// The result keeps template rendering, so callers can tint it afterwards.
+UIImage *YouModSymbolImageInCanvas(NSString *symbolName, CGFloat canvasSize, CGFloat pointSize, UIImageSymbolWeight weight) {
+    UIImageSymbolConfiguration *config = [UIImageSymbolConfiguration configurationWithPointSize:pointSize weight:weight];
+    UIImage *symbol = [UIImage systemImageNamed:symbolName withConfiguration:config];
+    if (!symbol) return nil;
+    symbol = [symbol imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
+
+    UIGraphicsImageRendererFormat *format = [UIGraphicsImageRendererFormat defaultFormat];
+    UIGraphicsImageRenderer *renderer = [[UIGraphicsImageRenderer alloc] initWithSize:CGSizeMake(canvasSize, canvasSize) format:format];
+    UIImage *canvas = [renderer imageWithActions:^(UIGraphicsImageRendererContext *ctx) {
+        CGFloat width = symbol.size.width;
+        CGFloat height = symbol.size.height;
+        if (width <= 0 || height <= 0) return;
+        CGFloat scale = MIN(canvasSize / width, canvasSize / height);
+        CGSize fitted = CGSizeMake(width * scale, height * scale);
+        [symbol drawInRect:CGRectMake((canvasSize - fitted.width) / 2.0, (canvasSize - fitted.height) / 2.0, fitted.width, fitted.height)];
+    }];
+    return [canvas imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
 }
 
 // Language list
@@ -80,19 +102,32 @@ UIViewController *YouModTopViewController(UIViewController *root) {
     while (root.presentedViewController) root = root.presentedViewController;
     if ([root isKindOfClass:UINavigationController.class])
         return YouModTopViewController(((UINavigationController *)root).topViewController);
-    if ([root isKindOfClass:UITabBarController.class])
+    else if ([root isKindOfClass:UITabBarController.class])
         return YouModTopViewController(((UITabBarController *)root).selectedViewController);
     return root;
 }
 
 // OLEDKeyboard (https://github.com/dayanch96/OledKeyboard)
 BOOL isDarkMode(UIView *view) {
-    if ([view respondsToSelector:@selector(_mapkit_isDarkModeEnabled)]) {
-        return view._mapkit_isDarkModeEnabled;
-    }
+    if ([view respondsToSelector:@selector(_mapkit_isDarkModeEnabled)]) return view._mapkit_isDarkModeEnabled;
     return view.traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark;
 }
 
 BOOL isPad() {
     return UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad;
+}
+
+void YouModConfigureSharePopover(UIActivityViewController *activityVC, UIView *sourceView) {
+    if (isPad() && activityVC) {
+        UIView *targetView = sourceView ?: YouModTopViewController(nil).view;
+        if (targetView) {
+            activityVC.popoverPresentationController.sourceView = targetView;
+            CGRect bounds = targetView.bounds;
+            if (CGRectIsEmpty(bounds) && targetView.window) {
+                bounds = targetView.window.bounds;
+            }
+            activityVC.popoverPresentationController.sourceRect = CGRectMake(bounds.size.width / 2, bounds.size.height, 0, 0);
+            activityVC.popoverPresentationController.permittedArrowDirections = 0;
+        }
+    }
 }

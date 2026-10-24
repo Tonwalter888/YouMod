@@ -1,28 +1,8 @@
-// SABRDownload.x — On-device SABR download (opt-in, behind the SABRDownload toggle).
-//
-// Modern YouTube (21.29) ships no direct stream URL; media flows via SABR (server-
-// driven adaptive bitrate) over the UMP byte protocol. This downloads on-device by
-// CAPTURING the app's own live, fully-signed `videoplayback` request (which already
-// carries the session's auth / PoToken in its URL) and REPLAYING a modified copy of
-// it — selecting the mp4 itags we want, then reading the returned UMP media parts to
-// disk — instead of reconstructing a SABR session from scratch. The two elementary
-// files are handed to YouMod's existing muxer for the final mp4.
-//
-// Additive: gated on SABR_ENABLED(), off by default. Touches none of the existing
-// (direct / server) download paths.
-//
-// Protocol field numbers follow LuanRT/googlevideo (cross-checked against
-// coletdjnz/yt-dlp-ytse and Epic0001/YTKACE) but are pinned to what YouTube 21.29
-// actually sends; see docs/specs/2026-07-29-sabr-ondevice-download-final.md. They are
-// version-sensitive — every wire field is a named constant below so a YouTube update
-// can be re-mapped in one place.
+// Reworked on-device downloader with SABR
 
 #import "Headers.h"
 
-// Active only when the "Download method" setting is On-device (SABR). The capture
-// hook must share this gate with the download routing in Download.x, or it won't
-// capture the request the engine later needs.
-#define SABR_ENABLED() (INTFORVAL(DownloadMethod) == DownloadMethodOnDevice)
+#define SABR_ENABLED() 1
 
 // Serial queue guarding all shared engine state (capture globals, per-download
 // bookkeeping). Capture hooks and network completions fire on arbitrary threads and
@@ -249,12 +229,20 @@ static YMSABRFormat *SABRParseFormatId(NSData *fmt) {
 }
 
 // Resolve a download target for `itag` from the available-format list (#5.#1.#6).
-// Some itags appear twice — a plain entry and an xtags-tagged variant (distinct
-// formats, not versions). We prefer the xtags variant because that's what the app
-// itself selects (our capture played 251 with xtags), and we copy {itag,
-// lastModified, xtags} as one consistent triple so server-side matching lines up.
-static YMSABRFormat *SABRResolveFormat(NSData *body, uint64_t itag) {
+// Some itags appear more than once — a plain entry plus one or more xtags-tagged
+// variants (distinct formats, not versions): soundtrack language and DRC both live in
+// xtags, so for audio the itag alone does not identify a track.
+//
+// `wantXtags` names one variant exactly, and is the caller's chosen soundtrack. Pass
+// nil/empty for "no preference", which takes the first match and upgrades to an
+// xtags-bearing entry, because that's what the app itself plays (our capture played
+// 251 with xtags).
+//
+// Either way we copy {itag, lastModified, xtags} as one consistent triple, so
+// server-side matching lines up.
+static YMSABRFormat *SABRResolveFormat(NSData *body, uint64_t itag, NSData *wantXtags) {
     YMSABRFormat *result = [YMSABRFormat new];
+    BOOL exact = wantXtags.length > 0;
     SABRIterateTopLevel(body, ^BOOL(uint64_t f5, int w5, NSUInteger fs, NSUInteger fe, NSUInteger ps5, NSUInteger pl5) {
         if (f5 != kSABRReqUstreamerConfig || w5 != kProtoWireLengthDelimited) return YES;
         NSData *avail = [body subdataWithRange:NSMakeRange(ps5, pl5)];
@@ -264,12 +252,17 @@ static YMSABRFormat *SABRResolveFormat(NSData *body, uint64_t itag) {
             SABRIterateTopLevel(inner, ^BOOL(uint64_t f6, int w6, NSUInteger fs6, NSUInteger fe6, NSUInteger ps6, NSUInteger pl6) {
                 if (f6 != kSABRAvailList || w6 != kProtoWireLengthDelimited) return YES;
                 YMSABRFormat *fmt = SABRParseFormatId([inner subdataWithRange:NSMakeRange(ps6, pl6)]);
-                if (fmt.itag == itag) {
+                if (fmt.itag != itag) return YES;
+                BOOL take;
+                if (exact) {
+                    take = !result.found && [fmt.xtags isEqualToData:wantXtags];
+                } else {
                     // Keep the first match, but upgrade to an entry that carries xtags.
-                    if (!result.found || (result.xtags.length == 0 && fmt.xtags.length > 0)) {
-                        result.itag = fmt.itag; result.lastModified = fmt.lastModified;
-                        result.xtags = fmt.xtags; result.found = YES;
-                    }
+                    take = !result.found || (result.xtags.length == 0 && fmt.xtags.length > 0);
+                }
+                if (take) {
+                    result.itag = fmt.itag; result.lastModified = fmt.lastModified;
+                    result.xtags = fmt.xtags; result.found = YES;
                 }
                 return YES;
             });
@@ -599,7 +592,7 @@ static YMSABRTrack *SABRMakeTrack(YMSABRFormat *fmt, NSString *ext) {
 // last segment, then call `completion(videoURL, audioURL, err)` on the main queue.
 // Pass videoItag == 0 for an audio-only download (videoURL is then nil).
 // NB: named SABRRunDownload, not SABRDownload — the latter is a settings-key macro.
-static void SABRRunDownload(uint64_t videoItag, uint64_t audioItag,
+static void SABRRunDownload(uint64_t videoItag, uint64_t audioItag, NSData *audioXtags,
                             void (^progress)(float fraction, unsigned long long bytesDownloaded, BOOL isAudio),
                             void (^completion)(NSURL *videoURL, NSURL *audioURL, NSString *err)) {
     dispatch_async(SABRQueue(), ^{
@@ -608,8 +601,15 @@ static void SABRRunDownload(uint64_t videoItag, uint64_t audioItag,
             return;
         }
         BOOL wantVideo = videoItag != 0;
-        YMSABRFormat *videoFmt = wantVideo ? SABRResolveFormat(gCapPlainBody, videoItag) : nil;
-        YMSABRFormat *audioFmt = SABRResolveFormat(gCapPlainBody, audioItag);
+        YMSABRFormat *videoFmt = wantVideo ? SABRResolveFormat(gCapPlainBody, videoItag, nil) : nil;
+        YMSABRFormat *audioFmt = SABRResolveFormat(gCapPlainBody, audioItag, audioXtags);
+        // A requested soundtrack that isn't in the available-format list must fail
+        // rather than fall back: falling back would silently hand over a different
+        // language than the one that was picked.
+        if (!audioFmt.found && audioXtags.length > 0) {
+            dispatch_async(dispatch_get_main_queue(), ^{ completion(nil, nil, @"That soundtrack isn't available to download for this video."); });
+            return;
+        }
         if ((wantVideo && !videoFmt.found) || !audioFmt.found) {
             NSString *videoState = !wantVideo ? @"n/a" : (videoFmt.found ? @"ok" : @"missing");
             dispatch_async(dispatch_get_main_queue(), ^{ completion(nil, nil, [NSString stringWithFormat:@"format not available (video %llu:%@, audio %llu:%@)", videoItag, videoState, audioItag, audioFmt.found?@"ok":@"missing"]); });
@@ -718,22 +718,44 @@ static void SABRRunDownload(uint64_t videoItag, uint64_t audioItag,
 
 #pragma mark - Public entry (called from Download.x)
 
+// The soundtrack identity that travels to the wire: the picked format's xtags, which
+// is the same value the SABR FormatId carries. nil when the stream has none (a
+// single-soundtrack video) — resolution then falls back to "no preference".
+//
+// The accessor's return type is not contractual: it is an undeclared selector on a
+// private protobuf class, and the wire field it mirrors is length-delimited, so a
+// YouTube build could expose it as NSData rather than NSString. Both are read: bailing
+// out on an unexpected type would quietly fall back to the default soundtrack instead
+// of the picked one.
+static NSData *SABRXtagsForStream(YTIFormatStream *stream) {
+    if (!stream) return nil;
+    NSData *xtags = nil;
+    @try {
+        if ([stream respondsToSelector:@selector(xtags)]) {
+            id value = [stream xtags];
+            if ([value isKindOfClass:NSString.class])    xtags = [value dataUsingEncoding:NSUTF8StringEncoding];
+            else if ([value isKindOfClass:NSData.class]) xtags = value;
+        }
+    } @catch (id ex) {}
+    return xtags.length ? xtags : nil;
+}
+
 // Download the chosen mp4 video itag + m4a audio itag on-device via SABR, producing
 // two elementary files. `progress` (0..1) and `completion` are always delivered on
 // the main queue. The caller hands the two files to its existing muxer.
 @implementation YMSABR
-+ (void)downloadVideoItag:(int)videoItag audioItag:(int)audioItag
++ (void)downloadVideoItag:(int)videoItag audioItag:(int)audioItag audioStream:(YTIFormatStream *)audioStream
                  progress:(void (^)(float fraction, unsigned long long bytesDownloaded, BOOL isAudio))progress
                completion:(void (^)(NSURL *videoURL, NSURL *audioURL, NSString *err))completion {
-    SABRRunDownload((uint64_t)videoItag, (uint64_t)audioItag,
+    SABRRunDownload((uint64_t)videoItag, (uint64_t)audioItag, SABRXtagsForStream(audioStream),
         ^(float f, unsigned long long bytes, BOOL isAudio) { if (progress) dispatch_async(dispatch_get_main_queue(), ^{ progress(f, bytes, isAudio); }); },
         completion); // SABRRunDownload already delivers completion on the main queue
 }
-+ (void)downloadAudioItag:(int)audioItag
++ (void)downloadAudioItag:(int)audioItag audioStream:(YTIFormatStream *)audioStream
                  progress:(void (^)(float fraction, unsigned long long bytesDownloaded))progress
                completion:(void (^)(NSURL *audioURL, NSString *err))completion {
     // videoItag 0 → audio-only; deliver just the audio file.
-    SABRRunDownload(0, (uint64_t)audioItag,
+    SABRRunDownload(0, (uint64_t)audioItag, SABRXtagsForStream(audioStream),
         ^(float f, unsigned long long bytes, BOOL isAudio) { if (progress) dispatch_async(dispatch_get_main_queue(), ^{ progress(f, bytes); }); },
         ^(NSURL *videoURL, NSURL *audioURL, NSString *err) { completion(audioURL, err); });
 }
