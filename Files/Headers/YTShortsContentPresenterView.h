@@ -1,0 +1,2 @@
+@interface YTShortsContentPresenterView : UIView
+@end

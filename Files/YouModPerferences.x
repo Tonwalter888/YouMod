@@ -37,7 +37,7 @@
     NSURL *selectedFileURL = urls.firstObject;
     if (!selectedFileURL) return;
     NSDictionary *importedData = [NSDictionary dictionaryWithContentsOfURL:selectedFileURL];
-    // Vaild plist check
+    // Valid plist check
     if (!importedData || ![importedData isKindOfClass:[NSDictionary class]]) {
         YTAlertView *alertView = [%c(YTAlertView) infoDialog];
         alertView.title = LOC(@"ERROR");
@@ -134,7 +134,6 @@
         [defaults setInteger:2 forKey:RightSideGesture];
         [defaults setInteger:1 forKey:GestureHUDSize];
         [defaults setInteger:1 forKey:YTLogoIndex];
-        [defaults setInteger:2 forKey:DownloadMethod];
         [defaults synchronize];
         [[UIApplication sharedApplication] performSelector:@selector(suspend)];
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.3 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{

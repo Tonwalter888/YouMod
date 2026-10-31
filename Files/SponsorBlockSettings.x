@@ -5,21 +5,20 @@
 
 extern UIColor *SBColorFromHex(NSString *hexString);
 
-// Purple accent used to tint the toggle switches and duration sliders on this
-// page. (Distinct from the player overlay button's accent in SponsorBlock.x.)
+// Purple accent for the toggle switches and duration sliders on this page
+// (distinct from the player overlay button's accent in SponsorBlock.x).
 static UIColor *SBControlTintColor(void) {
     return [UIColor colorWithRed:0.6 green:0.2 blue:0.9 alpha:1.0];
 }
 
-// Tag base for a slider row's value label, offset by the row index so each
-// slider can find its own label via viewWithTag:.
+// Tag base for a slider row's value label, offset by the row index so each slider finds its label via viewWithTag:.
 static const NSInteger SBSliderValueLabelTagBase = 100;
 
-// The localization key for a segment action's display name. Shared by the
-// selected-action label and the action picker menu so the two never disagree.
+// Localization key for a segment action's display name, shared by the action label and the picker menu.
 static NSString *SBActionLocKey(SBSegmentAction action) {
     switch (action) {
         case SBSegmentActionAutoSkip: return @"SB_ACTION_AUTO_SKIP";
+        case SBSegmentActionAlwaysSkip: return @"SB_ACTION_ALWAYS_SKIP";
         case SBSegmentActionAsk:      return @"SB_ACTION_ASK";
         case SBSegmentActionDisplay:  return @"SB_ACTION_DISPLAY";
         case SBSegmentActionSkipTo:   return @"SB_ACTION_SKIP_TO";
@@ -27,10 +26,8 @@ static NSString *SBActionLocKey(SBSegmentAction action) {
     }
 }
 
-// One toggle row: the defaults key it controls and its localized title/description
-// keys. This is the single source of truth for the toggle section — the row count,
-// each cell's contents, and the value written on change all read from it, so a row
-// can never display one setting while toggling another.
+// One toggle row: the defaults key it controls and its localized title/description keys.
+// Single source of truth for the toggle section — row count, cell contents, and writes all read from it.
 @interface SBToggleRow : NSObject
 @property (nonatomic, copy) NSString *key;
 @property (nonatomic, copy) NSString *titleKey;
@@ -49,6 +46,7 @@ static NSArray<SBToggleRow *> *sbToggleRows() {
         [SBToggleRow key:SBEnabled title:@"SB_ENABLE" desc:@"SB_ENABLE_DESC"],
         [SBToggleRow key:SBShowButton title:@"SB_SHOW_BUTTON" desc:@"SB_SHOW_BUTTON_DESC"],
         [SBToggleRow key:SBShowNotifications title:@"SB_SHOW_NOTIFICATIONS" desc:@"SB_SHOW_NOTIFICATIONS_DESC"],
+        [SBToggleRow key:SBShowFullVideoLabel title:@"SB_SHOW_FULL_VIDEO_LABEL" desc:@"SB_SHOW_FULL_VIDEO_LABEL_DESC"],
         [SBToggleRow key:SBSegmentsInPlayer title:@"SB_SEGMENTS_IN_PLAYER" desc:@"SB_SEGMENTS_IN_PLAYER_DESC"],
         [SBToggleRow key:SBSegmentsInFeed title:@"SB_SEGMENTS_IN_FEED" desc:@"SB_SEGMENTS_IN_FEED_DESC"],
         [SBToggleRow key:SBSegmentsInMiniPlayer title:@"SB_SEGMENTS_IN_MINIPLAYER" desc:@"SB_SEGMENTS_IN_MINIPLAYER_DESC"],
@@ -141,8 +139,7 @@ static NSString *SBHexFromColor(UIColor *color) {
 - (UITableViewCell *)colorCellForCategory:(NSString *)category name:(NSString *)catName tableView:(UITableView *)tableView;
 @end
 
-// Flat list of all SB settings as search rows (declared before use by the per-page
-// filter below; defined in the Settings Search section).
+// Flat list of all SB settings as search rows (defined in the Settings Search section below).
 extern NSArray<YMSearchRow *> *sbFlatRowsWithRenderer(SBSettingsViewController *renderer);
 
 static const void *kSBTableViewKey = &kSBTableViewKey;
@@ -228,9 +225,8 @@ static const void *kSBAllFlatRowsKey = &kSBAllFlatRowsKey;
 
     [self.view addSubview:self.tableView];
 
-    // Pinned per-page search bar that filters this page's own rows. The flat row
-    // list is built once with self as the renderer (its cells write straight to
-    // NSUserDefaults, so reusing the live VC is safe).
+    // Pinned per-page search bar filtering this page's rows; the flat row list is built once
+    // with self as the renderer (its cells write straight to NSUserDefaults).
     self.allFlatRows = sbFlatRowsWithRenderer(self);
     UISearchBar *sb = [[UISearchBar alloc] initWithFrame:CGRectZero];
     sb.translatesAutoresizingMaskIntoConstraints = NO;
@@ -317,9 +313,8 @@ static const void *kSBAllFlatRowsKey = &kSBAllFlatRowsKey;
     if (self.traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark) {
         return [UIColor whiteColor];
     }
-    // Light mode: return a concrete colour rather than nil. nil lets YouTube tint the
-    // nav-bar foreground (back chevron + title) with its default appearance, which is
-    // system blue in light mode. labelColor keeps it black in light / white in dark.
+    // Light mode: a concrete colour, since nil would let YouTube tint the nav-bar foreground
+    // (back chevron + title) its default system blue.
     return [UIColor labelColor];
 }
 
@@ -332,16 +327,17 @@ static const void *kSBAllFlatRowsKey = &kSBAllFlatRowsKey;
     return [UIColor colorWithWhite:0.55 alpha:1.0];
 }
 
-#pragma mark - Sections: 0=Main, 1=Sliders, 2=Segments
+#pragma mark - Sections: 0=Main, 1=Sliders, 2=Segments, 3=User ID
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
-    return self.isFiltering ? 1 : 3;  // one flat section of matches while searching
+    return self.isFiltering ? 1 : 4;  // one flat section of matches while searching
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
     if (self.isFiltering) return self.filteredFlatRows.count;
     if (section == 0) return sbToggleRows().count;  // toggles
     if (section == 1) return 3;  // sliders (skip alert, unskip alert, min duration)
+    if (section == 3) return 2;  // private / public user ID
     return sbAllCategories().count * 2;  // action + color per category
 }
 
@@ -350,6 +346,7 @@ static const void *kSBAllFlatRowsKey = &kSBAllFlatRowsKey;
     NSString *title = nil;
     if (section == 0) title = LOC(@"SB_SECTION_MAIN");
     else if (section == 2) title = LOC(@"SB_CATEGORIES_HEADER");
+    else if (section == 3) title = LOC(@"SB_USERID_HEADER");
     if (!title) return nil;
 
     UIView *header = [[UIView alloc] init];
@@ -379,6 +376,7 @@ static const void *kSBAllFlatRowsKey = &kSBAllFlatRowsKey;
         return h > 0 ? h : UITableViewAutomaticDimension;
     }
     if (indexPath.section == 1) return 70;
+    if (indexPath.section == 3) return 48;
     if (indexPath.section == 2) {
         BOOL isActionRow = (indexPath.row % 2 == 0);
         NSInteger catIndex = indexPath.row / 2;
@@ -392,6 +390,7 @@ static const void *kSBAllFlatRowsKey = &kSBAllFlatRowsKey;
     if (self.isFiltering) return self.filteredFlatRows[indexPath.row].makeCell(tableView);
     if (indexPath.section == 0) return [self toggleCellForRow:indexPath.row tableView:tableView];
     if (indexPath.section == 1) return [self sliderCellForRow:indexPath.row tableView:tableView];
+    if (indexPath.section == 3) return [self userIdCellForRow:indexPath.row tableView:tableView];
     return [self segmentCellForRow:indexPath.row tableView:tableView];
 }
 
@@ -427,6 +426,10 @@ static const void *kSBAllFlatRowsKey = &kSBAllFlatRowsKey;
     if (sender.tag < 0 || sender.tag >= (NSInteger)rows.count) return;
     NSString *key = rows[sender.tag].key;
     [[NSUserDefaults standardUserDefaults] setBool:sender.on forKey:key];
+    [[NSUserDefaults standardUserDefaults] synchronize];
+    if ([key isEqualToString:SBShowButton] || [key isEqualToString:SBEnabled]) {
+        [[NSNotificationCenter defaultCenter] postNotificationName:@"YouModUpdateOverlayButtons" object:nil];
+    }
 }
 
 #pragma mark - Slider Cells (Section 1)
@@ -516,7 +519,7 @@ static const void *kSBAllFlatRowsKey = &kSBAllFlatRowsKey;
     else key = SBMinDuration;
 
     int rounded = (int)roundf(sender.value);
-    sender.value = rounded;
+    [sender setValue:rounded animated:YES];
     [[NSUserDefaults standardUserDefaults] setFloat:(float)rounded forKey:key];
     [[NSUserDefaults standardUserDefaults] synchronize];
     
@@ -525,7 +528,14 @@ static const void *kSBAllFlatRowsKey = &kSBAllFlatRowsKey;
     formatter.allowedUnits = NSCalendarUnitSecond;
     formatter.unitsStyle = NSDateComponentsFormatterUnitsStyleAbbreviated;
     
-    valueLabel.text = [formatter stringFromTimeInterval:rounded];
+    NSString *formattedValue = [formatter stringFromTimeInterval:rounded] ?: @"";
+    if (valueLabel && ![valueLabel.text isEqualToString:formattedValue]) {
+        [UIView transitionWithView:valueLabel
+                          duration:0.12
+                           options:UIViewAnimationOptionTransitionCrossDissolve | UIViewAnimationOptionBeginFromCurrentState
+                        animations:^{ valueLabel.text = formattedValue; }
+                        completion:nil];
+    }
 }
 
 #pragma mark - Segment Cells (Section 2)
@@ -551,7 +561,7 @@ static const void *kSBAllFlatRowsKey = &kSBAllFlatRowsKey;
     NSInteger currentAction = [[NSUserDefaults standardUserDefaults] integerForKey:actionKey];
     NSString *currentTitle = SBActionName(currentAction);
 
-    if (@available(iOS 15.0, *)) {
+    if ([UIButtonConfiguration class] && [menuButton respondsToSelector:@selector(setConfiguration:)]) {
         UIButtonConfiguration *config = [UIButtonConfiguration plainButtonConfiguration];
         config.title = currentTitle;
         config.image = [UIImage systemImageNamed:@"chevron.up.chevron.down" withConfiguration:[UIImageSymbolConfiguration configurationWithPointSize:11 weight:UIImageSymbolWeightMedium]];
@@ -571,10 +581,12 @@ static const void *kSBAllFlatRowsKey = &kSBAllFlatRowsKey;
     }
 
     NSArray<NSNumber *> *actionOptions;
-    if (isHighlight) {
+    if ([category isEqualToString:@"exclusive_access"]) {
+        actionOptions = @[@(SBSegmentActionDisable), @(SBSegmentActionDisplay)];
+    } else if (isHighlight) {
         actionOptions = @[@(SBSegmentActionDisable), @(SBSegmentActionSkipTo), @(SBSegmentActionAsk), @(SBSegmentActionDisplay)];
     } else {
-        actionOptions = @[@(SBSegmentActionDisable), @(SBSegmentActionAutoSkip), @(SBSegmentActionAsk), @(SBSegmentActionDisplay)];
+        actionOptions = @[@(SBSegmentActionDisable), @(SBSegmentActionAutoSkip), @(SBSegmentActionAlwaysSkip), @(SBSegmentActionAsk), @(SBSegmentActionDisplay)];
     }
 
     NSMutableArray<UIMenuElement *> *menuActions = [NSMutableArray array];
@@ -655,12 +667,16 @@ static const void *kSBAllFlatRowsKey = &kSBAllFlatRowsKey;
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     if (self.isFiltering) {
-        // In the flat filtered list the row carries its own tap handler (colour rows
-        // open the picker); route through it with a reload that refreshes results.
+        // In the flat filtered list the row carries its own tap handler (colour rows open the picker).
         YMSearchRow *row = self.filteredFlatRows[indexPath.row];
         [tableView deselectRowAtIndexPath:indexPath animated:YES];
         __weak typeof(self) weakSelf = self;
         if (row.onSelect) row.onSelect(self, ^{ [weakSelf.tableView reloadData]; });
+        return;
+    }
+    if (indexPath.section == 3) {
+        [tableView deselectRowAtIndexPath:indexPath animated:YES];
+        [self sbPresentUserIDDialogForRow:indexPath.row];
         return;
     }
     if (indexPath.section != 2) return;
@@ -682,6 +698,88 @@ static const void *kSBAllFlatRowsKey = &kSBAllFlatRowsKey;
     picker.delegate = self;
 
     [self presentViewController:picker animated:YES completion:nil];
+}
+
+#pragma mark - User ID Cells (Section 3)
+
+- (UITableViewCell *)userIdCellForRow:(NSInteger)row tableView:(UITableView *)tableView {
+    UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:nil];
+    cell.backgroundColor = [UIColor clearColor];
+    cell.selectionStyle = UITableViewCellSelectionStyleDefault;
+    cell.textLabel.textColor = [self sbTextColor];
+    cell.textLabel.font = [UIFont systemFontOfSize:16 weight:UIFontWeightMedium];
+    cell.detailTextLabel.textColor = [self sbSecondaryTextColor];
+    cell.detailTextLabel.font = [UIFont monospacedDigitSystemFontOfSize:13 weight:UIFontWeightRegular];
+    cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+
+    BOOL isPublic = (row == 1);
+    cell.textLabel.text = LOC(isPublic ? @"SB_PUBLIC_ID" : @"SB_PRIVATE_ID");
+    if (!isPublic) {
+        // Private ID stays masked in the row; it is revealed inside the dialog.
+        cell.detailTextLabel.text = LOC(@"SB_TAP_TO_SHOW");
+        return cell;
+    }
+    NSString *userID = sbPublicUserID();
+    NSString *detail = userID;
+    if (detail.length > 16) {
+        detail = [NSString stringWithFormat:@"%@…%@", [userID substringToIndex:10], [userID substringFromIndex:userID.length - 4]];
+    }
+    cell.detailTextLabel.text = detail;
+    return cell;
+}
+
+// All user-ID actions live in one system alert: a text field with the Cancel / Copy / Save actions.
+- (void)sbPresentUserIDDialogForRow:(NSInteger)row {
+    BOOL isPublic = (row == 1);
+    NSString *userID = isPublic ? sbPublicUserID() : sbLocalUserID();
+    __weak typeof(self) weakSelf = self;
+
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:LOC(isPublic ? @"SB_PUBLIC_ID" : @"SB_PRIVATE_ID")
+                                                                  message:nil
+                                                           preferredStyle:UIAlertControllerStyleAlert];
+
+    [alert addTextFieldWithConfigurationHandler:^(UITextField *field) {
+        field.text = userID;
+        field.font = [UIFont monospacedSystemFontOfSize:14 weight:UIFontWeightRegular];
+        field.clearButtonMode = UITextFieldViewModeWhileEditing;
+        field.autocapitalizationType = UITextAutocapitalizationTypeNone;
+        field.autocorrectionType = UITextAutocorrectionTypeNo;
+        field.spellCheckingType = UITextSpellCheckingTypeNo;
+        field.keyboardType = UIKeyboardTypeASCIICapable;
+        field.returnKeyType = UIReturnKeyDone;
+    }];
+
+    [alert addAction:[UIAlertAction actionWithTitle:LOC(@"CANCEL") style:UIAlertActionStyleCancel handler:nil]];
+
+    [alert addAction:[UIAlertAction actionWithTitle:LOC(@"SB_COPY_ID") style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+        UIPasteboard.generalPasteboard.string = userID;
+        YouModShowPill(LOC(@"SB_ID_COPIED"), YES);
+    }]];
+
+    UIAlertAction *saveAction = [UIAlertAction actionWithTitle:LOC(@"SB_ID_SAVE") style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+        NSString *newValue = [alert.textFields.firstObject.text stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+        if (newValue.length < 30) {
+            YouModShowPill(LOC(@"SB_ID_INVALID"), NO);
+            return;
+        }
+        if (isPublic) {
+            sbSetPublicUserIDManual(newValue);
+        } else {
+            sbSetPrivateUserID(newValue);
+        }
+        YouModShowPill(LOC(@"SB_ID_SAVED"), YES);
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+        [strongSelf.tableView reloadData];
+    }];
+    [alert addAction:saveAction];
+    alert.preferredAction = saveAction;
+
+    [self presentViewController:alert animated:YES completion:nil];
+
+    // Focus the field once the alert has finished fading in.
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.35 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        [alert.textFields.firstObject becomeFirstResponder];
+    });
 }
 
 #pragma mark - UIColorPickerViewControllerDelegate
@@ -715,11 +813,8 @@ static const void *kSBAllFlatRowsKey = &kSBAllFlatRowsKey;
 
 #pragma mark - Settings Search integration
 
-// Retained delegate for a colour picker opened from a search result. The stock
-// SBSettingsViewController colour flow reloads a specific SB-table index path,
-// which doesn't exist in the search results table; this dedicated delegate writes
-// the chosen colour and calls the search table's own reload instead. It is
-// associated with the presented picker so it lives exactly as long as the picker.
+// Delegate for a colour picker opened from a search result: writes the colour and reloads the search
+// table (the stock flow reloads an SB-table index path that doesn't exist there). Lives with the picker.
 @interface SBSearchColorDelegate : NSObject <UIColorPickerViewControllerDelegate>
 @property (nonatomic, copy) NSString *colorKey;
 @property (nonatomic, copy) void (^reload)(void);
@@ -737,15 +832,12 @@ static const void *kSBAllFlatRowsKey = &kSBAllFlatRowsKey;
 
 static const void *kSBSearchColorDelegateKey = &kSBSearchColorDelegateKey;
 
-// Build the flat list of every SponsorBlock setting as YMSearchRows, each rendered
-// by the given SBSettingsViewController's own cell builders. Shared by the global
-// settings search (via sbSearchRows) and SponsorBlock's own per-page search filter.
+// Builds the flat list of every SponsorBlock setting as YMSearchRows rendered by the given
+// SBSettingsViewController's cell builders; shared by the global settings search and this page's filter.
 NSArray<YMSearchRow *> *sbFlatRowsWithRenderer(SBSettingsViewController *renderer) {
     NSMutableArray<YMSearchRow *> *rows = [NSMutableArray array];
-    // Weak so a row's makeCell block can't retain the renderer: on the SponsorBlock
-    // page the renderer IS the presented VC, which also retains this row list, so a
-    // strong capture would cycle and leak the VC on every visit. The renderer always
-    // outlives cell rendering (it's the live VC or a retained child), so weak is safe.
+    // Weak capture: the renderer (the presented VC on the SB page) retains this row list, so a
+    // strong capture would cycle. The renderer always outlives cell rendering, so weak is safe.
     __weak SBSettingsViewController *renderer_w = renderer;
 
     // Section 0 — toggles.
@@ -807,11 +899,9 @@ NSArray<YMSearchRow *> *sbFlatRowsWithRenderer(SBSettingsViewController *rendere
 }
 
 NSArray<YMSearchRow *> *sbSearchRows(UIViewController *host) {
-    // One renderer builds every SB result cell. It's added as a child VC so the
-    // cells inherit the host's trait collection (light/dark), and its tableView is
-    // pointed at the host's (search results) table so SB's own cell handlers —
-    // e.g. the action picker's [self.tableView reloadData] — refresh the visible
-    // results rather than a table the renderer never presents.
+    // One renderer builds every SB result cell. Added as a child VC so cells inherit the host's
+    // traits, with its tableView pointed at the search-results table so cell handlers (like the
+    // action picker's reload) refresh the visible results.
     SBSettingsViewController *renderer = [[SBSettingsViewController alloc] init];
     [host addChildViewController:renderer];
     [renderer didMoveToParentViewController:host];
@@ -827,11 +917,9 @@ NSArray<YMSearchRow *> *sbSearchRows(UIViewController *host) {
 - (void)updateSponsorBlockSectionWithEntry:(id)entry;
 @end
 
-%hook YTSettingsSectionItemManager
-
-%new(v@:@)
-- (void)updateSponsorBlockSectionWithEntry:(id)entry {
-    YTSettingsViewController *settingsVC = [self valueForKey:@"_settingsViewControllerDelegate"];
+// Pushes the SponsorBlock settings page onto a settings view controller; shared by the native
+// section hook below and the custom YouMod home page so both open the identical styled SB page.
+void YMPushSponsorBlockSettings(id settingsVC) {
     // Use runtime-registered subclass of YTStyledViewController for YouTube's nav styling
     Class sbClass = objc_getClass("SBSettingsViewControllerStyled");
     if (!sbClass) sbClass = [SBSettingsViewController class];
@@ -839,6 +927,14 @@ NSArray<YMSearchRow *> *sbSearchRows(UIViewController *host) {
     id allocated = [sbClass alloc];
     SBSettingsViewController *sbVC = (SBSettingsViewController *)((id (*)(id, SEL, id))objc_msgSend)(allocated, @selector(initWithParentResponder:), settingsVC);
     [settingsVC pushViewController:sbVC];
+}
+
+%hook YTSettingsSectionItemManager
+
+%new(v@:@)
+- (void)updateSponsorBlockSectionWithEntry:(id)entry {
+    YTSettingsViewController *settingsVC = [self valueForKey:@"_settingsViewControllerDelegate"];
+    YMPushSponsorBlockSettings(settingsVC);
 }
 
 %end
@@ -877,10 +973,9 @@ NSArray<YMSearchRow *> *sbSearchRows(UIViewController *host) {
         }
     }
 
-    // Per-category default action and seek-bar color. Sponsor is the only
-    // category that auto-skips out of the box; the rest are disabled until the
-    // user opts in. The action/color default entries are generated from
-    // sbAllCategories() below so this table stays the sole per-category source.
+    // Per-category default action and seek-bar color. Sponsor is the only category that
+    // auto-skips by default; the rest are disabled until the user opts in. Entries are
+    // generated from sbAllCategories() below so this table stays the sole per-category source.
     NSDictionary<NSString *, NSArray *> *categoryDefaults = @{
         @"sponsor":        @[@(SBSegmentActionAutoSkip), @"#00D400"],
         @"intro":          @[@(SBSegmentActionDisable),  @"#00FFFF"],
@@ -892,11 +987,13 @@ NSArray<YMSearchRow *> *sbSearchRows(UIViewController *host) {
         @"hook":           @[@(SBSegmentActionDisable),  @"#395699"],
         @"poi_highlight":  @[@(SBSegmentActionDisable),  @"#FF006A"],
         @"filler":         @[@(SBSegmentActionDisable),  @"#7300FF"],
+        @"exclusive_access": @[@(SBSegmentActionDisable), @"#008A5C"],
     };
 
     NSMutableDictionary *defaults = [@{
         SBEnabled: @YES,
         SBShowButton: @YES,
+        SBButtonKey: @YES,
         SBShowNotifications: @YES,
         SBSegmentsInPlayer: @YES,
         SBSegmentsInFeed: @YES,

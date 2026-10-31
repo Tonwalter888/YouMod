@@ -111,7 +111,7 @@ jobs:
       - name: Hide Sensitive Inputs
         uses: levibostian/action-hide-sensitive-inputs@v1
         with:
-          exclude_inputs: bundle_id,display_name,youpip,ytuhd,ryd,abconfig,ytweaks,youslider,gonerino,demc,volboost,repo,branch,youquality
+          exclude_inputs: bundle_id,display_name,youpip,ytuhd,ryd,abconfig,ytweaks,youslider,gonerino,demc,volboost,repo,branch,youquality,ytshare
           
       - name: Install MEGA downloader
         if: ${{ startsWith(inputs.ipa_url, 'https://mega.nz/') }}
@@ -146,7 +146,11 @@ jobs:
           echo "YT_VERSION=$(grep -A 1 '<key>CFBundleVersion</key>' ytextracted/Payload/YouTube.app/Info.plist | grep '<string>' | awk -F'[><]' '{print $3}')" >> $GITHUB_ENV
 
       - name: Install Dependencies
-        run: brew install make ldid
+        run: brew install make ldid gnu-sed autoconf automake libtool pkg-config
+
+      - name: Install Go
+        if: ${{ inputs.gonerino }}
+        run: brew install go
 
       - name: Install Go
         if: ${{ inputs.gonerino }}
@@ -211,7 +215,7 @@ jobs:
       - name: Fix Theos od broken pipe issue
         run: sed -i '' 's/od -c "$i" | head/od -c "$i" 2>\/dev\/null | head/g' $THEOS/bin/convert_xml_plist.sh || true
 
-      - name: Install cyan and tbd
+      - name: Install cyan
         run: pipx install https://github.com/asdfzxcvbn/pyzule-rw/archive/main.zip
 
       - name: Checkout YouMod
@@ -291,7 +295,7 @@ jobs:
           echo "YOUMOD_VERSION=$(grep '^Version:' control | cut -d ' ' -f2)" >> $GITHUB_ENV
           make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
           mv packages/*.deb ${{ github.workspace }}/youmod.deb
-        
+
       - name: Build YouPiP
         if: ${{ inputs.youpip }}
         run: |

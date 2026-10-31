@@ -1,4 +1,3 @@
-#import <Photos/Photos.h>
 #import "Headers.h"
 
 @implementation YouModThumbnailViewController
@@ -75,10 +74,12 @@
     ]];
 
     [constraints addObjectsFromArray:@[
-        [closeBtn.topAnchor constraintEqualToAnchor:bgContainer.safeAreaLayoutGuide.topAnchor constant:12],
-        [closeBtn.leadingAnchor constraintEqualToAnchor:bgContainer.safeAreaLayoutGuide.leadingAnchor constant:12],
-        [moreBtn.topAnchor constraintEqualToAnchor:bgContainer.safeAreaLayoutGuide.topAnchor constant:12],
-        [moreBtn.trailingAnchor constraintEqualToAnchor:bgContainer.trailingAnchor constant:-12],
+        // Anchored to the safe area guide so buttons clear notches / Dynamic
+        // Island, even when the form sheet renders near-fullscreen (landscape).
+        [closeBtn.topAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.topAnchor constant:12],
+        [closeBtn.leadingAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.leadingAnchor constant:12],
+        [moreBtn.topAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.topAnchor constant:12],
+        [moreBtn.trailingAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.trailingAnchor constant:-12],
     ]];
 
     [constraints addObjectsFromArray:@[
@@ -177,10 +178,7 @@
 
 - (void)moreTapped:(UIButton *)sender {
     UIActivityViewController *activityVC = [[UIActivityViewController alloc] initWithActivityItems:@[self.thumbnailImage] applicationActivities:nil];
-    if (isPad()) {
-        activityVC.popoverPresentationController.sourceView = sender;
-        activityVC.popoverPresentationController.sourceRect = sender.bounds;
-    }
+    YouModConfigureSharePopover(activityVC, self.view);
     [self presentViewController:activityVC animated:YES completion:nil];
 }
 
