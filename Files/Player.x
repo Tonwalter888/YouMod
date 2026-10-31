@@ -31,8 +31,7 @@ static void startNetworkMonitoring(void) {
 
 #pragma mark - Rewind / Fast-forward on iOS media controls
 
-// The user-chosen skip amount for each direction, in seconds. Zero means the
-// preference was never set, in which case the seek falls back to 10 seconds.
+// Skip amount in seconds per direction; falls back to 10 when never set.
 static CGFloat YouModRewindSecondsValue(void) {
     CGFloat s = FLOAT_FOR_KEY(RewindSeconds);
     return s > 0 ? s : 10.0;
@@ -43,13 +42,8 @@ static CGFloat YouModForwardSecondsValue(void) {
     return s > 0 ? s : 10.0;
 }
 
-// Seeks the active player by delta seconds, clamped to [0, duration]. Returns NO
-// when no active player is available (e.g. a media key is pressed after playback
-// ended), so the caller can report the command as having nothing to act on.
-//
-// The seek runs on the main queue because MPRemoteCommand handlers may be invoked
-// off the main thread (notably from Bluetooth and CarPlay), while seekToTime: and
-// the player's time accessors are main-thread-only.
+// Seeks the active player by delta seconds, clamped to [0, duration]. Returns NO if no player is active.
+// Runs on the main queue since remote command handlers may arrive off-main (Bluetooth/CarPlay).
 static BOOL YouModSeekByInterval(CGFloat delta) {
     YTPlayerViewController *player = YouModCurrentPlayerViewController;
     if (!player || ![player respondsToSelector:@selector(seekToTime:)]) return NO;
@@ -64,8 +58,7 @@ static BOOL YouModSeekByInterval(CGFloat delta) {
     return YES;
 }
 
-// Retained handler tokens for the two skip commands. A non-nil token marks a
-// command whose handler is already installed, so it is installed only once.
+// Handler tokens for the two skip commands; a non-nil token means the handler is already installed.
 static id gYouModRewindTarget = nil;
 static id gYouModForwardTarget = nil;
 static NSMutableArray *gYouModRemoteCommandTargetProxies = nil;
@@ -96,10 +89,8 @@ static MPRemoteCommandHandlerStatus YouModStatusForSeek(BOOL handled) {
     return handled ? MPRemoteCommandHandlerStatusSuccess : MPRemoteCommandHandlerStatusNoSuchContent;
 }
 
-// When Skip Backward/Forward is on, Bluetooth/CarPlay/Lock Screen often still
-// deliver previous/next track events rather than skip events. Remap those to
-// seek using the matching per-direction preference; otherwise report unhandled
-// so the caller can fall through to YouTube's default track change.
+// Remap previous/next track events (Bluetooth/CarPlay/Lock Screen) to seeks when Skip Backward/Forward is on.
+// Otherwise report unhandled so YouTube's default track change applies.
 static BOOL YouModHandlePreviousNextRemoteCommand(MPRemoteCommandEvent *event) {
     if (YouModIsPreviousTrackCommand(event.command) && IS_ENABLED(SkipBackwardEnabled)) {
         return YouModSeekByInterval(-YouModRewindSecondsValue());
@@ -147,30 +138,14 @@ static BOOL YouModHandlePreviousNextRemoteCommand(MPRemoteCommandEvent *event) {
 }
 @end
 
-// Points the system now-playing skip controls (lock screen, Bluetooth, Control
-// Center, CarPlay) at our per-direction seek. When enabled, the OS previous/next
-// commands are turned off and skip-backward/forward take over with the user's
-// intervals; when disabled, previous/next are restored. Only these system
-// controls are configurable — the on-screen player rewind/fast-forward buttons
-// are rendered by YouTube with an amount it owns, so they are left alone.
-//
-// The handlers are installed once and thereafter only their enabled state and
-// preferred intervals are updated. Because the handlers read the seconds at press
-// time, a changed preference always seeks by the new amount immediately; the
-// interval shown on the OS controls reflects the value captured the last time this
-// ran (settings change, video change, or launch).
-//
-// YouTube repeatedly re-enables previous/next after we configure, so
-// %hook MPRemoteCommand also forces enabled state and wraps prev/next targets.
+// Points the system now-playing skip controls (lock screen, Bluetooth, Control Center, CarPlay) at our
+// per-direction seek, disabling previous/next. Handlers installed once; %hook MPRemoteCommand enforces the state.
 void YouModConfigureRemoteSkipCommands() {
     MPRemoteCommandCenter *cc = [MPRemoteCommandCenter sharedCommandCenter];
     BOOL back = IS_ENABLED(SkipBackwardEnabled);
     BOOL fwd = IS_ENABLED(SkipForwardEnabled);
 
-    // Each direction is independent: the previous/next track command is remapped
-    // to a skip only on the side the user enabled, so a mixed state (e.g. rewind
-    // on, fast-forward off) shows a skip-back control alongside the stock next
-    // track button.
+    // Each direction is independent: only the side the user enabled is remapped to a skip.
     cc.skipBackwardCommand.enabled = back;
     cc.skipBackwardCommand.preferredIntervals = @[@(YouModRewindSecondsValue())];
     cc.skipForwardCommand.enabled = fwd;
@@ -190,9 +165,8 @@ void YouModConfigureRemoteSkipCommands() {
     }
 }
 
-// Intercept YouTube's registration of previous/next remote targets so Bluetooth,
-// CarPlay, and Lock Screen presses seek when Skip Backward/Forward is enabled.
-// Also fight YouTube's attempts to re-enable previous/next or disable skip.
+// Wrap YouTube's previous/next remote targets so presses seek when Skip Backward/Forward is enabled,
+// and keep YouTube from re-enabling previous/next or disabling skip.
 %hook MPRemoteCommand
 - (void)addTarget:(id)target action:(SEL)action {
     if (YouModIsPreviousNextCommand(self)) {
@@ -445,7 +419,7 @@ static void YouModEnforcePrevNextVisibility(YTMainAppControlsOverlayView *overla
     gYouModEnforcingOverlayReplacement = NO;
 }
 
-// Part B: when seek paddles are unavailable, remap prev/next taps to seek within the video.
+// When seek paddles are unavailable, remap prev/next taps to seek within the video.
 static void YouModRemapPrevNextToSeek(YTMainAppControlsOverlayView *overlay) {
     YouModAttachSeekRemap(YouModOverlayIvarView(overlay, "_previousButtonView"), YouModRewindTapHandler(overlay));
     YouModAttachSeekRemap(YouModOverlayIvarView(overlay, "_nextButtonView"), YouModForwardTapHandler(overlay));
@@ -607,19 +581,12 @@ static void YouModAddEndTime(YTInlinePlayerBarContainerView *playerbar, YTPlayer
     %orig(arg);
 }
 // Always show seekbar
-- (void)setPlayerBarAlpha:(CGFloat)alpha { 
-    if (IS_ENABLED(AlwaysShowSeekbar)) alpha = 1.0;
-    %orig(alpha);
-}
+- (void)setPlayerBarAlpha:(CGFloat)alpha { %orig(IS_ENABLED(AlwaysShowSeekbar) ? 1 : alpha); }
 // Disables snap to chapter
-- (void)inlinePlayerBarView:(id)arg1 didScrubToChapteredTime:(CGFloat)arg2 shouldSnap:(BOOL)arg3 { 
-    if (IS_ENABLED(DontSnapToChapter)) arg3 = NO;
-    %orig(arg1, arg2, arg3);
-}
+- (void)inlinePlayerBarView:(id)arg1 didScrubToChapteredTime:(CGFloat)arg2 shouldSnap:(BOOL)arg3 { %orig(arg1, arg2, IS_ENABLED(DontSnapToChapter) ? NO : arg3); }
 - (void)setPeekableViewVisible:(BOOL)visible {
     %orig;
     if (!IS_ENABLED(ShowExtraTimeRemaining) && !IS_ENABLED(SBShowDuration)) return;
-
     YTLabel *dLabel = self.durationLabel;
     if (dLabel && self.endTimeString) {
         if (![dLabel.text isEqualToString:self.endTimeString]) {
@@ -681,10 +648,7 @@ static void YouModAddEndTime(YTInlinePlayerBarContainerView *playerbar, YTPlayer
 
 %hook YTAutonavEndscreenController
 - (void)showEndscreen { if (!IS_ENABLED(HideSuggestedVideo)) %orig; }
-- (void)showEndscreenControlsInPlayerBar:(BOOL)arg {
-    if (IS_ENABLED(HideSuggestedVideo)) arg = NO;
-    %orig(arg);
-}
+- (void)showEndscreenControlsInPlayerBar:(BOOL)arg { %orig(IS_ENABLED(HideSuggestedVideo) ? NO : arg); }
 %end
 
 %hook YTSettings
@@ -706,14 +670,8 @@ static void YouModAddEndTime(YTInlinePlayerBarContainerView *playerbar, YTPlayer
 
 // No Endscreen Cards
 %hook YTCreatorEndscreenView
-- (void)setHidden:(BOOL)arg { 
-    if (IS_ENABLED(HideEndScreenCards)) arg = YES;
-    %orig(arg);
-}
-- (void)setHoverCardHidden:(BOOL)arg { 
-    if (IS_ENABLED(HideEndScreenCards)) arg = YES;
-    %orig(arg);
-}
+- (void)setHidden:(BOOL)arg { %orig(IS_ENABLED(HideEndScreenCards) ? YES : arg); }
+- (void)setHoverCardHidden:(BOOL)arg { %orig(IS_ENABLED(HideEndScreenCards) ? YES : arg); }
 - (void)setHoverCardRenderer:(id)arg { if (!IS_ENABLED(HideEndScreenCards)) %orig; }
 %end
 
@@ -721,25 +679,20 @@ static void YouModAddEndTime(YTInlinePlayerBarContainerView *playerbar, YTPlayer
 // Disable Double Tap To Seek
 - (BOOL)allowDoubleTapToSeekGestureRecognizer { return IS_ENABLED(DisablesDoubleTap) ? NO : %orig; }
 // Disable long hold
-- (BOOL)allowLongPressGestureRecognizerInView:(id)arg { 
-    if (IS_ENABLED(HoldToSpeedEnabled) || IS_ENABLED(DisablesLongHold)) return NO;
-    return %orig;
-}
+- (BOOL)allowLongPressGestureRecognizerInView:(id)arg { return IS_ENABLED(DisablesLongHold) ? NO : %orig; }
 // Copy timestamp on pause
 - (void)didPressPause:(id)arg {
     %orig;
     if (!IS_ENABLED(CopyWithTimestampOnPause)) return;
     CGFloat mediaTimeIn = self.mediaTime;
     NSString *vidID = self.videoID;
-    if (vidID.length) {
-        UIPasteboard.generalPasteboard.string = [NSString stringWithFormat:@"https://www.youtube.com/watch?v=%@&t=%lds", vidID, (long)mediaTimeIn];
-    }
+    if (vidID.length) UIPasteboard.generalPasteboard.string = [NSString stringWithFormat:@"https://www.youtube.com/watch?v=%@&t=%lds", vidID, (long)mediaTimeIn];
 }
 - (BOOL)isZoomEnabled { 
     if (IS_ENABLED(DisablesFreeZoom)) {
         YTMainAppVideoPlayerOverlayView *mainov = [self videoPlayerOverlayView];
         YTVideoFreeZoomOverlayView *vidfreeov = [mainov videoFreeZoomOverlayView];
-        vidfreeov.hidden = YES; // See if this is enough to hide the indicator
+        vidfreeov.hidden = YES; // Hides the zoom indicator
         return NO;
     }
     return %orig; 
@@ -752,7 +705,7 @@ static void YouModAddEndTime(YTInlinePlayerBarContainerView *playerbar, YTPlayer
 - (void)setPaidContentWithPlayerData:(id)data { if (!IS_ENABLED(HidePaidPromoOverlay)) %orig; }
 %end
 
-// Moved out of the overlay VC in 20.21.6, so the hook above only covers 19.x now.
+// Moved out of the overlay VC in 20.21.6; the hook above covers 19.x.
 %hook YTPaidContentViewController
 - (void)showPaidContentRenderer:(id)renderer { if (!IS_ENABLED(HidePaidPromoOverlay)) %orig; }
 %end
@@ -829,10 +782,7 @@ static void YouModAddEndTime(YTInlinePlayerBarContainerView *playerbar, YTPlayer
 // Disable Autoplay 
 %hook YTPlaybackConfig
 - (BOOL)startPlayback { return IS_ENABLED(StopAutoplayVideo) ? NO : %orig; }
-- (void)setStartPlayback:(BOOL)arg { 
-    if (IS_ENABLED(StopAutoplayVideo)) arg = NO;
-    %orig(arg);
-}
+- (void)setStartPlayback:(BOOL)arg { %orig(IS_ENABLED(StopAutoplayVideo) ? NO : arg); }
 %end
 
 // Skip Content Warning (https://github.com/qnblackcat/uYouPlus/blob/main/uYouPlus.xm#L452-L454)
@@ -923,16 +873,10 @@ static CGFloat YouModConfiguredHoldToSpeedRate(void) {
     %orig;
 }
 // Remove Dark Background in Overlay
-- (void)setBackgroundVisible:(BOOL)arg1 isGradientBackground:(BOOL)arg2 {
-    if (IS_ENABLED(RemoveDarkOverlay)) arg1 = NO;
-    %orig(arg1, arg2);
-}
+- (void)setBackgroundVisible:(BOOL)arg1 isGradientBackground:(BOOL)arg2 { %orig(IS_ENABLED(RemoveDarkOverlay) ? NO : arg1, arg2); }
 // Hide Watermarks
 - (BOOL)isWatermarkEnabled { return IS_ENABLED(HideWaterMark) ? NO : %orig; }
-- (void)setWatermarkEnabled:(BOOL)arg { 
-    if (IS_ENABLED(HideWaterMark)) arg = NO;
-    %orig(arg);
-}
+- (void)setWatermarkEnabled:(BOOL)arg { %orig(IS_ENABLED(HideWaterMark) ? NO : arg); }
 - (void)layoutSubviews {
     %orig;
     if (IS_ENABLED(HideCastButtonPlayer) && self.playbackRouteButton != nil) self.playbackRouteButton.hidden = YES;
@@ -948,23 +892,18 @@ static CGFloat YouModConfiguredHoldToSpeedRate(void) {
 
 // Hide related videos in fullscreen
 %hook YTFullscreenEngagementOverlayController
-- (void)setEnabled:(BOOL)enabled { 
-    if (IS_ENABLED(HideRelatedVideos)) enabled = NO;
-    %orig(enabled);
-}
+- (void)setEnabled:(BOOL)enabled { %orig(IS_ENABLED(HideRelatedVideos) ? NO : enabled); }
 %end
 
 %hook YTSingleVideoController
 - (void)playerItem:(id)arg1 hasSelectableVideoFormats:(id)arg2 {
     %orig;
-    if (!arg2) return;
     [self YouModAutoQuality];
 }
 %new
 - (void)YouModAutoQuality {
     NSArray *videoFormats = self.selectableVideoFormats;
-    // Return early if there aren't any video formats available
-    // eg. Voice comments and others
+    // No video formats available (e.g. voice comments)
     if (!videoFormats || videoFormats.count == 0) return;
     NSInteger kQualityIndex = 0;
     if ([NSProcessInfo processInfo].lowPowerModeEnabled) {
@@ -1040,8 +979,7 @@ static CGFloat YouModConfiguredHoldToSpeedRate(void) {
 %hook YTVideoQualitySwitchOriginalController
 %property (retain, nonatomic) YTVideoQualitySwitchRedesignedController *redesignedController;
 - (void)setUserSelectableFormats:(NSArray <MLFormat *> *)formats {
-    if (self.redesignedController == nil)
-        self.redesignedController = [[%c(YTVideoQualitySwitchRedesignedController) alloc] initWithServiceRegistryScope:nil parentResponder:nil];
+    if (self.redesignedController == nil) self.redesignedController = [[%c(YTVideoQualitySwitchRedesignedController) alloc] initWithServiceRegistryScope:nil parentResponder:nil];
     [self.redesignedController setValue:[self valueForKey:@"_video"] forKey:@"_video"];
     NSArray <MLFormat *> *newFormats = [self.redesignedController respondsToSelector:@selector(addRestrictedFormats:)] ? [self.redesignedController addRestrictedFormats:formats] : formats;
     %orig(newFormats);
@@ -1233,7 +1171,6 @@ static UISlider *YouModVolumeSlider(void) {
     }
     return YES;
 }
-
 %new
 - (void)YouModHandlePanGesture:(UIPanGestureRecognizer *)panGestureRecognizer {
     // 0 = None, 1 = Vertical (Bright/Vol/Speed), 2 = Horizontal (Scrub)
@@ -1436,23 +1373,20 @@ static UISlider *YouModVolumeSlider(void) {
         controlType = 0;
     }
 }
-
 %new
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldBeRequiredToFailByGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
-    // Only the player's own pans (e.g. YouTube's scrubber) need to fail first. Page scroll pans
-    // are handled by YouModRequireAncestorPansToFail, so vertical swipes aren't blocked.
+    // Only player-internal pans must fail first; ancestor page-scroll pans are
+    // handled by YouModRequireAncestorPansToFail, so vertical swipes aren't blocked.
     if (gestureRecognizer == self.YouModPanGesture && [otherGestureRecognizer isKindOfClass:[UIPanGestureRecognizer class]] && [otherGestureRecognizer.view isDescendantOfView:self.playerView]) {
         return YES;
     }
     return NO;
 }
-
 %new
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
     if (gestureRecognizer == self.YouModPanGesture || gestureRecognizer == self.YouModHoldGesture) return NO;
     return YES;
 }
-
 // Pause using Two fingers
 %new
 - (void)YouModHandleTapGesture:(UITapGestureRecognizer *)tapGestureRecognizer {
@@ -1473,16 +1407,15 @@ static UISlider *YouModVolumeSlider(void) {
         }
     }
 }
-
 %new
 - (void)YouModAutoFullscreen {
     YTWatchController *watchController = [self valueForKey:@"_UIDelegate"];
     [watchController showFullScreen];
 }
-
 %new
 - (void)YouModSetAutoSpeed {
-    if (self.YouModHoldGesture && (self.YouModHoldGesture.state == UIGestureRecognizerStateBegan || self.YouModHoldGesture.state == UIGestureRecognizerStateChanged)) {
+    if (self.YouModHoldGesture 
+        && (self.YouModHoldGesture.state == UIGestureRecognizerStateBegan || self.YouModHoldGesture.state == UIGestureRecognizerStateChanged)) {
         return;
     }
     if (IS_ENABLED(GlobalSpeedLocked)) {
@@ -1500,13 +1433,11 @@ static UISlider *YouModVolumeSlider(void) {
     NSArray *speedLabels = @[@0.01, @0.25, @0.5, @0.75, @1.0, @1.25, @1.5, @1.75, @2.0, @3.0, @4.0, @5.0];
     [self setPlaybackRate:[speedLabels[speedIndex] floatValue]];
 }
-
 - (void)setMuted:(BOOL)muted { 
     if ([self.activeVideoPlayerOverlay isKindOfClass:%c(YTMainAppVideoPlayerOverlayViewController)]
         && YMIsOverlayButtonEnabled(@"mute.video")) muted = IS_ENABLED(KeepMutedKey);
     %orig(muted);
 }
-
 %new
 - (void)YouModAutoAudioTrack {
     NSInteger selectedIndex = INTFORVAL(AudioTrackLangIndex);
@@ -1518,7 +1449,6 @@ static UISlider *YouModVolumeSlider(void) {
     YTIAudioTrack *matchedTrack = nil;
 
     if (INTFORVAL(AudioTrack) == 1) {
-        // Loop for all tracks
         for (YTIAudioTrack *track in availableTracks) {
             if ([track.id_p hasSuffix:@".4"]) {
                 matchedTrack = track;
@@ -1526,7 +1456,6 @@ static UISlider *YouModVolumeSlider(void) {
             }
         }
     } else if (INTFORVAL(AudioTrack) == 2) {
-        // Loop for all tracks
         for (YTIAudioTrack *track in availableTracks) {
             if ([track.id_p hasPrefix:userTargetLang]) {
                 matchedTrack = track;
@@ -1558,10 +1487,8 @@ static UISlider *YouModVolumeSlider(void) {
         }
     }
 
-    // If found, change to it
     if (matchedTrack) [self setAudioTrack:matchedTrack source:0];
 }
-
 %new
 - (void)YouModAutoCaptions {
     YTSingleVideoController *sgvid = self.activeVideo;
@@ -1596,14 +1523,12 @@ static UISlider *YouModVolumeSlider(void) {
 
     if (matchedTrack && matchedTrack != currentTrack) [self setActiveCaptionTrack:matchedTrack source:0];
 }
-
 %new
 - (void)YouModHideSpeedToast {
     [UIView animateWithDuration:0.2 animations:^{
         self.YouModSpeedToastView.alpha = 0.0;
     }];
 }
-
 %new
 - (void)YouModShowSpeedToast:(CGFloat)speed isLocked:(BOOL)isLocked {
     UIColor *themeTextColor = [UIColor labelColor];
@@ -1676,8 +1601,7 @@ static UISlider *YouModVolumeSlider(void) {
     CGFloat paddingY = 16.0;
     CGFloat toastHeight = textSize.height + paddingY;
     
-    // Dynamic horizontal padding based on capsule corner geometry (radius = toastHeight / 2.0)
-    // Ensures text in any language sits comfortably inside the flat region of the pill container
+    // Pad horizontally so text sits inside the pill's flat region (radius = toastHeight / 2)
     CGFloat paddingX = toastHeight + 24.0;
     CGFloat calculatedWidth = textSize.width + paddingX;
     CGFloat toastWidth = fminf(fmaxf(calculatedWidth, toastHeight * 2.2), maxAvailableWidth + 24.0);
@@ -1694,7 +1618,6 @@ static UISlider *YouModVolumeSlider(void) {
         self.YouModSpeedToastView.alpha = 1.0;
     }];
 }
-
 %new
 - (void)YouModHoldToSpeed:(UILongPressGestureRecognizer *)gesture {
     if (gesture.state == UIGestureRecognizerStateEnded || gesture.state == UIGestureRecognizerStateCancelled || gesture.state == UIGestureRecognizerStateFailed) {
@@ -1785,8 +1708,7 @@ static UISlider *YouModVolumeSlider(void) {
                gesture.state == UIGestureRecognizerStateCancelled || 
                gesture.state == UIGestureRecognizerStateFailed) {
 
-        // Began never ran (gesture failed or was suppressed): nothing was applied, so
-        // restoring/applying a rate here would flash the speed on touch-up
+        // If Began never ran, nothing was applied; touching the rate now would flash the speed on touch-up
         if (!holdGestureActive) return;
 
         BOOL finalLockState = initialLockState;
@@ -1808,7 +1730,6 @@ static UISlider *YouModVolumeSlider(void) {
         [self YouModHideSpeedToast];
     }
 }
-
 %new
 - (void)YouModAutoDRCAudio {
     BOOL value = NO;
@@ -1968,14 +1889,7 @@ void YouModFilterVideoButtons(_ASDisplayView *view, NSString *iden) {
         UIView *elementView = [action.button valueForKey:@"_elementView"];
         elementView.userInteractionEnabled = NO;
     }
-    if (sleepTimerIndex != NSNotFound && INTFORVAL(SleepTimerEntry) != 0) {
-        YTActionSheetAction *action = actions[qualityIndex];
-        action.handler = ^{
-            YMSleepTimerPresentPicker(firstResponder.videoPlayerOverlayView.controlsOverlayView.overflowButton);
-        };
-        UIView *elementView = [action.button valueForKey:@"_elementView"];
-        elementView.userInteractionEnabled = NO;
-    }
+    if (sleepTimerIndex != NSNotFound && INTFORVAL(SleepTimerEntry) != 0) [actions removeObjectAtIndex:sleepTimerIndex];
     return actions;
 }
 %end

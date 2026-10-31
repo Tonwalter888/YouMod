@@ -4,55 +4,12 @@
 #import <objc/runtime.h>
 #import <objc/message.h>
 
-// YouTube's real version utility — class method exactly as specified: [%c(YTVersionUtils) appVersion].
-// Declared here so the footer can message it with [] syntax (no runtime guessing).
+// YouTube's version utility; the footer reads [%c(YTVersionUtils) appVersion].
 @interface YTVersionUtils : NSObject
 + (NSString *)appVersion;
 @end
 
 #pragma mark - Data Model
-
-typedef NS_ENUM(NSInteger, YMRowType) {
-    YMRowTypeToggle = 0,
-    YMRowTypePicker,
-    YMRowTypeAction,
-    YMRowTypeHeader,
-    YMRowTypeSegment,
-    YMRowTypeTextSegment,
-    YMRowTypeImageSegment,
-    YMRowTypeSlider,
-    YMRowTypeDeveloper
-};
-
-typedef NS_ENUM(NSInteger, YMVisibilityOperator) {
-    YMVisibilityOperatorBoolEquals = 0,
-    YMVisibilityOperatorIntEquals,
-    YMVisibilityOperatorIntNotEquals,
-    YMVisibilityOperatorIntGreaterThan,
-    YMVisibilityOperatorIntGreaterThanOrEqual,
-    YMVisibilityOperatorIntLessThan,
-    YMVisibilityOperatorIntLessThanOrEqual,
-    YMVisibilityOperatorIntInValues,
-    YMVisibilityOperatorIntNotInValues,
-    YMVisibilityOperatorCustomBlock
-};
-
-@interface YMVisibilityCondition : NSObject
-@property (nonatomic, copy) NSString *key;
-@property (nonatomic, assign) YMVisibilityOperator op;
-@property (nonatomic, assign) BOOL boolValue;
-@property (nonatomic, assign) NSInteger intValue;
-@property (nonatomic, strong) NSArray<NSNumber *> *intValues;
-@property (nonatomic, copy) BOOL (^customBlock)(NSUserDefaults *defaults);
-
-+ (instancetype)conditionWithBoolKey:(NSString *)key equals:(BOOL)value;
-+ (instancetype)conditionWithKey:(NSString *)key intOperator:(YMVisibilityOperator)op value:(NSInteger)value;
-+ (instancetype)conditionWithKey:(NSString *)key inValues:(NSArray<NSNumber *> *)values;
-+ (instancetype)conditionWithKey:(NSString *)key notInValues:(NSArray<NSNumber *> *)values;
-+ (instancetype)conditionWithBlock:(BOOL (^)(NSUserDefaults *defaults))block;
-
-- (BOOL)evaluateWithDefaults:(NSUserDefaults *)defaults;
-@end
 
 @implementation YMVisibilityCondition
 
@@ -133,71 +90,6 @@ typedef NS_ENUM(NSInteger, YMVisibilityOperator) {
     }
 }
 
-@end
-
-@interface YMSettingsItem : NSObject
-@property (nonatomic, assign) YMRowType type;
-@property (nonatomic, strong) NSString *title;
-@property (nonatomic, strong) NSString *subtitle;
-@property (nonatomic, strong) NSString *key;
-@property (nonatomic, strong) NSArray<NSString *> *pickerOptions;
-@property (nonatomic, assign) NSInteger pickerDefault;
-@property (nonatomic, copy) void (^action)(UIViewController *vc);
-@property (nonatomic, assign) BOOL opensPage; // YES -> row pushes another page, gets a disclosure chevron
-@property (nonatomic, strong) NSArray<NSNumber *> *segmentIcons;
-@property (nonatomic, strong) NSArray<NSString *> *segmentLabels;
-@property (nonatomic, strong) NSArray<UIImage *> *segmentImages;
-@property (nonatomic, assign) float sliderMin;
-@property (nonatomic, assign) float sliderMax;
-@property (nonatomic, assign) float sliderStep;
-@property (nonatomic, assign) float sliderDefault;
-// Developer row: a circular GitHub avatar + display name + chevron, with a role
-// line beneath. profileURL is opened on tap; avatarURL is the (github.com/<user>.png)
-// image fetched async and cached in memory.
-@property (nonatomic, strong) NSString *profileURL;
-@property (nonatomic, strong) NSString *avatarURL;
-
-// Multi-condition visibility predicates: all conditions must match by default (AND), or any condition if matchAnyCondition is YES (OR).
-@property (nonatomic, strong) NSMutableArray<YMVisibilityCondition *> *visibilityConditions;
-@property (nonatomic, assign) BOOL matchAnyCondition;
-
-+ (instancetype)toggleWithTitle:(NSString *)title subtitle:(NSString *)subtitle key:(NSString *)key;
-+ (instancetype)sliderWithTitle:(NSString *)title subtitle:(NSString *)subtitle key:(NSString *)key min:(float)min max:(float)max step:(float)step defaultValue:(float)defaultValue;
-+ (instancetype)pickerWithTitle:(NSString *)title subtitle:(NSString *)subtitle key:(NSString *)key options:(NSArray<NSString *> *)options defaultValue:(NSInteger)defaultValue;
-+ (instancetype)actionWithTitle:(NSString *)title subtitle:(NSString *)subtitle action:(void (^)(UIViewController *vc))action;
-+ (instancetype)navActionWithTitle:(NSString *)title subtitle:(NSString *)subtitle action:(void (^)(UIViewController *vc))action;
-+ (instancetype)headerWithTitle:(NSString *)title;
-+ (instancetype)segmentWithTitle:(NSString *)title key:(NSString *)key icons:(NSArray<NSNumber *> *)icons defaultValue:(NSInteger)defaultValue;
-+ (instancetype)textSegmentWithTitle:(NSString *)title key:(NSString *)key labels:(NSArray<NSString *> *)labels defaultValue:(NSInteger)defaultValue;
-+ (instancetype)imageSegmentWithTitle:(NSString *)title key:(NSString *)key images:(NSArray<UIImage *> *)images defaultValue:(NSInteger)defaultValue;
-+ (instancetype)developerWithName:(NSString *)name role:(NSString *)role profileURL:(NSString *)profileURL avatarURL:(NSString *)avatarURL;
-
-// Evaluation
-- (BOOL)isVisible;
-- (BOOL)isVisibleWithDefaults:(NSUserDefaults *)defaults;
-
-// Integer conditions (chainable)
-- (instancetype)visibleWhenKey:(NSString *)key equals:(NSInteger)value;
-- (instancetype)visibleWhenKey:(NSString *)key isNotEqualTo:(NSInteger)value;
-- (instancetype)visibleWhenKey:(NSString *)key isGreaterThan:(NSInteger)value;
-- (instancetype)visibleWhenKey:(NSString *)key isGreaterThanOrEqualTo:(NSInteger)value;
-- (instancetype)visibleWhenKey:(NSString *)key isLessThan:(NSInteger)value;
-- (instancetype)visibleWhenKey:(NSString *)key isLessThanOrEqualTo:(NSInteger)value;
-- (instancetype)visibleWhenKey:(NSString *)key inValues:(NSArray<NSNumber *> *)values;
-- (instancetype)visibleWhenKey:(NSString *)key notInValues:(NSArray<NSNumber *> *)values;
-- (instancetype)visibleWhenKeyDictionary:(NSDictionary<NSString *, NSNumber *> *)keyValues;
-
-// Boolean conditions (chainable)
-- (instancetype)visibleWhenBoolKey:(NSString *)key equals:(BOOL)value;
-- (instancetype)visibleWhenBoolKey:(NSString *)key;
-- (instancetype)visibleWhenBoolKeys:(NSArray<NSString *> *)keys;
-- (instancetype)visibleWhenBoolKeys:(NSArray<NSString *> *)keys allEqualTo:(BOOL)value;
-- (instancetype)visibleWhenAnyBoolKey:(NSArray<NSString *> *)keys;
-- (instancetype)visibleWhenBoolDictionary:(NSDictionary<NSString *, NSNumber *> *)keyValues;
-
-// Block / Custom conditions & modifier
-- (instancetype)visibleWhen:(BOOL (^)(NSUserDefaults *defaults))block;
-- (instancetype)requireAnyCondition;
 @end
 
 @implementation YMSettingsItem
@@ -303,6 +195,11 @@ typedef NS_ENUM(NSInteger, YMVisibilityOperator) {
     item.profileURL = profileURL;
     item.avatarURL = avatarURL;
     return item;
+}
+
+- (instancetype)withIconType:(NSInteger)iconType {
+    self.iconType = iconType;
+    return self;
 }
 
 - (BOOL)isVisible {
@@ -441,6 +338,34 @@ typedef NS_ENUM(NSInteger, YMVisibilityOperator) {
 
 @end
 
+#pragma mark - Settings Search Registry
+
+// A registered settings group (name + items) feeding the home page search index.
+@interface YMSettingsGroup : NSObject
+@property (nonatomic, copy) NSString *title;
+@property (nonatomic, copy) NSArray<YMSettingsItem *> *items;
+@end
+@implementation YMSettingsGroup
+@end
+
+@implementation YMSearchRow
+@end
+
+// Registered groups; SponsorBlock adds its own rows via sbSearchRows.
+// Registration dedupes by title so screen rebuilds don't duplicate rows.
+static NSMutableArray<YMSettingsGroup *> *gYMSearchGroups = nil;
+
+void YMRegisterSettingsGroup(NSString *title, NSArray<YMSettingsItem *> *items) {
+    if (!gYMSearchGroups) gYMSearchGroups = [NSMutableArray array];
+    for (YMSettingsGroup *existing in [gYMSearchGroups copy]) {
+        if ([existing.title isEqualToString:title]) [gYMSearchGroups removeObject:existing];
+    }
+    YMSettingsGroup *group = [YMSettingsGroup new];
+    group.title = title;
+    group.items = items;
+    [gYMSearchGroups addObject:group];
+}
+
 #pragma mark - YMSubSettingsViewController
 
 @interface YMSubSettingsViewController : UIViewController <UITableViewDelegate, UITableViewDataSource, UISearchBarDelegate>
@@ -455,12 +380,19 @@ typedef NS_ENUM(NSInteger, YMVisibilityOperator) {
 - (UIColor *)ymTextColor;
 - (UIColor *)ymSecondaryColor;
 - (UITableViewCell *)cellForItem:(YMSettingsItem *)item tableView:(UITableView *)tableView;
+- (UITableViewCell *)navCellForItem:(YMSettingsItem *)item tableView:(UITableView *)tableView;
 - (void)updateSearchBarTheme;
-// Whether this page installs a per-page search bar that filters its own rows.
-// Subclasses can override this.
+
+// Global search (home page): the search bar covers every registered settings group
+// instead of just this page's own rows.
+- (BOOL)globalSearch;
+- (void)setGlobalSearch:(BOOL)global;
+- (NSArray<YMSearchRow *> *)globalSearchIndex;
+- (NSArray<YMSearchRow *> *)filteredSearchRows;
+- (void)setFilteredSearchRows:(NSArray<YMSearchRow *> *)rows;
+// YES = per-page search bar filtering this page's own rows. Subclasses can override.
 - (BOOL)usesPageSearch;
-// Whether this page shows the thin version footer ("YouTube <ver> • YouMod <ver>")
-// below its rows. Set before pushing; used by the custom YouMod home page.
+// YES = thin version footer below the rows (set before pushing; home page only).
 - (BOOL)showsVersionFooter;
 - (void)setShowsVersionFooter:(BOOL)shows;
 - (UIView *)ymVersionFooterView;
@@ -476,6 +408,9 @@ static const void *kYMSliderStepAssoc = &kYMSliderStepAssoc;
 static const void *kYMSliderLabelAssoc = &kYMSliderLabelAssoc;
 static const void *kYMPageFilterKey = &kYMPageFilterKey;
 static const void *kYMShowsVersionFooterKey = &kYMShowsVersionFooterKey;
+static const void *kYMGlobalSearchKey = &kYMGlobalSearchKey;
+static const void *kYMGlobalSearchIndexKey = &kYMGlobalSearchIndexKey;
+static const void *kYMFilteredSearchRowsKey = &kYMFilteredSearchRowsKey;
 
 static NSString *YMFormattedSliderValue(NSString *key, float value) {
     if ([key isEqualToString:HoldToSpeedRate]) {
@@ -508,25 +443,23 @@ static NSString *YMFormattedSliderValue(NSString *key, float value) {
 - (BOOL)showsVersionFooter { return [objc_getAssociatedObject(self, kYMShowsVersionFooterKey) boolValue]; }
 - (void)setShowsVersionFooter:(BOOL)shows { objc_setAssociatedObject(self, kYMShowsVersionFooterKey, @(shows), OBJC_ASSOCIATION_RETAIN_NONATOMIC); }
 
-// Thin, small, unselectable footer: "YouTube <ver> • YouMod <ver>".
-// The edge gap uses leading/trailing anchors (auto-flip under RTL) and the text uses
-// natural alignment, so the layout follows the app's RTL/LTR direction.
+// Thin unselectable footer "YouTube <ver> • YouMod <ver>" (leading/trailing +
+// natural alignment = RTL-safe).
 - (UIView *)ymVersionFooterView {
-    // tableFooterView is sized by its frame (not constraints), so give it a real height.
-    // Label sits at top:12 / bottom:-24 within it (see constraints below).
-    UIView *footer = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 0, 50)];
+    // tableFooterView is frame-sized (no constraints), so give it a real height.
+    UIView *footer = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 0, 60)];
     footer.userInteractionEnabled = NO;
 
     UILabel *label = [[UILabel alloc] init];
     label.translatesAutoresizingMaskIntoConstraints = NO;
 
-    // YouTube version exactly as specified: [%c(YTVersionUtils) appVersion].
+    // YouTube version via [%c(YTVersionUtils) appVersion].
     NSString *ytVersion = @"";
     @try {
         ytVersion = [%c(YTVersionUtils) appVersion] ?: @"";
     } @catch (...) {}
     label.text = [NSString stringWithFormat:@"YouTube %@ • YouMod %@", ytVersion, YouModVersion];
-    label.font = [UIFont systemFontOfSize:11 weight:UIFontWeightThin];
+    label.font = [UIFont systemFontOfSize:13 weight:UIFontWeightLight];
     label.textColor = [self ymSecondaryColor];
     label.textAlignment = NSTextAlignmentNatural; // follows RTL/LTR
     label.userInteractionEnabled = NO; // unselectable
@@ -556,9 +489,8 @@ static const void *kYMCachedDisplayedItemsKey = &kYMCachedDisplayedItemsKey;
     objc_setAssociatedObject(self, kYMCachedDisplayedItemsKey, items, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 }
 
-// The rows to display: all items, or — while a page search is active — only those
-// whose title/subtitle match, with headers dropped (a filtered list has no sections).
-// A row with visibility predicates is shown only while its conditions evaluate to true.
+// Rows to show: visible items, or title/subtitle matches while a page search is
+// active (headers dropped — a filtered list has no sections).
 - (BOOL)isItemVisible:(YMSettingsItem *)item {
     return [item isVisible];
 }
@@ -734,11 +666,68 @@ static const void *kYMCachedDisplayedItemsKey = &kYMCachedDisplayedItemsKey;
     }
 }
 
+#pragma mark - Global Search
+
+- (BOOL)globalSearch { return [objc_getAssociatedObject(self, kYMGlobalSearchKey) boolValue]; }
+- (void)setGlobalSearch:(BOOL)global { objc_setAssociatedObject(self, kYMGlobalSearchKey, @(global), OBJC_ASSOCIATION_RETAIN_NONATOMIC); }
+- (NSArray<YMSearchRow *> *)filteredSearchRows { return objc_getAssociatedObject(self, kYMFilteredSearchRowsKey) ?: @[]; }
+- (void)setFilteredSearchRows:(NSArray<YMSearchRow *> *)rows { objc_setAssociatedObject(self, kYMFilteredSearchRowsKey, rows, OBJC_ASSOCIATION_RETAIN_NONATOMIC); }
+
+// One settings item as a search row rendered through this page's cell builders.
+- (YMSearchRow *)searchRowForItem:(YMSettingsItem *)item groupTitle:(NSString *)groupTitle {
+    __weak typeof(self) weakSelf = self;
+    YMSearchRow *row = [YMSearchRow new];
+    NSString *sub = item.subtitle.length ? item.subtitle : @"";
+    row.searchText = [NSString stringWithFormat:@"%@ %@ %@", item.title ?: @"", sub, groupTitle ?: @""];
+    row.makeCell = ^UITableViewCell *(UITableView *tv) { return [weakSelf cellForItem:item tableView:tv]; };
+    return row;
+}
+
+// Index of every real setting (toggle/picker/segment/slider) from the registered
+// groups plus SponsorBlock rows. Menu rows and headers are entries, not settings.
+- (NSArray<YMSearchRow *> *)globalSearchIndex {
+    NSArray<YMSearchRow *> *cached = objc_getAssociatedObject(self, kYMGlobalSearchIndexKey);
+    if (cached) return cached;
+    NSMutableArray<YMSearchRow *> *rows = [NSMutableArray array];
+    for (YMSettingsGroup *group in gYMSearchGroups) {
+        for (YMSettingsItem *item in group.items) {
+            BOOL searchable = item.type == YMRowTypeToggle || item.type == YMRowTypePicker
+                || item.type == YMRowTypeSegment || item.type == YMRowTypeTextSegment
+                || item.type == YMRowTypeImageSegment || item.type == YMRowTypeSlider;
+            if (!searchable || item.title.length == 0 || ![item isVisible]) continue;
+            [rows addObject:[self searchRowForItem:item groupTitle:group.title]];
+        }
+    }
+    [rows addObjectsFromArray:sbSearchRows(self)];
+    objc_setAssociatedObject(self, kYMGlobalSearchIndexKey, rows, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    return rows;
+}
+
+// Refilter the global index for the current pageFilter text.
+- (void)updateGlobalSearchResults {
+    NSString *q = self.pageFilter;
+    if (q.length == 0) {
+        self.filteredSearchRows = @[];
+        return;
+    }
+    NSMutableArray<YMSearchRow *> *matches = [NSMutableArray array];
+    NSStringCompareOptions opts = NSCaseInsensitiveSearch | NSDiacriticInsensitiveSearch;
+    for (YMSearchRow *row in [self globalSearchIndex]) {
+        if ([row.searchText rangeOfString:q options:opts].location != NSNotFound) [matches addObject:row];
+    }
+    self.filteredSearchRows = matches;
+}
+
 #pragma mark - UISearchBarDelegate
 
 - (void)searchBar:(UISearchBar *)searchBar textDidChange:(NSString *)searchText {
     self.pageFilter = [searchText stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
-    [self updateDisplayedItemsAnimated:NO];
+    if (self.globalSearch) {
+        [self updateGlobalSearchResults];
+        [self.tableView reloadData];
+    } else {
+        [self updateDisplayedItemsAnimated:NO];
+    }
 }
 
 - (void)searchBarTextDidBeginEditing:(UISearchBar *)searchBar {
@@ -757,7 +746,12 @@ static const void *kYMCachedDisplayedItemsKey = &kYMCachedDisplayedItemsKey;
     searchBar.text = @"";
     self.pageFilter = @"";
     [searchBar resignFirstResponder];
-    [self updateDisplayedItemsAnimated:NO];
+    if (self.globalSearch) {
+        [self updateGlobalSearchResults];
+        [self.tableView reloadData];
+    } else {
+        [self updateDisplayedItemsAnimated:NO];
+    }
 }
 
 - (void)viewWillAppear:(BOOL)animated {
@@ -778,8 +772,7 @@ static const void *kYMCachedDisplayedItemsKey = &kYMCachedDisplayedItemsKey;
         backButton.tintColor = [UIColor blackColor];
     }
 
-    // Keep the version footer pinned to the table width (it is created before the
-    // table has been laid out, so its frame width needs to be synced here).
+    // Keep the footer width in sync with the table (created before layout).
     UIView *footer = self.tableView.tableFooterView;
     if (footer) {
         CGRect f = footer.frame;
@@ -794,9 +787,8 @@ static const void *kYMCachedDisplayedItemsKey = &kYMCachedDisplayedItemsKey;
     if (self.traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark) {
         return [UIColor whiteColor];
     }
-    // Light mode: return a concrete colour rather than nil. nil lets YouTube tint the
-    // nav-bar foreground (back chevron + title) with its default appearance, which is
-    // system blue in light mode. labelColor keeps it black in light / white in dark.
+    // Concrete colour in light mode; nil would let YouTube tint the nav-bar
+    // foreground system blue. labelColor = black in light / white in dark.
     return [UIColor labelColor];
 }
 
@@ -816,21 +808,34 @@ static const void *kYMCachedDisplayedItemsKey = &kYMCachedDisplayedItemsKey;
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
+    if (self.globalSearch && self.pageFilter.length > 0) return self.filteredSearchRows.count;
     return self.displayedItems.count;
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
+    if (self.globalSearch && self.pageFilter.length > 0) {
+        return self.filteredSearchRows[indexPath.row].makeCell(tableView);
+    }
     return [self cellForItem:self.displayedItems[indexPath.row] tableView:tableView];
 }
 
-// Builds the cell for a single item, dispatching on its row type. Shared by this
-// page's data source and the global settings-search results table, so both render
-// the same live, editable controls from one type dispatch.
+- (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath {
+    if (self.globalSearch && self.pageFilter.length > 0) {
+        CGFloat h = self.filteredSearchRows[indexPath.row].cellHeight;
+        return h > 0 ? h : UITableViewAutomaticDimension;
+    }
+    YMSettingsItem *item = self.displayedItems[indexPath.row];
+    // Nav rows without a subtitle (home page section rows) get a taller, icon-ready row.
+    if (item.type == YMRowTypeAction && item.opensPage && item.subtitle.length == 0) return 66;
+    return UITableViewAutomaticDimension;
+}
+
+// Builds a cell for one item by row type (shared by the data source and search).
 - (UITableViewCell *)cellForItem:(YMSettingsItem *)item tableView:(UITableView *)tableView {
     if (item.type == YMRowTypeToggle) {
         return [self toggleCellForItem:item tableView:tableView];
     } else if (item.type == YMRowTypeAction) {
-        return [self actionCellForItem:item tableView:tableView];
+        return item.opensPage ? [self navCellForItem:item tableView:tableView] : [self actionCellForItem:item tableView:tableView];
     } else if (item.type == YMRowTypeHeader) {
         return [self headerCellForItem:item tableView:tableView];
     } else if (item.type == YMRowTypeSegment) {
@@ -849,6 +854,13 @@ static const void *kYMCachedDisplayedItemsKey = &kYMCachedDisplayedItemsKey;
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
+    if (self.globalSearch && self.pageFilter.length > 0) {
+        YMSearchRow *row = self.filteredSearchRows[indexPath.row];
+        if (!row.onSelect) return;
+        __weak typeof(self) weakSelf = self;
+        row.onSelect(self, ^{ [weakSelf.tableView reloadData]; });
+        return;
+    }
     YMSettingsItem *item = self.displayedItems[indexPath.row];
     if (item.type == YMRowTypeAction && item.action) {
         item.action(self);
@@ -905,8 +917,7 @@ static const void *kYMCachedDisplayedItemsKey = &kYMCachedDisplayedItemsKey;
     cell.backgroundColor = [UIColor clearColor];
     cell.selectionStyle = UITableViewCellSelectionStyleNone;
 
-    // A stored value of zero is treated as "no value yet" and shown as the
-    // default. Slider ranges are therefore expected to be positive.
+    // Stored 0 = "no value yet" → show the default. Slider ranges must be positive.
     float stored = [[NSUserDefaults standardUserDefaults] floatForKey:item.key];
     if (stored <= 0) stored = item.sliderDefault;
     stored = fmaxf(item.sliderMin, fminf(stored, item.sliderMax));
@@ -1036,8 +1047,7 @@ static UIImage *YMGrayCircle(CGFloat diameter) {
         cell.detailTextLabel.numberOfLines = 0;
     }
 
-    // Put the circular avatar in the cell's imageView: UIKit then lays the name/role
-    // text out to its right automatically (no fragile manual frame offsets).
+    // Avatar in cell.imageView so UIKit lays the name/role text beside it.
     const CGFloat avatarDiameter = 36.0;
     cell.imageView.contentMode = UIViewContentModeScaleAspectFill;
     cell.imageView.clipsToBounds = YES;
@@ -1068,6 +1078,70 @@ static UIImage *YMGrayCircle(CGFloat diameter) {
                 });
             }
         }
+    }
+
+    return cell;
+}
+
+#pragma mark - Nav Cell
+
+// Menu row that pushes a page: leading YT icon (RTL-mirrored), title, chevron.
+- (UITableViewCell *)navCellForItem:(YMSettingsItem *)item tableView:(UITableView *)tableView {
+    UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:nil];
+    cell.backgroundColor = [UIColor clearColor];
+    cell.selectionStyle = UITableViewCellSelectionStyleDefault;
+    cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+
+    UILabel *titleLabel = [[UILabel alloc] init];
+    titleLabel.translatesAutoresizingMaskIntoConstraints = NO;
+    titleLabel.text = item.title;
+    titleLabel.textColor = [self ymTextColor];
+    titleLabel.font = [UIFont systemFontOfSize:16 weight:UIFontWeightMedium];
+    [cell.contentView addSubview:titleLabel];
+
+    NSLayoutXAxisAnchor *textLeading = cell.contentView.leadingAnchor;
+    CGFloat textInset = 16;
+
+    if (item.iconType > 0) {
+        UIImageView *iconView = [[UIImageView alloc] init];
+        iconView.translatesAutoresizingMaskIntoConstraints = NO;
+        iconView.contentMode = UIViewContentModeScaleAspectFit;
+        UIImage *icon = YouModYTIconImage(item.iconType, NO, nil);
+        iconView.image = [icon imageFlippedForRightToLeftLayoutDirection];
+        [cell.contentView addSubview:iconView];
+        [NSLayoutConstraint activateConstraints:@[
+            [iconView.leadingAnchor constraintEqualToAnchor:cell.contentView.leadingAnchor constant:16],
+            [iconView.centerYAnchor constraintEqualToAnchor:cell.contentView.centerYAnchor],
+            [iconView.widthAnchor constraintEqualToConstant:28],
+            [iconView.heightAnchor constraintEqualToConstant:28],
+        ]];
+        textLeading = iconView.trailingAnchor;
+        textInset = 12;
+    }
+
+    if (item.subtitle.length > 0) {
+        UILabel *subtitleLabel = [[UILabel alloc] init];
+        subtitleLabel.translatesAutoresizingMaskIntoConstraints = NO;
+        subtitleLabel.text = item.subtitle;
+        subtitleLabel.textColor = [self ymSecondaryColor];
+        subtitleLabel.font = [UIFont systemFontOfSize:13];
+        subtitleLabel.numberOfLines = 0;
+        [cell.contentView addSubview:subtitleLabel];
+        [NSLayoutConstraint activateConstraints:@[
+            [titleLabel.leadingAnchor constraintEqualToAnchor:textLeading constant:textInset],
+            [titleLabel.topAnchor constraintEqualToAnchor:cell.contentView.topAnchor constant:12],
+            [titleLabel.trailingAnchor constraintLessThanOrEqualToAnchor:cell.contentView.trailingAnchor constant:-16],
+            [subtitleLabel.leadingAnchor constraintEqualToAnchor:textLeading constant:textInset],
+            [subtitleLabel.topAnchor constraintEqualToAnchor:titleLabel.bottomAnchor constant:3],
+            [subtitleLabel.trailingAnchor constraintLessThanOrEqualToAnchor:cell.contentView.trailingAnchor constant:-16],
+            [subtitleLabel.bottomAnchor constraintEqualToAnchor:cell.contentView.bottomAnchor constant:-12],
+        ]];
+    } else {
+        [NSLayoutConstraint activateConstraints:@[
+            [titleLabel.leadingAnchor constraintEqualToAnchor:textLeading constant:textInset],
+            [titleLabel.centerYAnchor constraintEqualToAnchor:cell.contentView.centerYAnchor],
+            [titleLabel.trailingAnchor constraintLessThanOrEqualToAnchor:cell.contentView.trailingAnchor constant:-16],
+        ]];
     }
 
     return cell;
@@ -1321,9 +1395,8 @@ static UIImage *YMGrayCircle(CGFloat diameter) {
         UIAction *action = [UIAction actionWithTitle:optionTitle image:nil identifier:nil handler:^(__kindof UIAction *a) {
             [[NSUserDefaults standardUserDefaults] setInteger:i forKey:itemKey];
             if ([itemKey isEqualToString:SleepTimerEntry]) {
-                // Update the locked sleep.timer entry only when a custom
-                // overlay order already exists. Creating a one-entry order
-                // here makes every other missing button default to enabled.
+                // Update the locked sleep.timer entry only when a custom overlay
+                // order exists (a one-entry order would default all others to on).
                 NSArray *savedOrder = [[NSUserDefaults standardUserDefaults] arrayForKey:OverlayButtonOrder];
                 if (savedOrder.count > 0) {
                     NSMutableArray *order = [NSMutableArray array];
@@ -1430,160 +1503,6 @@ static UIImage *YMGrayCircle(CGFloat diameter) {
 
 @end
 
-#pragma mark - Settings Search
-
-// A searchable group of YouMod (YMSettingsItem-based) settings: the group's
-// display name plus its items. Registered by Settings.x so the search VC can build
-// a flat index without knowing how each group's items are constructed.
-@interface YMSettingsGroup : NSObject
-@property (nonatomic, copy) NSString *title;
-@property (nonatomic, copy) NSArray<YMSettingsItem *> *items;
-@end
-@implementation YMSettingsGroup
-@end
-
-@implementation YMSearchRow
-@end
-
-// The registered YouMod setting groups (excludes SponsorBlock, which contributes
-// its own rows via sbSearchRows). Settings.x re-registers these each time the
-// settings screen is built; registration dedupes by title (see below).
-static NSMutableArray<YMSettingsGroup *> *gYMSearchGroups = nil;
-
-void YMRegisterSettingsGroup(NSString *title, NSArray<YMSettingsItem *> *items) {
-    if (!gYMSearchGroups) gYMSearchGroups = [NSMutableArray array];
-    // Replace any prior registration for this title (idempotent) so re-opening the
-    // settings screen — which rebuilds the section — doesn't duplicate index rows.
-    for (YMSettingsGroup *existing in [gYMSearchGroups copy]) {
-        if ([existing.title isEqualToString:title]) [gYMSearchGroups removeObject:existing];
-    }
-    YMSettingsGroup *group = [YMSettingsGroup new];
-    group.title = title;
-    group.items = items;
-    [gYMSearchGroups addObject:group];
-}
-
-// Global settings search. Subclasses YMSubSettingsViewController to inherit every
-// YMSettingsItem cell builder (toggle/slider/picker/segment) and its change
-// handlers, so results are the live, editable controls. Rows that don't originate
-// from a YMSettingsItem (SponsorBlock's action pickers and colour circles) are
-// supplied as YMSearchRow objects that render themselves.
-@interface YMSettingsSearchViewController : YMSubSettingsViewController <UISearchBarDelegate>
-@end
-
-static const void *kYMSearchAllRowsKey = &kYMSearchAllRowsKey;
-static const void *kYMSearchFilteredRowsKey = &kYMSearchFilteredRowsKey;
-
-@implementation YMSettingsSearchViewController
-
-- (NSArray<YMSearchRow *> *)allRows { return objc_getAssociatedObject(self, kYMSearchAllRowsKey); }
-- (void)setAllRows:(NSArray<YMSearchRow *> *)r { objc_setAssociatedObject(self, kYMSearchAllRowsKey, r, OBJC_ASSOCIATION_RETAIN_NONATOMIC); }
-- (NSArray<YMSearchRow *> *)filteredRows { return objc_getAssociatedObject(self, kYMSearchFilteredRowsKey); }
-- (void)setFilteredRows:(NSArray<YMSearchRow *> *)r { objc_setAssociatedObject(self, kYMSearchFilteredRowsKey, r, OBJC_ASSOCIATION_RETAIN_NONATOMIC); }
-
-- (BOOL)usesPageSearch { return YES; }
-
-// Wrap a YMSettingsItem as a search row rendered through the inherited cell builder.
-- (YMSearchRow *)searchRowForItem:(YMSettingsItem *)item groupTitle:(NSString *)groupTitle {
-    __weak typeof(self) weakSelf = self;
-    YMSearchRow *row = [YMSearchRow new];
-    NSString *sub = item.subtitle.length ? item.subtitle : @"";
-    row.searchText = [NSString stringWithFormat:@"%@ %@ %@", item.title ?: @"", sub, groupTitle ?: @""];
-    row.makeCell = ^UITableViewCell *(UITableView *tv) { return [weakSelf cellForItem:item tableView:tv]; };
-    return row;
-}
-
-- (void)buildIndex {
-    NSMutableArray<YMSearchRow *> *all = [NSMutableArray array];
-    for (YMSettingsGroup *group in gYMSearchGroups) {
-        for (YMSettingsItem *item in group.items) {
-            // Headers and action rows (which navigate elsewhere) aren't settings to find.
-            if (item.type == YMRowTypeHeader || item.type == YMRowTypeAction) continue;
-            if (item.title.length == 0) continue;
-            [all addObject:[self searchRowForItem:item groupTitle:group.title]];
-        }
-    }
-    [all addObjectsFromArray:sbSearchRows(self)];
-    self.allRows = all;
-    self.filteredRows = @[];
-}
-
-- (void)viewDidLoad {
-    [super viewDidLoad];
-    [self buildIndex];
-}
-
-// Focus our own search bar once the page is actually on screen (becomeFirstResponder
-// from viewDidLoad is unreliable — the bar isn't in the window yet), so the keyboard
-// is up as soon as the search page appears.
-- (void)viewDidAppear:(BOOL)animated {
-    Class ytStyled = objc_getClass("YTStyledViewController");
-    struct objc_super superStruct = { self, ytStyled ?: [UIViewController class] };
-    ((void (*)(struct objc_super *, SEL, BOOL))objc_msgSendSuper)(&superStruct, @selector(viewDidAppear:), animated);
-
-    dispatch_async(dispatch_get_main_queue(), ^{
-        [self.searchBar becomeFirstResponder];
-    });
-}
-
-- (void)searchBar:(UISearchBar *)searchBar textDidChange:(NSString *)searchText {
-    NSString *query = [searchText stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
-    if (query.length == 0) {
-        self.filteredRows = @[];
-    } else {
-        NSMutableArray<YMSearchRow *> *matches = [NSMutableArray array];
-        NSStringCompareOptions opts = NSCaseInsensitiveSearch | NSDiacriticInsensitiveSearch;
-        for (YMSearchRow *row in self.allRows) {
-            if ([row.searchText rangeOfString:query options:opts].location != NSNotFound) {
-                [matches addObject:row];
-            }
-        }
-        self.filteredRows = matches;
-    }
-    [self.tableView reloadData];
-}
-
-- (void)searchBarCancelButtonClicked:(UISearchBar *)searchBar {
-    searchBar.text = @"";
-    self.filteredRows = @[];
-    [searchBar resignFirstResponder];
-    [self.tableView reloadData];
-}
-
-- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
-    return self.filteredRows.count;
-}
-
-- (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
-    return self.filteredRows[indexPath.row].makeCell(tableView);
-}
-
-- (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath {
-    CGFloat h = self.filteredRows[indexPath.row].cellHeight;
-    return h > 0 ? h : UITableViewAutomaticDimension;
-}
-
-- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
-    [tableView deselectRowAtIndexPath:indexPath animated:YES];
-    YMSearchRow *row = self.filteredRows[indexPath.row];
-    if (!row.onSelect) return;
-    __weak typeof(self) weakSelf = self;
-    row.onSelect(self, ^{ [weakSelf.tableView reloadData]; });
-}
-
-@end
-
-// Push the global settings search page onto the native settings nav stack.
-void YMPushSettingsSearch(id settingsVC, id parentResponder) {
-    Class styledClass = objc_getClass("YMSettingsSearchViewControllerStyled");
-    if (!styledClass) styledClass = [YMSettingsSearchViewController class];
-
-    YMSettingsSearchViewController *vc = (YMSettingsSearchViewController *)((id (*)(id, SEL, id))objc_msgSend)([styledClass alloc], @selector(initWithParentResponder:), parentResponder);
-    if (!vc) vc = [[styledClass alloc] init];
-    vc.navTitle = LOC(@"SEARCH");
-    [settingsVC pushViewController:vc];
-}
-
 #pragma mark - Convenience Factory Functions
 
 YMSettingsItem *YMToggle(NSString *title, NSString *subtitle, NSString *key) {
@@ -1622,9 +1541,8 @@ YMSettingsItem *YMImageSegment(NSString *title, NSString *key, NSArray<UIImage *
     return [YMSettingsItem imageSegmentWithTitle:title key:key images:images defaultValue:defaultValue];
 }
 
-// A Developer row: circular GitHub avatar + display name + chevron, with the role
-// beneath. GitHub serves a user's avatar at github.com/<user>.png, so we only need
-// the handle to both open the profile and fetch the avatar.
+// Developer row builder: GitHub serves avatars at github.com/<user>.png, so the
+// handle both opens the profile and fetches the avatar.
 YMSettingsItem *YMDeveloper(NSString *name, NSString *role, NSString *profileURL, NSString *avatarBaseURL) {
     NSString *avatarURL = [NSString stringWithFormat:@"%@.png", avatarBaseURL];
     return [YMSettingsItem developerWithName:name role:role profileURL:profileURL avatarURL:avatarURL];
@@ -1651,10 +1569,9 @@ static const NSInteger kYMTabMinEnabled = 1;
 static const void *kYMTabTableViewKey = &kYMTabTableViewKey;
 static const void *kYMTabDataKey = &kYMTabDataKey;
 static const void *kYMTabSnapshotKey = &kYMTabSnapshotKey;
-// Saved copies of the shared navigation bar's appearance, restored when this
-// screen is dismissed. This screen installs its own opaque navigation bar
-// appearance; because that appearance is shared, leaving it in place would repaint
-// the previous screen's back button with the appearance's default (blue) tint.
+// Saved nav-bar appearances, restored on dismissal. This screen installs its own
+// opaque appearance; the shared bar would otherwise repaint the previous screen's
+// back button with the appearance's default (blue) tint.
 static const void *kYMTabSavedStdAppearanceKey = &kYMTabSavedStdAppearanceKey;
 static const void *kYMTabSavedScrollEdgeAppearanceKey = &kYMTabSavedScrollEdgeAppearanceKey;
 
@@ -1737,9 +1654,7 @@ static const void *kYMTabSavedScrollEdgeAppearanceKey = &kYMTabSavedScrollEdgeAp
     [self loadTabData];
     [self takeSnapshot];
 
-    // The previous screen's navigation bar appearance is saved before this screen
-    // installs its own opaque appearance, and restored on dismissal so that screen
-    // keeps its own back-button tint.
+    // Save the previous nav-bar appearance before installing ours; restore it on dismissal.
     UINavigationBar *sharedNavBar = self.navigationController.navigationBar;
     objc_setAssociatedObject(self, kYMTabSavedStdAppearanceKey, sharedNavBar.standardAppearance, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     objc_setAssociatedObject(self, kYMTabSavedScrollEdgeAppearanceKey, sharedNavBar.scrollEdgeAppearance, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
@@ -1806,8 +1721,7 @@ static const void *kYMTabSavedScrollEdgeAppearanceKey = &kYMTabSavedScrollEdgeAp
     struct objc_super superStruct = { self, ytStyled ?: [UIViewController class] };
     ((void (*)(struct objc_super *, SEL, BOOL))objc_msgSendSuper)(&superStruct, @selector(viewWillDisappear:), animated);
 
-    // Restore the previous screen's saved navigation bar appearance so it keeps
-    // its own back-button tint rather than this screen's opaque appearance.
+    // Restore the saved nav-bar appearance so the previous screen keeps its tint.
     UINavigationBar *navBar = self.navigationController.navigationBar;
     navBar.standardAppearance = objc_getAssociatedObject(self, kYMTabSavedStdAppearanceKey);
     navBar.scrollEdgeAppearance = objc_getAssociatedObject(self, kYMTabSavedScrollEdgeAppearanceKey);
@@ -1869,8 +1783,8 @@ static const void *kYMTabSavedScrollEdgeAppearanceKey = &kYMTabSavedScrollEdgeAp
     NSMutableArray *toSave = [NSMutableArray array];
     for (NSMutableDictionary *entry in self.tabData) {
         if ([entry[@"id"] isEqualToString:@"download"]) {
-            // The download tab's on/off state lives in the Downloading settings
-            // (DownloadLibraryTab), not here — keep the saved entry in sync with it.
+            // Download tab state lives in the Downloading settings
+            // (DownloadLibraryTab); keep the saved entry in sync with it.
             [toSave addObject:@{@"id": entry[@"id"], @"enabled": @([[NSUserDefaults standardUserDefaults] boolForKey:DownloadLibraryTab])}];
         } else {
             [toSave addObject:@{@"id": entry[@"id"], @"enabled": entry[@"enabled"]}];
@@ -1892,8 +1806,8 @@ static const void *kYMTabSavedScrollEdgeAppearanceKey = &kYMTabSavedScrollEdgeAp
 - (NSInteger)enabledCount {
     NSInteger count = 0;
     for (NSDictionary *entry in self.tabData) {
-        // The download tab is governed by the Downloading settings, not by the
-        // per-tab limit here — same as before it joined this list.
+        // Download tab is governed by the Downloading settings, not the
+        // per-tab limit here.
         if ([entry[@"id"] isEqualToString:@"download"]) continue;
         if ([entry[@"enabled"] boolValue]) count++;
     }
@@ -1947,8 +1861,7 @@ static const void *kYMTabSavedScrollEdgeAppearanceKey = &kYMTabSavedScrollEdgeAp
 
     BOOL isDownloadTab = [tabID isEqualToString:@"download"];
     if (isDownloadTab) {
-        // The download tab can only be turned on/off from the Downloading
-        // settings section — the switch here just mirrors that state.
+        // Download tab switch just mirrors the Downloading settings state.
         sw.on = [[NSUserDefaults standardUserDefaults] boolForKey:DownloadLibraryTab];
         sw.enabled = NO;
     } else {
@@ -2061,9 +1974,8 @@ void YMPushTabOrder(id settingsVC, id parentResponder) {
     [settingsVC pushViewController:vc];
 }
 
-// Modal entry point for opening Manage Tabs without a YTSettingsViewController nav stack
-// (used by the long-press gesture on the Home tab). Wraps the standard tab-order VC in
-// a UINavigationController with a Done button and presents from the topmost VC.
+// Modal Manage Tabs entry (Home tab long-press) when no settings nav stack exists:
+// wraps the tab-order VC in a UINavigationController with a Done button.
 void YMPresentTabOrderModally(id parentResponder) {
     Class styledClass = objc_getClass("YMTabOrderViewControllerStyled");
     if (!styledClass) styledClass = [YMTabOrderViewController class];
@@ -2103,8 +2015,8 @@ void YMPresentTabOrderModally(id parentResponder) {
 
 #pragma mark - YMOverlayButtonOrderViewController
 
-// The sleep.timer toggle is locked in the manage screen; its state is derived
-// from the SleepTimerEntry picker (2 = overlay, 3 = both) instead.
+// sleep.timer toggle is locked here; its state derives from the SleepTimerEntry
+// picker (2 = overlay, 3 = both).
 static BOOL YMSleepTimerOverlayEnabled(void) {
     NSInteger entry = INTFORVAL(SleepTimerEntry);
     return entry == 2 || entry == 3;
@@ -2375,9 +2287,8 @@ static const void *kYMOverlayMoveInFlightKey = &kYMOverlayMoveInFlightKey;
 
 #pragma mark - UITableViewDataSource
 
-// Section 0 = buttons on the top overlay row, section 1 = buttons on the
-// bottom bar. Both derive from the single buttonData array via the "bottom"
-// flag, so the saved format (and the player side) is unchanged.
+// Section 0 = top overlay row, section 1 = bottom bar. Both come from buttonData
+// via the "bottom" flag (saved format unchanged).
 - (NSArray<NSNumber *> *)flatIndexesForSection:(NSInteger)section {
     BOOL wantBottom = (section == 1);
     NSMutableArray<NSNumber *> *indexes = [NSMutableArray array];
@@ -2438,8 +2349,8 @@ static const void *kYMOverlayMoveInFlightKey = &kYMOverlayMoveInFlightKey;
         sw.tag = 999;
         [cell.contentView addSubview:sw];
 
-        // Arrow button: moves the button to the other row (down from the top
-        // row, up from the bottom row) — replaces the old top/bottom segment.
+        // Arrow button moves the button to the other row
+        // (replaces the old top/bottom segment).
         moveButton = [UIButton buttonWithType:UIButtonTypeSystem];
         moveButton.backgroundColor = [UIColor secondarySystemBackgroundColor];
         moveButton.tintColor = [UIColor labelColor];
@@ -2475,9 +2386,9 @@ static const void *kYMOverlayMoveInFlightKey = &kYMOverlayMoveInFlightKey;
     cell.imageView.image = btnIcon;
     cell.imageView.tintColor = [UIColor labelColor];
 
-    // These buttons are controlled by their own settings, so their switches
-    // are locked here. Always set enabled explicitly because cells are reused;
-    // otherwise a locked switch can leave a regular button's toggle disabled.
+    // These buttons are controlled by their own settings, so their switches are
+    // locked. Set enabled explicitly (cells are reused) or a locked switch would
+    // leave a regular button's toggle disabled.
     BOOL isExternallyManaged = [buttonID isEqualToString:@"download.video"]
         || [buttonID isEqualToString:@"sponsorblock.toggle"]
         || [buttonID isEqualToString:@"sleep.timer"];
@@ -2528,22 +2439,19 @@ static const void *kYMOverlayMoveInFlightKey = &kYMOverlayMoveInFlightKey;
     }
     if (fromRow < 0) return;
     // The moved entry is appended to its new section, so its new row equals
-    // the target section's current row count (0 when that section was empty).
+    // that section's current count.
     NSInteger toRow = (NSInteger)toFlat.count;
     BOOL fromBecomesEmpty = (fromFlat.count == 1);
     BOOL toWasEmpty = (toFlat.count == 0);
 
-    // Stacking a batch update on top of the previous move's animation leaves
-    // ghost rows (the same button painted in several places) because the
-    // placeholder delete/insert dance runs against cells that are still fading
-    // out with stale buttonIDs. Serialize: one move in flight at a time.
+    // Stacking a batch update on a still-running move leaves ghost rows (stale
+    // buttonIDs on fading cells) — serialize: one move in flight at a time.
     if ([objc_getAssociatedObject(self, kYMOverlayMoveInFlightKey) boolValue]) return;
     objc_setAssociatedObject(self, kYMOverlayMoveInFlightKey, @(YES), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 
     [self.tableView performBatchUpdates:^{
-        // Rebuild buttonData as top group followed by bottom group so the
-        // entry lands at the end of its new section; relative order within
-        // each side (what the player renders) is preserved.
+        // Rebuild buttonData as top group + bottom group so the entry lands at
+        // the end of its section (relative order preserved).
         entry[@"bottom"] = @(toSection == 1);
         NSMutableArray *top = [NSMutableArray array];
         NSMutableArray *bottom = [NSMutableArray array];
@@ -2568,8 +2476,7 @@ static const void *kYMOverlayMoveInFlightKey = &kYMOverlayMoveInFlightKey;
         [self saveButtonData];
     } completion:^(BOOL finished) {
         objc_setAssociatedObject(self, kYMOverlayMoveInFlightKey, @(NO), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-        // Self-sizing rows + batch updates can leave stale cells behind; pin the
-        // table back to the real data once the animation settles.
+        // Self-sizing + batch updates can leave stale cells; reload once settled.
         [self.tableView reloadData];
     }];
 }
@@ -2582,8 +2489,8 @@ static const void *kYMOverlayMoveInFlightKey = &kYMOverlayMoveInFlightKey;
 }
 
 - (NSIndexPath *)tableView:(UITableView *)tableView targetIndexPathForMoveFromRowAtIndexPath:(NSIndexPath *)sourceIndexPath toProposedIndexPath:(NSIndexPath *)proposedIndexPath {
-    // Dragging only reorders within a section; switching sides is the arrow
-    // button's job, so redirect any cross-section drop back into the source.
+    // Drag reorders within a section only; cross-section drops are redirected
+    // back (switching sides is the arrow button's job).
     if (proposedIndexPath.section == sourceIndexPath.section) return proposedIndexPath;
     NSInteger rows = [self tableView:tableView numberOfRowsInSection:sourceIndexPath.section];
     NSInteger row = MIN(proposedIndexPath.row, rows - 1);
@@ -2677,8 +2584,8 @@ void YMPushSubSettings(NSString *title, NSArray<YMSettingsItem *> *items, id set
     [settingsVC pushViewController:vc];
 }
 
-// Same as YMPushSubSettings, but the page shows the thin version footer. The flag is
-// set before pushing so -viewDidLoad picks it up when it builds the table footer.
+// Same as YMPushSubSettings, but for the home page: version footer on, and the
+// search bar searches every registered settings group instead of just these rows.
 void YMPushSubSettingsWithFooter(NSString *title, NSArray<YMSettingsItem *> *items, id settingsVC, id parentResponder) {
     Class styledClass = objc_getClass("YMSubSettingsViewControllerStyled");
     if (!styledClass) styledClass = [YMSubSettingsViewController class];
@@ -2688,6 +2595,7 @@ void YMPushSubSettingsWithFooter(NSString *title, NSArray<YMSettingsItem *> *ite
     vc.navTitle = title;
     vc.items = items;
     vc.showsVersionFooter = YES;
+    vc.globalSearch = YES;
     [settingsVC pushViewController:vc];
 }
 
@@ -2698,13 +2606,8 @@ static void ymRegisterStyledSubclass(Class sourceClass, const char *name) {
     Class newClass = objc_allocateClassPair(ytStyled, name, 0);
     if (!newClass) return;
 
-    // Copy methods and properties from sourceClass up through its own class chain,
-    // stopping before UIViewController/YTStyledViewController. Walking the chain
-    // (not just sourceClass) is required when sourceClass itself subclasses another
-    // YouMod controller — e.g. YMSettingsSearchViewController inherits its cell
-    // builders from YMSubSettingsViewController; a single-level copy would drop
-    // them. Subclass levels are copied first so an override wins over its parent
-    // (class_addMethod does not replace an already-added selector).
+    // Copy methods/properties from sourceClass up its class chain (stops before
+    // UIViewController). Subclass levels copy first so overrides win.
     for (Class cls = sourceClass; cls && cls != [UIViewController class]; cls = class_getSuperclass(cls)) {
         unsigned int count = 0;
         Method *methods = class_copyMethodList(cls, &count);
@@ -2769,5 +2672,4 @@ static void ymRegisterStyledSubclass(Class sourceClass, const char *name) {
     ymRegisterStyledSubclass([YMSubSettingsViewController class], "YMSubSettingsViewControllerStyled");
     ymRegisterStyledSubclass([YMTabOrderViewController class], "YMTabOrderViewControllerStyled");
     ymRegisterStyledSubclass([YMOverlayButtonOrderViewController class], "YMOverlayButtonOrderViewControllerStyled");
-    ymRegisterStyledSubclass([YMSettingsSearchViewController class], "YMSettingsSearchViewControllerStyled");
 }

@@ -253,8 +253,7 @@ static UIColor *ymYouTubeBackgroundColor(void);
         _sizeLabel.translatesAutoresizingMaskIntoConstraints = NO;
 
         _menuButton = [%c(YTQTMButton) iconButton];
-        // Rendered into an exact 24x24 canvas so the ellipsis never gets
-        // squished or cropped inside the button's hit area.
+        // Rendered into an exact 24x24 canvas so the ellipsis never gets squished or cropped.
         [_menuButton setImage:YouModSymbolImageInCanvas(@"ellipsis", 24, 22, UIImageSymbolWeightMedium) forState:UIControlStateNormal];
         _menuButton.tintColor = [UIColor labelColor];
         if ([_menuButton respondsToSelector:@selector(enableNewTouchFeedback)]) [_menuButton enableNewTouchFeedback];
@@ -340,8 +339,7 @@ static UIColor *ymYouTubeBackgroundColor(void) {
 
 #pragma mark - Pausing other players
 
-// Every AVPlayer alive in the process, held weakly so entries vanish on
-// dealloc without needing a dealloc hook.
+// Every AVPlayer alive in the process, held weakly so entries vanish on dealloc without a hook.
 static NSHashTable<AVPlayer *> *ymLiveAVPlayers(void) {
     static NSHashTable<AVPlayer *> *table;
     static dispatch_once_t once;
@@ -349,8 +347,8 @@ static NSHashTable<AVPlayer *> *ymLiveAVPlayers(void) {
     return table;
 }
 
-// Pauses everything the app could be playing: YouTube's own player (watch
-// page, miniplayer, shorts) plus any AVPlayer anywhere in the process.
+// Pauses everything the app could be playing: YouTube's own player (watch page, miniplayer, shorts)
+// plus any AVPlayer in the process.
 static void ymPauseOtherPlayers(void) {
     [YouModCurrentPlayerViewController pause];
     for (AVPlayer *player in [ymLiveAVPlayers() allObjects]) {
@@ -376,11 +374,8 @@ static void ymPauseOtherPlayers(void) {
 static const CGFloat ymRefreshTriggerDistance = 64.0;
 static const CGFloat ymRefreshHiddenTravel = 72.0; // how far the bubble sits above its resting spot
 
-// Pull-to-refresh bubble for the library grid: a floating circle with an
-// arrow that slides into view and rotates as the user drags down — from the
-// top of the list or by overscrolling past the bottom — then spins while
-// refreshing. Driven by the collection view's scroll delegate, which the
-// view controller forwards below.
+// Pull-to-refresh bubble for the library grid: a floating circle with an arrow that slides into
+// view and rotates as the user drags, then spins while refreshing. Driven by the scroll delegate.
 @interface YMLibraryRefreshControl : UIView
 @property (nonatomic, copy) void (^onRefresh)(void);
 @property (nonatomic, readonly, getter=isRefreshing) BOOL refreshing;
@@ -425,10 +420,8 @@ static const CGFloat ymRefreshHiddenTravel = 72.0; // how far the bubble sits ab
     return self;
 }
 
-// How far past an edge the user has dragged: overshoot at the top or at the
-// bottom of the list, whichever is larger. Clamping the bottom's max offset
-// at the top resting point keeps short lists (smaller than the viewport)
-// from reading as permanently overscrolled.
+// How far past an edge the user has dragged (top or bottom overshoot, whichever is larger).
+// Clamping the bottom's max offset keeps short lists from reading as permanently overscrolled.
 - (CGFloat)pullDistanceInScrollView:(UIScrollView *)scrollView {
     CGFloat topPull = -(scrollView.contentOffset.y + scrollView.adjustedContentInset.top);
     CGFloat maxOffset = scrollView.contentSize.height - scrollView.bounds.size.height + scrollView.adjustedContentInset.bottom;
@@ -440,16 +433,13 @@ static const CGFloat ymRefreshHiddenTravel = 72.0; // how far the bubble sits ab
     CGFloat pull = [self pullDistanceInScrollView:scrollView];
     CGFloat progress = MIN(MAX(pull / ymRefreshTriggerDistance, 0), 1);
     if (self.isRefreshing) return;
-    // The bubble slides down into view and the arrow flips from pointing
-    // down to pointing up across the pull.
+    // The bubble slides down into view and the arrow flips from down to up across the pull.
     self.transform = CGAffineTransformMakeTranslation(0, -ymRefreshHiddenTravel * (1 - progress));
     self.alpha = progress;
     self.iconView.transform = CGAffineTransformMakeRotation(progress * (CGFloat)M_PI);
 }
 
-// Called on finger-up: refresh only when the pull is still past the
-// threshold at release, so the bounce after a fast upward flick can't
-// trigger it on its own.
+// Called on finger-up: refresh only when the pull is still past the threshold at release.
 - (void)draggingEndedInScrollView:(UIScrollView *)scrollView {
     if (self.isRefreshing) return;
     if ([self pullDistanceInScrollView:scrollView] >= ymRefreshTriggerDistance) {
@@ -461,8 +451,7 @@ static const CGFloat ymRefreshHiddenTravel = 72.0; // how far the bubble sits ab
     if (self.isRefreshing) return;
     self.refreshing = YES;
 
-    // Park the bubble fully in view and spin the arrow continuously; the
-    // scroll position stays wherever the user pulled from.
+    // Park the bubble fully in view and spin the arrow; the scroll position stays put.
     self.transform = CGAffineTransformIdentity;
     self.alpha = 1.0;
     CABasicAnimation *spin = [CABasicAnimation animationWithKeyPath:@"transform.rotation"];
@@ -588,8 +577,7 @@ static const CGFloat ymRefreshHiddenTravel = 72.0; // how far the bubble sits ab
     _typeScrollView = [UIScrollView new];
     _typeScrollView.showsHorizontalScrollIndicator = NO;
     _typeScrollView.translatesAutoresizingMaskIntoConstraints = NO;
-    // Clip the regular scroll-view subheader to a continuous curve, independent
-    // of the separate liquid-glass backdrop behind it.
+    // Clip the regular scroll-view subheader to a continuous curve, independent of its glass backdrop.
     _typeScrollView.layer.cornerRadius = 21;
     _typeScrollView.layer.cornerCurve = kCACornerCurveContinuous;
     _typeScrollView.clipsToBounds = YES;
@@ -617,9 +605,8 @@ static const CGFloat ymRefreshHiddenTravel = 72.0; // how far the bubble sits ab
     [_playlistBackButton addTarget:self action:@selector(backToPlaylistsTapped) forControlEvents:UIControlEventTouchUpInside];
     [topBar addSubview:_playlistBackButton];
 
-    // Playlist create/delete actions live in their own glass pill, pinned to
-    // the trailing end of the type bar and floating above the scrolling
-    // chips instead of scrolling away with them.
+    // Playlist create/delete actions live in their own glass pill pinned to the trailing end
+    // of the type bar, floating above the scrolling chips.
     _playlistActionsView = [UIView new];
     _playlistActionsView.translatesAutoresizingMaskIntoConstraints = NO;
     _playlistActionsView.layer.zPosition = 1;
@@ -661,8 +648,7 @@ static const CGFloat ymRefreshHiddenTravel = 72.0; // how far the bubble sits ab
     _collectionView.backgroundColor = ymYouTubeBackgroundColor();
     _collectionView.keyboardDismissMode = UIScrollViewKeyboardDismissModeOnDrag;
     _collectionView.alwaysBounceVertical = YES; // lets the pull-to-refresh gesture work even with few or no items
-    // The collection view extends behind the clear header; only the rounded
-    // type-selector pill keeps its glass backdrop over the scrolling content.
+    // The collection view extends behind the clear header; only the rounded type-selector pill keeps its glass backdrop.
     _collectionView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
     _collectionView.contentInset = UIEdgeInsetsMake(174, 0, 0, 0);
     _collectionView.scrollIndicatorInsets = _collectionView.contentInset;
@@ -854,15 +840,13 @@ static const CGFloat ymRefreshHiddenTravel = 72.0; // how far the bubble sits ab
         [self.typeStackView addArrangedSubview:button];
     }];
 
-    // Playlist actions are only available on the playlists overview, not
-    // while viewing a playlist's contents.
+    // Playlist actions are only available on the playlists overview, not inside a playlist.
     BOOL inPlaylists = [self.selectedType isEqualToString:kYMLibraryTypePlaylists];
     BOOL viewingPlaylist = inPlaylists && self.selectedPlaylistID.length > 0;
     self.playlistBackButton.hidden = !viewingPlaylist;
     self.playlistActionsView.hidden = !inPlaylists || viewingPlaylist;
     self.deletePlaylistButton.enabled = ymLibraryPlaylists().count > 0;
-    // Reserve leading space for the back button on a playlist detail screen,
-    // and trailing space for the actions pill on the playlists overview.
+    // Reserve leading space for the back button (playlist detail) and trailing space for the actions pill (overview).
     self.typeGlassLeadingConstraint.constant = viewingPlaylist ? 56 : 14;
     self.typeScrollLeadingConstraint.constant = viewingPlaylist ? 58 : 16;
     self.typeGlassTrailingConstraint.constant = inPlaylists && !viewingPlaylist ? -94 : -14;
@@ -1028,9 +1012,8 @@ static const CGFloat ymRefreshHiddenTravel = 72.0; // how far the bubble sits ab
             NSDate *modifiedDate = nil;
             [fileURL getResourceValue:&modifiedDate forKey:NSURLContentModificationDateKey error:nil];
             row.modifiedDate = modifiedDate ?: NSDate.distantPast;
-            // Audio rows have no real artwork: render the note into a fixed
-            // 48pt canvas so it stays a medium icon centered in the frame
-            // instead of scaling up with the 16:9 thumbnail view.
+            // Audio rows have no real artwork: render the note into a fixed 48pt canvas
+            // so it stays a medium icon centered in the frame.
             row.thumbnail = row.isAudio
                 ? YouModSymbolImageInCanvas(@"music.note", 48, 24, UIImageSymbolWeightRegular)
                 : ymThumbnailForVideoFile(fileURL);
@@ -1258,8 +1241,7 @@ static const CGFloat ymRefreshHiddenTravel = 72.0; // how far the bubble sits ab
     return self.rows.count;
 }
 
-// The library view controller is the collection view's scroll delegate, so
-// it feeds the refresh control from here.
+// The library view controller is the collection view's scroll delegate, so it feeds the refresh control.
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView {
     if (scrollView == self.collectionView) [self.refreshControl scrollViewDidScroll:scrollView];
 }
@@ -1273,8 +1255,7 @@ static const CGFloat ymRefreshHiddenTravel = 72.0; // how far the bubble sits ab
     YMLibraryRow *row = self.rows[indexPath.item];
     cell.titleLabel.text = row.title;
     cell.sizeLabel.text = row.sizeText;
-    // Audio rows show a small centered icon on the placeholder fill; video
-    // rows fill the frame with their real thumbnail.
+    // Audio rows show a small centered icon on the placeholder fill; video rows fill the frame with their thumbnail.
     cell.thumbnailImageView.contentMode = (row.isAudio || row.isPlaylist) ? UIViewContentModeCenter : UIViewContentModeScaleAspectFill;
     cell.thumbnailImageView.image = row.thumbnail;
     cell.thumbnailImageView.tintColor = (row.isAudio || row.isPlaylist) ? [UIColor secondaryLabelColor] : nil;
@@ -1297,14 +1278,12 @@ static const CGFloat ymRefreshHiddenTravel = 72.0; // how far the bubble sits ab
     NSURL *fileURL = [NSURL fileURLWithPath:row.path];
 
     AVURLAsset *asset = [AVURLAsset URLAssetWithURL:fileURL options:nil];
-    // The deprecated isPlayable flag reports NO for playable m4a audio, so
-    // decide from the tracks the asset actually exposes: m4a/AAC exposes an
-    // audio track, while mka/mkv containers expose none.
+    // The deprecated isPlayable flag reports NO for playable m4a audio, so decide from the
+    // tracks the asset exposes: m4a/AAC has an audio track, mka/mkv containers expose none.
     BOOL playable = [asset tracksWithMediaType:AVMediaTypeVideo].count > 0
                  || [asset tracksWithMediaType:AVMediaTypeAudio].count > 0;
     if (playable) {
-        // Stop everything else that is playing (YouTube's player and any
-        // AVPlayer in the process) so it doesn't mix with the opened file.
+        // Stop everything else that is playing (YouTube's player and any AVPlayer) so it doesn't mix with the opened file.
         ymPauseOtherPlayers();
         AVPlayerViewController *playerVC = [AVPlayerViewController new];
         playerVC.player = [AVPlayer playerWithURL:fileURL];
@@ -1316,8 +1295,7 @@ static const CGFloat ymRefreshHiddenTravel = 72.0; // how far the bubble sits ab
     }
 }
 
-// Options for a library item, presented as the YouTube-style bottom sheet
-// from the cell's ellipsis button.
+// Options for a library item, presented as the YouTube-style bottom sheet from the ellipsis button.
 - (void)showActionSheetForRowAtIndexPath:(NSIndexPath *)indexPath sourceView:(UIView *)sourceView {
     YMLibraryRow *row = self.rows[indexPath.item];
     NSURL *fileURL = [NSURL fileURLWithPath:row.path];
@@ -1381,9 +1359,8 @@ static const CGFloat ymRefreshHiddenTravel = 72.0; // how far the bubble sits ab
     [sheet presentFromView:sourceView animated:YES completion:nil];
 }
 
-// Rename dialog via the system alert: a text field prefilled with the
-// current name plus Cancel / Rename buttons. The video ID suffix (and the
-// file extension) are preserved automatically.
+// Rename dialog via a system alert: text field prefilled with the current name plus
+// Cancel / Rename. The video ID suffix and file extension are preserved automatically.
 - (void)presentRenameDialogForRow:(YMLibraryRow *)row {
     UIAlertController *alert = [UIAlertController alertControllerWithTitle:LOC(@"LIBRARY_RENAME_TITLE")
                                                                    message:nil
@@ -1414,8 +1391,7 @@ static const CGFloat ymRefreshHiddenTravel = 72.0; // how far the bubble sits ab
     [self presentViewController:alert animated:YES completion:nil];
 }
 
-// Moves the media file (plus its sidecar thumbnail) and updates the row in
-// place, so the collection view reflects the new name immediately.
+// Moves the media file (plus its sidecar thumbnail) and updates the row in place.
 // Returns NO when the name didn't change or the file couldn't be moved.
 - (BOOL)applyRename:(NSString *)newBase toRow:(YMLibraryRow *)row {
     NSFileManager *fm = [NSFileManager defaultManager];
@@ -1428,8 +1404,7 @@ static const CGFloat ymRefreshHiddenTravel = 72.0; // how far the bubble sits ab
 
     if (![fm moveItemAtPath:row.path toPath:newPath error:nil]) return NO;
 
-    // Follow along with the sibling .jpg and drop the stale generated-thumb
-    // cache entry (keyed by the old file name).
+    // Follow along with the sibling .jpg and drop the stale generated-thumb cache entry.
     NSString *oldSibling = [[row.path stringByDeletingPathExtension] stringByAppendingPathExtension:@"jpg"];
     NSString *newSibling = [[newPath stringByDeletingPathExtension] stringByAppendingPathExtension:@"jpg"];
     if ([fm fileExistsAtPath:oldSibling]) [fm moveItemAtPath:oldSibling toPath:newSibling error:nil];

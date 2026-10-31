@@ -3,10 +3,7 @@
 // Hide Subbar
 %hook YTHeaderContentComboView
 - (void)enableSubheaderBarWithView:(UIView *)view { if (!IS_ENABLED(HideSubbar)) %orig; }
-- (void)setFeedHeaderScrollMode:(int)mode {
-    if (IS_ENABLED(HideSubbar)) mode = 0;
-    %orig(mode);
-}
+- (void)setFeedHeaderScrollMode:(int)mode { %orig(IS_ENABLED(HideSubbar) ? 0 : mode); }
 %end
 
 // Hide voice search button
@@ -33,8 +30,7 @@
 }
 %end
 
-// Original (untranslated) titles: the server ships the untranslated title next to the
-// auto-translated one on video renderers (search results, video lists).
+// Original (untranslated) titles: the server ships the original alongside the auto-translated one.
 %hook YTIVideoWithContextRenderer
 - (YTIFormattedString *)title {
     if (IS_ENABLED(NoTranslatedTitles) && [self hasUntranslatedTitle]) {

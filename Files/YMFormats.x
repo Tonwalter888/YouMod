@@ -417,7 +417,7 @@ NSArray<YMCaptionTrack *> *YMCaptionTracksFromPlayer(YTPlayerViewController *pla
         if (baseURL.length == 0) continue;
         YMCaptionTrack *t = [YMCaptionTrack new];
         t.languageCode = [track languageCode];
-        // dropdownOptionTitle only exists on YTIFormattedString from 20.x; 19.x would throw.
+        // dropdownOptionTitle exists on 20.x only; 19.x would throw.
         id name = [track name];
         NSString *title = [name respondsToSelector:@selector(dropdownOptionTitle)] ? [name dropdownOptionTitle] : [name stringWithFormattingRemoved];
         t.name = title ?: [track languageCode];

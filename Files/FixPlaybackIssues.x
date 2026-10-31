@@ -149,7 +149,7 @@ return [headers copy];
 //                   PART 4a: NSMutableURLRequest
 // ============================================================================
 
- // Initial hook for intercepting and modifying the request in its earliest state possible
+ // Initial hook: intercept and modify the request as early as possible
 %hook NSMutableURLRequest
 
 - (id)initWithURL:(NSURL *)URL cachePolicy:(unsigned long long)cachePolicy timeoutInterval:(double)timeoutInterval {
@@ -549,7 +549,7 @@ static void YTApplyCustomBody(NSMutableURLRequest *request) {
 //            PART 4c: GTMSessionFetcherSessionDelegateDispatcher
 // ============================================================================
 
-// Catching the request in what it appears to be its final stage; The dispatcher checks and maybe modifies the final request and it sends it to Google.
+// Final interception point: the dispatcher checks/patches the request just before it is sent to Google.
 %hook GTMSessionFetcherSessionDelegateDispatcher
 
 - (id)connection:(id)connection
@@ -658,7 +658,7 @@ willPerformHTTPRedirection:(id)response
 //    PART 5: EXPERIMENTAL PoToken BYPASS (Special Thanks to @tywtyw2002 for the idea)
 // ========================================================================================
 
-// In order to use the base_url from YTIOnesieHotConfig, we have to hook this class in order for url and ustreamer_config from YTIIosPlaybackOnesieConfig to become null. This MAY bypass PoToken.
+// Hooks this class to null url/ustreamer_config so base_url from YTIOnesieHotConfig is used. This MAY bypass PoToken.
 
 %hook YTIIosPlaybackOnesieConfig
 
@@ -668,7 +668,7 @@ return 0;
 
 %end
 
-//Keep in mind this is experimental and there is a good chance that it won't have any effect whatsoever, tho I may update this when I get clue how to maybe patch it better. And sorry if one hooked class seems exaggerated for me to call a PoToken bypass......
+// Experimental: this may have no effect whatsoever.
 
 
 %ctor {

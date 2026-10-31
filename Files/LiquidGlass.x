@@ -1,15 +1,12 @@
 #import "Headers.h"
 #import <objc/message.h>
 
-// System bar-style glass backdrop: a real UIGlassEffect ("liquid glass") on
-// iOS 26+, falling back to a system material blur on older versions. The
-// backdrop view is created once per view and reused on repeated calls, so
-// it's safe to re-apply after theme changes.
+// System bar-style glass backdrop: UIGlassEffect ("liquid glass") on iOS 26+,
+// else a system material blur. Created once per view and reused.
 static const void *kYMLiquidGlassBackdropKey = &kYMLiquidGlassBackdropKey;
 
-// Resolved dynamically so this compiles against any SDK: UIGlassEffect only
-// exists on iOS 26+, so the class lookup itself acts as the availability
-// check (no @available needed, which some toolchains can't link).
+// Resolved dynamically so this compiles against any SDK; the class lookup
+// itself acts as the iOS 26+ availability check (no @available needed).
 static UIVisualEffect *YMCreateSystemBarGlassEffect(void) {
     Class glass = NSClassFromString(@"UIGlassEffect");
     SEL selector = NSSelectorFromString(@"effectWithStyle:");
@@ -55,6 +52,7 @@ void YouModApplyLiquidGlassToView(UIView *view, BOOL wantsBackground) {
 %hook YTChipCloudChipView
 - (void)didMoveToWindow {
     %orig;
+    if (self.renderer && [self.renderer.description containsString:@"STYLE_FULL_SCREEN_RELATED"]) return;
     YouModApplyLiquidGlassToView(self, YES);
 }
 %end
@@ -111,10 +109,10 @@ void YouModApplyLiquidGlassToView(UIView *view, BOOL wantsBackground) {
 %hook YTFirstTimeSignInView
 - (void)didMoveToWindow {
     %orig;
-    @try {
-        if (self.chooseAccountButton != nil) YouModApplyLiquidGlassToView(self.chooseAccountButton, YES);
-        if (self.alternateAccountButton != nil) YouModApplyLiquidGlassToView(self.alternateAccountButton, YES);
-    } @catch (id ex) {}
+    for (NSString *ivar in @[@"_chooseAccountButton", @"_alternateAccountButton"]) {
+        YTQTMButton *button = [self valueForKey:ivar];
+        if (button != nil) YouModApplyLiquidGlassToView(button, YES);
+    }
 }
 %end
 
@@ -154,51 +152,38 @@ static float YMSeekStartValue;
 
 %hook YTInlineMutedPlaybackPlayerOverlayView
 %property (nonatomic, retain) UIPanGestureRecognizer *ymSeekPan;
-
 - (void)didMoveToWindow {
     %orig;
-
     if (self.window && !self.ymSeekPan) {
-        self.ymSeekPan =
-            [[UIPanGestureRecognizer alloc] initWithTarget:self
-                                                    action:@selector(ym_handleSeekPan:)];
+        self.ymSeekPan = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(YouModHandleSeekPan:)];
         self.ymSeekPan.delegate = (id<UIGestureRecognizerDelegate>)self;
         self.ymSeekPan.cancelsTouchesInView = NO;
         [self addGestureRecognizer:self.ymSeekPan];
     }
 }
-
 %new
 - (BOOL)gestureRecognizerShouldBegin:(UIGestureRecognizer *)gesture {
     if (gesture != self.ymSeekPan) return YES;
-
     CGPoint velocity = [(UIPanGestureRecognizer *)gesture velocityInView:self];
-    return fabs(velocity.x) > fabs(velocity.y); // horizontal swipes only
+    return fabs(velocity.x) > fabs(velocity.y);
 }
-
 %new
-- (void)ym_handleSeekPan:(UIPanGestureRecognizer *)pan {
+- (void)YouModHandleSeekPan:(UIPanGestureRecognizer *)gesture {
     UISlider *slider = self.scrubberView.scrubber;
     if (!slider) return;
-
     float duration = slider.maximumValue - slider.minimumValue;
     if (duration <= 0) return;
-
-    if (pan.state == UIGestureRecognizerStateBegan) {
+    UIGestureRecognizerState state = gesture.state;
+    if (state == UIGestureRecognizerStateBegan) {
         YMSeekStartValue = slider.value;
         [slider sendActionsForControlEvents:UIControlEventTouchDown];
-    }
-
-    UIGestureRecognizerState state = pan.state;
-    if (state != UIGestureRecognizerStateChanged &&
+    } else if (state != UIGestureRecognizerStateChanged &&
         state != UIGestureRecognizerStateEnded &&
         state != UIGestureRecognizerStateCancelled) return;
-
-    CGFloat dx = [pan translationInView:self].x;
+    CGFloat dx = [gesture translationInView:self].x;
     float value = YMSeekStartValue + dx / self.bounds.size.width * duration;
     value = fminf(fmaxf(value, slider.minimumValue), slider.maximumValue);
     slider.value = value;
-
     if (state == UIGestureRecognizerStateChanged) {
         [slider sendActionsForControlEvents:UIControlEventValueChanged];
     } else if (state == UIGestureRecognizerStateEnded) {

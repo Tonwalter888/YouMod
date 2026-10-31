@@ -638,10 +638,17 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 + (instancetype)activeKeyboard;
 @end
 
+@interface YTIChipCloudChipRenderer : GPBMessage
+@end
+
 @interface YTChipCloudChipView : UIControl
+@property (nonatomic, strong, readwrite) YTIChipCloudChipRenderer *renderer;
 @end
 
 @interface YTPlaybackButton : UIControl
+@end
+
+@interface YTPausedStateCarouselView : UIView
 @end
 
 @interface UIPredictionViewController : UIViewController // Keyboard with enabled predictions panel
@@ -863,8 +870,8 @@ typedef NS_ENUM(NSInteger, SBSegmentAction) {
 + (void)submitSegmentForVideoID:(NSString *)videoID category:(NSString *)category start:(float)start end:(float)end duration:(float)duration completion:(void (^)(BOOL success, NSString *errorMessage))completion;
 @end
 
-// Engagement panel pieces used to host YMSBCardViewController (SponsorBlockMenu.x).
-// Protobuf fields resolve at runtime, so these are only declarations.
+// Engagement panel pieces hosting YMSBCardViewController (SponsorBlockMenu.x).
+// Protobuf fields resolve at runtime — declarations only.
 @interface YTIEngagementPanelTitleHeaderRenderer : GPBMessage
 @property (nonatomic, strong) YTIFormattedString *title;
 @end
@@ -901,8 +908,8 @@ typedef NS_ENUM(NSInteger, SBSegmentAction) {
 @property (nonatomic, assign, readonly) YTPlayerViewController *player;
 @end
 
-// Overlay window/view that only take touches landing on their subviews; empty
-// areas fall through to YouTube's window underneath (SponsorBlock.x).
+// Overlay window/view taking touches only on their subviews; empty areas fall
+// through to YouTube's window underneath (SponsorBlock.x).
 @interface SBPassthroughView : UIView
 @end
 @interface SBPassthroughWindow : UIWindow
@@ -925,10 +932,9 @@ extern void sbSetPublicUserIDManual(NSString *userID);
 extern void YMSBPresentWhitelistManager(void);
 extern YTPlayerViewController *YouModCurrentPlayerViewController;
 
-// Form-sheet card dialog of our own (UIModalPresentationFormSheet inside a
-// UINavigationController), used for segment voting, whitelist and user-ID
-// editing. Rows are plain table items; set swipeToDelete + onDeleteItem to get
-// swipe-left delete rows, searchBar to filter items by title/subtitle text.
+// Form-sheet card dialog (UIModalPresentationFormSheet + UINavigationController)
+// for segment voting, whitelist and user-ID editing. Rows are plain table items;
+// swipeToDelete + onDeleteItem add swipe-left delete, searchBar filters rows.
 @class YMSBCardViewController;
 @interface YMSBCardItem : NSObject
 @property (nonatomic, strong) UIImage *image;
@@ -956,25 +962,22 @@ extern YTPlayerViewController *YouModCurrentPlayerViewController;
 + (void)presentCardInEngagementPanel:(YMSBCardViewController *)card fromResponder:(id)responder; // YouTube engagement panel
 @end
 
-// The ordered set of SponsorBlock categories YouMod supports. Both the core
-// (segment fetching / skipping) and the settings UI read from this single list,
-// so a category can never be fetchable without a control, or configurable
-// without being fetched.
+// SponsorBlock categories YouMod supports — one list shared by the core
+// (fetch/skip) and the settings UI, so both always agree on the categories.
 extern NSArray<NSString *> *sbAllCategories(void);
 extern UIColor *SBColorFromHex(NSString *hexString);
 
-// Supported range and default for the skip/unskip banner duration (seconds).
-// The settings sliders expose this range and the core clamps stored values to
-// it, so both read from one source and can never drift out of agreement.
+// Skip/unskip banner duration range and default (seconds) — shared by the
+// settings sliders and the core's clamp so they can't drift apart.
 static const CGFloat SBAlertDurationMin = 2.0;
 static const CGFloat SBAlertDurationMax = 20.0;
 static const CGFloat SBAlertDurationDefault = 4.0;
 
 #pragma mark - Custom Overlay Button Registry
 
-// A registered button shown in the player's controls overlay (top-right, under
-// YouTube's settings gear). Features register a spec from their own %ctor; the
-// single YTMainAppControlsOverlayView hook in OverlayButtons.x lays them all out.
+// A button registered into the player's controls overlay (top-right, under
+// YouTube's gear). Features register a spec from their %ctor; OverlayButtons.x
+// lays them all out.
 @interface YMOverlayButtonSpec : NSObject
 @property (nonatomic, copy) NSString *identifier;       // unique, e.g. @"sponsorblock.toggle"
 @property (nonatomic, copy) NSString *symbolName;       // SF Symbol name (icon button)
@@ -994,15 +997,144 @@ extern BOOL YMIsOverlayButtonEnabled(NSString *identifier);
 extern BOOL YMIsOverlayButtonBottom(NSString *identifier);
 extern void YMPushOverlayButtonOrder(id settingsVC, id parentResponder);
 
+#pragma mark - YouMod Settings Framework (YouModSettings.x)
+
+typedef NS_ENUM(NSInteger, YMRowType) {
+    YMRowTypeToggle = 0,
+    YMRowTypePicker,
+    YMRowTypeAction,
+    YMRowTypeHeader,
+    YMRowTypeSegment,
+    YMRowTypeTextSegment,
+    YMRowTypeImageSegment,
+    YMRowTypeSlider,
+    YMRowTypeDeveloper
+};
+
+typedef NS_ENUM(NSInteger, YMVisibilityOperator) {
+    YMVisibilityOperatorBoolEquals = 0,
+    YMVisibilityOperatorIntEquals,
+    YMVisibilityOperatorIntNotEquals,
+    YMVisibilityOperatorIntGreaterThan,
+    YMVisibilityOperatorIntGreaterThanOrEqual,
+    YMVisibilityOperatorIntLessThan,
+    YMVisibilityOperatorIntLessThanOrEqual,
+    YMVisibilityOperatorIntInValues,
+    YMVisibilityOperatorIntNotInValues,
+    YMVisibilityOperatorCustomBlock
+};
+
+@interface YMVisibilityCondition : NSObject
+@property (nonatomic, copy) NSString *key;
+@property (nonatomic, assign) YMVisibilityOperator op;
+@property (nonatomic, assign) BOOL boolValue;
+@property (nonatomic, assign) NSInteger intValue;
+@property (nonatomic, strong) NSArray<NSNumber *> *intValues;
+@property (nonatomic, copy) BOOL (^customBlock)(NSUserDefaults *defaults);
+
++ (instancetype)conditionWithBoolKey:(NSString *)key equals:(BOOL)value;
++ (instancetype)conditionWithKey:(NSString *)key intOperator:(YMVisibilityOperator)op value:(NSInteger)value;
++ (instancetype)conditionWithKey:(NSString *)key inValues:(NSArray<NSNumber *> *)values;
++ (instancetype)conditionWithKey:(NSString *)key notInValues:(NSArray<NSNumber *> *)values;
++ (instancetype)conditionWithBlock:(BOOL (^)(NSUserDefaults *defaults))block;
+
+- (BOOL)evaluateWithDefaults:(NSUserDefaults *)defaults;
+@end
+
+@interface YMSettingsItem : NSObject
+@property (nonatomic, assign) YMRowType type;
+@property (nonatomic, strong) NSString *title;
+@property (nonatomic, strong) NSString *subtitle;
+@property (nonatomic, strong) NSString *key;
+@property (nonatomic, strong) NSArray<NSString *> *pickerOptions;
+@property (nonatomic, assign) NSInteger pickerDefault;
+@property (nonatomic, copy) void (^action)(UIViewController *vc);
+@property (nonatomic, assign) BOOL opensPage; // YES -> row pushes another page, gets a disclosure chevron
+@property (nonatomic, assign) NSInteger iconType; // YT icon (YTIIcon type) shown leading; 0 = no icon
+@property (nonatomic, strong) NSArray<NSNumber *> *segmentIcons;
+@property (nonatomic, strong) NSArray<NSString *> *segmentLabels;
+@property (nonatomic, strong) NSArray<UIImage *> *segmentImages;
+@property (nonatomic, assign) float sliderMin;
+@property (nonatomic, assign) float sliderMax;
+@property (nonatomic, assign) float sliderStep;
+@property (nonatomic, assign) float sliderDefault;
+// Developer row: circular GitHub avatar + name + role; tap opens profileURL,
+// avatarURL (github.com/<user>.png) is fetched async and cached.
+@property (nonatomic, strong) NSString *profileURL;
+@property (nonatomic, strong) NSString *avatarURL;
+
+// Visibility predicates: all must match (AND), or any when matchAnyCondition is YES (OR).
+@property (nonatomic, strong) NSMutableArray<YMVisibilityCondition *> *visibilityConditions;
+@property (nonatomic, assign) BOOL matchAnyCondition;
+
++ (instancetype)toggleWithTitle:(NSString *)title subtitle:(NSString *)subtitle key:(NSString *)key;
++ (instancetype)sliderWithTitle:(NSString *)title subtitle:(NSString *)subtitle key:(NSString *)key min:(float)min max:(float)max step:(float)step defaultValue:(float)defaultValue;
++ (instancetype)pickerWithTitle:(NSString *)title subtitle:(NSString *)subtitle key:(NSString *)key options:(NSArray<NSString *> *)options defaultValue:(NSInteger)defaultValue;
++ (instancetype)actionWithTitle:(NSString *)title subtitle:(NSString *)subtitle action:(void (^)(UIViewController *vc))action;
++ (instancetype)navActionWithTitle:(NSString *)title subtitle:(NSString *)subtitle action:(void (^)(UIViewController *vc))action;
++ (instancetype)headerWithTitle:(NSString *)title;
++ (instancetype)segmentWithTitle:(NSString *)title key:(NSString *)key icons:(NSArray<NSNumber *> *)icons defaultValue:(NSInteger)defaultValue;
++ (instancetype)textSegmentWithTitle:(NSString *)title key:(NSString *)key labels:(NSArray<NSString *> *)labels defaultValue:(NSInteger)defaultValue;
++ (instancetype)imageSegmentWithTitle:(NSString *)title key:(NSString *)key images:(NSArray<UIImage *> *)images defaultValue:(NSInteger)defaultValue;
++ (instancetype)developerWithName:(NSString *)name role:(NSString *)role profileURL:(NSString *)profileURL avatarURL:(NSString *)avatarURL;
+
+// Chainable row styling
+- (instancetype)withIconType:(NSInteger)iconType;
+
+// Evaluation
+- (BOOL)isVisible;
+- (BOOL)isVisibleWithDefaults:(NSUserDefaults *)defaults;
+
+// Integer conditions (chainable)
+- (instancetype)visibleWhenKey:(NSString *)key equals:(NSInteger)value;
+- (instancetype)visibleWhenKey:(NSString *)key isNotEqualTo:(NSInteger)value;
+- (instancetype)visibleWhenKey:(NSString *)key isGreaterThan:(NSInteger)value;
+- (instancetype)visibleWhenKey:(NSString *)key isGreaterThanOrEqualTo:(NSInteger)value;
+- (instancetype)visibleWhenKey:(NSString *)key isLessThan:(NSInteger)value;
+- (instancetype)visibleWhenKey:(NSString *)key isLessThanOrEqualTo:(NSInteger)value;
+- (instancetype)visibleWhenKey:(NSString *)key inValues:(NSArray<NSNumber *> *)values;
+- (instancetype)visibleWhenKey:(NSString *)key notInValues:(NSArray<NSNumber *> *)values;
+- (instancetype)visibleWhenKeyDictionary:(NSDictionary<NSString *, NSNumber *> *)keyValues;
+
+// Boolean conditions (chainable)
+- (instancetype)visibleWhenBoolKey:(NSString *)key equals:(BOOL)value;
+- (instancetype)visibleWhenBoolKey:(NSString *)key;
+- (instancetype)visibleWhenBoolKeys:(NSArray<NSString *> *)keys;
+- (instancetype)visibleWhenBoolKeys:(NSArray<NSString *> *)keys allEqualTo:(BOOL)value;
+- (instancetype)visibleWhenAnyBoolKey:(NSArray<NSString *> *)keys;
+- (instancetype)visibleWhenBoolDictionary:(NSDictionary<NSString *, NSNumber *> *)keyValues;
+
+// Block / Custom conditions & modifier
+- (instancetype)visibleWhen:(BOOL (^)(NSUserDefaults *defaults))block;
+- (instancetype)requireAnyCondition;
+@end
+
+// Page pushes and item factories (defined in YouModSettings.x)
+extern void YMPushSubSettings(NSString *title, NSArray<YMSettingsItem *> *items, id settingsVC, id parentResponder);
+extern void YMPushSubSettingsWithFooter(NSString *title, NSArray<YMSettingsItem *> *items, id settingsVC, id parentResponder);
+extern YMSettingsItem *YMToggle(NSString *title, NSString *subtitle, NSString *key);
+extern YMSettingsItem *YMSlider(NSString *title, NSString *subtitle, NSString *key, float min, float max, float step, float defaultValue);
+extern YMSettingsItem *YMPicker(NSString *title, NSString *subtitle, NSString *key, NSArray<NSString *> *options, NSInteger defaultValue);
+extern YMSettingsItem *YMAction(NSString *title, NSString *subtitle, void (^action)(UIViewController *vc));
+extern YMSettingsItem *YMNavAction(NSString *title, NSString *subtitle, void (^action)(UIViewController *vc));
+extern YMSettingsItem *YMHeader(NSString *title);
+extern YMSettingsItem *YMSegment(NSString *title, NSString *key, NSArray<NSNumber *> *icons, NSInteger defaultValue);
+extern YMSettingsItem *YMTextSegment(NSString *title, NSString *key, NSArray<NSString *> *labels, NSInteger defaultValue);
+extern YMSettingsItem *YMImageSegment(NSString *title, NSString *key, NSArray<UIImage *> *images, NSInteger defaultValue);
+extern YMSettingsItem *YMDeveloper(NSString *name, NSString *role, NSString *profileURL, NSString *avatarBaseURL);
+extern void YMPushTabOrder(id settingsVC, id parentResponder);
+extern void YMRegisterSettingsGroup(NSString *title, NSArray<YMSettingsItem *> *items);
+extern void YMPushSponsorBlockSettings(id settingsVC);
+
+@interface YTSettingsSectionItemManager (YouMod)
+- (void)updateYouModSectionWithEntry:(id)entry;
+@end
+
 #pragma mark - Settings Search
 
-// One row in the global settings-search results. A row renders its own cell and
-// (optionally) handles its own tap, so a single results table can host cells from
-// different settings pages (the generic YouMod pages and SponsorBlock) without the
-// search controller knowing how any of them are built. searchText is what the query
-// is matched against (title + description). makeCell builds the live, editable
-// control; onSelect handles taps that need to present UI (e.g. the colour picker),
-// receiving the presenting VC and a reload block to refresh the results.
+// One row in the global settings-search results: renders its own cell (makeCell)
+// and optionally handles its own tap (onSelect, with a reload block). searchText
+// is what the query matches against (title + description).
 @interface YMSearchRow : NSObject
 @property (nonatomic, copy) NSString *searchText;
 @property (nonatomic, copy) UITableViewCell *(^makeCell)(UITableView *tableView);
@@ -1010,11 +1142,9 @@ extern void YMPushOverlayButtonOrder(id settingsVC, id parentResponder);
 @property (nonatomic, copy) void (^onSelect)(UIViewController *presenter, void (^reload)(void));
 @end
 
-// SponsorBlock's searchable rows (toggles, sliders, per-category action pickers and
-// colour circles), rendered by SponsorBlock's own cell builders so its settings are
-// editable inline in the global search. host adopts the rendering VC as a child so
-// the cells inherit the correct trait collection (light/dark). Defined in
-// SponsorBlockSettings.x; consumed by the search VC in YouModSettings.x.
+// SponsorBlock's searchable rows, rendered by its own cell builders so its
+// settings are editable inline in search. host adopts the rendering VC as a child
+// for correct light/dark traits. Defined in SponsorBlockSettings.x.
 extern NSArray<YMSearchRow *> *sbSearchRows(UIViewController *host);
 
 extern NSBundle *YouModBundle();
@@ -1239,14 +1369,12 @@ typedef NS_ENUM(NSInteger, YouModTranslationState) {
 @property (nonatomic, strong) UIView *containerView;
 @end
 
-// On-device SABR downloader (SABRDownload.x). Produces two elementary files (video
-// mp4 + audio m4a) for the existing muxer; progress/completion on the main queue.
+// On-device SABR downloader (SABRDownload.x): produces video mp4 + audio m4a for
+// the existing muxer; progress/completion on the main queue.
 //
-// Every language dub of a video shares ONE audio itag (140) and differs only in the
-// SABR FormatId's xtags, so an itag alone cannot name a soundtrack. `audioStream` is
-// the picked audio format straight out of the player response — the engine reads the
-// track identity off it and matches the corresponding entry in the captured
-// available-format list. Pass nil for "no preference" (first matching format).
+// audioStream is the picked audio format from the player response. Language dubs
+// share one itag (140) and differ only in the FormatId's xtags, so the track
+// identity is read from this format (nil = no preference, first match wins).
 @interface YMSABR : NSObject
 + (void)downloadVideoItag:(int)videoItag audioItag:(int)audioItag audioStream:(YTIFormatStream *)audioStream
                  progress:(void (^)(float fraction, unsigned long long bytesDownloaded, BOOL isAudio))progress
@@ -1258,7 +1386,7 @@ typedef NS_ENUM(NSInteger, YouModTranslationState) {
 @end
 
 // _ASDisplayView/YTELMViewController centralized helpers
-extern UIColor *YouModApplyOLEDToDisplayView(_ASDisplayView *view, NSString *iden, UIColor *color);
+extern void YouModApplyOLEDToDisplayView(_ASDisplayView *view, NSString *iden);
 extern void YouModFilterAdsDisplayView(_ASDisplayView *view, NSString *iden);
 extern void YouModConfigureDownloadButton(_ASDisplayView *view, NSString *iden);
 extern void YouModSetupDownloadGestures(_ASDisplayView *view, NSString *iden);
@@ -1268,7 +1396,7 @@ extern void YouModHandleDownloadButtonAction(_ASDisplayView *view);
 extern void YouModFilterVideoButtons(_ASDisplayView *view, NSString *iden);
 extern void YouModFilterShortsDisplayView(_ASDisplayView *view, NSString *iden);
 extern void YouModRemoveShortsPausedButtons(_ASDisplayView *view, NSString *iden);
-extern UIColor *YouModApplyOLEDCollectionView(ASCollectionView *self, NSString *iden, UIColor *color);
+extern void YouModApplyOLEDCollectionView(ASCollectionView *view, NSString *iden);
 extern void YouModRemoveDrawerAds(YTELMViewController *self);
 extern void YouModRemoveFullscreenActionsButtons(YTELMViewController *controller);
 extern void YouModApplyLiquidGlassToView(UIView *view, BOOL arg);

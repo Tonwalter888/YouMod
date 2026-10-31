@@ -27,9 +27,7 @@ static NSString *getPostString(NSString *description) {
             @"videos_post_root.eml"
         ];
     });
-    for (NSString *str in postStrings) {
-        if ([description containsString:str]) return str;
-    }
+    for (NSString *str in postStrings) if ([description containsString:str]) return str;
     return nil;
 }
 
@@ -63,14 +61,12 @@ static NSString *getAdString(NSString *description) {
             @"video_display_full_buttoned_layout"
         ];
     });
-    for (NSString *str in adStrings) {
-        if ([description containsString:str]) return str;
-    }
+    for (NSString *str in adStrings) if ([description containsString:str]) return str;
     return nil;
 }
 
-static BOOL isAdRenderer(YTIElementRenderer *elementRenderer, int kind) {
-    if (elementRenderer.hasCompatibilityOptions && elementRenderer.compatibilityOptions.hasAdLoggingData) return YES;
+static BOOL isAdRenderer(YTIElementRenderer *elementRenderer) {
+    if (elementRenderer.compatibilityOptions.hasAdLoggingData) return YES;
     NSString *description = [elementRenderer description];
     NSString *adString = getAdString(description);
     if (adString) return YES;
@@ -115,7 +111,7 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
             if (itemsArray.count > 0) {
                 NSIndexSet *removeItemsArrayIndexes = [itemsArray indexesOfObjectsPassingTest:^BOOL(YTIHorizontalListSupportedRenderers *horizontalListSupportedRenderers, NSUInteger idx2, BOOL *stop2) {
                     YTIElementRenderer *elementRenderer = horizontalListSupportedRenderers.elementRenderer;
-                    return isAdRenderer(elementRenderer, 4);
+                    return isAdRenderer(elementRenderer);
                 }];
                 [itemsArray removeObjectsAtIndexes:removeItemsArrayIndexes];
             }
@@ -181,13 +177,13 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
             if (contentsArray.count > 1) {
                 NSIndexSet *removeContentsArrayIndexes = [contentsArray indexesOfObjectsPassingTest:^BOOL(YTIItemSectionSupportedRenderers *sectionSupportedRenderers, NSUInteger idx2, BOOL *stop2) {
                     YTIElementRenderer *elementRenderer = sectionSupportedRenderers.elementRenderer;
-                    return isAdRenderer(elementRenderer, 3);
+                    return isAdRenderer(elementRenderer);
                 }];
                 [contentsArray removeObjectsAtIndexes:removeContentsArrayIndexes];
             }
             YTIItemSectionSupportedRenderers *firstObject = [contentsArray firstObject];
             YTIElementRenderer *elementRenderer = firstObject.elementRenderer;
-            if (isAdRenderer(elementRenderer, 2)) return YES;
+            if (isAdRenderer(elementRenderer)) return YES;
 
             objc_setAssociatedObject(sectionRenderer, kFilteredSectionKey, @YES, OBJC_ASSOCIATION_ASSIGN);
             return NO;
@@ -200,7 +196,7 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
     return newArray;
 }
 
-// Filer new ads
+// Filter new ads
 %hook YTIElementRenderer
 - (NSData *)elementData {
     if (self.compatibilityOptions.hasAdLoggingData) return nil;
@@ -231,17 +227,11 @@ static NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItem
 %end
 
 %hook YTAdsInnerTubeContextDecorator
-- (void)decorateContext:(id)context { 
-    context = nil;
-    %orig(context);
-}
+- (void)decorateContext:(id)context { %orig(nil); }
 %end
 
 %hook YTAccountScopedAdsInnerTubeContextDecorator
-- (void)decorateContext:(id)context { 
-    context = nil;
-    %orig(context);
-}
+- (void)decorateContext:(id)context { %orig(nil); }
 %end
 
 %hook YTLocalPlaybackController
@@ -271,7 +261,7 @@ static BOOL isAdsReelContentModel(YTReelContentModel *model) {
     else if ((((YTReelModel *)model).isLiveVideo || ((YTReelModel *)model).isLivePreviewVideo) && IS_ENABLED(RemoveShortsLive)) return nil;
     return model;
 }
-// setReels: moved here from YTReelInfinitePlaybackDataSource, which is 19.x only.
+// Moved from YTReelInfinitePlaybackDataSource (19.x only).
 - (void)setReels:(NSMutableOrderedSet <YTReelContentModel *> *)reels {
     [reels removeObjectsAtIndexes:[reels indexesOfObjectsPassingTest:^BOOL(YTReelContentModel *obj, NSUInteger idx, BOOL *stop) {
         if (isAdsReelContentModel(obj)) return YES;

@@ -1,8 +1,6 @@
 #import "Headers.h"
 
-// Range segments render as a filled bar at least this wide so very short segments
-// stay visible. Point segments (poi_highlight) have no duration, so they render as
-// a fixed-width tick centered on their position via the x-offset.
+// Min width keeps short range segments visible; poi_highlight points render as a fixed-width tick.
 static const CGFloat SBMarkerMinWidth = 2.0;
 static const CGFloat SBPoiMarkerWidth = 3.0;
 static const CGFloat SBPoiMarkerXOffset = 1.5;
@@ -11,17 +9,13 @@ static const CGFloat SBPoiMarkerXOffset = 1.5;
 
 static NSString *const SBSegmentMarkerLayerName = @"SBSegmentMarkerLayer";
 
-// Each bar view carries its own segment data as associated objects, stamped by
-// its player's sbRefreshMarkers. There is deliberately no process-wide segment
-// list: several players exist at once (main player + one per feed cell), and a
-// shared list made one player's segments bleed onto another's bar.
+// Each bar view carries its own segments as associated objects (stamped by sbRefreshMarkers);
+// a shared list would bleed one player's segments onto another player's bar.
 static const NSInteger SBMarkerContextPlayer = 1;
 static const NSInteger SBMarkerContextFeed = 2;
 static const NSInteger SBMarkerContextMiniplayer = 3;
 
-// Master switches for a bar context; the decoration rebuild and the bar hooks
-// gate every pass through these so toggling a setting is reflected on the very
-// next layout tick.
+// Master switch per bar context; checked on every layout so setting toggles apply immediately.
 static BOOL SBMarkersEnabledForContext(NSInteger context) {
     if (!IS_ENABLED(SBEnabled) || !IS_ENABLED(SBButtonKey)) return NO;
     if (context == SBMarkerContextPlayer) return IS_ENABLED(SBSegmentsInPlayer);
@@ -161,23 +155,20 @@ static void SBRebuildMarkersInLayer(CALayer *hostLayer, NSArray<SBSegment *> *se
 }
 
 static void SBRebuildMarkersInDecorationView(UIView *view) {
-    // Stamps live on the bar view, not on the decoration view: YouTube swaps
-    // decoration subviews as the bar changes state, and a fresh view reads the
-    // same stamps instead of starting blank until the next refresh.
+    // Stamps live on the bar view: YouTube swaps decoration subviews, and a fresh view reads the same stamps.
     UIView *barView = view.superview;
     if (![barView isKindOfClass:%c(YTModularPlayerBarView)]) return;
 
     NSArray<SBSegment *> *segments = objc_getAssociatedObject(barView, @selector(sbSegmentsForView));
     NSInteger context = [objc_getAssociatedObject(barView, @selector(sbMarkerContextForView)) integerValue];
 
-    // Disabled or segment-less: clearing is the outcome the user asked for.
+    // Disabled or no segments: remove existing markers.
     if (!SBMarkersEnabledForContext(context) || segments.count == 0) {
         SBRemoveMarkerContainerFromLayer(view.layer);
         return;
     }
 
-    // Transient states (model not ready, mid-layout zero size): keep the old
-    // container so nothing blinks; the next tick rebuilds.
+    // Transient states (model not ready, zero size): keep the old container to avoid blinking.
     CGFloat start = 0.0, end = 0.0;
     if (!SBGetDecorationViewTimeRange(view, &start, &end)) return;
     CGFloat barHeight = view.bounds.size.height;
@@ -207,9 +198,7 @@ static void SBRebuildMarkersInDecorationView(UIView *view) {
 }
 %end
 
-// Bars without a decoration view (miniplayer, legacy feed slider) carry their
-// markers directly on their own layer: layout repositions them, and a disabled
-// toggle strips them on the spot.
+// Bars without a decoration view (miniplayer, legacy feed slider) carry markers on their own layer.
 %hook YTWatchFloatingMiniplayerProgressBarView
 - (void)layoutSubviews {
     %orig;
@@ -256,10 +245,7 @@ static void SBRebuildMarkersInDecorationView(UIView *view) {
     [self sbRefreshMarkers:notification.userInfo[@"segments"]];
 }
 %new
-// Stamps each bar with its own segments (associated objects) and rebuilds it
-// once; the layout hooks keep the bars correct from there. An empty list is a
-// clearing pass — every path still runs, so stale markers never survive a
-// video change.
+// Stamps each bar with its segments (associated objects) and rebuilds once; an empty list clears stale markers.
 - (void)sbRefreshMarkers:(NSArray<SBSegment *> *)segments {
     if (!IS_ENABLED(SBEnabled) || !IS_ENABLED(SBButtonKey)) return;
     if (!segments) segments = self.sbSegments;

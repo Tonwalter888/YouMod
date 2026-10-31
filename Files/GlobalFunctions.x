@@ -23,9 +23,8 @@ UIImage *YouModYTIconImage(NSInteger iconType, BOOL useCustomColor, UIColor *cus
     return [[icon iconImageWithColor:targetColor] imageWithTintColor:targetColor];
 }
 
-// Render an SF Symbol into an exact square canvas (aspect-fit, centered), so
-// every icon box is identical regardless of the symbol's natural proportions.
-// The result keeps template rendering, so callers can tint it afterwards.
+// Render an SF Symbol into an exact square canvas (aspect-fit, centered) so icon
+// boxes match; result stays template-rendered for later tinting.
 UIImage *YouModSymbolImageInCanvas(NSString *symbolName, CGFloat canvasSize, CGFloat pointSize, UIImageSymbolWeight weight) {
     UIImageSymbolConfiguration *config = [UIImageSymbolConfiguration configurationWithPointSize:pointSize weight:weight];
     UIImage *symbol = [UIImage systemImageNamed:symbolName withConfiguration:config];

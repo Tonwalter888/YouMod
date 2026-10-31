@@ -126,9 +126,8 @@ BOOL YMIsOverlayButtonEnabled(NSString *identifier) {
     return YES;
 }
 
-// Whether a button is placed in the bottom bar (YTInlinePlayerBarContainerView)
-// instead of the top overlay row. Persisted per-entry as "bottom" in the
-// OverlayButtonOrder prefs array; defaults to NO (top row).
+// Whether a button goes in the bottom bar (YTInlinePlayerBarContainerView) instead of the top
+// overlay row. Persisted as "bottom" in the OverlayButtonOrder prefs array; defaults to NO.
 BOOL YMIsOverlayButtonBottom(NSString *identifier) {
     if (!identifier || identifier.length == 0) return NO;
     NSArray *savedOrder = [[NSUserDefaults standardUserDefaults] arrayForKey:OverlayButtonOrder];
@@ -201,11 +200,9 @@ static void YMScanForGearFrame(UIView *view, YTMainAppControlsOverlayView *overl
     for (UIView *sub in view.subviews) {
         if ([sub isKindOfClass:%c(YTQTMButton)]) {
             CGRect f = [sub convertRect:sub.bounds toView:overlay];
-            // Zero-size frames show up transiently while the overlay is
-            // animating; anchoring to one parks the row at a garbage spot.
+            // Skip transient zero-size frames from the overlay animation.
             if (!CGRectIsEmpty(f) && CGRectGetMidY(f) <= topRegionMaxY) { // in the top button row
-                // The CGRectIsNull check must stay first: CGRectGetMidX(CGRectNull) is
-                // infinite, so the > comparison alone would never accept the first match.
+                // CGRectNull's midX is infinite, so the null check must come first.
                 if (CGRectIsNull(*bestFrame) || CGRectGetMidX(f) > CGRectGetMidX(*bestFrame)) *bestFrame = f;
             }
         }
@@ -358,7 +355,10 @@ static BOOL isRelatedVideosExpanded = NO;
     %orig;
     for (YMOverlayButtonSpec *spec in YMRegisteredOverlayButtons()) {
         YTQTMButton *btn = (YTQTMButton *)[self viewWithTag:spec.viewTag];
-        if (btn) btn.alpha = visible && !isRelatedVideosExpanded;
+        if (btn) {
+            btn.alpha = visible && !isRelatedVideosExpanded;
+            btn.hidden = !(visible && !isRelatedVideosExpanded);
+        }
     }
 }
 %new
@@ -469,9 +469,8 @@ static void maybeApplyFrostedGlassToView(YTFrostedGlassView *frostedGlassView, U
     if ([frostedGlassView respondsToSelector:@selector(maybeApplyToView:)]) [frostedGlassView maybeApplyToView:view];
 }
 
-// Creates (once) and maintains a frosted-glass pill sized to the union of the
-// bottom overlay buttons. Kept below the buttons in the subview order so the
-// icons draw on top; removed entirely when there is nothing to cover.
+// Maintains a frosted-glass pill sized to the union of the bottom overlay buttons, kept below
+// them so icons draw on top; removed entirely when there is nothing to cover.
 static void YMFrostedBackgroundUpdate(YTInlinePlayerBarContainerView *self_, NSArray<UIView *> *buttons) {
     UIView *background = [self_ viewWithTag:YMFrostedBackgroundTag];
     if (buttons.count == 0) {
@@ -491,9 +490,7 @@ static void YMFrostedBackgroundUpdate(YTInlinePlayerBarContainerView *self_, NSA
         background.userInteractionEnabled = NO; // taps fall through to the player
         background.clipsToBounds = YES;
         maybeApplyFrostedGlassToView(nil, background);
-        // The blur/overlay layers YTFrostedGlassView attaches must track the
-        // pill's frame on every relayout, since only this pill (not the frosted
-        // view itself) stays in the hierarchy.
+        // The blur/overlay layers must track the pill's frame on every relayout.
         for (UIView *sub in background.subviews) {
             sub.frame = background.bounds;
             sub.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
@@ -505,6 +502,27 @@ static void YMFrostedBackgroundUpdate(YTInlinePlayerBarContainerView *self_, NSA
         background.layer.cornerRadius = CGRectGetHeight(unionFrame) / 2.0;
     }
     background.alpha = ((UIView *)buttons.firstObject).alpha;
+}
+
+// Sync YouMod's bottom-row buttons with the inline bar's visibility changes:
+// reveal after YT hides the bar's icons, fade with the scrubber/peekable state.
+static void YMRevealBottomOverlayButtons(YTInlinePlayerBarContainerView *view) {
+    for (YMOverlayButtonSpec *spec in YMRegisteredOverlayButtons()) {
+        if (!YMIsOverlayButtonBottom(spec.identifier)) continue;
+        YTQTMButton *btn = (YTQTMButton *)[view viewWithTag:spec.viewTag];
+        if (![btn isKindOfClass:%c(YTQTMButton)]) continue;
+        btn.hidden = NO;
+        if (spec.symbolName.length > 0) setOverlayButtonIcon(btn, spec.symbolName);
+    }
+}
+
+static void YMSetBottomOverlayButtonsAlpha(YTInlinePlayerBarContainerView *view, CGFloat alpha) {
+    for (YMOverlayButtonSpec *spec in YMRegisteredOverlayButtons()) {
+        if (!YMIsOverlayButtonBottom(spec.identifier)) continue;
+        UIView *btn = [view viewWithTag:spec.viewTag];
+        if ([btn isKindOfClass:%c(YTQTMButton)]) btn.alpha = alpha;
+    }
+    [[view viewWithTag:YMFrostedBackgroundTag] setAlpha:alpha];
 }
 
 %hook YTInlinePlayerBarContainerView
@@ -590,12 +608,32 @@ static void YMFrostedBackgroundUpdate(YTInlinePlayerBarContainerView *self_, NSA
 }
 - (void)setPeekableViewVisible:(BOOL)visible {
     %orig;
-    if (![self._viewControllerForAncestor isKindOfClass:%c(YTMainAppVideoPlayerOverlayViewController)]) return;
-    for (YMOverlayButtonSpec *spec in YMRegisteredOverlayButtons()) {
-        UIView *btn = [self viewWithTag:spec.viewTag];
-        if ([btn isKindOfClass:%c(YTQTMButton)]) btn.alpha = visible;
-    }
-    [[self viewWithTag:YMFrostedBackgroundTag] setAlpha:visible];
+    YMSetBottomOverlayButtonsAlpha(self, visible);
+}
+// Reveal after YT hides the bar's icons; fade with the scrubber/peekable state.
+- (void)updateIconVisibilityAndLayout {
+    %orig;
+    YMRevealBottomOverlayButtons(self);
+}
+- (void)updateIconVisibility {
+    %orig;
+    YMRevealBottomOverlayButtons(self);
+}
+- (void)updateIconsHiddenAttribute {
+    %orig;
+    YMRevealBottomOverlayButtons(self);
+}
+- (void)hideScrubber {
+    %orig;
+    YMSetBottomOverlayButtonsAlpha(self, 0);
+}
+- (void)setPeekableViewVisible:(BOOL)visible fullscreenButtonVisibleShouldMatchPeekableView:(BOOL)match {
+    %orig;
+    YMSetBottomOverlayButtonsAlpha(self, visible);
+}
+- (void)peekWithShowScrubber:(BOOL)scrubber setControlsAbovePlayerBarVisible:(BOOL)visible {
+    %orig;
+    YMSetBottomOverlayButtonsAlpha(self, visible);
 }
 %new
 - (void)ymOverlayButtonTapped:(YTQTMButton *)sender {

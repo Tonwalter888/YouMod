@@ -4,9 +4,8 @@
 
 #define SABR_ENABLED() 1
 
-// Serial queue guarding all shared engine state (capture globals, per-download
-// bookkeeping). Capture hooks and network completions fire on arbitrary threads and
-// hop here before touching shared state.
+// Serial queue guarding all shared engine state; capture hooks and network
+// completions hop here before touching shared state.
 static dispatch_queue_t SABRQueue(void) {
     static dispatch_queue_t q; static dispatch_once_t o;
     dispatch_once(&o, ^{ q = dispatch_queue_create("youmod.sabr", DISPATCH_QUEUE_SERIAL); });
@@ -44,9 +43,8 @@ typedef NS_ENUM(NSInteger, SABRPartType) {
 // SABR_REDIRECT (part 43) payload: #1 = the replacement videoplayback URL (string).
 static const uint64_t kSABRRedirectURL = 1;
 
-// Parse a UMP stream, invoking `handler` per part with (type, payload). Returns
-// bytes consumed. Payload for MEDIA parts still includes the leading headerId
-// varint (caller strips it).
+// Parse a UMP stream, calling `handler` per part (type, payload). Returns bytes
+// consumed. MEDIA payloads still include the leading headerId varint.
 static NSUInteger SABRParseUMP(NSData *data, void (^handler)(uint64_t type, const uint8_t *payload, NSUInteger size)) {
     const uint8_t *b = (const uint8_t *)data.bytes; NSUInteger len = data.length, pos = 0;
     while (pos < len) {
@@ -96,8 +94,8 @@ static const uint64_t kSABRTimeRangeDur   = 2;
 static const uint64_t kSABRTimeRangeScale = 3;
 static const uint64_t kSABRMsPerSecond    = 1000; // ms timebase (also the timescale we emit)
 
-// MediaHeader (UMP part 20) fields. On 21.29 the scalar start/duration (#11/#12) are
-// absent and their values come from the #15 TimeRange instead.
+// MediaHeader (UMP part 20) fields. On 21.29+ start/duration come from the
+// #15 TimeRange instead of scalars #11/#12.
 static const uint64_t kSABRHdrHeaderId      = 1;
 static const uint64_t kSABRHdrItag          = 3;
 static const uint64_t kSABRHdrIsInit        = 8;
@@ -111,16 +109,16 @@ static const uint64_t kSABRTRStartTicks     = 1;
 static const uint64_t kSABRTRDurationTicks  = 2;
 static const uint64_t kSABRTRTimescale      = 3;
 
-// FormatInitializationMetadata (UMP part 42) — a track's total length. #1 is the
-// video_id string; the FormatId is at #2.
+// FormatInitializationMetadata (UMP part 42): a track's total length.
+// #1 = video_id string, #2 = FormatId.
 static const uint64_t kSABRInitFormatId     = 2; // FormatId { itag, lastModified, xtags }
 static const uint64_t kSABRInitEndTimeMs    = 3; // total duration ms
 static const uint64_t kSABRInitEndSegment   = 4; // last segment index
 
 // Cap on request round-trips per download (safety backstop, never hit in practice).
 static const int kSABRMaxRequests = 400;
-// Bail after this many CONSECUTIVE rounds with no new media (a policy-only round is
-// normal; a run of them means the download is genuinely stuck).
+// Bail after this many consecutive rounds with no new media (a run of
+// policy-only rounds means the download is genuinely stuck).
 static const int kSABRMaxEmptyRounds = 4;
 
 #pragma mark - Protobuf helpers (base-128 varint; distinct from the UMP varint above)
@@ -155,10 +153,9 @@ static void SABRAppendBytesField(NSMutableData *d, uint64_t field, NSData *bytes
     SABRAppendProtoVarint(d, (field << 3) | 2); SABRAppendProtoVarint(d, bytes.length); [d appendData:bytes];
 }
 
-// Walk ONE level of a protobuf message. handler receives each field's number, wire
-// type, the byte span of the whole field (tag..end), and its payload span. Return NO
-// from handler to stop early. Returns YES only if the buffer parsed cleanly
-// end-to-end (a malformed field aborts with NO).
+// Walk ONE level of a protobuf message: handler gets (field number, wire type,
+// whole-field span, payload span) and returns NO to stop early. YES only if the
+// buffer parsed cleanly end-to-end.
 static BOOL SABRIterateTopLevel(NSData *data, BOOL (^handler)(uint64_t field, int wire, NSUInteger fieldStart, NSUInteger fieldEnd, NSUInteger payloadStart, NSUInteger payloadLen)) {
     const uint8_t *b = (const uint8_t *)data.bytes; NSUInteger len = data.length, pos = 0;
     while (pos < len) {
@@ -188,8 +185,8 @@ static BOOL SABRReadVarintField(NSData *msg, uint64_t field, uint64_t *out) {
     return got;
 }
 
-// Return a copy of `msg` with varint `field` set to `value` (replacing an existing
-// one in place, or appended if absent). Non-target fields are copied byte-for-byte.
+// Copy `msg` with varint `field` set to `value` (replaced in place, or appended
+// if absent). Other fields are copied byte-for-byte.
 static NSData *SABRSetVarintField(NSData *msg, uint64_t field, uint64_t value) {
     const uint8_t *b = (const uint8_t *)msg.bytes;
     NSMutableData *out = [NSMutableData data];
@@ -229,17 +226,10 @@ static YMSABRFormat *SABRParseFormatId(NSData *fmt) {
 }
 
 // Resolve a download target for `itag` from the available-format list (#5.#1.#6).
-// Some itags appear more than once — a plain entry plus one or more xtags-tagged
-// variants (distinct formats, not versions): soundtrack language and DRC both live in
-// xtags, so for audio the itag alone does not identify a track.
-//
-// `wantXtags` names one variant exactly, and is the caller's chosen soundtrack. Pass
-// nil/empty for "no preference", which takes the first match and upgrades to an
-// xtags-bearing entry, because that's what the app itself plays (our capture played
-// 251 with xtags).
-//
-// Either way we copy {itag, lastModified, xtags} as one consistent triple, so
-// server-side matching lines up.
+// Itags can repeat as plain + xtags-tagged variants (soundtrack/DRC live in xtags).
+// `wantXtags` names one variant exactly (the picked soundtrack); nil/empty = no
+// preference → first match, upgraded to an xtags-bearing entry (what the app plays).
+// {itag, lastModified, xtags} is copied as one triple so server matching lines up.
 static YMSABRFormat *SABRResolveFormat(NSData *body, uint64_t itag, NSData *wantXtags) {
     YMSABRFormat *result = [YMSABRFormat new];
     BOOL exact = wantXtags.length > 0;
@@ -273,8 +263,8 @@ static YMSABRFormat *SABRResolveFormat(NSData *body, uint64_t itag, NSData *want
     return result;
 }
 
-// Encode a FormatId submessage { #1 itag, #2 lastModified, #3 xtags }. xtags is
-// always emitted (empty string if none) — matches YTKACE / the real client.
+// Encode FormatId { #1 itag, #2 lastModified, #3 xtags }. xtags is always
+// emitted (empty if none) — matches YTKACE / the real client.
 static NSData *SABREncodeFormatId(YMSABRFormat *fmt) {
     NSMutableData *d = [NSMutableData data];
     SABRAppendVarintField(d, kSABRFmtItag, fmt.itag);
@@ -283,10 +273,9 @@ static NSData *SABREncodeFormatId(YMSABRFormat *fmt) {
     return d;
 }
 
-// Encode a BufferedRange reporting the REAL extent just received for a track:
-// segments [startSeg..endSeg] spanning [startMs, startMs+durationMs). Reporting the
-// true extent (not player_time) is essential — overstating it makes the server think
-// the track is fully buffered and stop sending its remaining segments.
+// Encode a BufferedRange with the REAL extent just received: segments
+// [startSeg..endSeg] over [startMs, startMs+durationMs). Overstating it makes the
+// server think the track is fully buffered and stop sending its remaining segments.
 static NSData *SABREncodeBufferedRange(YMSABRFormat *fmt, uint64_t startSeg, uint64_t endSeg, uint64_t startMs, uint64_t durationMs) {
     NSMutableData *tr = [NSMutableData data];
     SABRAppendVarintField(tr, kSABRTimeRangeStart, startMs);
@@ -371,16 +360,16 @@ static void SABRDecodeFormatInit(const uint8_t *payload, NSUInteger size, uint64
 
 #pragma mark - Per-track download state
 
-// Accumulates one track's media (keyed by ITAG, not headerId — the init segment and
-// media segments of a track arrive under different headerIds). Written to `fileURL`.
+// Accumulates one track's media, keyed by ITAG (init and media segments arrive
+// under different headerIds). Written to `fileURL`.
 @interface YMSABRTrack : NSObject
 @property (nonatomic, strong) YMSABRFormat *format;
 @property (nonatomic, strong) NSURL *fileURL;
 @property (nonatomic, strong) NSFileHandle *handle;
 @property (nonatomic, assign) uint64_t downloadedMs;   // real total downloaded duration (sum of segment durations)
 @property (nonatomic, assign) uint64_t lastSequence;   // highest segment index written
-// Per-round window of NEW segments (for the buffered_range we report each round —
-// the reference sends a delta window, not a cumulative 0..N range).
+// Per-round window of NEW segments (the buffered_range we report is a delta
+// window, not a cumulative 0..N range).
 @property (nonatomic, assign) uint64_t roundStartMs;
 @property (nonatomic, assign) uint64_t roundDurationMs;
 @property (nonatomic, assign) uint64_t roundFirstSeq;
@@ -396,11 +385,10 @@ static void SABRDecodeFormatInit(const uint8_t *payload, NSUInteger size, uint64
 
 #pragma mark - Capture layer (permanent): the app's live signed videoplayback request
 
-// Captured request material — tracks the MOST-RECENT videoplayback request, i.e. the
-// currently watched video, so switching videos re-captures the new one. Capturing
-// mid-playback is safe: the engine rebuilds the buffered ranges (#3) and selected
-// formats from scratch and never depends on the captured body's own ranges.
-// Touched only on SABRQueue.
+// Captured request material: tracks the MOST-RECENT videoplayback request (the
+// current video), so switching videos re-captures the new one. Capturing
+// mid-playback is safe — the engine rebuilds buffered ranges and selected formats
+// from scratch. Touched only on SABRQueue.
 static NSURL *gCapURL;
 static NSData *gCapPlainBody;      // pre-Brotli body (from -HTTPBody)
 static NSDictionary *gCapHeaders;
@@ -427,8 +415,7 @@ static NSTimeInterval SABRExpireFromURL(NSURL *url) {
             NSData *plainCopy = [plain copy];
             NSMutableDictionary *hdrs = [r.allHTTPHeaderFields mutableCopy] ?: [NSMutableDictionary dictionary];
             dispatch_async(SABRQueue(), ^{
-                // Most-recent-wins: always track the latest videoplayback request (the
-                // current video), so switching videos captures the new one.
+                // Most-recent-wins so switching videos captures the new request.
                 gCapURL = url; gCapPlainBody = plainCopy; gCapHeaders = hdrs; gCapExpire = SABRExpireFromURL(url);
             });
         }
@@ -440,14 +427,12 @@ static NSTimeInterval SABRExpireFromURL(NSURL *url) {
 #pragma mark - Request builder
 
 // Build one request body targeting `videoFmt` + `audioFmt`:
-//   #16 = preferred audio FormatId, #17 = preferred video FormatId (the real
-//         download targets — sent every request).
-//   #2  = the "initialized" echo list (empty until formats initialize).
-//   #3  = buffered ranges we already hold (empty = stream from start).
-//   #1.#28 + #4 = player_time_ms (advances the stream).
-//   #1 / #5 / #19 kept byte-for-byte (auth/session/config stay intact).
-// `bufferedRanges` / `selectedFormats` are pre-encoded FormatId/BufferedRange
-// submessages (nil/empty on the first request).
+//   #16/#17 = preferred audio/video FormatId (the download targets, every request)
+//   #2 = "initialized" echo list · #3 = buffered ranges we hold (empty = from start)
+//   #1.#28 + #4 = player_time_ms (advances the stream)
+//   #1 / #5 / #19 kept byte-for-byte (auth/session/config stay intact)
+// `bufferedRanges` / `selectedFormats` are pre-encoded submessages (nil/empty on
+// the first request).
 static NSData *SABRBuildRequestBody(NSData *orig, YMSABRFormat *videoFmt, YMSABRFormat *audioFmt,
                                     uint64_t playerTimeMs, NSArray<NSData *> *bufferedRanges,
                                     NSArray<NSData *> *selectedFormats) {
@@ -479,10 +464,9 @@ static NSData *SABRBuildRequestBody(NSData *orig, YMSABRFormat *videoFmt, YMSABR
 
 #pragma mark - Download engine (permanent)
 
-// One network round-trip: POST `body` uncompressed to the captured signed URL,
-// return the raw UMP response. Called ON SABRQueue (it reads gCapHeaders); the
-// NSURLSession completion runs on an arbitrary queue, so the caller's completion
-// block must hop back to SABRQueue before touching shared state.
+// One network round-trip: POST `body` to the captured signed URL, return the raw
+// UMP response. Called on SABRQueue; the completion must hop back to SABRQueue
+// before touching shared state.
 static void SABRPostOnce(NSURL *url, NSData *body, void (^completion)(NSData *data, NSHTTPURLResponse *http, NSError *err)) {
     NSMutableURLRequest *req = [NSMutableURLRequest requestWithURL:url];
     req.HTTPMethod = @"POST";
@@ -498,10 +482,9 @@ static void SABRPostOnce(NSURL *url, NSData *body, void (^completion)(NSData *da
     }] resume];
 }
 
-// Parse one UMP response, routing media to whichever track (by itag) it belongs to.
-// Writes init segments (once) + media segments, updates each track's lastSequence,
-// downloaded duration, per-round window, and FORMAT_INIT markers, and reports any
-// redirect URL / reload flag via out-params.
+// Parse one UMP response, routing media to its track by itag. Writes init (once)
+// + media segments, updates lastSequence / duration / per-round window and
+// FORMAT_INIT markers, and reports redirect/reload via out-params.
 static void SABRIngestResponse(NSData *data, NSDictionary<NSNumber *, YMSABRTrack *> *tracks,
                                NSString **redirectURL, BOOL *reload) {
     NSMutableDictionary<NSNumber *, YMSABRMediaHeader *> *headers = [NSMutableDictionary dictionary]; // headerId -> header
@@ -527,9 +510,9 @@ static void SABRIngestResponse(NSData *data, NSDictionary<NSNumber *, YMSABRTrac
                 if (!track.initWritten) { [track.handle writeData:[NSData dataWithBytes:payload + hc length:size - hc]]; track.bytesWritten += size - hc; track.initWritten = YES; }
                 return;
             }
-            // A segment can arrive more than once (same sequence, different headerId)
-            // when pacing changes; only sequences beyond the high-water mark are new.
-            // Writing a duplicate would corrupt the elementary stream.
+            // A segment can arrive more than once (same sequence, different
+            // headerId); only sequences past the high-water mark are new —
+            // duplicates would corrupt the elementary stream.
             if (h.sequence <= track.lastSequence) return;
             [track.handle writeData:[NSData dataWithBytes:payload + hc length:size - hc]];
             track.bytesWritten += size - hc;
@@ -565,8 +548,8 @@ static void SABRIngestResponse(NSData *data, NSDictionary<NSNumber *, YMSABRTrac
     if (reload) *reload = sawReload;
 }
 
-// A track is complete once it has reached its last segment (authoritative), or its
-// real downloaded duration has reached the total (belt-and-suspenders).
+// A track is complete at its last segment (authoritative), or when its real
+// downloaded duration reaches the total (backup check).
 static BOOL SABRTrackDone(YMSABRTrack *track) {
     if (!track.endSegment && !track.endTimeMs) return NO;        // no markers yet → not done
     if (track.endSegment && track.lastSequence >= track.endSegment) return YES;
@@ -574,8 +557,8 @@ static BOOL SABRTrackDone(YMSABRTrack *track) {
     return NO;
 }
 
-// Open a fresh unique temp file for a track (unique per download so a stale or
-// concurrent run can't collide/overwrite).
+// Fresh unique temp file per track (per download, so stale or concurrent runs
+// can't collide).
 static YMSABRTrack *SABRMakeTrack(YMSABRFormat *fmt, NSString *ext) {
     NSString *name = [NSString stringWithFormat:@"sabr_%llu_%@.%@", fmt.itag, [NSUUID UUID].UUIDString, ext];
     NSString *path = [NSTemporaryDirectory() stringByAppendingPathComponent:name];
@@ -587,11 +570,11 @@ static YMSABRTrack *SABRMakeTrack(YMSABRFormat *fmt, NSString *ext) {
     return t;
 }
 
-// Orchestrator: download the video itag + audio itag together (both requested every
-// round; media routed to a file per track by itag) until every track reaches its
-// last segment, then call `completion(videoURL, audioURL, err)` on the main queue.
-// Pass videoItag == 0 for an audio-only download (videoURL is then nil).
-// NB: named SABRRunDownload, not SABRDownload — the latter is a settings-key macro.
+// Orchestrator: download the video + audio itags together (both requested every
+// round; media routed per itag) until each track reaches its last segment, then
+// `completion(videoURL, audioURL, err)` on the main queue. videoItag == 0 =
+// audio-only (videoURL is nil). NB: named SABRRunDownload — SABRDownload is a
+// settings-key macro.
 static void SABRRunDownload(uint64_t videoItag, uint64_t audioItag, NSData *audioXtags,
                             void (^progress)(float fraction, unsigned long long bytesDownloaded, BOOL isAudio),
                             void (^completion)(NSURL *videoURL, NSURL *audioURL, NSString *err)) {
@@ -603,9 +586,8 @@ static void SABRRunDownload(uint64_t videoItag, uint64_t audioItag, NSData *audi
         BOOL wantVideo = videoItag != 0;
         YMSABRFormat *videoFmt = wantVideo ? SABRResolveFormat(gCapPlainBody, videoItag, nil) : nil;
         YMSABRFormat *audioFmt = SABRResolveFormat(gCapPlainBody, audioItag, audioXtags);
-        // A requested soundtrack that isn't in the available-format list must fail
-        // rather than fall back: falling back would silently hand over a different
-        // language than the one that was picked.
+        // A requested soundtrack missing from the available-format list must fail,
+        // not fall back (fallback would serve the wrong language).
         if (!audioFmt.found && audioXtags.length > 0) {
             dispatch_async(dispatch_get_main_queue(), ^{ completion(nil, nil, @"That soundtrack isn't available to download for this video."); });
             return;
@@ -619,8 +601,8 @@ static void SABRRunDownload(uint64_t videoItag, uint64_t audioItag, NSData *audi
         gSABRCancel = NO;
         YMSABRTrack *videoTrack = wantVideo ? SABRMakeTrack(videoFmt, @"mp4") : nil;
         YMSABRTrack *audioTrack = SABRMakeTrack(audioFmt, @"m4a");
-        // Ordered [video?, audio]; `mainTrack` (first = video when present, else audio)
-        // drives player_time, matching the reference's "drive off the main format".
+        // Ordered [video?, audio]; `mainTrack` (video when present, else audio)
+        // drives player_time, matching the reference.
         NSArray<YMSABRTrack *> *trackList = wantVideo ? @[videoTrack, audioTrack] : @[audioTrack];
         YMSABRTrack *mainTrack = trackList.firstObject;
         NSMutableDictionary<NSNumber *, YMSABRTrack *> *tracks = [NSMutableDictionary dictionary];
@@ -630,8 +612,8 @@ static void SABRRunDownload(uint64_t videoItag, uint64_t audioItag, NSData *audi
         __block int emptyRounds = 0;   // consecutive rounds with no new media (SABR may send policy-only rounds)
         __block BOOL finished = NO;
         __block NSURL *currentURL = gCapURL;
-        // Recursive loop across async network callbacks: hold the block in a heap box
-        // and recurse through it (a direct capture is an ARC retain-cycle error);
+        // Recursive loop across async callbacks: hold the block in a heap box and
+        // recurse through it (a direct capture is an ARC retain-cycle error);
         // `finish` empties the box to free the loop.
         NSMutableArray *box = [NSMutableArray arrayWithObject:[NSNull null]];
         void (^callRound)(void) = ^{ id r = box.firstObject; if (r && r != [NSNull null]) ((void (^)(void))r)(); };
@@ -652,25 +634,22 @@ static void SABRRunDownload(uint64_t videoItag, uint64_t audioItag, NSData *audi
             if (gSABRCancel) { finish(@"cancelled"); return; }
             if (requestCount++ >= kSABRMaxRequests) { finish(@"exceeded request cap"); return; }
 
-            // Each requested format stays in its preferred field (#16/#17) for the whole
-            // session; a finished track is silenced only by its buffered_ranges (which
-            // tell the server it is fully buffered). Removing a completed format from
-            // #16/#17 instead would change the request shape and stall the other track.
+            // Each requested format stays in #16/#17 for the whole session; a
+            // finished track is silenced by its buffered_ranges. Removing it from
+            // #16/#17 would change the request shape and stall the other track.
             NSMutableArray<NSData *> *buffered = [NSMutableArray array];
             NSMutableArray<NSData *> *selected = [NSMutableArray array];
-            // Report each track's REAL per-round window (the delta of segments received
-            // last round: real start/duration/first/last from #15 time_range), as the
-            // reference does — never player_time. Overstating a track's buffered extent
-            // makes the server treat it as complete and stop sending its tail segments.
+            // Report each track's REAL per-round delta window (start/duration/
+            // first/last from #15 time_range), never player_time — overstating
+            // buffered extent makes the server stop sending tail segments.
             for (YMSABRTrack *t in trackList) {
                 if (t.roundHasMedia) {
                     [buffered addObject:SABREncodeBufferedRange(t.format, t.roundFirstSeq, t.roundLastSeq, t.roundStartMs, t.roundDurationMs)];
                 }
                 if (t.lastSequence > 0) [selected addObject:SABREncodeFormatId(t.format)];
             }
-            // Drive player_time off the main track's real downloaded total (video when
-            // present, else audio). The playhead stays at/ahead of each track's buffered
-            // edge and pulls the remaining segments forward.
+            // Drive player_time off the main track's real downloaded total (video
+            // when present, else audio) so the playhead pulls segments forward.
             uint64_t driveTime = mainTrack.downloadedMs;
             NSData *body = SABRBuildRequestBody(gCapPlainBody, videoFmt, audioFmt, driveTime, buffered, selected);
             if (!body) { finish(@"failed to build request body"); return; }
@@ -698,10 +677,9 @@ static void SABRRunDownload(uint64_t videoItag, uint64_t audioItag, NSData *audi
                     BOOL isAudio = (videoTrack != nil && videoTrack.complete && audioTrack != nil && !audioTrack.complete);
                     if (progress) progress(fracSum / (float)trackList.count, bytesTotal, isAudio);
                     if (allDone) { finish(nil); return; }
-                    // Stall guard keys off SEQUENCE advancement, not raw bytes: a request
-                    // that can't make progress still returns the same segment (nonzero
-                    // bytes, no new sequence), so a bytes check would never trip. Bail
-                    // after several CONSECUTIVE rounds where no INCOMPLETE track advanced.
+                    // Stall guard keys off SEQUENCE advancement, not bytes (a
+                    // stuck request still returns the same segment). Bail after
+                    // several consecutive rounds where no incomplete track advanced.
                     BOOL advanced = NO;
                     for (YMSABRTrack *t in trackList)
                         if (!t.complete && t.lastSequence > beforeSeq[@(t.format.itag)].unsignedLongLongValue) advanced = YES;
@@ -718,15 +696,12 @@ static void SABRRunDownload(uint64_t videoItag, uint64_t audioItag, NSData *audi
 
 #pragma mark - Public entry (called from Download.x)
 
-// The soundtrack identity that travels to the wire: the picked format's xtags, which
-// is the same value the SABR FormatId carries. nil when the stream has none (a
-// single-soundtrack video) — resolution then falls back to "no preference".
-//
-// The accessor's return type is not contractual: it is an undeclared selector on a
-// private protobuf class, and the wire field it mirrors is length-delimited, so a
-// YouTube build could expose it as NSData rather than NSString. Both are read: bailing
-// out on an unexpected type would quietly fall back to the default soundtrack instead
-// of the picked one.
+// Soundtrack identity on the wire: the picked format's xtags (same value the SABR
+// FormatId carries). nil = single-soundtrack video → resolution falls back to
+// "no preference". The accessor's type isn't contractual (undeclared selector on a
+// private protobuf class; the wire field is length-delimited), so both NSData and
+// NSString are read — bailing on an unexpected type would silently serve the
+// default soundtrack instead of the picked one.
 static NSData *SABRXtagsForStream(YTIFormatStream *stream) {
     if (!stream) return nil;
     NSData *xtags = nil;
@@ -740,9 +715,9 @@ static NSData *SABRXtagsForStream(YTIFormatStream *stream) {
     return xtags.length ? xtags : nil;
 }
 
-// Download the chosen mp4 video itag + m4a audio itag on-device via SABR, producing
-// two elementary files. `progress` (0..1) and `completion` are always delivered on
-// the main queue. The caller hands the two files to its existing muxer.
+// Download the chosen mp4 video + m4a audio itags on-device via SABR into two
+// elementary files for the caller's muxer. `progress` (0..1) and `completion` are
+// always delivered on the main queue.
 @implementation YMSABR
 + (void)downloadVideoItag:(int)videoItag audioItag:(int)audioItag audioStream:(YTIFormatStream *)audioStream
                  progress:(void (^)(float fraction, unsigned long long bytesDownloaded, BOOL isAudio))progress

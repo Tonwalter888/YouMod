@@ -23,10 +23,10 @@
 - (UIColor *)backgroundColor:(NSInteger)pageStyle { return pageStyle == 1 ? [UIColor blackColor] : %orig; }
 %end
 
-UIColor *YouModApplyOLEDToDisplayView(_ASDisplayView *view, NSString *iden, UIColor *color) {
-    if (!IS_ENABLED(OLEDTheme)) return color;
+void YouModApplyOLEDToDisplayView(_ASDisplayView *view, NSString *iden) {
+    if (!IS_ENABLED(OLEDTheme)) return;
     UIViewController *controller = view._viewControllerForAncestor;
-    if ([controller isKindOfClass:%c(YTRelatedVideosCollectionViewController)]) return color;
+    if ([controller isKindOfClass:%c(YTRelatedVideosCollectionViewController)]) return;
     NSSet *blackViews = [NSSet setWithObjects:
         @"id.elements.components.comment_composer",
         @"id.subs.subscriptions_channel_bar",
@@ -36,24 +36,24 @@ UIColor *YouModApplyOLEDToDisplayView(_ASDisplayView *view, NSString *iden, UICo
         @"PAmedia_hub_device_picker.engagement_panel_header", nil
     ];  
     if ([blackViews containsObject:iden]) {
-        color = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
+        view.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
             return isDarkMode(view) ? [UIColor blackColor] : [UIColor clearColor];
         }];
     } else if ([iden isEqualToString:@"id.elements.components.filter_chip_bar"]) {
         UIColor *dynamicColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
             return isDarkMode(view) ? [UIColor blackColor] : [UIColor clearColor];
         }];
-        color = dynamicColor;
+        view.backgroundColor = dynamicColor;
         view.superview.backgroundColor = dynamicColor;
     } else if ([controller isKindOfClass:%c(YTActionSheetDialogViewController)] || [controller isKindOfClass:%c(YTBottomSheetController)]) {
-        if ([view.superview.accessibilityIdentifier isEqualToString:@"eml.animated_subscribe_button"]) return color;
-        color = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
+        if ([view.superview.accessibilityIdentifier isEqualToString:@"eml.animated_subscribe_button"]) return;
+        view.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
             return isDarkMode(view) ? [UIColor blackColor] : [UIColor clearColor];
         }];
     } else if ([iden isEqualToString:@"eml.live_chat_text_message"] && [controller isKindOfClass:%c(YCHAsyncLiveChatCollectionViewController)]) {
         YCHAsyncLiveChatCollectionViewController *con = (YCHAsyncLiveChatCollectionViewController *)controller;
-        if ([con.view isKindOfClass:%c(YCHAsyncLiveChatImmersiveCollectionView)]) return color;
-        color = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
+        if ([con.view isKindOfClass:%c(YCHAsyncLiveChatImmersiveCollectionView)]) return;
+        view.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
             return isDarkMode(view) ? [UIColor blackColor] : [UIColor whiteColor];
         }];
     } else {
@@ -64,7 +64,7 @@ UIColor *YouModApplyOLEDToDisplayView(_ASDisplayView *view, NSString *iden, UICo
         } @catch (id ex) {}
         if (desc != nil && ([desc containsString:@"live_chat_buy_flow_panel_header.eml"] 
             || [desc containsString:@"missing_content_view.eml"])) {
-            color = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
+            view.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
                 return isDarkMode(view) ? [UIColor blackColor] : [UIColor clearColor];
             }];
         } else {
@@ -72,24 +72,22 @@ UIColor *YouModApplyOLEDToDisplayView(_ASDisplayView *view, NSString *iden, UICo
             @try {
                 desc = [[[[nodeCon performSelector:@selector(parent)] performSelector:@selector(parent)] performSelector:@selector(owningComponent)] description];
             } @catch (id ex) {
-                return color;
+                return;
             }
             if (desc != nil && [desc containsString:@"macro_markers_list_item.eml"]) {
-                color = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
+                view.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
                     return isDarkMode(view) ? [UIColor blackColor] : [UIColor clearColor];
                 }];
             }
         }
     }
-    return color;
 }
 
-UIColor *YouModApplyOLEDCollectionView(ASCollectionView *self, NSString *iden, UIColor *color) {
-    if (!IS_ENABLED(OLEDTheme) || ![iden isEqualToString:@"eml.chip_bar_collection"]) return color;
-    color = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
-        return isDarkMode(self) ? [UIColor blackColor] : [UIColor clearColor];
+void YouModApplyOLEDCollectionView(ASCollectionView *view, NSString *iden) {
+    if (!IS_ENABLED(OLEDTheme) || ![iden isEqualToString:@"eml.chip_bar_collection"]) return;
+    view.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
+        return isDarkMode(view) ? [UIColor blackColor] : [UIColor clearColor];
     }];
-    return color;
 }
 
 %hook YTContextualWrapView
@@ -191,14 +189,14 @@ UIColor *YouModApplyOLEDCollectionView(ASCollectionView *self, NSString *iden, U
 }
 %end
 
-// the jankiest oled keyboard hack to ever jank
+// Janky OLED keyboard hack
 // blame @ZomkaDEV for this
 %hook UIKeyboardDockView
 - (void)layoutSubviews {
     %orig;
     if (!isDarkMode(self)) return;
 
-    // pre-ios 26 and post-ios 26 keyboards are done differently because thanks tim apple
+    // Pre-iOS 26 and iOS 26+ keyboards are styled differently
     __block CGFloat top = CGFLOAT_MAX, btnH = 0;
     NSMutableArray *vq = [NSMutableArray arrayWithObject:self];
     while (vq.count) {
@@ -243,7 +241,7 @@ UIColor *YouModApplyOLEDCollectionView(ASCollectionView *self, NSString *iden, U
 }
 %end
 
-// Since we can't hook a private framework class from UIKit, we check the class name through the nearest available from UIKit class
+// Private class can't be hooked directly; detect it by name via its UIKit base class.
 %hook UIInputView
 - (void)layoutSubviews {
     %orig;

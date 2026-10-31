@@ -37,7 +37,7 @@
     NSURL *selectedFileURL = urls.firstObject;
     if (!selectedFileURL) return;
     NSDictionary *importedData = [NSDictionary dictionaryWithContentsOfURL:selectedFileURL];
-    // Vaild plist check
+    // Valid plist check
     if (!importedData || ![importedData isKindOfClass:[NSDictionary class]]) {
         YTAlertView *alertView = [%c(YTAlertView) infoDialog];
         alertView.title = LOC(@"ERROR");

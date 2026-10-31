@@ -87,8 +87,7 @@ static NSInteger YouModPillSequence = 0;
     view.totalDuration = duration;
     view.remainingDuration = duration;
     view.isPaused = NO;
-    // Plain pills carry the info icon; the success/error variants opt out
-    // below since they add their own status icon.
+    // Plain pills carry the info icon; success/error variants add their own.
     view.showsInfoIcon = YES;
 
     // Base layer (revealed as progress depletes)
@@ -115,9 +114,8 @@ static NSInteger YouModPillSequence = 0;
     view.messageLabel = label;
     [view addSubview:label];
 
-    // Info icon (trailing side): fills the reserved gap pills leave when
-    // there is no action or status icon; hidden in layoutSubviews for the
-    // success/error variants that bring their own icon
+    // Info icon (trailing side): fills the reserved gap when there is no action
+    // or status icon; hidden in layoutSubviews for success/error variants.
     UIImageSymbolConfiguration *infoConfig = [UIImageSymbolConfiguration configurationWithPointSize:16 weight:UIImageSymbolWeightMedium];
     UIImageView *infoIcon = [[UIImageView alloc] initWithImage:[UIImage systemImageNamed:@"info.circle" withConfiguration:infoConfig]];
     infoIcon.tintColor = [UIColor colorWithWhite:1.0 alpha:0.65];
@@ -208,8 +206,8 @@ static NSInteger YouModPillSequence = 0;
 
 - (void)layoutSubviews {
     [super layoutSubviews];
-    // The icon only has constraints (and reserved space) on button-less
-    // pills — never let it surface when an action button is present.
+    // The info icon only has reserved space on button-less pills; hide it
+    // whenever an action button is present.
     self.infoIconView.hidden = self.actionButton != nil || !self.showsInfoIcon;
     if (self.progressOverlay.layer.animationKeys.count == 0 || self.isPaused) {
         self.progressOverlay.frame = CGRectMake(0, 0, self.bounds.size.width, self.bounds.size.height);
@@ -442,7 +440,7 @@ static NSInteger YouModPillSequence = 0;
     }] forControlEvents:UIControlEventTouchUpInside];
     [view addSubview:saveButton];
 
-    // Share button (rightmost) - Using arrowshape.turn.up.right
+    // Share button (rightmost)
     UIButton *shareButton = [UIButton buttonWithType:UIButtonTypeCustom];
     shareButton.translatesAutoresizingMaskIntoConstraints = NO;
     UIImage *shareIcon = [UIImage systemImageNamed:@"arrowshape.turn.up.right" withConfiguration:config];

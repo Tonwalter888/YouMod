@@ -26,15 +26,13 @@ typedef NS_ENUM(NSInteger, YMSleepTimerMode) {
     YMSleepTimerModeEndOfVideo = 1,
 };
 
-// Weak set: YouTube can create/destroy slim bar views at any time, we must not
-// keep deallocated ones alive.
+// Weak set: YouTube can destroy slim bar views at any time; don't keep them alive.
 static NSHashTable<YTSlimStatusBarView *> *slimBarSet = nil;
 static YTSlimStatusBarControllerImpl *slimBarController = nil;
 static BOOL slimBarThemed = NO;
 static NSUInteger slimBarReconnectSequence = 0;
 
-// While a playable game is up or the player is fullscreen, the bar is hidden
-// and text updates stop until the layout comes back.
+// Bar hidden while a playable game or fullscreen player is up.
 static BOOL layoutHidesBar = NO;
 
 static NSString *YMSleepTimerFormatClock(NSTimeInterval interval) {
@@ -57,8 +55,8 @@ static NSString *YMSleepTimerFormatClock(NSTimeInterval interval) {
 @property (nonatomic, assign) BOOL volumeCaptured;
 @property (nonatomic, assign) BOOL connectionLost;
 @property (nonatomic, copy) NSString *endOfVideoID;
-// Last remaining playback time seen from YTSingleVideoTime callbacks; decides
-// whether a videoID change was a natural end (< 0.1 s left) or a manual switch.
+// Last remaining time from YTSingleVideoTime; tells a natural end (< 0.1 s)
+// from a manual video switch.
 @property (nonatomic, assign) CGFloat capturedRemainingTime;
 + (instancetype)shared;
 - (void)startWithMinutes:(NSInteger)minutes;
@@ -140,8 +138,8 @@ static NSString *YMSleepTimerFormatClock(NSTimeInterval interval) {
     self.endOfVideoID = [player currentVideoID];
     CGFloat total = player ? [player currentVideoTotalMediaTime] : 0.0;
     CGFloat current = player ? [player currentVideoMediaTime] : 0.0;
-    // No duration known yet: treat any upcoming video change as a manual
-    // switch until YTSingleVideoTime ticks give us a real remaining time.
+    // Unknown duration: treat video changes as manual until ticks report a
+    // real remaining time.
     self.capturedRemainingTime = total > current ? total - current : CGFLOAT_MAX;
     self.connectionLost = NO;
     [self persist];
@@ -160,8 +158,7 @@ static NSString *YMSleepTimerFormatClock(NSTimeInterval interval) {
     [self notifyButtons];
 }
 
-// The user moved to a different video before this one ended: shut the timer
-// down without pausing playback and say so with a pill (not a dialog).
+// Manual video switch: cancel without pausing playback and show a pill.
 - (void)cancelForVideoChange {
     [self restoreVolume];
     [self stopTimer];
@@ -180,9 +177,8 @@ static NSString *YMSleepTimerFormatClock(NSTimeInterval interval) {
 
 - (void)fire {
     [self stopTimer];
-    // Fade the audio out completely, then stop the video, then show the
-    // dialog. Volume is only restored after the pause so the *next* playback
-    // doesn't start muted-silent.
+    // Fade out, pause, restore volume (so the next playback isn't muted),
+    // then show the dialog.
     [self applyFadeFraction:0.0];
     [self pausePlayer];
     [self restoreVolumeAfterPause];
@@ -238,8 +234,8 @@ static NSString *YMSleepTimerFormatClock(NSTimeInterval interval) {
             return;
         }
         if (videoChanged) {
-            // The last remaining time captured from YTSingleVideoTime tells a
-            // natural end (autoplay, <0.1 s left) from a manual video switch.
+            // Captured remaining time tells a natural end (<0.1 s) from a
+            // manual video switch.
             if (self.capturedRemainingTime < 0.1) {
                 [self fire];
             } else {
@@ -251,8 +247,8 @@ static NSString *YMSleepTimerFormatClock(NSTimeInterval interval) {
     [self updateSlimBars];
 }
 
-// Called from the playback time-change hooks as well, so expiry and fade stay
-// accurate even when the NSTimer is suspended (locked screen with audio on).
+// Also called from time-change hooks so expiry/fade stay accurate while the
+// NSTimer is suspended (locked screen with audio on).
 - (void)playbackTick {
     if (![self isActive]) return;
     NSDate *now = [NSDate date];
@@ -262,8 +258,8 @@ static NSString *YMSleepTimerFormatClock(NSTimeInterval interval) {
     [self tick];
 }
 
-// Keep the end-of-video remaining time fresh from YTSingleVideoTime, so a
-// videoID change can be judged even when the runloop timer is suspended.
+// Keeps end-of-video remaining time fresh so video changes can be judged
+// while the runloop timer is suspended.
 - (void)noteSingleVideoTime:(YTSingleVideoTime *)time video:(YTSingleVideoController *)video {
     if (self.mode != YMSleepTimerModeEndOfVideo || !time) return;
     CGFloat total = video ? [video totalMediaTime] : 0.0;
@@ -294,8 +290,7 @@ static NSString *YMSleepTimerFormatClock(NSTimeInterval interval) {
     self.volumeCaptured = NO;
 }
 
-// After firing, the player may already be tearing down; restoring the volume
-// on the active video keeps the *next* playback from starting muted-silent.
+// Restore after pause so the next playback doesn't start muted.
 - (void)restoreVolumeAfterPause {
     [self restoreVolume];
 }
@@ -427,9 +422,8 @@ static void YMSleepTimerShowCustomTimeAlert(void) {
     UIDatePicker *datePicker = [[UIDatePicker alloc] initWithFrame:CGRectMake(0, 0, 238, 150)];
     datePicker.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     datePicker.datePickerMode = UIDatePickerModeTime;
-    // Force the scrolling-wheel style: on iOS 14+ the default is compact, which
-    // collapses to a button that opens a separate popover instead of sitting
-    // inside this dialog.
+    // Force wheel style: on iOS 14+ the compact default collapses into a
+    // popover button instead of sitting inside this dialog.
     datePicker.preferredDatePickerStyle = UIDatePickerStyleWheels;
     datePicker.locale = [NSLocale currentLocale]; // renders 12/24h per system setting
 
@@ -517,9 +511,8 @@ void YMSleepTimerPresentPicker(UIView *sourceView) {
 
 #pragma mark - Hooks
 
-// Mirror of SponsorBlock's time-change hooks: keeps the countdown / fade and
-// expiry check running on real playback ticks even when the runloop timer is
-// suspended (e.g. locked screen while audio keeps playing).
+// Time-change hooks keep countdown/fade/expiry running on real playback ticks
+// while the runloop timer is suspended (e.g. locked screen with audio).
 %hook YTPlayerViewController
 - (void)singleVideo:(YTSingleVideoController *)video currentVideoTimeDidChange:(YTSingleVideoTime *)time {
     %orig;
@@ -554,8 +547,7 @@ void YMSleepTimerPresentPicker(UIView *sourceView) {
     }
     [slimBarSet addObject:barView];
     slimBarController = self;
-    // If the timer is already running (e.g. started before this bar existed),
-    // theme the new bar right away.
+    // Timer already running: theme the new bar right away.
     if ([[YMSleepTimer shared] isActive]) {
         if (isWatch) slimBarThemed = NO;
         [[YMSleepTimer shared] updateSlimBars];
@@ -574,8 +566,8 @@ void YMSleepTimerPresentPicker(UIView *sourceView) {
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2.75 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
             if (seq != slimBarReconnectSequence) return; // flapped again meanwhile
             timer.connectionLost = NO;
-            // YouTube may have reset the bar's appearance while disconnected,
-            // so re-apply the sleep timer theme before updating the text.
+            // Re-apply the theme; YouTube may have reset the bar's appearance
+            // while disconnected.
             slimBarThemed = NO;
             [timer updateSlimBars];
         });
@@ -585,8 +577,7 @@ void YMSleepTimerPresentPicker(UIView *sourceView) {
 }
 %end
 
-// While a playable game is up, hide the bar and stop updating the text until
-// the game screen goes away.
+// Hide the bar and text updates while a playable game is up.
 %hook YTPlayablesFullscreenViewController
 - (void)viewDidAppear:(BOOL)animated {
     %orig;
@@ -614,8 +605,7 @@ void YMSleepTimerPresentPicker(UIView *sourceView) {
 %ctor {
     %init;
     if (!slimBarSet) slimBarSet = [NSHashTable weakObjectsHashTable];
-    // A sleep timer is session-only. Clear any value left by an earlier app
-    // process so force-quitting and reopening YouTube starts with no timer.
+    // Session-only: clear values left by an earlier app process.
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [defaults removeObjectForKey:SleepTimerEndDate];
     [defaults removeObjectForKey:SleepTimerMode];
@@ -624,8 +614,7 @@ void YMSleepTimerPresentPicker(UIView *sourceView) {
                                                       object:nil
                                                        queue:nil
                                                   usingBlock:^(NSNotification *note) {
-        // The runloop timer is suspended in the background; catch up on the
-        // wall clock as soon as we come back.
+        // Timer is suspended in background; catch up on return.
         [weakTimer tick];
     }];
 }

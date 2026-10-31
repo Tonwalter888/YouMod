@@ -1,4 +1,3 @@
-"SETTINGS" = "Settings";
 "INTERFACE" = "Interface";
 
 "SEARCH" = "Search";
@@ -775,3 +774,7 @@
 "DUPLICATE_DOWNLOAD_TITLE" = "Already downloaded";
 "DUPLICATE_DOWNLOAD_MESSAGE" = "This video is already in your library. Delete the existing file and download it again?";
 "DUPLICATE_DOWNLOAD_REPLACE" = "Delete and download again";
+
+"DEV_ROLE_AUTHOR" = "Author/Owner";
+"DEV_ROLE_COLLABORATOR" = "Collaborator";
+"DEV_HEADER" = "Developer";

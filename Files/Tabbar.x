@@ -124,8 +124,7 @@ static YTIPivotBarSupportedRenderers *YouModNewTab(NSString *pivotID, NSString *
 
 %hook YTPivotBarView
 - (void)setRenderer:(YTIPivotBarRenderer *)renderer {
-    if (renderer.backgroundStyle == 2) isNewYTTabbarLayout = YES;
-    else isNewYTTabbarLayout = NO;
+    isNewYTTabbarLayout = renderer.backgroundStyle == 2;
     NSMutableArray <YTIPivotBarSupportedRenderers *> *items = [renderer itemsArray];
     NSArray *savedOrder = [[NSUserDefaults standardUserDefaults] arrayForKey:TabOrder];
     if (savedOrder.count > 0) {
@@ -142,8 +141,7 @@ static YTIPivotBarSupportedRenderers *YouModNewTab(NSString *pivotID, NSString *
         NSMutableArray *ordered = [NSMutableArray array];
         for (NSDictionary *entry in savedOrder) {
             NSString *tabID = entry[@"id"];
-            // The download tab is ordered here like the rest, but its on/off
-            // state always comes from the Downloading settings (DownloadLibraryTab).
+            // The download tab's on/off state always comes from the Downloading settings (DownloadLibraryTab).
             BOOL isDownloadTab = [tabID isEqualToString:@"download"];
             BOOL enabled = isDownloadTab ? IS_ENABLED(DownloadLibraryTab) : [entry[@"enabled"] boolValue];
             if (!enabled) continue;
@@ -184,28 +182,80 @@ static YTIPivotBarSupportedRenderers *YouModNewTab(NSString *pivotID, NSString *
 }
 %end
 
-// Hide Tab Bar Indicators
-%hook YTPivotBarIndicatorView
-- (void)setFillColor:(UIColor *)arg {
-    if (IS_ENABLED(HideTabIndi)) arg = [UIColor clearColor];
-    %orig(arg);
-}
-- (void)setBorderColor:(UIColor *)arg {
-    if (IS_ENABLED(HideTabIndi)) arg = [UIColor clearColor];
-    %orig(arg);
+%hook YTFloatingPivotBarView
+- (void)setRenderer:(YTIPivotBarRenderer *)renderer {
+    isNewYTTabbarLayout = renderer.backgroundStyle == 2;
+    NSMutableArray <YTIPivotBarSupportedRenderers *> *items = [renderer itemsArray];
+    NSArray *savedOrder = [[NSUserDefaults standardUserDefaults] arrayForKey:TabOrder];
+    if (savedOrder.count > 0) {
+        // Build lookup: pivotIdentifier -> renderer item
+        NSMutableDictionary<NSString *, YTIPivotBarSupportedRenderers *> *lookup = [NSMutableDictionary dictionary];
+        for (YTIPivotBarSupportedRenderers *item in items) {
+            NSString *pID = [[item pivotBarItemRenderer] pivotIdentifier];
+            NSString *pID2 = [[item pivotBarIconOnlyItemRenderer] pivotIdentifier];
+            if (pID && pID.length > 0) lookup[pID] = item;
+            else if (pID2 && pID2.length > 0) lookup[pID2] = item;
+        }
+
+        // Build ordered array from saved data
+        NSMutableArray *ordered = [NSMutableArray array];
+        for (NSDictionary *entry in savedOrder) {
+            NSString *tabID = entry[@"id"];
+            // The download tab's on/off state always comes from the Downloading settings (DownloadLibraryTab).
+            BOOL isDownloadTab = [tabID isEqualToString:@"download"];
+            BOOL enabled = isDownloadTab ? IS_ENABLED(DownloadLibraryTab) : [entry[@"enabled"] boolValue];
+            if (!enabled) continue;
+
+            NSString *pivotID = isDownloadTab ? kYMLibraryPivotIdentifier : ymPivotIDForTabID(tabID);
+            if (!pivotID) continue;
+
+            YTIPivotBarSupportedRenderers *existing = lookup[pivotID];
+            if (existing) {
+                [ordered addObject:existing];
+            } else {
+                // Custom tab not in YouTube's default items — create it
+                NSInteger iconType = isDownloadTab ? 18 : ymIconTypeForTabID(tabID);
+                NSString *title = isDownloadTab ? LOC(@"DOWNLOAD_LIBRARY_TAB") : ymTitleForTabID(tabID);
+                if (iconType > 0 && title) {
+                    YTIPivotBarSupportedRenderers *newTab = YouModNewTab(pivotID, title, iconType);
+                    if (newTab) [ordered addObject:newTab];
+                }
+            }
+        }
+        // Replace items with ordered set
+        [items removeAllObjects];
+        [items addObjectsFromArray:ordered];
+    }
+    if (IS_ENABLED(DownloadLibraryTab)) {
+        BOOL alreadyPresent = NO;
+        for (YTIPivotBarSupportedRenderers *item in items) {
+            NSString *pID = [[item pivotBarItemRenderer] pivotIdentifier];
+            NSString *pID2 = [[item pivotBarIconOnlyItemRenderer] pivotIdentifier];
+            if ([pID isEqualToString:kYMLibraryPivotIdentifier] || [pID2 isEqualToString:kYMLibraryPivotIdentifier]) { alreadyPresent = YES; break; }
+        }
+        if (!alreadyPresent) {
+            YTIPivotBarSupportedRenderers *libraryTab = YouModNewTab(kYMLibraryPivotIdentifier, LOC(@"DOWNLOAD_LIBRARY_TAB"), 18);
+            if (libraryTab) [items addObject:libraryTab];
+        }
+    }
+    %orig(renderer);
 }
 %end
 
+/*
+// Hide Tab Bar Indicators
+%hook YTPivotBarIndicatorView
+- (void)setFillColor:(UIColor *)color { %orig(IS_ENABLED(HideTabIndi) ? [UIColor clearColor] : color); }
+- (void)setBorderColor:(UIColor *)color { %orig(IS_ENABLED(HideTabIndi) ? [UIColor clearColor] : color); }
+%end
+*/
+
 static NSString *YMExtractYouTubeVideoID(NSString *urlString) {
     if (!urlString || urlString.length == 0) return nil;
-
     NSString *cleanString = [urlString stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
-
     if (cleanString.length == 11 && ![cleanString containsString:@"/"] && ![cleanString containsString:@"?"]) return cleanString;
-
     NSString *extractedID = nil;
     NSURL *url = [NSURL URLWithString:cleanString];
-
     if (url) {
         if ([url.host containsString:@"youtu.be"]) {
             NSString *path = [url.path stringByReplacingOccurrencesOfString:@"/" withString:@""];
@@ -226,7 +276,6 @@ static NSString *YMExtractYouTubeVideoID(NSString *urlString) {
             }
         }
     }
-
     if (!extractedID) {
         NSError *error = nil;
         NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"(?:v=|\\/(?:shorts|live|clip)\\/|youtu\\.be\\/)([a-zA-Z0-9_-]{11})"
@@ -235,7 +284,6 @@ static NSString *YMExtractYouTubeVideoID(NSString *urlString) {
         NSTextCheckingResult *match = [regex firstMatchInString:cleanString options:0 range:NSMakeRange(0, cleanString.length)];
         if (match && match.numberOfRanges > 1) extractedID = [cleanString substringWithRange:[match rangeAtIndex:1]];
     }
-
     return (extractedID && extractedID.length == 11) ? extractedID : nil;
 }
 
@@ -243,18 +291,15 @@ static NSString *gLastOpenedVideoID = nil;
 
 static void YMOpenLinkFromClipboard(UIViewController *presentingVC, BOOL isRuntime) {
     UIPasteboard *pasteboard = [UIPasteboard generalPasteboard];
-    
     if (![pasteboard hasStrings]) return;
 
     NSString *rawString = [pasteboard.string stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
     NSString *videoID = YMExtractYouTubeVideoID(rawString);
-
     if (!videoID || videoID.length == 0) return;
     else if (gLastOpenedVideoID && [gLastOpenedVideoID isEqualToString:videoID] && IS_ENABLED(AutoOpenLink) && !isRuntime) return;
 
     NSString *schemeURLString = [NSString stringWithFormat:@"youtube://%@", videoID];
     NSURL *targetURL = [NSURL URLWithString:schemeURLString];
-
     if ([[UIApplication sharedApplication] canOpenURL:targetURL]) {
         gLastOpenedVideoID = [videoID copy];
         [[UIApplication sharedApplication] openURL:targetURL options:@{} completionHandler:nil];
@@ -326,6 +371,7 @@ static BOOL isGestureRegistered = NO;
         return [UIMenu menuWithTitle:@"" children:menuChildren];
     }];
 }
+- (void)setIndicatorDot:(UIView *)indicatorDot { if (!IS_ENABLED(HideTabIndi)) %orig; }
 %end
 
 // Startup Tab
@@ -356,9 +402,8 @@ static BOOL isTabSelected = NO;
     }
     %orig(renderer);
 }
-// Startup-tab support: the Download tab has no native browse destination, so when the
-// saved Default Tab resolves to it, present the download library exactly like a real
-// tap instead of letting YouTube resolve a pivot identifier it doesn't know.
+// Startup-tab support: the Download tab has no native browse destination, so present the
+// download library like a real tap when the saved Default Tab resolves to it.
 - (void)selectItemWithPivotIdentifier:(id)pivotIdentifier {
     if ([pivotIdentifier isKindOfClass:[NSString class]] && [(NSString *)pivotIdentifier isEqualToString:kYMLibraryPivotIdentifier]) {
         [self cacheCurrentViewControllers];
@@ -380,8 +425,7 @@ static BOOL isTabSelected = NO;
     }
     if (!isTabSelected) {
         // Build pivot identifiers from enabled tabs (skip Create — matches Settings.x segment logic).
-        // Mirrors the real bar: the Download tab follows the Downloading settings, and when the
-        // saved order has no entry for it yet, it sits at the end of the bar.
+        // The Download tab follows the Downloading settings and defaults to the end of the bar.
         NSMutableArray *pivotIdentifiers = [NSMutableArray array];
         NSArray *savedOrder = [[NSUserDefaults standardUserDefaults] arrayForKey:TabOrder];
         if (savedOrder.count > 0) {
@@ -433,10 +477,8 @@ static BOOL isTabSelected = NO;
 }
 %end
 
-// Recompute SB overlay safe-area inset whenever YouTube shows or hides the pivot bar
-// (e.g. entering/exiting fullscreen player). This keeps the SponsorBlock skip pill
-// and download progress pill anchored above the tabbar when visible, and at the
-// device safe-area bottom when the tabbar is hidden.
+// Recompute SB overlay safe-area inset when YouTube shows or hides the pivot bar (e.g. fullscreen),
+// keeping the skip/download pills above the tabbar or at the safe-area bottom when it's hidden.
 %hook YTAppViewController
 - (void)hidePivotBar {
     %orig;

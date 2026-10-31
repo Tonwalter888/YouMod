@@ -21,9 +21,7 @@
 // Try to disable Shorts PiP
 - (BOOL)shortsPlayerGlobalConfigEnableReelsPictureInPicture { return IS_ENABLED(DisablesShortsPiP) ? NO : %orig; }
 - (BOOL)shortsPlayerGlobalConfigEnableReelsPictureInPictureIos { return IS_ENABLED(DisablesShortsPiP) ? NO : %orig; }
-// Startup animation picker: default honors YouTube and the existing hide toggle;
-// Show forces YouTube's animation on, Disabled turns it off, and custom video
-// keeps the animation window available for YTStartupAnimationViewController.
+// Startup animation: modes 1/3 force it on, mode 2 off; default honors YouTube and the hide toggle.
 - (BOOL)mainAppCoreClientIosEnableStartupAnimation {
     NSInteger mode = INTFORVAL(StartupAnimation);
     if (mode == 1 || mode == 3) return YES;
@@ -63,26 +61,17 @@
 // Disable Hints
 %hook YTSettings
 - (BOOL)areHintsDisabled { return IS_ENABLED(DisableHints) ? YES : %orig; }
-- (void)setHintsDisabled:(BOOL)arg {
-    if (IS_ENABLED(DisableHints)) arg = YES;
-    %orig(arg);
-}
+- (void)setHintsDisabled:(BOOL)arg { %orig(IS_ENABLED(DisableHints) ? YES : arg); }
 %end
 
 %hook YTSettingsImpl
 - (BOOL)areHintsDisabled { return IS_ENABLED(DisableHints) ? YES : %orig; }
-- (void)setHintsDisabled:(BOOL)arg {
-    if (IS_ENABLED(DisableHints)) arg = YES;
-    %orig(arg);
-}
+- (void)setHintsDisabled:(BOOL)arg { %orig(IS_ENABLED(DisableHints) ? YES : arg); }
 %end
 
 %hook YTUserDefaults
 - (BOOL)areHintsDisabled { return IS_ENABLED(DisableHints) ? YES : %orig; }
-- (void)setHintsDisabled:(BOOL)arg {
-    if (IS_ENABLED(DisableHints)) arg = YES;
-    %orig(arg);
-}
+- (void)setHintsDisabled:(BOOL)arg { %orig(IS_ENABLED(DisableHints) ? YES : arg); }
 %end
 
 // Block upgrade dialogs

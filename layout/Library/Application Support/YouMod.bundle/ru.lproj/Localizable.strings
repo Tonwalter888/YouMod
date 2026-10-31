@@ -1,4 +1,3 @@
-"SETTINGS" = "Настройки";
 "INTERFACE" = "Интерфейс";
 
 "SEARCH" = "Поиск";
@@ -743,3 +742,7 @@
 "DUPLICATE_DOWNLOAD_TITLE" = "Уже скачано";
 "DUPLICATE_DOWNLOAD_MESSAGE" = "Это видео уже есть в библиотеке. Удалить существующий файл и скачать заново?";
 "DUPLICATE_DOWNLOAD_REPLACE" = "Удалить и скачать заново";
+
+"DEV_ROLE_AUTHOR" = "Author/Owner";
+"DEV_ROLE_COLLABORATOR" = "Collaborator";
+"DEV_HEADER" = "Developer";

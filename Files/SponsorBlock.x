@@ -6,16 +6,13 @@ BOOL useBackwardIconForButton;
 // System sound played on skip when haptic/audio feedback is enabled.
 static const SystemSoundID SBSkipHapticSoundID = 1519;
 
-// Skipping is suppressed within this many seconds of a segment's end, so a
-// segment already almost over isn't re-triggered by a late time-change callback.
+// Skips are suppressed this close to a segment's end so a late time-change callback can't re-trigger one.
 static const CGFloat SBSegmentEndGuardSeconds = 0.5;
 
-// The skip banner is shown after this delay so the seek completes first —
-// otherwise the following time-change callback dismisses it immediately.
+// The skip banner is delayed so the seek completes first; otherwise the next time-change callback dismisses it.
 static const NSTimeInterval SBSkipNotificationDelaySeconds = 0.3;
 
-// Clamps a stored banner duration to the supported range, falling back to the
-// default when unset or out of range.
+// Clamps a stored banner duration to the supported range, falling back to the default when unset or out of range.
 static float SBClampedAlertDuration(NSString *key) {
     float duration = FLOAT_FOR_KEY(key);
     if (duration < SBAlertDurationMin || duration > SBAlertDurationMax) return SBAlertDurationDefault;
@@ -49,20 +46,16 @@ void sbUpdateOverlayInsetForPivotBar() {
     UIViewController *rootVC = sbOverlayWindow.rootViewController;
     if (!rootVC) return;
 
-    // The overlay window's frame is set only at creation; the scene can change
-    // size afterward (rotation, iPhone fullscreen exit) and this plain-UIViewController
-    // window doesn't auto-resize with it. Re-syncing to the current scene bounds keeps
-    // the pill safe-area math on the correct (e.g. portrait) size rather than a stale
-    // landscape one — otherwise pills anchor to a mid-screen bottom edge.
+    // The window's frame is set only at creation and doesn't auto-resize with the scene (rotation,
+    // fullscreen exit); re-sync it so the pill safe-area math uses current bounds.
     UIWindowScene *scene = sbOverlayWindow.windowScene;
     CGRect sceneBounds = scene ? scene.coordinateSpace.bounds : sbOverlayWindow.bounds;
     if (scene && !CGRectEqualToRect(sbOverlayWindow.frame, sceneBounds)) {
         sbOverlayWindow.frame = sceneBounds;
     }
 
-    // Look up YouTube's root view controller in the SAME scene as our overlay
-    // window — on iPad multi-window the app delegate's window may belong to a
-    // different scene, so [delegate window] is not safe here.
+    // Find YouTube's root VC in the same scene as our overlay window (on iPad multi-window
+    // the delegate's window may be a different scene).
     UIWindow *ytWindow = nil;
     for (UIWindow *win in sbOverlayWindow.windowScene.windows) {
         if ([win.rootViewController isKindOfClass:NSClassFromString(@"YTAppViewController")] || [win.rootViewController isKindOfClass:NSClassFromString(@"YTAppViewControllerImpl")]) {
@@ -74,27 +67,19 @@ void sbUpdateOverlayInsetForPivotBar() {
     YTPivotBarViewController *pivotVC = (YTPivotBarViewController *)[appVC performSelector:@selector(pivotBarViewController)];
     YTPivotBarView *pivot = (YTPivotBarView *)pivotVC.view;
 
-    // Measure the pivot bar's visible top edge in our overlay window's coords
-    // and convert it into the inset our pills need above the device safe area.
-    // This avoids reading pivot.bounds.size.height directly — that value
-    // includes home-indicator padding on notched devices and would over-correct
-    // the safe area, leaving the pill floating too high above the tabbar.
+    // Convert the pivot bar's visible top edge into the inset pills need above the safe area.
+    // pivot.bounds.size.height includes home-indicator padding and would over-correct.
     CGFloat tabH = 0.0;
     if (pivot && pivot.window != nil && !pivot.hidden && pivot.alpha > 0.01) {
         UIView *overlayView = rootVC.view;
         CGRect pivotInOverlay = [overlayView convertRect:pivot.bounds fromView:pivot];
         CGFloat pivotTop = CGRectGetMinY(pivotInOverlay);
-        // The scene bounds are the authoritative overlay height. overlayView.bounds
-        // is avoided here because it only reflects a new window size once autoresizing
-        // has propagated, which may lag within the current runloop.
+        // Scene bounds are authoritative; overlayView.bounds lags until autoresizing propagates.
         CGFloat overlayHeight = sceneBounds.size.height;
         CGFloat deviceSafeBottom = sbOverlayWindow.safeAreaInsets.bottom;
         CGFloat pivotHeight = pivot.bounds.size.height;
-        // Clamp to the pivot bar's own height: a legitimate inset can never exceed
-        // the bar it's clearing. If convertRect returns a stale value during a scene
-        // transition (e.g. fullscreen exit), the raw result balloons toward the full
-        // screen height — clamping to pivotHeight keeps the pill just above the safe
-        // area instead of letting it drift to the middle of the screen.
+        // Clamp to the pivot bar's height: stale convertRect values during scene transitions
+        // would otherwise inflate the inset toward full screen height.
         tabH = MAX(0.0, MIN(pivotHeight, overlayHeight - deviceSafeBottom - pivotTop));
     }
     UIEdgeInsets current = rootVC.additionalSafeAreaInsets;
@@ -119,16 +104,15 @@ void sbDismissAllNotifications(void) {
     }
 }
 
-// Hide the pill overlay instantly (non-animated) and dismiss active notifications
-// so stale pills never persist into app-switcher or upon re-entering the app.
+// Hide the pill overlay instantly and dismiss active notifications so no stale pills
+// persist into the app switcher or re-entering the app.
 static void sbHideOverlayForSnapshot(void) {
     sbDismissAllNotifications();
     if (sbOverlayWindow) sbOverlayWindow.hidden = YES;
 }
 
-// Restore the overlay only if active notification subviews are present.
-// Guarded to the hidden state so the two "became active" notifications don't
-// each re-trigger the fade.
+// Restore the overlay (faded in) only if notification subviews are present; guarded to the
+// hidden state so the two "became active" notifications don't each re-trigger the fade.
 static void sbRestoreOverlayAfterSnapshot(void) {
     if (!sbOverlayWindow) return;
     UIView *rootView = sbOverlayWindow.rootViewController.view;
@@ -145,9 +129,7 @@ static void sbRestoreOverlayAfterSnapshot(void) {
     }
 }
 
-// Tracks which scene's lifecycle is currently observed. When sbOverlayWindow is
-// recreated for a different scene (after the original goes Unattached), we
-// re-bind observers to the new scene rather than leaving stale registrations.
+// Tracks the observed scene so observers re-bind when the overlay window is recreated for a new scene.
 static UIWindowScene *sbObservedScene = nil;
 static id sbSceneDeactivateObserver = nil;
 static id sbSceneBackgroundObserver = nil;
@@ -171,13 +153,8 @@ static void sbRegisterOverlayLifecycleObservers(UIWindowScene *targetScene) {
 
     sbObservedScene = targetScene;
 
-    // Hide on deactivation, restore on activation. Deactivation is the trigger
-    // (not backgrounding) because invoking the app switcher only moves the app to
-    // the inactive state — a background-only observer misses that path. queue:nil
-    // runs the hide synchronously before the snapshot is captured. Scene
-    // notifications are filtered to targetScene so one scene's interruption
-    // doesn't hide another's overlay on iPad multi-window; the app-level
-    // notifications (object:nil) are an app-wide backstop.
+    // Hide on deactivation (the app switcher only goes inactive), restore on activation.
+    // queue:nil hides before the snapshot; scene notifications are per-scene, app-level ones are a backstop.
     sbSceneDeactivateObserver = [nc addObserverForName:UISceneWillDeactivateNotification object:targetScene queue:nil usingBlock:^(__unused NSNotification *note) {
         sbHideOverlayForSnapshot();
     }];
@@ -197,9 +174,7 @@ static void sbRegisterOverlayLifecycleObservers(UIWindowScene *targetScene) {
         sbRestoreOverlayAfterSnapshot();
     }];
 
-    // Recompute pivot-bar inset on rotation / dynamic tabbar height changes.
-    // UIDeviceOrientationDidChangeNotification only fires when device-orientation
-    // generation is enabled; this call is idempotent.
+    // Recompute the pivot-bar inset on rotation / tabbar height changes; the call is idempotent.
     [[UIDevice currentDevice] beginGeneratingDeviceOrientationNotifications];
     sbOrientationObserver = [nc addObserverForName:UIDeviceOrientationDidChangeNotification object:nil queue:[NSOperationQueue mainQueue] usingBlock:^(__unused NSNotification *note) {
         sbUpdateOverlayInsetForPivotBar();
@@ -249,8 +224,7 @@ UIView *sbGetNotificationParent(void) {
 
 static NSMutableDictionary<NSString *, NSArray<SBSegment *> *> *sbSegmentCache;
 
-// Drops the cached segments for a video (e.g. after a vote changed server-side
-// data) so the next activation refetches.
+// Drops the cached segments for a video (e.g. after a vote changed server-side data) so the next activation refetches.
 void sbInvalidateSegmentCache(NSString *videoID) {
     if (!videoID) return;
     @synchronized(sbSegmentCache) {
@@ -421,8 +395,7 @@ static void sbSendViewedSegment(SBSegment *segment) {
     if ([self.sbLastVideoID isEqualToString:videoID] && self.sbSegments.count > 0) return;
     self.sbLastVideoID = videoID;
 
-    // Skip fetching (and clear markers) while disabled via the menu toggle or
-    // a whitelisted channel.
+    // Skip fetching and clear markers while disabled via the menu toggle or a whitelisted channel.
     if (!sbActiveForVideo(self)) {
         [[NSNotificationCenter defaultCenter] postNotificationName:@"SBSegmentsDidLoad"
                                                             object:self
@@ -430,8 +403,7 @@ static void sbSendViewedSegment(SBSegment *segment) {
         return;
     }
 
-    // Clear the previous video's markers right away — the fetch below repopulates
-    // them when it lands.
+    // Clear the previous video's markers right away; the fetch below repopulates them.
     [[NSNotificationCenter defaultCenter] postNotificationName:@"SBSegmentsDidLoad"
                                                         object:self
                                                       userInfo:@{@"segments": @[]}];
@@ -440,9 +412,7 @@ static void sbSendViewedSegment(SBSegment *segment) {
     [SBRequest fetchSegmentsForVideoID:videoID completion:^(NSArray<SBSegment *> *segments) {
         __strong typeof(weakSelf) strongSelf = weakSelf;
         if (!strongSelf) return;
-        // The player may have moved on to another video while this request was
-        // in flight; drop the late result so it can't overwrite the newer one.
-        // The newer video's own fetch posts when it lands.
+        // Drop the result if the player moved on to another video while this request was in flight.
         if (![[strongSelf currentVideoID] isEqualToString:videoID]) return;
         strongSelf.sbSegments = segments;
         [[NSNotificationCenter defaultCenter] postNotificationName:@"SBSegmentsDidLoad"
@@ -462,9 +432,8 @@ static void sbSendViewedSegment(SBSegment *segment) {
     %orig;
     [self sbCheckSegmentsAtCurrentTime];
 }
-// Evaluates the loaded segments against the current playback time and performs
-// the configured skip / ask action for the first matching segment. Shared by
-// both time-change hooks so the skip logic lives in one place.
+// Evaluates the loaded segments at the current playback time and performs the configured
+// action for the first match; shared by both time-change hooks.
 %new
 - (void)sbCheckSegmentsAtCurrentTime {
     if (!sbActiveForVideo(self) || self.isPlayingAd) {
@@ -488,8 +457,7 @@ static void sbSendViewedSegment(SBSegment *segment) {
         if ([segment.actionType isEqualToString:@"mute"] || [segment.actionType isEqualToString:@"full"]) continue;
 
         BOOL isPoi = [segment.category isEqualToString:@"poi_highlight"];
-        // "Always auto-skip" acts like auto-skip but ignores the
-        // once-per-segment set, so re-entering a segment skips again.
+        // "Always auto-skip" ignores the once-per-segment set, so re-entering a segment skips again.
         BOOL repeatSkip = (action == SBSegmentActionAlwaysSkip);
 
         if (isPoi) {
@@ -564,8 +532,7 @@ static void sbSendViewedSegment(SBSegment *segment) {
 }
 %new
 - (void)sbPerformSkip:(SBSegment *)segment {
-    // "Always auto-skip" segments stay out of the once-per-segment set so
-    // encountering them again skips again.
+    // "Always auto-skip" segments stay out of the once-per-segment set so re-entry skips again.
     if ([segment configuredAction] != SBSegmentActionAlwaysSkip) [self.sbSkippedSegments addObject:segment.UUID];
     [self seekToTime:(CGFloat)segment.endTime];
     sbSendViewedSegment(segment);
@@ -584,8 +551,7 @@ static void sbSendViewedSegment(SBSegment *segment) {
         float alertDuration = SBClampedAlertDuration(SBUnskipAlertDuration);
 
         __weak typeof(self) weakSelf = self;
-        // Delay notification so the seek completes before the banner is shown,
-        // preventing the time-change callback from dismissing it immediately.
+        // Delay the banner so the seek completes first, preventing the time-change callback from dismissing it.
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(SBSkipNotificationDelaySeconds * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
             __strong typeof(weakSelf) strongSelf = weakSelf;
             if (!strongSelf) return;

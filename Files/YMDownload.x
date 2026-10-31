@@ -380,9 +380,8 @@ void YMDownloadStart(YMFormat *video, NSArray<YMFormat *> *audioTracks, NSArray<
     for (YMFormat *track in audioTracks) expectedTotal += (unsigned long long)track.contentLength;
     gYMDownloadMeter.expectedTotal = expectedTotal;
     __block unsigned long long completedBeforePhase = 0;
-    // Pushes cumulative progress into the download pill: percent in the title,
-    // downloaded/total bytes and speed in the subtitle. `phaseFraction` is only
-    // a fallback for when the expected sizes are unknown.
+    // Pushes cumulative progress into the download pill (percent, bytes, speed);
+    // phaseFraction is a fallback when expected sizes are unknown.
     void (^reportProgress)(float, unsigned long long, BOOL) = ^(float phaseFraction, unsigned long long completedBytes, BOOL isAudio) {
         [gYMDownloadMeter observeBytes:completedBytes];
         float overall = expectedTotal > 0 ? (float)((double)completedBytes / (double)expectedTotal) : phaseFraction;

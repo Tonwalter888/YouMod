@@ -66,8 +66,8 @@ typedef NS_ENUM(NSInteger, YMDownloadSheetSection) {
 - (void)presentFrom:(UIViewController *)presenter {
     UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:self];
     nav.navigationBarHidden = YES;
-    // Runtime OS check instead of @available: the Linux theos toolchain ships
-    // no compiler-rt builtins lib, so __isOSVersionAtLeast can't be linked.
+    // Runtime OS check instead of @available: the Linux theos toolchain can't
+    // link the compiler-rt builtins.
     if ([NSProcessInfo processInfo].operatingSystemVersion.majorVersion >= 15) {
         nav.sheetPresentationController.detents = @[[UISheetPresentationControllerDetent largeDetent]];
         nav.sheetPresentationController.prefersGrabberVisible = YES;
@@ -161,7 +161,7 @@ static NSString *YMByteCountString(unsigned long long bytes) {
     [super viewDidLoad];
     [self buildModel];
     self.view.backgroundColor = UIColor.systemBackgroundColor;
-    self.view.tintColor = UIColor.systemPurpleColor; // why he ourple
+    self.view.tintColor = UIColor.systemPurpleColor;
 
     UILabel *titleLabel = [UILabel new];
     if (self.channelTitle.length > 0) {
@@ -245,15 +245,12 @@ static NSString *YMByteCountString(unsigned long long bytes) {
     return out;
 }
 
-// Applies the model rebuilt by rebuildRows on top of the previous section list:
-// fades sections in/out when they appear or disappear, and cross-fades the
-// row content of the sections whose rows actually changed.
+// Animates the rebuildRows result: fades sections in/out and reloads the rows
+// of the sections that actually changed.
 - (void)applyRebuiltRowsFrom:(NSArray<NSNumber *> *)oldSections
                 changedKinds:(NSArray<NSNumber *> *)changedKinds {
-    // Batch updates must only declare section insert/delete — and may only run
-    // when the section list itself changed. Switching codecs keeps the sections
-    // but changes row counts, and an (empty) batch would trip UIKit's data
-    // source consistency check ("Invalid batch updates detected").
+    // Batch updates may only declare section insert/delete, and only when the
+    // section list itself changed — an empty batch trips UIKit's consistency check.
     if (![oldSections isEqualToArray:self.sections]) {
         [self.tableView performBatchUpdates:^{
             for (NSUInteger i = 0; i < oldSections.count; i++) {

@@ -10,50 +10,6 @@
 
 static const NSInteger TweakSection = 'ytmo';
 
-@interface YMSettingsItem : NSObject
-- (BOOL)isVisible;
-- (BOOL)isVisibleWithDefaults:(NSUserDefaults *)defaults;
-- (instancetype)visibleWhenKey:(NSString *)key equals:(NSInteger)value;
-- (instancetype)visibleWhenKey:(NSString *)key isNotEqualTo:(NSInteger)value;
-- (instancetype)visibleWhenKey:(NSString *)key isGreaterThan:(NSInteger)value;
-- (instancetype)visibleWhenKey:(NSString *)key isGreaterThanOrEqualTo:(NSInteger)value;
-- (instancetype)visibleWhenKey:(NSString *)key isLessThan:(NSInteger)value;
-- (instancetype)visibleWhenKey:(NSString *)key isLessThanOrEqualTo:(NSInteger)value;
-- (instancetype)visibleWhenKey:(NSString *)key inValues:(NSArray<NSNumber *> *)values;
-- (instancetype)visibleWhenKey:(NSString *)key notInValues:(NSArray<NSNumber *> *)values;
-- (instancetype)visibleWhenKeyDictionary:(NSDictionary<NSString *, NSNumber *> *)keyValues;
-- (instancetype)visibleWhenBoolKey:(NSString *)key equals:(BOOL)value;
-- (instancetype)visibleWhenBoolKey:(NSString *)key;
-- (instancetype)visibleWhenBoolKeys:(NSArray<NSString *> *)keys;
-- (instancetype)visibleWhenBoolKeys:(NSArray<NSString *> *)keys allEqualTo:(BOOL)value;
-- (instancetype)visibleWhenAnyBoolKey:(NSArray<NSString *> *)keys;
-- (instancetype)visibleWhenBoolDictionary:(NSDictionary<NSString *, NSNumber *> *)keyValues;
-- (instancetype)visibleWhen:(BOOL (^)(NSUserDefaults *defaults))block;
-- (instancetype)requireAnyCondition;
-@end
-extern void YMPushSubSettings(NSString *title, NSArray<YMSettingsItem *> *items, id settingsVC, id parentResponder);
-extern void YMPushSubSettingsWithFooter(NSString *title, NSArray<YMSettingsItem *> *items, id settingsVC, id parentResponder);
-extern YMSettingsItem *YMToggle(NSString *title, NSString *subtitle, NSString *key);
-extern YMSettingsItem *YMSlider(NSString *title, NSString *subtitle, NSString *key, float min, float max, float step, float defaultValue);
-extern YMSettingsItem *YMPicker(NSString *title, NSString *subtitle, NSString *key, NSArray<NSString *> *options, NSInteger defaultValue);
-extern YMSettingsItem *YMAction(NSString *title, NSString *subtitle, void (^action)(UIViewController *vc));
-extern YMSettingsItem *YMNavAction(NSString *title, NSString *subtitle, void (^action)(UIViewController *vc));
-extern YMSettingsItem *YMHeader(NSString *title);
-extern YMSettingsItem *YMSegment(NSString *title, NSString *key, NSArray<NSNumber *> *icons, NSInteger defaultValue);
-extern YMSettingsItem *YMTextSegment(NSString *title, NSString *key, NSArray<NSString *> *labels, NSInteger defaultValue);
-extern YMSettingsItem *YMImageSegment(NSString *title, NSString *key, NSArray<UIImage *> *images, NSInteger defaultValue);
-extern YMSettingsItem *YMDeveloper(NSString *name, NSString *role, NSString *profileURL, NSString *avatarBaseURL);
-extern void YMPushTabOrder(id settingsVC, id parentResponder);
-extern void YMPushOverlayButtonOrder(id settingsVC, id parentResponder);
-extern void YMRegisterSettingsGroup(NSString *title, NSArray<YMSettingsItem *> *items);
-extern void YMPushSettingsSearch(id settingsVC, id parentResponder);
-extern void YMPushSponsorBlockSettings(id settingsVC);
-
-@interface YTSettingsSectionItemManager (YouMod)
-- (void)updateYouModSectionWithEntry:(id)entry;
-- (void)updateSponsorBlockSectionWithEntry:(id)entry;
-@end
-
 static NSString *GetCacheSize() { // YTLite - @dayanch96
     NSString *cachePath = NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES).firstObject;
     NSArray *filesArray = [[NSFileManager defaultManager] subpathsOfDirectoryAtPath:cachePath error:nil];
@@ -70,42 +26,20 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
 
 #pragma mark - Custom YouMod home page
 
-// The custom YouMod home page is a YMSubSettingsViewController (YouMod's own UIKit
-// table page) instead of YouTube's native settings collection view. Its rows are
-// built in -updateYouModSectionWithEntry: (where every sub-group's item array is in
-// scope) and cached here; the top-level "YouMod" tap pushes it via -didReceiveDrillDownItem:.
+// Custom YouMod home page rows, built in -updateYouModSectionWithEntry: and cached
+// here. Tapping the "YouMod" cell in YouTube's settings pushes this page.
 static NSArray<YMSettingsItem *> *gYMYouModHomeItems = nil;
 
-// Push the cached custom home page. settingsVC is the YTSettingsViewController that
-// owns the navigation stack; parentResponder seeds YouTube's DI container for theming.
-// Uses the footer variant so the thin version footer shows at the bottom.
+// Push the cached home page (footer variant shows the version footer). settingsVC
+// owns the navigation stack; parentResponder seeds YouTube's theming DI.
 static void YMPushYouModHome(id settingsVC, id parentResponder) {
     if (!gYMYouModHomeItems || !settingsVC) return;
     YMPushSubSettingsWithFooter(TweakName, gYMYouModHomeItems, settingsVC, parentResponder);
 }
 
-// Best-effort check that a settings drill-down targets the YouMod category. The exact
-// shape of the drill-down item isn't something we can verify offline, so this probes a
-// few likely KVC paths inside @try and defaults to NO (never intercepts) when unsure —
-// a wrong guess can't break other settings navigation. On-device test-and-adjust point.
-static BOOL YMIsYouModDrillDown(id selfVC, id item) {
-    @try {
-        id cat = [selfVC valueForKey:@"_detailsCategoryID"];
-        if ([cat respondsToSelector:@selector(integerValue)] && [cat integerValue] == TweakSection) return YES;
-    } @catch (...) {}
-    for (NSString *key in @[@"categoryID", @"categoryId", @"category"]) {
-        @try {
-            id v = [item valueForKey:key];
-            if ([v respondsToSelector:@selector(integerValue)] && [v integerValue] == TweakSection) return YES;
-        } @catch (...) {}
-    }
-    return NO;
-}
-
-// Shared push for the "Tab bar" sub-page. Its items need a dynamic image list built
-// from the enabled tabs, so both the native section row and the custom home page call
-// this instead of duplicating the ~50-line image builder.
-static void YMPushTabBarSettings(id settingsVC, id parentResponder) {
+// "Tab bar" sub-page items (image list built from the enabled tabs).
+// Shared by the search registration and the home row.
+static NSArray<YMSettingsItem *> *YMTabBarItems(id settingsVC, id parentResponder) {
     NSDictionary *tabYTIconMap = @{@"home": @(65), @"shorts": @(769), @"subscriptions": @(66), @"library": @(61)};
     NSDictionary *tabBundleIconMap = @{@"history": @"icons/history", @"gaming": @"icons/gaming", @"sports": @"icons/sports", @"notifications": @"icons/noti", @"news": @"icons/news", @"music": @"icons/music", @"watchlater": @"icons/watchlater", @"playlist": @"icons/playlist", @"like": @"icons/like", @"live": @"icons/live", @"post": @"icons/post", @"video": @"icons/video", @"movie": @"icons/movie", @"course": @"icons/course", @"minigame": @"icons/minigame", @"fashion": @"icons/fashion", @"learning": @"icons/learning", @"download": @"icons/download"};
     YTAssetLoader *assetLoader = [[%c(YTAssetLoader) alloc] initWithBundle:YouModBundle()];
@@ -152,7 +86,7 @@ static void YMPushTabBarSettings(id settingsVC, id parentResponder) {
         }
     }
 
-    YMPushSubSettings(YMLOC(@"TABBAR"), @[
+    return @[
         YMImageSegment(YMLOC(@"DEFAULT_TAB"), DefaultTab, defaultTabImages, 0),
         YMTextSegment(YMLOC(@"FORSTED_TAB_BAR"), UseFrostedTabBar, (@[YMLOC(@"DEFAULT"),YMLOC(@"ENABLED"), YMLOC(@"DISABLED")]), 0),
         YMToggle(YMLOC(@"HIDE_TAB_INDI"), YMLOC(@"HIDE_TAB_INDI_DESC"), HideTabIndi),
@@ -161,11 +95,11 @@ static void YMPushTabBarSettings(id settingsVC, id parentResponder) {
             (void)vc;
             YMPushTabOrder(settingsVC, parentResponder);
         }),
-    ], settingsVC, parentResponder);
+    ];
 }
 
-// Shared build of the "Preferences" sub-page items, used by both the native section row
-// and the custom home page so the import/export/cache block lives in one place.
+// "Preferences" sub-page items (import/export/cache + update/cache toggles).
+// Shared by the search registration and the home row.
 static NSArray<YMSettingsItem *> *YMPreferencesItems(void) {
     return @[
         YMHeader(YMLOC(@"PERFER")),
@@ -289,52 +223,12 @@ static NSArray<YMSettingsItem *> *YMPreferencesItems(void) {
 
 %new(v@:@)
 - (void)updateYouModSectionWithEntry:(id)entry {
-    NSMutableArray <YTSettingsSectionItem *> *sectionItems = [NSMutableArray array];
-    Class YTSettingsSectionItemClass = %c(YTSettingsSectionItem);
+    (void)entry;
     YTSettingsViewController *settingsViewController = [self valueForKey:@"_settingsViewControllerDelegate"];
 
-    // Section 0 (top): version + search. GitHub/Developer and Preferences are
-    // rendered further down (between SponsorBlock and Preferences) in the new layout.
+    // No native rows — the "YouMod" row opens the home page (didSelectItemAtIndex
+    // hook below). This method only builds the sub-group item arrays for home + search.
 
-    // Tweak Version (at the top)
-    // Thanks to the original codes from YTweaks by fosterbarnes - https://github.com/fosterbarnes/YTweaks/blob/e921591a89b87256a2b37c4788bd99282f70d9c2/Settings.x
-    YTSettingsSectionItem *tweakVersion = [YTSettingsSectionItemClass itemWithTitle:[@"YouMod v" stringByAppendingString:YouModVersion]
-        titleDescription:nil
-        accessibilityIdentifier:nil
-        detailTextBlock:nil
-        selectBlock:^BOOL (YTSettingsCell *cell, NSUInteger arg1) {
-            return NO;
-        }];
-    [sectionItems addObject:tweakVersion];
-
-    // ?
-    YTSettingsSectionItem *settings = [YTSettingsSectionItemClass itemWithTitle:nil
-        titleDescription:YMLOC(@"SETTINGS")
-        accessibilityIdentifier:nil
-        detailTextBlock:nil
-        selectBlock:^BOOL (YTSettingsCell *cell, NSUInteger arg1) {
-            return NO;
-        }];
-    [sectionItems addObject:settings];
-
-    // Search — opens the global settings search page. The top-level list is YouTube's
-    // native settings collection view, which we can't attach a live search bar to
-    // without triggering YouTube's own search mode (it hijacks the pane), so global
-    // search lives on a pushed page whose own search bar is focused on appear.
-    // No settingIcon: YouTube already uses the magnifier (YT_SEARCH) for the Navbar
-    // row, so an icon here would duplicate it. The row's title carries the meaning.
-    YTSettingsSectionItem *search = [YTSettingsSectionItemClass itemWithTitle:YMLOC(@"SEARCH")
-        titleDescription:YMLOC(@"SEARCH_DESC")
-        accessibilityIdentifier:nil
-        detailTextBlock:nil
-        selectBlock:^BOOL (YTSettingsCell *cell, NSUInteger arg1) {
-            YMPushSettingsSearch(settingsViewController, [self parentResponder]);
-            return YES;
-        }];
-    search.indicatorIconType = YT_CHEVRON_RIGHT; // YT's native light-gray ">" for rows that push a page
-    [sectionItems addObject:search];
-
-    // Section 1
     // Downloading
     NSArray<YMSettingsItem *> *downloadingItems = @[
             YMToggle(YMLOC(@"DOWNLOAD_MANAGER"), YMLOC(@"DOWNLOAD_MANAGER_DESC"), DownloadManager),
@@ -346,34 +240,14 @@ static NSArray<YMSettingsItem *> *YMPreferencesItems(void) {
             YMToggle(YMLOC(@"DOWNLOAD_POST"), YMLOC(@"DOWNLOAD_POST_DESC"), DownloadPost),
     ];
     YMRegisterSettingsGroup(YMLOC(@"DOWNLOADING"), downloadingItems);
-    YTSettingsSectionItem *downloadinggroup = [YTSettingsSectionItemClass itemWithTitle:YMLOC(@"DOWNLOADING") accessibilityIdentifier:nil detailTextBlock:nil selectBlock:^BOOL (YTSettingsCell *cell, NSUInteger arg1) {
-        YMPushSubSettings(YMLOC(@"DOWNLOADING"), downloadingItems, settingsViewController, [self parentResponder]);
-        return YES;
-    }];
-    downloadinggroup.indicatorIconType = YT_CHEVRON_RIGHT;
-    YTIIcon *downloadIcon = [%c(YTIIcon) new];
-    downloadIcon.iconType = 57;
-    downloadinggroup.settingIcon = downloadIcon;
-    [sectionItems addObject:downloadinggroup];
 
-    // Section 2
     // Appearance
     NSArray<YMSettingsItem *> *appearanceItems = @[
             YMToggle(YMLOC(@"OLED_THEME"), YMLOC(@"OLED_THEME_DESC"), OLEDTheme),
             YMToggle(YMLOC(@"OLED_KEYBOARD"), YMLOC(@"OLED_KEYBOARD_DESC"), OLEDKeyboard),
     ];
     YMRegisterSettingsGroup(YMLOC(@"APPEARANCE"), appearanceItems);
-    YTSettingsSectionItem *appergroup = [YTSettingsSectionItemClass itemWithTitle:YMLOC(@"APPEARANCE") accessibilityIdentifier:nil detailTextBlock:nil selectBlock:^BOOL (YTSettingsCell *cell, NSUInteger arg1) {
-        YMPushSubSettings(YMLOC(@"APPEARANCE"), appearanceItems, settingsViewController, [self parentResponder]);
-        return YES;
-    }];
-    appergroup.indicatorIconType = YT_CHEVRON_RIGHT;
-    YTIIcon *icon0 = [%c(YTIIcon) new];
-    icon0.iconType = 921;
-    appergroup.settingIcon = icon0;
-    [sectionItems addObject:appergroup];
 
-    // Section 3
     // Navigation bar
     NSArray<YMSettingsItem *> *navbarItems = @[
             YMToggle(YMLOC(@"STICKY_NAVBAR"), YMLOC(@"STICKY_NAVBAR_DESC"), StickyNavBar),
@@ -386,17 +260,7 @@ static NSArray<YMSettingsItem *> *YMPreferencesItems(void) {
             YMPicker(YMLOC(@"NAVIGATION_ICON"), YMLOC(@"NAVIGATION_ICON_DESC"), YTLogoIndex, (@[YMLOC(@"DEFAULT"), YMLOC(@"PREMIUM"), YMLOC(@"YOUTUBE"), YMLOC(@"REMOVE_YTLOGO")]), 0),
     ];
     YMRegisterSettingsGroup(YMLOC(@"NAVBAR"), navbarItems);
-    YTSettingsSectionItem *navbargroup = [YTSettingsSectionItemClass itemWithTitle:YMLOC(@"NAVBAR") accessibilityIdentifier:nil detailTextBlock:nil selectBlock:^BOOL (YTSettingsCell *cell, NSUInteger arg1) {
-        YMPushSubSettings(YMLOC(@"NAVBAR"), navbarItems, settingsViewController, [self parentResponder]);
-        return YES;
-    }];
-    navbargroup.indicatorIconType = YT_CHEVRON_RIGHT;
-    YTIIcon *icon1 = [%c(YTIIcon) new];
-    icon1.iconType = 60;
-    navbargroup.settingIcon = icon1;
-    [sectionItems addObject:navbargroup];
 
-    // Section 4
     // Feed
     NSArray<YMSettingsItem *> *feedItems = @[
             YMToggle(YMLOC(@"REMOVE_ADS"), YMLOC(@"REMOVE_ADS_DESC"), RemoveAds),
@@ -412,17 +276,7 @@ static NSArray<YMSettingsItem *> *YMPreferencesItems(void) {
             YMToggle(YMLOC(@"HIDE_SPONSOR_BUTTON"), YMLOC(@"HIDE_SPONSOR_BUTTON_DESC"), HideSponsorButton),
     ];
     YMRegisterSettingsGroup(YMLOC(@"FEED"), feedItems);
-    YTSettingsSectionItem *feedgroup = [YTSettingsSectionItemClass itemWithTitle:YMLOC(@"FEED") accessibilityIdentifier:nil detailTextBlock:nil selectBlock:^BOOL (YTSettingsCell *cell, NSUInteger arg1) {
-        YMPushSubSettings(YMLOC(@"FEED"), feedItems, settingsViewController, [self parentResponder]);
-        return YES;
-    }];
-    feedgroup.indicatorIconType = YT_CHEVRON_RIGHT;
-    YTIIcon *icon2 = [%c(YTIIcon) new];
-    icon2.iconType = 193;
-    feedgroup.settingIcon = icon2;
-    [sectionItems addObject:feedgroup];
 
-    // Section 5
     // Player
     NSArray<YMSettingsItem *> *playerItems = @[
             YMPicker(YMLOC(@"QUALITY_WIFI"), YMLOC(@"QUALITY_WIFI_DESC"), WifiQualityIndex, (@[YMLOC(@"DEFAULT"), YMLOC(@"BEST"), @"2160p", @"1440p", @"1080p", @"720p", @"480p", @"360p", @"240p", @"144p"]), 0),
@@ -484,7 +338,6 @@ static NSArray<YMSettingsItem *> *YMPreferencesItems(void) {
             YMToggle(YMLOC(@"SKIP_FORWARD"), YMLOC(@"SKIP_FORWARD_DESC"), SkipForwardEnabled),
             [YMSlider(YMLOC(@"FORWARD_SECONDS"), nil, ForwardSeconds, 5, 60, 5, 10) visibleWhenBoolKey:SkipForwardEnabled],
             YMHeader(YMLOC(@"PLAYER_ACTIONS")),
-            // Moved here from the old top-level "Extra" group (was under YouMod home).
             YMToggle(YMLOC(@"FIX_PLAYBACK_ISSUES"), YMLOC(@"FIX_PLAYBACK_ISSUES_DESC"), FixPlaybackIssues),
             YMPicker(YMLOC(@"DEFAULT_SPEED"), YMLOC(@"DEFAULT_SPEED_DESC"), AutoSpeedIndex, (@[YMLOC(@"DISABLED"), @"0.25x", @"0.5x", @"0.75x", @"1x", @"1.25x", @"1.5x", @"1.75x", @"2x", @"3x", @"4x", @"5x"]), 0),
             YMToggle(YMLOC(@"FORCE_MINIPLAYER"), YMLOC(@"FORCE_MINIPLAYER_DESC"), ForceMiniPlayer),
@@ -514,17 +367,7 @@ static NSArray<YMSettingsItem *> *YMPreferencesItems(void) {
             YMToggle(YMLOC(@"DISABLES_ENGAGE_PANEL"), YMLOC(@"DISABLES_ENGAGE_PANEL_DESC"), DisablesEngagementPanel),
     ];
     YMRegisterSettingsGroup(YMLOC(@"PLAYER"), playerItems);
-    YTSettingsSectionItem *playergroup = [YTSettingsSectionItemClass itemWithTitle:YMLOC(@"PLAYER") accessibilityIdentifier:nil detailTextBlock:nil selectBlock:^BOOL (YTSettingsCell *cell, NSUInteger arg1) {
-        YMPushSubSettings(YMLOC(@"PLAYER"), playerItems, settingsViewController, [self parentResponder]);
-        return YES;
-    }];
-    playergroup.indicatorIconType = YT_CHEVRON_RIGHT;
-    YTIIcon *icon3 = [%c(YTIIcon) new];
-    icon3.iconType = 658;
-    playergroup.settingIcon = icon3;
-    [sectionItems addObject:playergroup];
 
-    // Section 6
     // Shorts
     NSArray<YMSettingsItem *> *shortsItems = @[
             YMTextSegment(YMLOC(@"SHORTS_ACTION"), ShortsActionIndex, (@[YMLOC(@"LOOP"), YMLOC(@"SKIP_TO_NEXT_SHORTS"), YMLOC(@"PAUSE_SHORTS")]), 0),
@@ -556,29 +399,11 @@ static NSArray<YMSettingsItem *> *YMPreferencesItems(void) {
             YMToggle(YMLOC(@"REMOVE_SHORTS_PAUSED_TRENDS_BUTTON"), YMLOC(@"REMOVE_SHORTS_PAUSED_TRENDS_BUTTON_DESC"), RemoveShortsPausedTrendsButton),
     ];
     YMRegisterSettingsGroup(YMLOC(@"SHORTS"), shortsItems);
-    YTSettingsSectionItem *shortsgroup = [YTSettingsSectionItemClass itemWithTitle:YMLOC(@"SHORTS") accessibilityIdentifier:nil detailTextBlock:nil selectBlock:^BOOL (YTSettingsCell *cell, NSUInteger arg1) {
-        YMPushSubSettings(YMLOC(@"SHORTS"), shortsItems, settingsViewController, [self parentResponder]);
-        return YES;
-    }];
-    shortsgroup.indicatorIconType = YT_CHEVRON_RIGHT;
-    YTIIcon *icon4 = [%c(YTIIcon) new];
-    icon4.iconType = 769;
-    shortsgroup.settingIcon = icon4;
-    [sectionItems addObject:shortsgroup];
 
-    // Section 7
     // Tab bar
-    YTSettingsSectionItem *tabgroup = [YTSettingsSectionItemClass itemWithTitle:YMLOC(@"TABBAR") accessibilityIdentifier:nil detailTextBlock:nil selectBlock:^BOOL (YTSettingsCell *cell, NSUInteger arg1) {
-        YMPushTabBarSettings(settingsViewController, [self parentResponder]);
-        return YES;
-    }];
-    YTIIcon *icon5 = [%c(YTIIcon) new];
-    icon5.iconType = 66;
-    tabgroup.settingIcon = icon5;
-    tabgroup.indicatorIconType = YT_CHEVRON_RIGHT;
-    [sectionItems addObject:tabgroup];
+    NSArray<YMSettingsItem *> *tabbarItems = YMTabBarItems(settingsViewController, [self parentResponder]);
+    YMRegisterSettingsGroup(YMLOC(@"TABBAR"), tabbarItems);
 
-    // Section 8
     // Miscellaneous
     NSArray<YMSettingsItem *> *miscItems = @[
             YMToggle(YMLOC(@"BACKGROUND_PLAYBACK"), YMLOC(@"BACKGROUND_PLAYBACK_DESC"), BackgroundPlayback),
@@ -635,134 +460,64 @@ static NSArray<YMSettingsItem *> *YMPreferencesItems(void) {
             YMToggle(YMLOC(@"REMOVE_CLEARSCREEN_OPTION"), YMLOC(@"REMOVE_CLEARSCREEN_OPTION_DESC"), RemoveClearScreenOption),
     ];
     YMRegisterSettingsGroup(YMLOC(@"MISCELLANEOUS"), miscItems);
-    YTSettingsSectionItem *othergroup = [YTSettingsSectionItemClass itemWithTitle:YMLOC(@"MISCELLANEOUS") accessibilityIdentifier:nil detailTextBlock:nil selectBlock:^BOOL (YTSettingsCell *cell, NSUInteger arg1) {
-        YMPushSubSettings(YMLOC(@"MISCELLANEOUS"), miscItems, settingsViewController, [self parentResponder]);
-        return YES;
-    }];
-    YTIIcon *icon6 = [%c(YTIIcon) new];
-    icon6.iconType = 1101;
-    othergroup.settingIcon = icon6;
-    othergroup.indicatorIconType = YT_CHEVRON_RIGHT;
-    [sectionItems addObject:othergroup];
 
-    // Section: SponsorBlock
-    YTSettingsSectionItem *sponsorblockgroup = [YTSettingsSectionItemClass itemWithTitle:@"SponsorBlock" accessibilityIdentifier:nil detailTextBlock:nil selectBlock:^BOOL (YTSettingsCell *cell, NSUInteger arg1) {
-        [self updateSponsorBlockSectionWithEntry:entry];
-        return YES;
-    }];
-    YTIIcon *iconSB = [%c(YTIIcon) new];
-    iconSB.iconType = 610;
-    sponsorblockgroup.settingIcon = iconSB;
-    sponsorblockgroup.indicatorIconType = YT_CHEVRON_RIGHT;
-    [sectionItems addObject:sponsorblockgroup];
-
-    // Developer/GitHub (native fallback representation). The rich avatar rows only render
-    // on the custom home page; this keeps the GitHub links reachable if the drill-down
-    // interception doesn't fire on-device. The "Developer" row itself opens the custom
-    // home page so the avatar view is always reachable. Sits between SponsorBlock and Preferences.
-    YTSettingsSectionItem *devHeader = [YTSettingsSectionItemClass itemWithTitle:nil
-        titleDescription:@"Developer"
-        accessibilityIdentifier:nil
-        detailTextBlock:nil
-        selectBlock:^BOOL (YTSettingsCell *cell, NSUInteger arg1) {
-            YMPushYouModHome(settingsViewController, [self parentResponder]);
-            return YES;
-        }];
-    [sectionItems addObject:devHeader];
-
-    YTSettingsSectionItem *fbIssues = [YTSettingsSectionItemClass itemWithTitle:YMLOC(@"NEW_ISSUES")
-        titleDescription:YMLOC(@"NEW_ISSUES_DESC")
-        accessibilityIdentifier:nil
-        detailTextBlock:nil
-        selectBlock:^BOOL (YTSettingsCell *cell, NSUInteger arg1) {
-            return [%c(YTUIUtils) openURL:[NSURL URLWithString:@"https://github.com/Tonwalter888/YouMod/issues/new/choose"]];
-        }];
-    [sectionItems addObject:fbIssues];
-
-    YTSettingsSectionItem *fbSource = [YTSettingsSectionItemClass itemWithTitle:YMLOC(@"SOURCE_CODES")
-        titleDescription:YMLOC(@"SOURCE_CODES_DESC")
-        accessibilityIdentifier:nil
-        detailTextBlock:nil
-        selectBlock:^BOOL (YTSettingsCell *cell, NSUInteger arg1) {
-            return [%c(YTUIUtils) openURL:[NSURL URLWithString:@"https://github.com/Tonwalter888/YouMod"]];
-        }];
-    [sectionItems addObject:fbSource];
-
-    // Section 9
-    // Perferences
-    YTSettingsSectionItem *perfgroup = [YTSettingsSectionItemClass itemWithTitle:YMLOC(@"PERFER_HEADER") accessibilityIdentifier:nil detailTextBlock:nil selectBlock:^BOOL (YTSettingsCell *cell, NSUInteger arg1) {
-        YMPushSubSettings(YMLOC(@"PERFER_HEADER"), YMPreferencesItems(), settingsViewController, [self parentResponder]);
-        return YES;
-    }];
-    YTIIcon *icon7 = [%c(YTIIcon) new];
-    icon7.iconType = 530;
-    perfgroup.settingIcon = icon7;
-    perfgroup.indicatorIconType = YT_CHEVRON_RIGHT;
-    [sectionItems addObject:perfgroup];
+    // Preferences (import/export/cache actions + update/cache toggles).
+    NSArray<YMSettingsItem *> *prefItems = YMPreferencesItems();
+    YMRegisterSettingsGroup(YMLOC(@"PERFER_HEADER"), prefItems);
 
     // ---- Custom YouMod home page ----
-    // Built here (in the one place every sub-group item array is in scope) and cached;
-    // the top-level "YouMod" tap pushes this instead of YouTube's native section view.
-    // Layout: [wider rows with ">" chevrons] for each section, then the Developer/GitHub
-    // block between SponsorBlock and Preferences, then Preferences.
+    // Cached here; the "YouMod" cell tap pushes it. Section rows are tall icon rows,
+    // then the Developer block and Preferences.
     NSMutableArray<YMSettingsItem *> *homeItems = [NSMutableArray array];
 
-    // Version (top, informational — no chevron).
-    [homeItems addObject:YMAction([@"YouMod v" stringByAppendingString:YouModVersion], nil, ^(UIViewController *vc) { (void)vc; })];
-
-    // Settings header + Search.
-    [homeItems addObject:YMHeader(YMLOC(@"SETTINGS"))];
-    [homeItems addObject:YMNavAction(YMLOC(@"SEARCH"), YMLOC(@"SEARCH_DESC"), ^(UIViewController *vc) {
-        (void)vc;
-        YMPushSettingsSearch(settingsViewController, [self parentResponder]);
-    })];
-
-    // Section rows — each a nav row (opensPage gives the ">" chevron) pushing its sub-page.
-    [homeItems addObject:YMNavAction(YMLOC(@"DOWNLOADING"), nil, ^(UIViewController *vc) {
+    // Section rows — nav rows pushing their sub-page.
+    [homeItems addObject:[YMNavAction(YMLOC(@"DOWNLOADING"), nil, ^(UIViewController *vc) {
         (void)vc;
         YMPushSubSettings(YMLOC(@"DOWNLOADING"), downloadingItems, settingsViewController, [self parentResponder]);
-    })];
-    [homeItems addObject:YMNavAction(YMLOC(@"APPEARANCE"), nil, ^(UIViewController *vc) {
+    }) withIconType:57]];
+    [homeItems addObject:[YMNavAction(YMLOC(@"APPEARANCE"), nil, ^(UIViewController *vc) {
         (void)vc;
         YMPushSubSettings(YMLOC(@"APPEARANCE"), appearanceItems, settingsViewController, [self parentResponder]);
-    })];
-    [homeItems addObject:YMNavAction(YMLOC(@"NAVBAR"), nil, ^(UIViewController *vc) {
+    }) withIconType:921]];
+    [homeItems addObject:[YMNavAction(YMLOC(@"NAVBAR"), nil, ^(UIViewController *vc) {
         (void)vc;
         YMPushSubSettings(YMLOC(@"NAVBAR"), navbarItems, settingsViewController, [self parentResponder]);
-    })];
-    [homeItems addObject:YMNavAction(YMLOC(@"FEED"), nil, ^(UIViewController *vc) {
+    }) withIconType:60]];
+    [homeItems addObject:[YMNavAction(YMLOC(@"FEED"), nil, ^(UIViewController *vc) {
         (void)vc;
         YMPushSubSettings(YMLOC(@"FEED"), feedItems, settingsViewController, [self parentResponder]);
-    })];
-    [homeItems addObject:YMNavAction(YMLOC(@"PLAYER"), nil, ^(UIViewController *vc) {
+    }) withIconType:193]];
+    [homeItems addObject:[YMNavAction(YMLOC(@"PLAYER"), nil, ^(UIViewController *vc) {
         (void)vc;
         YMPushSubSettings(YMLOC(@"PLAYER"), playerItems, settingsViewController, [self parentResponder]);
-    })];
-    [homeItems addObject:YMNavAction(YMLOC(@"SHORTS"), nil, ^(UIViewController *vc) {
+    }) withIconType:658]];
+    [homeItems addObject:[YMNavAction(YMLOC(@"SHORTS"), nil, ^(UIViewController *vc) {
         (void)vc;
         YMPushSubSettings(YMLOC(@"SHORTS"), shortsItems, settingsViewController, [self parentResponder]);
-    })];
-    [homeItems addObject:YMNavAction(YMLOC(@"TABBAR"), nil, ^(UIViewController *vc) {
+    }) withIconType:769]];
+    [homeItems addObject:[YMNavAction(YMLOC(@"TABBAR"), nil, ^(UIViewController *vc) {
         (void)vc;
-        YMPushTabBarSettings(settingsViewController, [self parentResponder]);
-    })];
-    [homeItems addObject:YMNavAction(YMLOC(@"MISCELLANEOUS"), nil, ^(UIViewController *vc) {
+        YMPushSubSettings(YMLOC(@"TABBAR"), tabbarItems, settingsViewController, [self parentResponder]);
+    }) withIconType:66]];
+    [homeItems addObject:[YMNavAction(YMLOC(@"MISCELLANEOUS"), nil, ^(UIViewController *vc) {
         (void)vc;
         YMPushSubSettings(YMLOC(@"MISCELLANEOUS"), miscItems, settingsViewController, [self parentResponder]);
-    })];
-    [homeItems addObject:YMNavAction(@"SponsorBlock", nil, ^(UIViewController *vc) {
+    }) withIconType:1101]];
+    [homeItems addObject:[YMNavAction(@"SponsorBlock", nil, ^(UIViewController *vc) {
         (void)vc;
         YMPushSponsorBlockSettings(settingsViewController);
-    })];
+    }) withIconType:610]];
+    [homeItems addObject:[YMNavAction(YMLOC(@"PERFER_HEADER"), nil, ^(UIViewController *vc) {
+        (void)vc;
+        YMPushSubSettings(YMLOC(@"PERFER_HEADER"), prefItems, settingsViewController, [self parentResponder]);
+    }) withIconType:530]];
 
-    // Developer block (GitHub) — sits between SponsorBlock and Preferences.
-    [homeItems addObject:YMHeader(@"Developer")];
-    [homeItems addObject:YMDeveloper(@"Tonwalter888", @"author/owner", @"https://github.com/Tonwalter888", @"https://github.com/Tonwalter888")];
-    [homeItems addObject:YMDeveloper(@"G Rohit", @"collaborator", @"https://github.com/grohit1810", @"https://github.com/grohit1810")];
-    [homeItems addObject:YMDeveloper(@"ZomkaDEV", @"collaborator", @"https://github.com/ZomkaDEV", @"https://github.com/ZomkaDEV")];
-    // Blank header below the Developer section (this section is wide normally).
-    [homeItems addObject:YMHeader(@"")];
-    // The old GitHub link rows, kept like normal.
+    // Developer block (GitHub).
+    [homeItems addObject:YMHeader(YMLOC(@"DEV_HEADER"))];
+    [homeItems addObject:YMDeveloper(@"Tonwalter888", YMLOC(@"DEV_ROLE_AUTHOR"), @"https://github.com/Tonwalter888", @"https://github.com/Tonwalter888")];
+    [homeItems addObject:YMDeveloper(@"G Rohit", YMLOC(@"DEV_ROLE_COLLABORATOR"), @"https://github.com/grohit1810", @"https://github.com/grohit1810")];
+    [homeItems addObject:YMDeveloper(@"ZomkaDEV", YMLOC(@"DEV_ROLE_COLLABORATOR"), @"https://github.com/ZomkaDEV", @"https://github.com/ZomkaDEV")];
+    // GitHub links.
     [homeItems addObject:YMAction(YMLOC(@"NEW_ISSUES"), YMLOC(@"NEW_ISSUES_DESC"), ^(UIViewController *vc) {
         (void)vc;
         [%c(YTUIUtils) openURL:[NSURL URLWithString:@"https://github.com/Tonwalter888/YouMod/issues/new/choose"]];
@@ -772,20 +527,15 @@ static NSArray<YMSettingsItem *> *YMPreferencesItems(void) {
         [%c(YTUIUtils) openURL:[NSURL URLWithString:@"https://github.com/Tonwalter888/YouMod"]];
     })];
 
-    // Preferences (last).
-    [homeItems addObject:YMNavAction(YMLOC(@"PERFER_HEADER"), nil, ^(UIViewController *vc) {
-        (void)vc;
-        YMPushSubSettings(YMLOC(@"PERFER_HEADER"), YMPreferencesItems(), settingsViewController, [self parentResponder]);
-    })];
-
     gYMYouModHomeItems = [homeItems copy];
 
+    // The native section itself is empty — the "YouMod" cell opens the home page.
     if ([settingsViewController respondsToSelector:@selector(setSectionItems:forCategory:title:icon:titleDescription:headerHidden:)]) {
         YTIIcon *icon = [%c(YTIIcon) new];
         icon.iconType = YT_TUNE;
-        [settingsViewController setSectionItems:sectionItems forCategory:TweakSection title:TweakName icon:icon titleDescription:nil headerHidden:NO];
+        [settingsViewController setSectionItems:nil forCategory:TweakSection title:TweakName icon:icon titleDescription:nil headerHidden:NO];
     } else
-        [settingsViewController setSectionItems:sectionItems forCategory:TweakSection title:TweakName titleDescription:nil headerHidden:NO];
+        [settingsViewController setSectionItems:nil forCategory:TweakSection title:TweakName titleDescription:nil headerHidden:NO];
 }
 
 - (void)updateSectionForCategory:(NSUInteger)category withEntry:(id)entry {
@@ -798,26 +548,22 @@ static NSArray<YMSettingsItem *> *YMPreferencesItems(void) {
 
 %end
 
-// The drill-down interceptor is grouped + conditionally initialized in %ctor so that if
-// -didReceiveDrillDownItem: doesn't exist on this YouTube build, we never hook it (a
-// %orig on a missing method would crash). When absent, the native section fallback row
-// still opens the same sub-pages.
-%group YMYouModDrillDown
-%hook YTSettingsViewController
+// Tapping the (empty) "YouMod" row opens the custom home page right here; %orig is
+// skipped so YouTube never drills into the empty section.
+%hook YTSettingsSectionController
 
-// When the top-level "YouMod" section is tapped, push our custom home page instead of
-// letting YouTube drill into its native section view. See YMIsYouModDrillDown() — the
-// category check is defensive (defaults to letting %orig handle it) and is the
-// on-device test-and-adjust point. Signature taken from the user's class dump.
-- (void)didReceiveDrillDownItem:(id)item {
-    if (gYMYouModHomeItems && YMIsYouModDrillDown(self, item)) {
-        YMPushYouModHome(self, [self parentResponder]);
+- (void)didSelectItemAtIndex:(NSInteger)index fromView:(UIView *)view {
+    NSArray<YTSettingsSectionItem *> *items = self.items;
+    if (index >= 0 && index < (NSInteger)items.count && [items[index].title isEqualToString:TweakName]) {
+        UIViewController *sectionVC = [self valueForKey:@"_sectionControllerDelegate"];
+        YTSettingsViewController *settingsVC = (YTSettingsViewController *)sectionVC.parentViewController;
+        id parentResponder = [sectionVC valueForKey:@"_parentResponder"];
+        YMPushYouModHome(settingsVC, parentResponder);
         return;
     }
     %orig;
 }
 
-%end
 %end
 
 %ctor {
@@ -836,8 +582,4 @@ static NSArray<YMSettingsItem *> *YMPreferencesItems(void) {
         ForwardSeconds: @10.0
     }];
     %init;
-    // Only hook the drill-down interceptor if this build actually has the method.
-    if ([%c(YTSettingsViewController) instancesRespondToSelector:@selector(didReceiveDrillDownItem:)]) {
-        %init(YMYouModDrillDown);
-    }
 }

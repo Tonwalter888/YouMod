@@ -1,11 +1,8 @@
 #import "Headers.h"
 #import <CommonCrypto/CommonDigest.h>
 
-// SponsorBlock menu: the player-overlay shield button opens a YouTube-style
-// bottom sheet (enable/disable, segment voting, channel whitelist), while
-// voting / whitelist / user-ID editing use our own form-sheet card dialog
-// (YMSBCardViewController) built on a UINavigationController + inset-grouped
-// UITableView, so sub-screens push and swipe-left delete comes for free.
+// SponsorBlock menu: the shield button opens a YouTube-style bottom sheet (toggle, voting, whitelist);
+// sub-screens push onto our form-sheet card dialog (YMSBCardViewController), a nav stack with a table.
 
 #pragma mark - Small helpers
 
@@ -51,9 +48,8 @@ static UIImage *sbDotImage(UIColor *color) {
     }];
 }
 
-// Uniform icon size for the YouTube action sheet: each SF Symbol is rendered
-// into an exact 24x24 canvas (aspect-fit, centered), so every row's icon box
-// is identical regardless of the symbol's natural proportions.
+// Uniform icon size for the YouTube action sheet: each SF Symbol is rendered into an exact
+// 24x24 canvas so every row's icon box is identical.
 static UIImage *sbSheetIcon(NSString *symbolName) {
     return YouModSymbolImageInCanvas(symbolName, 24, 22, UIImageSymbolWeightMedium);
 }
@@ -64,16 +60,14 @@ NSString *sbLocalUserID(void) {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     NSString *userID = [defaults stringForKey:SBPrivateUserIDKey];
     if (userID.length >= 30) return userID;
-    // A UUID without hyphens is exactly 32 hex characters, matching the
-    // SponsorBlock requirement for a local userID.
+    // A hyphen-less UUID is 32 hex chars, matching SponsorBlock's local userID requirement.
     userID = [[[NSUUID UUID] UUIDString] stringByReplacingOccurrencesOfString:@"-" withString:@""];
     [defaults setObject:userID forKey:SBPrivateUserIDKey];
     return userID;
 }
 
-// The public userID is the private one hashed with SHA-256 5000 times
-// (SponsorBlock spec). Cached as a dict so a private-ID change is detected
-// and a manual public-ID override survives.
+// Public userID is the private one hashed with SHA-256 5000 times (SponsorBlock spec);
+// cached so a private-ID change is detected and a manual override survives.
 static NSString *sbHashPublicFromPrivate(NSString *privateID) {
     NSData *data = [privateID dataUsingEncoding:NSUTF8StringEncoding];
     uint8_t digest[CC_SHA256_DIGEST_LENGTH];
@@ -121,8 +115,7 @@ void sbSetPublicUserIDManual(NSString *userID) {
 
 #pragma mark - Whitelist + channel info
 
-// Same pattern as Download.x's YouModPlayerDataForPlayer: contentPlayerResponse
-// when the player responds to it, playerResponse otherwise.
+// Same as Download.x's YouModPlayerDataForPlayer: contentPlayerResponse when available, playerResponse otherwise.
 static YTIPlayerResponse *sbPlayerDataForPlayer(YTPlayerViewController *player) {
     YTPlayerResponse *response;
     if ([player respondsToSelector:@selector(contentPlayerResponse)]) {
@@ -179,8 +172,7 @@ BOOL sbActiveForVideo(YTPlayerViewController *player) {
     return YES;
 }
 
-// Pushes a fresh segments notification for the player: fetches and activates
-// segments when SB is (back) on, clears markers when it is off/whitelisted.
+// Posts a fresh segments notification: fetches segments when SB is (back) on, clears markers when off/whitelisted.
 static void sbPostSegmentsForPlayer(YTPlayerViewController *player, BOOL enabled) {
     if (!player) return;
     NSString *videoID = [player currentVideoID];
@@ -200,9 +192,7 @@ static void sbPostSegmentsForPlayer(YTPlayerViewController *player, BOOL enabled
     }];
 }
 
-// Re-syncs the currently playing video after the whitelist changed, so
-// removing a channel brings skipping/markers back immediately instead of
-// waiting for the next video.
+// Re-syncs the current video after a whitelist change so skipping/markers update immediately.
 static void sbRefreshPlayerAfterWhitelistChange(void) {
     YTPlayerViewController *player = YouModCurrentPlayerViewController;
     if (!player) return;
@@ -336,10 +326,8 @@ static YTICommand *sbEngagementPanelShowCommand(NSString *title) {
     endpoint.panelIdentifier = SBEngagementPanelID;
     endpoint.engagementPanel = panel;
 
-    // The endpoint is a YTICommand extension whose descriptor YouTube keeps in a
-    // C static (no ObjC accessor), so encode it as that extension field on the
-    // wire and let YouTube's parser, which carries the app's extension registry,
-    // attach it. Proto field numbers are fixed for wire compatibility.
+    // The endpoint is a YTICommand extension whose descriptor YouTube keeps in a C static (no ObjC
+    // accessor), so encode it as that extension field on the wire and let YouTube's parser attach it.
     static const uint64_t SBShowEngagementPanelEndpointField = 138681778;
     NSData *payload = [endpoint data];
     NSMutableData *wire = [NSMutableData data];
@@ -374,8 +362,7 @@ static UIViewController *sbEngagementPanelFor(UIViewController *card) {
 }
 
 static BOOL sbIsOurPanelModel(id model) {
-    // The view model's panelIdentifier is a YTEngagementPanelIdentifier, not the
-    // endpoint's NSString of the same name the compiler would pick for `id`.
+    // panelIdentifier is a YTEngagementPanelIdentifier here, not the endpoint's NSString of the same name.
     YTEngagementPanelIdentifier *panelID = ((id (*)(id, SEL))objc_msgSend)(model, @selector(panelIdentifier));
     return sbEngagementPanelNav && [panelID.identifierString isEqualToString:SBEngagementPanelID];
 }
@@ -422,8 +409,7 @@ static BOOL sbIsOurPanelModel(id model) {
     NSArray<YMSBCardItem *> *_visibleItems;
 }
 
-// items is the filtered view of allItems; setting items re-applies the
-// current search query so deletions rebuild the list correctly.
+// items is the filtered view of allItems; setting it re-applies the search query so deletions rebuild correctly.
 - (void)setItems:(NSArray<YMSBCardItem *> *)items {
     self.allItems = items ?: @[];
     [self refilterItems];
@@ -437,8 +423,7 @@ static BOOL sbIsOurPanelModel(id model) {
     [self refilterItemsWithReload:YES];
 }
 
-// Recomputes the visible list from allItems + the search query. Pass NO for
-// reload when the caller animates row changes itself (e.g. deletion).
+// Recomputes the visible list from allItems + the search query; pass NO when the caller animates row changes itself.
 - (void)refilterItemsWithReload:(BOOL)reload {
     NSString *query = [self.searchText stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
     NSArray *source = self.allItems;
@@ -463,8 +448,7 @@ static BOOL sbIsOurPanelModel(id model) {
                                                                     style:UIBarButtonItemStylePlain
                                                                    target:self
                                                                    action:@selector(dismissCard)];
-    // White in dark mode, black in light mode — re-resolved on appearance
-    // changes in sbUpdateCloseButtonColor with a cross-dissolve.
+    // White in dark mode, black in light mode; re-resolved on appearance changes in sbUpdateCloseButtonColor.
     closeButton.tintColor = [UIColor labelColor];
     self.navigationItem.rightBarButtonItem = closeButton;
 
@@ -486,14 +470,12 @@ static BOOL sbIsOurPanelModel(id model) {
 
     if (self.searchBar) {
         self.searchBar.delegate = self;
-        // Clear the bar's own background so only the rounded inner field
-        // shows — no outer white frame.
+        // Clear the bar's own background so only the rounded inner field shows.
         self.searchBar.backgroundImage = [[UIImage alloc] init];
         self.searchBar.translatesAutoresizingMaskIntoConstraints = NO;
 
-        // Wrap the bar in a fixed-height, full-width header view: a bare
-        // search bar as tableHeaderView gets mis-sized on inset-grouped
-        // tables and rows slide underneath it.
+        // Wrap the bar in a fixed-height header view: a bare search bar as tableHeaderView
+        // gets mis-sized on inset-grouped tables.
         UIView *header = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 320, 56)];
         header.backgroundColor = [UIColor clearColor];
         [header addSubview:self.searchBar];
@@ -509,15 +491,12 @@ static BOOL sbIsOurPanelModel(id model) {
     [self sbStyleFieldBorders];
 
     if (self.swipeToDelete) {
-        // Editing mode puts a red minus on the leading edge of every row;
-        // tapping it reveals the red Delete button, identical to the
-        // swipe-left interaction.
+        // Editing mode: a red minus on each row reveals the red Delete button, same as swipe-left.
         _tableView.editing = YES;
         _tableView.allowsSelectionDuringEditing = NO;
     }
 
-    // Centered empty-state text (e.g. "no whitelisted channels"), shown only
-    // while there are no items.
+    // Centered empty-state text (e.g. "no whitelisted channels"), shown only while empty.
     _emptyLabel = [[UILabel alloc] init];
     _emptyLabel.text = self.emptyText;
     _emptyLabel.font = [UIFont systemFontOfSize:14 weight:UIFontWeightMedium];
@@ -546,9 +525,8 @@ static BOOL sbIsOurPanelModel(id model) {
     _emptyLabel.hidden = !(self.items.count == 0 && _emptyText.length > 0);
 }
 
-// Re-applies trait-dependent field styling: no border, and a slightly grayer
-// fill in light mode (default depth in dark mode). Called on theme changes
-// inside a cross-dissolve so the flip is animated.
+// Re-applies trait-dependent field styling (no border, grayer fill in light mode)
+// on theme changes inside a cross-dissolve.
 - (void)sbStyleFieldBorders {
     UIColor *fieldFill = [UIColor colorWithDynamicProvider:^UIColor *(UITraitCollection *trait) {
         return (trait.userInterfaceStyle == UIUserInterfaceStyleDark) ? [UIColor secondarySystemBackgroundColor] : [UIColor systemGray5Color];
@@ -570,8 +548,7 @@ static BOOL sbIsOurPanelModel(id model) {
     }
 }
 
-// The close button flips white (dark mode) / black (light mode) with a short
-// cross-dissolve instead of snapping.
+// The close button flips white (dark mode) / black (light mode) with a short cross-dissolve.
 - (void)sbUpdateCloseButtonColor {
     UIBarButtonItem *closeButton = self.navigationItem.rightBarButtonItem;
     if (!closeButton) return;
@@ -705,8 +682,7 @@ static BOOL sbIsOurPanelModel(id model) {
         cell.backgroundColor = [UIColor systemGray6Color];
         cell.contentView.backgroundColor = [UIColor systemGray6Color];
     }
-    // Re-applied on every pass so reused cells always carry the current
-    // dynamic text colors (white in dark mode, black in light mode).
+    // Re-applied on every pass so reused cells always carry the current dynamic text colors.
     cell.textLabel.font = [UIFont systemFontOfSize:15 weight:UIFontWeightMedium];
     cell.textLabel.textColor = [UIColor labelColor];
     cell.detailTextLabel.font = [UIFont systemFontOfSize:12];
@@ -731,9 +707,7 @@ static BOOL sbIsOurPanelModel(id model) {
     if (item && item.handler) item.handler(self);
 }
 
-// Editing mode: every whitelist row gets a red minus on its leading edge;
-// tapping it bounces out the same red Delete button the swipe-left
-// interaction used to reveal.
+// Editing mode: every whitelist row gets a red minus revealing the red Delete button, as in swipe-left.
 - (BOOL)tableView:(UITableView *)tableView canEditRowAtIndexPath:(NSIndexPath *)indexPath {
     return self.swipeToDelete && [self itemForRow:indexPath.row] != nil;
 }
@@ -750,9 +724,8 @@ static BOOL sbIsOurPanelModel(id model) {
     if (editingStyle != UITableViewCellEditingStyleDelete) return;
     YMSBCardItem *item = [self itemForRow:indexPath.row];
     if (!item) return;
-    // Model change first (onDeleteItem no longer touches the UI), then drop
-    // the item from the backing list and animate the row sliding out — a full
-    // reloadData here would cut the animation off.
+    // Model change first, then drop the item from the backing list and animate the row out;
+    // a full reloadData here would cut the animation off.
     if (self.onDeleteItem) self.onDeleteItem(self, item);
     NSMutableArray<YMSBCardItem *> *remaining = [self.allItems mutableCopy];
     [remaining removeObject:item];
@@ -779,10 +752,8 @@ static UINavigationController *sbCardNavigationController(YMSBCardViewController
     UINavigationController *nav = [[YMSBCardNavigationController alloc] initWithRootViewController:card];
     nav.modalPresentationStyle = UIModalPresentationFormSheet;
 
-    // YouTube restyles navigation bars app-wide (appearance proxies), which
-    // can leave a sheet's title invisible. Give our bar an explicit dynamic
-    // title color and a background matching the grouped table so the header
-    // blends seamlessly into the dialog.
+    // YouTube restyles navigation bars app-wide and can leave a sheet's title invisible;
+    // give our bar explicit dynamic colors and a grouped-table background.
     UIColor *headerBackground = card.sbUsesSubmitColors
         ? [UIColor colorWithDynamicProvider:^UIColor *(UITraitCollection *trait) {
             return trait.userInterfaceStyle == UIUserInterfaceStyleDark ? [%c(YTColor) black3] : [UIColor whiteColor];
@@ -790,8 +761,7 @@ static UINavigationController *sbCardNavigationController(YMSBCardViewController
         : [UIColor systemGroupedBackgroundColor];
     NSMutableDictionary *titleAttributes = [[NSMutableDictionary alloc] init];
     titleAttributes[NSForegroundColorAttributeName] = [UIColor labelColor];
-    // Same size as the × close button (16pt), but bold so the title reads
-    // heavier than the icon.
+    // Same size as the × close button (16pt), but bold so the title reads heavier than the icon.
     titleAttributes[NSFontAttributeName] = [UIFont systemFontOfSize:16 weight:UIFontWeightBold];
     UINavigationBarAppearance *barAppearance = [[UINavigationBarAppearance alloc] init];
     [barAppearance configureWithOpaqueBackground];
@@ -841,8 +811,7 @@ static UINavigationController *sbCardNavigationController(YMSBCardViewController
 
     __weak typeof(self) weakSelf = self;
 
-    // Whitelisted channel: SponsorBlock is fully overridden, so the enable/
-    // disable toggle is meaningless — only whitelist management is offered.
+    // Whitelisted channel: SponsorBlock is fully overridden, so only whitelist management is offered.
     NSString *menuChannelID = sbCurrentChannelID(self);
     BOOL channelListed = menuChannelID.length > 0 && sbIsChannelWhitelisted(menuChannelID);
 
@@ -929,8 +898,7 @@ static void sbHandleVoteResult(YTPlayerViewController *player, SBSegment *droppe
                                                       userInfo:@{@"segments": remaining ?: @[]}];
 }
 
-// Form-sheet card listing every loaded segment (categories the user enabled);
-// tapping one pushes the vote options screen.
+// Card listing every loaded segment (enabled categories); tapping one pushes the vote options screen.
 %new
 - (void)sbShowVoteCard {
     NSArray<SBSegment *> *segments = [self.sbSegments sortedArrayUsingComparator:^NSComparisonResult(SBSegment *a, SBSegment *b) {
@@ -1011,8 +979,7 @@ static void sbHandleVoteResult(YTPlayerViewController *player, SBSegment *droppe
                             subtitle:segmentInfo
                            tintColor:[UIColor labelColor]
                               handler:^(__unused YMSBCardViewController *c) {
-            // Jumping keeps the card open so the user can keep browsing or
-            // vote right after scrubbing around.
+            // Jumping keeps the card open so the user can vote right after scrubbing around.
             __strong typeof(weakSelf) strongSelf = weakSelf;
             if (strongSelf) [strongSelf seekToTime:(CGFloat)segment.startTime];
         }],
@@ -1203,8 +1170,7 @@ static UIView *sbNudgeControls(void (^nudge)(float delta)) {
                                             subtitle:nil
                                            tintColor:[UIColor labelColor]
                                              handler:^(__unused YMSBCardViewController *c) {
-            // Plays from just before the start so the transition can be
-            // checked; the half sheet stays open over the visible player.
+            // Plays from just before the start so the transition can be checked; the sheet stays open.
             __strong typeof(weakSelf) strongSelf = weakSelf;
             if (!strongSelf) return;
             [strongSelf seekToTime:(CGFloat)MAX(0.0f, start - 2.0f)];
@@ -1248,8 +1214,7 @@ static UIView *sbNudgeControls(void (^nudge)(float delta)) {
     return items;
 }
 
-// Adds/removes the current channel to/from the whitelist directly from the
-// video menu, with a success pill as feedback (no confirmation card).
+// Toggles the current channel on/off the whitelist from the video menu, with a success pill (no confirmation card).
 %new
 - (void)sbToggleWhitelistFromMenu {
     NSString *channelID = sbCurrentChannelID(self);
@@ -1261,8 +1226,7 @@ static UIView *sbNudgeControls(void (^nudge)(float delta)) {
     BOOL wasListed = sbIsChannelWhitelisted(channelID);
     sbSetChannelWhitelisted(channelID, channelName, !wasListed);
 
-    // Removing the whitelist brings skipping/markers back for the video
-    // being watched right now; adding it clears them.
+    // Removing the whitelist brings skipping/markers back for the current video; adding it clears them.
     sbPostSegmentsForPlayer(self, wasListed);
 
     YouModShowPill(LOC(wasListed ? @"SB_WHITELIST_REMOVE" : @"SB_WHITELIST_ADD"), YES);

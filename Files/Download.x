@@ -393,8 +393,7 @@ NSString *YouModGlobalAuthHeader = nil;
     
     UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:vc];
     
-    // Use a runtime version check here: this toolchain does not link the
-    // compiler-rt availability helper emitted by @available.
+    // Runtime version check: this toolchain can't link the @available helper.
     if ([NSProcessInfo processInfo].operatingSystemVersion.majorVersion >= 15) {
         UISheetPresentationController *sheet = nav.sheetPresentationController;
         if (sheet) {
@@ -445,7 +444,7 @@ NSString *YouModGlobalAuthHeader = nil;
                 ASDisplayNode *node = ((_ASDisplayView *)current).keepalive_node;
                 if (![node isKindOfClass:%c(ELMTextNode)]) {
                     for (id child in node.yogaChildren) {
-                        if ([child isKindOfClass:%c(ELMTextNode)]) {
+                        if ([child isKindOfClass:%c(ELMTextNode)] || [child isKindOfClass:%c(ELMExpandableTextNode)]) {
                             node = child;
                             break;
                         }
@@ -460,6 +459,7 @@ NSString *YouModGlobalAuthHeader = nil;
                     desc = [owningComponent description];
                 } @catch (id ex) {}
                 if (desc != nil && [desc containsString:@"post_text.eml"]) {
+                    if ([node isKindOfClass:%c(ELMExpandableTextNode)]) node = [node performSelector:@selector(currentTextNode)];
                     NSAttributedString *strings = [node valueForKey:@"_attributedText"];
                     resultText = strings.string;
                     break;
@@ -662,7 +662,7 @@ void YouModHandleDownloadButtonAction(_ASDisplayView *view) {
         [rootView addSubview:downloadBtn];
     }
     CGRect rect = [topView convertRect:topView.bounds toView:rootView];
-    downloadBtn.frame = CGRectMake(CGRectGetMaxX(rect) - 10, CGRectGetMaxY(rect) - 50, 40, 40);
+    downloadBtn.frame = CGRectMake(CGRectGetMaxX(rect) - 10, CGRectGetMaxY(rect) + 50, 40, 40);
     [rootView bringSubviewToFront:downloadBtn];
 }
 %new

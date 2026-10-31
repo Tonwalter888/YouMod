@@ -82,8 +82,7 @@ static __weak YTStartupAnimationViewController *sStartupAnimationController;
 @end
 
 static UIWindowScene *YMStartupVideoScene(YTStartupAnimationViewController *controller) {
-    // Prefer the scene that owns YouTube's startup controller, especially when
-    // the app has multiple windows/scenes open.
+    // Prefer the scene that owns YouTube's startup controller (multiple scenes).
     UIWindowScene *controllerScene = controller.viewIfLoaded.window.windowScene;
     if (controllerScene && controllerScene.activationState != UISceneActivationStateUnattached) return controllerScene;
 

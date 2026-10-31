@@ -66,12 +66,6 @@
             break;
         }
     }
-    if (self.visibleButtons.count == 0) {
-        self.hidden = YES;
-        [self sizeToFit];
-    } else {
-        self.hidden = NO;
-    }
 }
 %end
 

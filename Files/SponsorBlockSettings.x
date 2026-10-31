@@ -5,18 +5,16 @@
 
 extern UIColor *SBColorFromHex(NSString *hexString);
 
-// Purple accent used to tint the toggle switches and duration sliders on this
-// page. (Distinct from the player overlay button's accent in SponsorBlock.x.)
+// Purple accent for the toggle switches and duration sliders on this page
+// (distinct from the player overlay button's accent in SponsorBlock.x).
 static UIColor *SBControlTintColor(void) {
     return [UIColor colorWithRed:0.6 green:0.2 blue:0.9 alpha:1.0];
 }
 
-// Tag base for a slider row's value label, offset by the row index so each
-// slider can find its own label via viewWithTag:.
+// Tag base for a slider row's value label, offset by the row index so each slider finds its label via viewWithTag:.
 static const NSInteger SBSliderValueLabelTagBase = 100;
 
-// The localization key for a segment action's display name. Shared by the
-// selected-action label and the action picker menu so the two never disagree.
+// Localization key for a segment action's display name, shared by the action label and the picker menu.
 static NSString *SBActionLocKey(SBSegmentAction action) {
     switch (action) {
         case SBSegmentActionAutoSkip: return @"SB_ACTION_AUTO_SKIP";
@@ -28,10 +26,8 @@ static NSString *SBActionLocKey(SBSegmentAction action) {
     }
 }
 
-// One toggle row: the defaults key it controls and its localized title/description
-// keys. This is the single source of truth for the toggle section — the row count,
-// each cell's contents, and the value written on change all read from it, so a row
-// can never display one setting while toggling another.
+// One toggle row: the defaults key it controls and its localized title/description keys.
+// Single source of truth for the toggle section — row count, cell contents, and writes all read from it.
 @interface SBToggleRow : NSObject
 @property (nonatomic, copy) NSString *key;
 @property (nonatomic, copy) NSString *titleKey;
@@ -143,8 +139,7 @@ static NSString *SBHexFromColor(UIColor *color) {
 - (UITableViewCell *)colorCellForCategory:(NSString *)category name:(NSString *)catName tableView:(UITableView *)tableView;
 @end
 
-// Flat list of all SB settings as search rows (declared before use by the per-page
-// filter below; defined in the Settings Search section).
+// Flat list of all SB settings as search rows (defined in the Settings Search section below).
 extern NSArray<YMSearchRow *> *sbFlatRowsWithRenderer(SBSettingsViewController *renderer);
 
 static const void *kSBTableViewKey = &kSBTableViewKey;
@@ -230,9 +225,8 @@ static const void *kSBAllFlatRowsKey = &kSBAllFlatRowsKey;
 
     [self.view addSubview:self.tableView];
 
-    // Pinned per-page search bar that filters this page's own rows. The flat row
-    // list is built once with self as the renderer (its cells write straight to
-    // NSUserDefaults, so reusing the live VC is safe).
+    // Pinned per-page search bar filtering this page's rows; the flat row list is built once
+    // with self as the renderer (its cells write straight to NSUserDefaults).
     self.allFlatRows = sbFlatRowsWithRenderer(self);
     UISearchBar *sb = [[UISearchBar alloc] initWithFrame:CGRectZero];
     sb.translatesAutoresizingMaskIntoConstraints = NO;
@@ -319,9 +313,8 @@ static const void *kSBAllFlatRowsKey = &kSBAllFlatRowsKey;
     if (self.traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark) {
         return [UIColor whiteColor];
     }
-    // Light mode: return a concrete colour rather than nil. nil lets YouTube tint the
-    // nav-bar foreground (back chevron + title) with its default appearance, which is
-    // system blue in light mode. labelColor keeps it black in light / white in dark.
+    // Light mode: a concrete colour, since nil would let YouTube tint the nav-bar foreground
+    // (back chevron + title) its default system blue.
     return [UIColor labelColor];
 }
 
@@ -674,8 +667,7 @@ static const void *kSBAllFlatRowsKey = &kSBAllFlatRowsKey;
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     if (self.isFiltering) {
-        // In the flat filtered list the row carries its own tap handler (colour rows
-        // open the picker); route through it with a reload that refreshes results.
+        // In the flat filtered list the row carries its own tap handler (colour rows open the picker).
         YMSearchRow *row = self.filteredFlatRows[indexPath.row];
         [tableView deselectRowAtIndexPath:indexPath animated:YES];
         __weak typeof(self) weakSelf = self;
@@ -736,8 +728,7 @@ static const void *kSBAllFlatRowsKey = &kSBAllFlatRowsKey;
     return cell;
 }
 
-// All user-ID actions live in one system alert: a plain text field with the
-// Cancel / Copy / Save actions in order.
+// All user-ID actions live in one system alert: a text field with the Cancel / Copy / Save actions.
 - (void)sbPresentUserIDDialogForRow:(NSInteger)row {
     BOOL isPublic = (row == 1);
     NSString *userID = isPublic ? sbPublicUserID() : sbLocalUserID();
@@ -822,11 +813,8 @@ static const void *kSBAllFlatRowsKey = &kSBAllFlatRowsKey;
 
 #pragma mark - Settings Search integration
 
-// Retained delegate for a colour picker opened from a search result. The stock
-// SBSettingsViewController colour flow reloads a specific SB-table index path,
-// which doesn't exist in the search results table; this dedicated delegate writes
-// the chosen colour and calls the search table's own reload instead. It is
-// associated with the presented picker so it lives exactly as long as the picker.
+// Delegate for a colour picker opened from a search result: writes the colour and reloads the search
+// table (the stock flow reloads an SB-table index path that doesn't exist there). Lives with the picker.
 @interface SBSearchColorDelegate : NSObject <UIColorPickerViewControllerDelegate>
 @property (nonatomic, copy) NSString *colorKey;
 @property (nonatomic, copy) void (^reload)(void);
@@ -844,15 +832,12 @@ static const void *kSBAllFlatRowsKey = &kSBAllFlatRowsKey;
 
 static const void *kSBSearchColorDelegateKey = &kSBSearchColorDelegateKey;
 
-// Build the flat list of every SponsorBlock setting as YMSearchRows, each rendered
-// by the given SBSettingsViewController's own cell builders. Shared by the global
-// settings search (via sbSearchRows) and SponsorBlock's own per-page search filter.
+// Builds the flat list of every SponsorBlock setting as YMSearchRows rendered by the given
+// SBSettingsViewController's cell builders; shared by the global settings search and this page's filter.
 NSArray<YMSearchRow *> *sbFlatRowsWithRenderer(SBSettingsViewController *renderer) {
     NSMutableArray<YMSearchRow *> *rows = [NSMutableArray array];
-    // Weak so a row's makeCell block can't retain the renderer: on the SponsorBlock
-    // page the renderer IS the presented VC, which also retains this row list, so a
-    // strong capture would cycle and leak the VC on every visit. The renderer always
-    // outlives cell rendering (it's the live VC or a retained child), so weak is safe.
+    // Weak capture: the renderer (the presented VC on the SB page) retains this row list, so a
+    // strong capture would cycle. The renderer always outlives cell rendering, so weak is safe.
     __weak SBSettingsViewController *renderer_w = renderer;
 
     // Section 0 — toggles.
@@ -914,11 +899,9 @@ NSArray<YMSearchRow *> *sbFlatRowsWithRenderer(SBSettingsViewController *rendere
 }
 
 NSArray<YMSearchRow *> *sbSearchRows(UIViewController *host) {
-    // One renderer builds every SB result cell. It's added as a child VC so the
-    // cells inherit the host's trait collection (light/dark), and its tableView is
-    // pointed at the host's (search results) table so SB's own cell handlers —
-    // e.g. the action picker's [self.tableView reloadData] — refresh the visible
-    // results rather than a table the renderer never presents.
+    // One renderer builds every SB result cell. Added as a child VC so cells inherit the host's
+    // traits, with its tableView pointed at the search-results table so cell handlers (like the
+    // action picker's reload) refresh the visible results.
     SBSettingsViewController *renderer = [[SBSettingsViewController alloc] init];
     [host addChildViewController:renderer];
     [renderer didMoveToParentViewController:host];
@@ -934,9 +917,8 @@ NSArray<YMSearchRow *> *sbSearchRows(UIViewController *host) {
 - (void)updateSponsorBlockSectionWithEntry:(id)entry;
 @end
 
-// Push the SponsorBlock settings page onto a settings view controller. Shared by the
-// native section hook below and the custom YouMod home page, so both entry points
-// open the identical styled SB page.
+// Pushes the SponsorBlock settings page onto a settings view controller; shared by the native
+// section hook below and the custom YouMod home page so both open the identical styled SB page.
 void YMPushSponsorBlockSettings(id settingsVC) {
     // Use runtime-registered subclass of YTStyledViewController for YouTube's nav styling
     Class sbClass = objc_getClass("SBSettingsViewControllerStyled");
@@ -991,10 +973,9 @@ void YMPushSponsorBlockSettings(id settingsVC) {
         }
     }
 
-    // Per-category default action and seek-bar color. Sponsor is the only
-    // category that auto-skips out of the box; the rest are disabled until the
-    // user opts in. The action/color default entries are generated from
-    // sbAllCategories() below so this table stays the sole per-category source.
+    // Per-category default action and seek-bar color. Sponsor is the only category that
+    // auto-skips by default; the rest are disabled until the user opts in. Entries are
+    // generated from sbAllCategories() below so this table stays the sole per-category source.
     NSDictionary<NSString *, NSArray *> *categoryDefaults = @{
         @"sponsor":        @[@(SBSegmentActionAutoSkip), @"#00D400"],
         @"intro":          @[@(SBSegmentActionDisable),  @"#00FFFF"],
