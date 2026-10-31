@@ -133,6 +133,23 @@ void YouModApplyLiquidGlassToView(UIView *view, BOOL wantsBackground) {
 }
 %end
 
+%hook YTGlobalConfig
+- (BOOL)shouldBlockUpgradeDialog { return YES; }
+%end
+
+%hook YTVersionUtils
++ (NSString *)appVersionLong {
+    NSString *appVersion = %orig;
+    if ([appVersion compare:@"20.21.6" options:NSNumericSearch] == NSOrderedAscending) return @"20.21.6";
+    return appVersion;
+}
++ (NSString *)appVersion {
+    NSString *appVersion = %orig;
+    if ([appVersion compare:@"20.21.6" options:NSNumericSearch] == NSOrderedAscending) return @"20.21.6";
+    return appVersion;
+}
+%end
+
 static float YMSeekStartValue;
 
 %hook YTInlineMutedPlaybackPlayerOverlayView
