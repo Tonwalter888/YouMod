@@ -111,8 +111,10 @@ void YouModApplyLiquidGlassToView(UIView *view, BOOL wantsBackground) {
 %hook YTFirstTimeSignInView
 - (void)didMoveToWindow {
     %orig;
-    if (self.chooseAccountButton != nil) YouModApplyLiquidGlassToView(self.chooseAccountButton, YES);
-    if (self.alternateAccountButton != nil) YouModApplyLiquidGlassToView(self.alternateAccountButton, YES);
+    @try {
+        if (self.chooseAccountButton != nil) YouModApplyLiquidGlassToView(self.chooseAccountButton, YES);
+        if (self.alternateAccountButton != nil) YouModApplyLiquidGlassToView(self.alternateAccountButton, YES);
+    } @catch (id ex) {}
 }
 %end
 
