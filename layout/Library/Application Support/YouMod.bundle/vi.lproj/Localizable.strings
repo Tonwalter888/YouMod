@@ -168,8 +168,6 @@
 "HIDE_CAST_BUTTON_NAVBAR_DESC" = "Ẩn nút truyền phát trên thanh điều hướng.";
 "HIDE_MESSAGES_BUTTON" = "Hide messages button";
 "HIDE_MESSAGES_BUTTON_DESC" = "Hide messages button in the navigation bar.";
-"HIDE_MORE_BUTTON_NAV" = "Hide more button";
-"HIDE_MORE_BUTTON_NAV_DESC" = "Hide the more (three-dot) button in the navigation bar.";
 
 "FEED" = "Bảng tin";
 "HIDE_SUBBAR" = "Ẩn thanh bộ lọc";
@@ -472,8 +470,6 @@
 "DISABLES_SHORTS_PIP_DESC" = "Thử tắt PiP cho Shorts, có thể không tắt được hoàn toàn 100%.";
 "DISABLE_HINTS" = "Tắt gợi ý";
 "DISABLE_HINTS_DESC" = "Tắt các gợi ý hướng dẫn và cửa sổ pop-up tương tác.";
-"BLOCK_UPGRADE_DIALOGS" = "Chặn hộp thoại yêu cầu cập nhật";
-"BLOCK_UPGRADE_DIALOGS_DESC" = "Chặn các hộp thoại của YouTube yêu cầu bạn cập nhật ứng dụng.";
 "ARE_YOU_THERE_DIALOG" = "Ẩn hộp thoại 'Bạn vẫn đang xem chứ?'";
 "ARE_YOU_THERE_DIALOG_DESC" = "Ẩn hộp thoại xuất hiện khi bạn không tương tác với ứng dụng quá lâu.";
 "FIXES_SLOW_MINIPLAYER" = "Sửa trình phát thu nhỏ chậm";
@@ -482,8 +478,6 @@
 "DISABLES_NEW_MINIPLAYER_DESC" = "Dùng trình phát thu nhỏ kiểu cũ thay vì kiểu mới; chỉ hiệu quả trên các phiên bản YouTube cũ.";
 "DISABLES_SNACK_BAR" = "Tắt thanh thông báo nhanh";
 "DISABLES_SNACK_BAR_DESC" = "Tắt thanh thông báo nhanh khi nhấn một số nút hoặc thực hiện thao tác nào đó trong ứng dụng.";
-"HIDE_STARTUP_ANIMATIONS" = "Ẩn hiệu ứng khởi động của YouTube";
-"HIDE_STARTUP_ANIMATIONS_DESC" = "Ẩn hiệu ứng khởi động của YouTube khi mở ứng dụng.";
 "HIDE_LIKE_DISLIKE_VOTES" = "Ẩn thông báo thích/không thích";
 "HIDE_LIKE_DISLIKE_VOTES_DESC" = "Ẩn các thông báo bật lên khi bạn thích/không thích video.";
 "FLYOUT_MENU" = "Menu bật ra";

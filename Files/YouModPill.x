@@ -90,13 +90,13 @@ static NSInteger YouModPillSequence = 0;
     // Plain pills carry the info icon; success/error variants add their own.
     view.showsInfoIcon = YES;
 
-    // Base layer (revealed as progress depletes)
-    view.backgroundColor = [UIColor colorWithWhite:0.08 alpha:1.0];
+    // Base layer (revealed as progress depletes): frosted light gray.
+    YouModApplyFrostedPanelBackgroundToView(view);
 
     // Progress overlay (shrinks from right to left)
     UIView *progressOverlay = [[UIView alloc] initWithFrame:CGRectZero];
     progressOverlay.translatesAutoresizingMaskIntoConstraints = YES;
-    progressOverlay.backgroundColor = [UIColor colorWithWhite:0.18 alpha:1.0];
+    progressOverlay.backgroundColor = [[UIColor labelColor] colorWithAlphaComponent:0.12];
     progressOverlay.userInteractionEnabled = NO;
     progressOverlay.layer.anchorPoint = CGPointMake(0, 0.5);
     progressOverlay.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
@@ -107,7 +107,7 @@ static NSInteger YouModPillSequence = 0;
     UILabel *label = [[UILabel alloc] initWithFrame:CGRectZero];
     label.translatesAutoresizingMaskIntoConstraints = NO;
     label.text = message;
-    label.textColor = [UIColor whiteColor];
+    label.textColor = [UIColor labelColor];
     label.font = [UIFont systemFontOfSize:14.0 weight:UIFontWeightMedium];
     label.numberOfLines = 2;
     label.lineBreakMode = NSLineBreakByTruncatingTail;
@@ -118,7 +118,7 @@ static NSInteger YouModPillSequence = 0;
     // or status icon; hidden in layoutSubviews for success/error variants.
     UIImageSymbolConfiguration *infoConfig = [UIImageSymbolConfiguration configurationWithPointSize:16 weight:UIImageSymbolWeightMedium];
     UIImageView *infoIcon = [[UIImageView alloc] initWithImage:[UIImage systemImageNamed:@"info.circle" withConfiguration:infoConfig]];
-    infoIcon.tintColor = [UIColor colorWithWhite:1.0 alpha:0.65];
+    infoIcon.tintColor = [UIColor secondaryLabelColor];
     infoIcon.hidden = YES;
     infoIcon.translatesAutoresizingMaskIntoConstraints = NO;
     view.infoIconView = infoIcon;
@@ -136,8 +136,8 @@ static NSInteger YouModPillSequence = 0;
         UIImageSymbolConfiguration *config = [UIImageSymbolConfiguration configurationWithPointSize:14 weight:UIImageSymbolWeightMedium];
         UIImage *icon = [UIImage systemImageNamed:iconName withConfiguration:config];
         [button setImage:icon forState:UIControlStateNormal];
-        button.tintColor = [UIColor whiteColor];
-        button.backgroundColor = [UIColor colorWithWhite:1.0 alpha:0.15];
+        button.tintColor = [UIColor labelColor];
+        button.backgroundColor = [[UIColor labelColor] colorWithAlphaComponent:0.12];
         button.layer.cornerRadius = 16.0;
         button.clipsToBounds = YES;
         [button addTarget:view action:@selector(actionButtonTapped) forControlEvents:UIControlEventTouchUpInside];
@@ -398,13 +398,13 @@ static NSInteger YouModPillSequence = 0;
     view.remainingDuration = duration;
     view.isPaused = NO;
 
-    // Base layer (revealed as progress depletes)
-    view.backgroundColor = [UIColor colorWithWhite:0.08 alpha:1.0];
+    // Base layer (revealed as progress depletes): frosted light gray.
+    YouModApplyFrostedPanelBackgroundToView(view);
 
     // Progress overlay (shrinks from right to left)
     UIView *progressOverlay = [[UIView alloc] initWithFrame:CGRectZero];
     progressOverlay.translatesAutoresizingMaskIntoConstraints = YES;
-    progressOverlay.backgroundColor = [UIColor colorWithWhite:0.18 alpha:1.0];
+    progressOverlay.backgroundColor = [[UIColor labelColor] colorWithAlphaComponent:0.12];
     progressOverlay.userInteractionEnabled = NO;
     progressOverlay.layer.anchorPoint = CGPointMake(0, 0.5);
     progressOverlay.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
@@ -415,7 +415,7 @@ static NSInteger YouModPillSequence = 0;
     UILabel *label = [[UILabel alloc] initWithFrame:CGRectZero];
     label.translatesAutoresizingMaskIntoConstraints = NO;
     label.text = message;
-    label.textColor = [UIColor whiteColor];
+    label.textColor = [UIColor labelColor];
     label.font = [UIFont systemFontOfSize:14.0 weight:UIFontWeightMedium];
     label.numberOfLines = 1;
     label.lineBreakMode = NSLineBreakByTruncatingTail;
@@ -429,8 +429,8 @@ static NSInteger YouModPillSequence = 0;
     saveButton.translatesAutoresizingMaskIntoConstraints = NO;
     UIImage *saveIcon = [UIImage systemImageNamed:@"square.and.arrow.down" withConfiguration:config];
     [saveButton setImage:saveIcon forState:UIControlStateNormal];
-    saveButton.tintColor = [UIColor whiteColor];
-    saveButton.backgroundColor = [UIColor colorWithWhite:1.0 alpha:0.15];
+    saveButton.tintColor = [UIColor labelColor];
+    saveButton.backgroundColor = [[UIColor labelColor] colorWithAlphaComponent:0.12];
     saveButton.layer.cornerRadius = 16.0;
     saveButton.clipsToBounds = YES;
     __weak typeof(view) weakView = view;
@@ -445,8 +445,8 @@ static NSInteger YouModPillSequence = 0;
     shareButton.translatesAutoresizingMaskIntoConstraints = NO;
     UIImage *shareIcon = [UIImage systemImageNamed:@"arrowshape.turn.up.right" withConfiguration:config];
     [shareButton setImage:shareIcon forState:UIControlStateNormal];
-    shareButton.tintColor = [UIColor whiteColor];
-    shareButton.backgroundColor = [UIColor colorWithWhite:1.0 alpha:0.15];
+    shareButton.tintColor = [UIColor labelColor];
+    shareButton.backgroundColor = [[UIColor labelColor] colorWithAlphaComponent:0.12];
     shareButton.layer.cornerRadius = 16.0;
     shareButton.clipsToBounds = YES;
     [shareButton addAction:[UIAction actionWithHandler:^(__kindof UIAction * _Nonnull action) {

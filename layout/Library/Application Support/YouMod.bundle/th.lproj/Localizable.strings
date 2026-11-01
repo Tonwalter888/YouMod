@@ -167,8 +167,6 @@
 "HIDE_CAST_BUTTON_NAVBAR_DESC" = "ซ่อนปุ่มแคสต์ในแถบนำทาง";
 "HIDE_MESSAGES_BUTTON" = "ซ่อนปุ่มข้อความ";
 "HIDE_MESSAGES_BUTTON_DESC" = "ซ่อนปุ่มข้อความในแถบนำทาง";
-"HIDE_MORE_BUTTON_NAV" = "ซ่อนปุ่มเพิ่มเติม";
-"HIDE_MORE_BUTTON_NAV_DESC" = "ซ่อนปุ่มเพิ่มเติม (สามจุด) ในแถบนำทาง";
 
 "FEED" = "ฟีด";
 "HIDE_SUBBAR" = "ซ่อนแถบหมวดหมู่";
@@ -471,8 +469,6 @@
 "DISABLES_SHORTS_PIP_DESC" = "พยายามปิด PiP ของ Shorts อาจไม่สามารถปิดได้ 100%";
 "DISABLE_HINTS" = "ปิดคำแนะนำ";
 "DISABLE_HINTS_DESC" = "ปิดคำแนะนำการใช้งานต่างๆ";
-"BLOCK_UPGRADE_DIALOGS" = "บล็อกกล่องแจ้งเตือนอัปเดต";
-"BLOCK_UPGRADE_DIALOGS_DESC" = "บล็อกกล่องข้อความแจ้งเตือนให้อัปเดตแอป";
 "ARE_YOU_THERE_DIALOG" = "ซ่อนกล่องแจ้งเตือน 'คุณยังอยู่ไหม'";
 "ARE_YOU_THERE_DIALOG_DESC" = "ซ่อนกล่องแจ้งเตือน 'คุณยังอยู่ไหม' เมื่อคุณปล่อยวิดีโอเล่นทิ้งไว้นานเกินไป";
 "FIXES_SLOW_MINIPLAYER" = "แก้ไขมินิเพลเยอร์ช้า";
@@ -481,8 +477,6 @@
 "DISABLES_NEW_MINIPLAYER_DESC" = "ใช้มินิเพลเยอร์แบบเก่า สามารถใช้ได้เฉพาะกับ YouTube เวอร์ชั่นเก่า";
 "DISABLES_SNACK_BAR" = "ปิดใช้งาน Snack bar";
 "DISABLES_SNACK_BAR_DESC" = "ปิดใช้งาน Snack bar เมื่อแตะปุ่มหรือทำอะไรในแอป";
-"HIDE_STARTUP_ANIMATIONS" = "ซ่อนแอนิเมชัน";
-"HIDE_STARTUP_ANIMATIONS_DESC" = "ซ่อนแอนิเมชันตอนเปิดแอป";
 "HIDE_LIKE_DISLIKE_VOTES" = "ซ่อนโหวดชอบ/ไม่ชอบ";
 "HIDE_LIKE_DISLIKE_VOTES_DESC" = "ซ่อนกล่องโหวดชอบ/ไม่ชอบ";
 "FLYOUT_MENU" = "เมนูป๊อปอัป";

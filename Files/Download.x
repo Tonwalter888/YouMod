@@ -662,7 +662,7 @@ void YouModHandleDownloadButtonAction(_ASDisplayView *view) {
         [rootView addSubview:downloadBtn];
     }
     CGRect rect = [topView convertRect:topView.bounds toView:rootView];
-    downloadBtn.frame = CGRectMake(CGRectGetMaxX(rect) - 10, CGRectGetMaxY(rect) + 50, 40, 40);
+    downloadBtn.frame = CGRectMake(CGRectGetMaxX(rect) - 50, CGRectGetMaxY(rect) + 8, 40, 40);
     [rootView bringSubviewToFront:downloadBtn];
 }
 %new

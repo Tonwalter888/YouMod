@@ -168,8 +168,6 @@
 "HIDE_CAST_BUTTON_NAVBAR_DESC" = "Masque le bouton Cast (diffusion) dans la barre de navigation.";
 "HIDE_MESSAGES_BUTTON" = "Hide messages button";
 "HIDE_MESSAGES_BUTTON_DESC" = "Hide messages button in the navigation bar.";
-"HIDE_MORE_BUTTON_NAV" = "Hide more button";
-"HIDE_MORE_BUTTON_NAV_DESC" = "Hide the more (three-dot) button in the navigation bar.";
 
 "FEED" = "Flux";
 "HIDE_SUBBAR" = "Masquer la sous-barre";
@@ -472,8 +470,6 @@
 "DISABLES_SHORTS_PIP_DESC" = "Tente de désactiver le mode PiP (image dans l'image) pour les Shorts (peut ne pas fonctionner dans tous les cas).";
 "DISABLE_HINTS" = "Désactiver les astuces";
 "DISABLE_HINTS_DESC" = "Désactive les astuces de tutoriel et les pop-ups interactives.";
-"BLOCK_UPGRADE_DIALOGS" = "Bloquer les invitations à la mise à jour";
-"BLOCK_UPGRADE_DIALOGS_DESC" = "Bloque les fenêtres contextuelles de YouTube vous demandant de mettre à jour l'application.";
 "ARE_YOU_THERE_DIALOG" = "Masquer la boîte de dialogue 'Vous êtes toujours là ?'";
 "ARE_YOU_THERE_DIALOG_DESC" = "Masque le message s'affichant en cas d'inactivité prolongée dans l'application.";
 "FIXES_SLOW_MINIPLAYER" = "Corriger la lenteur du mini-lecteur";
@@ -482,8 +478,6 @@
 "DISABLES_NEW_MINIPLAYER_DESC" = "Utilise l'ancien style de mini-lecteur au lieu du nouveau (uniquement sur les anciennes versions de YouTube).";
 "DISABLES_SNACK_BAR" = "Désactiver la barre de notification";
 "DISABLES_SNACK_BAR_DESC" = "Désactive la barre de notification (snack bar) éphémère qui apparaît en bas de l'écran lors de certaines actions.";
-"HIDE_STARTUP_ANIMATIONS" = "Masquer l'animation de démarrage";
-"HIDE_STARTUP_ANIMATIONS_DESC" = "Masque l'animation d'introduction de YouTube à l'ouverture de l'application.";
 "HIDE_LIKE_DISLIKE_VOTES" = "Masquer les animations de vote";
 "HIDE_LIKE_DISLIKE_VOTES_DESC" = "Masque les messages et animations éphémères s'affichant lorsque vous aimez ou n'aimez pas une vidéo.";
 "FLYOUT_MENU" = "Menu contextuel";

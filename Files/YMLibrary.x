@@ -349,7 +349,7 @@ static NSHashTable<AVPlayer *> *ymLiveAVPlayers(void) {
 
 // Pauses everything the app could be playing: YouTube's own player (watch page, miniplayer, shorts)
 // plus any AVPlayer in the process.
-static void ymPauseOtherPlayers(void) {
+void YouModPauseAllPlayers(void) {
     [YouModCurrentPlayerViewController pause];
     for (AVPlayer *player in [ymLiveAVPlayers() allObjects]) {
         if (player.rate > 0) [player pause];
@@ -368,6 +368,36 @@ static void ymPauseOtherPlayers(void) {
     return player;
 }
 %end
+
+#pragma mark - Library player PiP restore
+
+// Strong ref so the fullscreen player survives PiP (and library screen rebuilds).
+static AVPlayerViewController *ymLibraryPlayerVC = nil;
+
+// Restores the fullscreen player when the PiP expand button is tapped. The modal
+// can be gone by then (e.g. the library screen was rebuilt while in PiP), so
+// re-present onto the topmost view controller instead of leaving a blank screen.
+@interface YMLibraryPlayerPiPDelegate : NSObject <AVPlayerViewControllerDelegate>
+@end
+@implementation YMLibraryPlayerPiPDelegate
+- (void)playerViewController:(AVPlayerViewController *)playerViewController restoreUserInterfaceForPictureInPictureStopWithCompletionHandler:(void (^)(BOOL restored))completionHandler {
+    if (playerViewController.presentingViewController) {
+        completionHandler(YES);
+        return;
+    }
+    UIViewController *topVC = YouModTopViewController(nil);
+    [topVC presentViewController:playerViewController animated:YES completion:^{
+        completionHandler(YES);
+    }];
+}
+@end
+
+static YMLibraryPlayerPiPDelegate *ymLibraryPiPDelegate(void) {
+    static YMLibraryPlayerPiPDelegate *delegate;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{ delegate = [YMLibraryPlayerPiPDelegate new]; });
+    return delegate;
+}
 
 #pragma mark - Pull-to-refresh control
 
@@ -1284,9 +1314,11 @@ static const CGFloat ymRefreshHiddenTravel = 72.0; // how far the bubble sits ab
                  || [asset tracksWithMediaType:AVMediaTypeAudio].count > 0;
     if (playable) {
         // Stop everything else that is playing (YouTube's player and any AVPlayer) so it doesn't mix with the opened file.
-        ymPauseOtherPlayers();
+        YouModPauseAllPlayers();
         AVPlayerViewController *playerVC = [AVPlayerViewController new];
         playerVC.player = [AVPlayer playerWithURL:fileURL];
+        playerVC.delegate = ymLibraryPiPDelegate();
+        ymLibraryPlayerVC = playerVC;
         [self presentViewController:playerVC animated:YES completion:^{
             [playerVC.player play];
         }];

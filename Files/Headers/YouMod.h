@@ -153,7 +153,6 @@
 #define HideVoiceSearch @"YouModHideVoiceSearchButton"
 #define HideCastButtonNav @"YouModHideCastButtonNavigationBar"
 #define HideMessages @"YouModHideMessagesButton"
-#define HideMoreButtonNav @"YouModHideMoreButtonNav"
 // Feed
 #define RemoveAds @"YouModRemoveAds"
 #define HideSubbar @"YouModHideSubbar"
@@ -278,12 +277,10 @@
 #define BackgroundPlayback @"YouModEnablesBackgroundPlayback"
 #define DisablesShortsPiP @"YouModTrytoDisablesShortsPiP"
 #define DisableHints @"YouModDisableHints"
-#define BlockUpgradeDialogs @"YouModBlockUpgradeDialogs"
 #define HideAreYouThereDialog @"YouModHideAreYouThereDialog"
 #define FixesSlowMiniPlayer @"YouModFixesSlowMiniPlayer"
 #define DisablesNewMiniPlayer @"YouModDisablesNewMiniPlayer"
 #define DisablesSnackBar @"YouModDisablesSnackBar"
-#define HideStartupAni @"YouModHideStartupAnimations"
 #define StartupAnimation @"YouModStartupAnimation"
 #define HideLikeDislikeVotes @"YouModHideLikeDislikeVotes"
 #define HideCommuGuide @"YouModHideCommuGuide"
@@ -1147,6 +1144,7 @@ extern void YMPushSponsorBlockSettings(id settingsVC);
 // for correct light/dark traits. Defined in SponsorBlockSettings.x.
 extern NSArray<YMSearchRow *> *sbSearchRows(UIViewController *host);
 
+extern void YouModPauseAllPlayers(void);
 extern NSBundle *YouModBundle();
 extern UIImage *YouModYTIconImage(NSInteger iconType, BOOL useCustomColor, UIColor *customColor);
 extern UIImage *YouModSymbolImageInCanvas(NSString *symbolName, CGFloat canvasSize, CGFloat pointSize, UIImageSymbolWeight weight);
@@ -1401,3 +1399,4 @@ extern void YouModRemoveDrawerAds(YTELMViewController *self);
 extern void YouModRemoveFullscreenActionsButtons(YTELMViewController *controller);
 extern void YouModApplyLiquidGlassToView(UIView *view, BOOL arg);
 extern void YouModApplyLiquidGlassBackdropToView(UIView *view, CGFloat cornerRadius);
+extern void YouModApplyFrostedPanelBackgroundToView(UIView *view);

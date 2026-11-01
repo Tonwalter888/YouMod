@@ -355,10 +355,7 @@ static BOOL isRelatedVideosExpanded = NO;
     %orig;
     for (YMOverlayButtonSpec *spec in YMRegisteredOverlayButtons()) {
         YTQTMButton *btn = (YTQTMButton *)[self viewWithTag:spec.viewTag];
-        if (btn) {
-            btn.alpha = visible && !isRelatedVideosExpanded;
-            btn.hidden = !(visible && !isRelatedVideosExpanded);
-        }
+        if (btn) btn.alpha = visible && !isRelatedVideosExpanded;
     }
 }
 %new
@@ -525,15 +522,24 @@ static void YMSetBottomOverlayButtonsAlpha(YTInlinePlayerBarContainerView *view,
     [[view viewWithTag:YMFrostedBackgroundTag] setAlpha:alpha];
 }
 
-%hook YTInlinePlayerBarContainerView
-- (id)init {
-    self = %orig;
+static void setButtomNotifications(YTInlinePlayerBarContainerView *self) {
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(updateSpeedButton:) name:YouModUpdateSpeedLabel object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(updateQualityButton:) name:YouModUpdateQualityLabel object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(updateSleepButtonIcon:) name:YouModUpdateSleepTimerButton object:nil];
     if (IS_ENABLED(SBShowButton)) {
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(updateTimeLabels) name:@"YouModUpdateTimeLabel" object:nil];
     }
+}
+
+%hook YTInlinePlayerBarContainerView
+- (id)init {
+    self = %orig;
+    setButtomNotifications(self);
+    return self;
+}
+- (id)initWithParentResponder:(id)responder {
+    self = %orig;
+    setButtomNotifications(self);
     return self;
 }
 - (void)layoutSubviews {

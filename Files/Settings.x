@@ -256,7 +256,6 @@ static NSArray<YMSettingsItem *> *YMPreferencesItems(void) {
             YMToggle(YMLOC(@"HIDE_VOICE_SEARCH_BUTTON"), YMLOC(@"HIDE_VOICE_SEARCH_BUTTON_DESC"), HideVoiceSearch),
             YMToggle(YMLOC(@"HIDE_CAST_BUTTON_NAVBAR"), YMLOC(@"HIDE_CAST_BUTTON_NAVBAR_DESC"), HideCastButtonNav),
             YMToggle(YMLOC(@"HIDE_MESSAGES_BUTTON"), YMLOC(@"HIDE_MESSAGES_BUTTON_DESC"), HideMessages),
-            YMToggle(YMLOC(@"HIDE_MORE_BUTTON_NAV"), YMLOC(@"HIDE_MORE_BUTTON_NAV_DESC"), HideMoreButtonNav),
             YMPicker(YMLOC(@"NAVIGATION_ICON"), YMLOC(@"NAVIGATION_ICON_DESC"), YTLogoIndex, (@[YMLOC(@"DEFAULT"), YMLOC(@"PREMIUM"), YMLOC(@"YOUTUBE"), YMLOC(@"REMOVE_YTLOGO")]), 0),
     ];
     YMRegisterSettingsGroup(YMLOC(@"NAVBAR"), navbarItems);
@@ -409,7 +408,6 @@ static NSArray<YMSettingsItem *> *YMPreferencesItems(void) {
             YMToggle(YMLOC(@"BACKGROUND_PLAYBACK"), YMLOC(@"BACKGROUND_PLAYBACK_DESC"), BackgroundPlayback),
             YMToggle(YMLOC(@"DISABLES_SHORTS_PIP"), YMLOC(@"DISABLES_SHORTS_PIP_DESC"), DisablesShortsPiP),
             YMToggle(YMLOC(@"DISABLE_HINTS"), YMLOC(@"DISABLE_HINTS_DESC"), DisableHints),
-            YMToggle(YMLOC(@"BLOCK_UPGRADE_DIALOGS"), YMLOC(@"BLOCK_UPGRADE_DIALOGS_DESC"), BlockUpgradeDialogs),
             YMToggle(YMLOC(@"ARE_YOU_THERE_DIALOG"), YMLOC(@"ARE_YOU_THERE_DIALOG_DESC"), HideAreYouThereDialog),
             YMToggle(YMLOC(@"FIXES_SLOW_MINIPLAYER"), YMLOC(@"FIXES_SLOW_MINIPLAYER_DESC"), FixesSlowMiniPlayer),
             YMToggle(YMLOC(@"DISABLES_NEW_MINIPLAYER"), YMLOC(@"DISABLES_NEW_MINIPLAYER_DESC"), DisablesNewMiniPlayer),
@@ -432,7 +430,6 @@ static NSArray<YMSettingsItem *> *YMPreferencesItems(void) {
             }) visibleWhenKey:StartupAnimation equals:3] visibleWhen:^BOOL(__unused NSUserDefaults *defaults) {
                 return YMStartupVideoFileExists();
             }],
-            [YMToggle(YMLOC(@"HIDE_STARTUP_ANIMATIONS"), YMLOC(@"HIDE_STARTUP_ANIMATIONS_DESC"), HideStartupAni) visibleWhenKey:StartupAnimation equals:0],
             YMHeader(@""),
             YMTextSegment(YMLOC(@"DEVICE_UI"), DeviceUIIndex, (@[YMLOC(@"DEFAULT"), @"iPad", @"iPhone"]), 0),
             YMToggle(YMLOC(@"AUTO_OPEN_LINK"), YMLOC(@"AUTO_OPEN_LINK_DESC"), AutoOpenLink),

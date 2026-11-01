@@ -208,13 +208,13 @@ static void YouModTranslateText(NSString *text, NSString *targetLang, void (^com
 - (void)viewDidLoad {
     [super viewDidLoad];
     
-    self.view.backgroundColor = [UIColor systemBackgroundColor];
+    // Frosted + light-gray background, extending under the header.
+    YouModApplyFrostedPanelBackgroundToView(self.view);
     self.title = LOC(@"TRANSLATION");
 
     if (self.navigationController) {
         UINavigationBarAppearance *appearance = [[UINavigationBarAppearance alloc] init];
-        [appearance configureWithOpaqueBackground];
-        appearance.backgroundColor = [UIColor systemBackgroundColor];
+        [appearance configureWithTransparentBackground];
         appearance.titleTextAttributes = @{
             NSForegroundColorAttributeName: [UIColor labelColor],
             NSFontAttributeName: [UIFont boldSystemFontOfSize:17]

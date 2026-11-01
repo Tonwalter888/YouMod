@@ -1,15 +1,11 @@
 #import "Headers.h"
 #import <objc/message.h>
 
-// System bar-style glass backdrop: UIGlassEffect ("liquid glass") on iOS 26+,
-// else a system material blur. Created once per view and reused.
 static const void *kYMLiquidGlassBackdropKey = &kYMLiquidGlassBackdropKey;
 
-// Resolved dynamically so this compiles against any SDK; the class lookup
-// itself acts as the iOS 26+ availability check (no @available needed).
 static UIVisualEffect *YMCreateSystemBarGlassEffect(void) {
-    Class glass = NSClassFromString(@"UIGlassEffect");
-    SEL selector = NSSelectorFromString(@"effectWithStyle:");
+    Class glass = %c(UIGlassEffect);
+    SEL selector = @selector(effectWithStyle:);
     if (glass && [glass respondsToSelector:selector]) {
         UIVisualEffect *(*createEffect)(id, SEL, NSInteger) = (UIVisualEffect *(*)(id, SEL, NSInteger))objc_msgSend;
         return createEffect(glass, selector, 0); // UIGlassEffectStyleRegular
@@ -17,9 +13,7 @@ static UIVisualEffect *YMCreateSystemBarGlassEffect(void) {
     return nil;
 }
 
-void YouModApplyLiquidGlassBackdropToView(UIView *view, CGFloat cornerRadius) {
-    if (!view) return;
-
+static UIVisualEffectView *YMEnsureGlassBackdrop(UIView *view) {
     UIVisualEffectView *glassView = objc_getAssociatedObject(view, kYMLiquidGlassBackdropKey);
     if (!glassView) {
         UIVisualEffect *effect = YMCreateSystemBarGlassEffect();
@@ -28,12 +22,24 @@ void YouModApplyLiquidGlassBackdropToView(UIView *view, CGFloat cornerRadius) {
         glassView.userInteractionEnabled = NO;
         glassView.isAccessibilityElement = NO;
         glassView.accessibilityElementsHidden = YES;
-        glassView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
         [view insertSubview:glassView atIndex:0];
+        // Flexible: pinned on all sides so the glass stretches with the host while
+        // it is dragged or resized — no manual frame syncing needed.
+        glassView.translatesAutoresizingMaskIntoConstraints = NO;
+        [NSLayoutConstraint activateConstraints:@[
+            [glassView.leadingAnchor constraintEqualToAnchor:view.leadingAnchor],
+            [glassView.trailingAnchor constraintEqualToAnchor:view.trailingAnchor],
+            [glassView.topAnchor constraintEqualToAnchor:view.topAnchor],
+            [glassView.bottomAnchor constraintEqualToAnchor:view.bottomAnchor],
+        ]];
         objc_setAssociatedObject(view, kYMLiquidGlassBackdropKey, glassView, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     }
+    return glassView;
+}
 
-    glassView.frame = view.bounds;
+void YouModApplyLiquidGlassBackdropToView(UIView *view, CGFloat cornerRadius) {
+    if (!view) return;
+    YMEnsureGlassBackdrop(view);
     view.backgroundColor = UIColor.clearColor;
     view.layer.cornerRadius = cornerRadius;
     view.layer.cornerCurve = kCACornerCurveContinuous;
@@ -42,6 +48,13 @@ void YouModApplyLiquidGlassBackdropToView(UIView *view, CGFloat cornerRadius) {
     UIColor *edgeColor = [(dark ? UIColor.whiteColor : UIColor.blackColor) colorWithAlphaComponent:dark ? 0.20 : 0.10];
     view.layer.borderWidth = 0.5;
     view.layer.borderColor = edgeColor.CGColor;
+}
+
+// Frosted panel background for dialogs: manual glass blur over a light-gray base.
+void YouModApplyFrostedPanelBackgroundToView(UIView *view) {
+    if (!view) return;
+    YMEnsureGlassBackdrop(view);
+    view.backgroundColor = [UIColor systemGray6Color];
 }
 
 void YouModApplyLiquidGlassToView(UIView *view, BOOL wantsBackground) {
@@ -58,10 +71,9 @@ void YouModApplyLiquidGlassToView(UIView *view, BOOL wantsBackground) {
 %end
 
 %hook YTRightNavigationButtons
-- (NSArray <YTQTMButton *> *)visibleButtons {
-    NSArray <YTQTMButton *> *orig = %orig;
-    if (orig && orig.count > 0) for (YTQTMButton *button in orig) YouModApplyLiquidGlassToView(button, YES);
-    return orig;
+- (void)layoutSubviews {
+    %orig;
+    YouModApplyLiquidGlassBackdropToView(self, CGRectGetHeight(self.bounds) / 2.0);
 }
 %end
 
@@ -128,23 +140,6 @@ void YouModApplyLiquidGlassToView(UIView *view, BOOL wantsBackground) {
 - (void)addBackButton:(YTQTMButton *)button toStackView:(UIStackView *)stackView {
     if (button) YouModApplyLiquidGlassToView(button, NO);
     %orig;
-}
-%end
-
-%hook YTGlobalConfig
-- (BOOL)shouldBlockUpgradeDialog { return YES; }
-%end
-
-%hook YTVersionUtils
-+ (NSString *)appVersionLong {
-    NSString *appVersion = %orig;
-    if ([appVersion compare:@"20.21.6" options:NSNumericSearch] == NSOrderedAscending) return @"20.21.6";
-    return appVersion;
-}
-+ (NSString *)appVersion {
-    NSString *appVersion = %orig;
-    if ([appVersion compare:@"20.21.6" options:NSNumericSearch] == NSOrderedAscending) return @"20.21.6";
-    return appVersion;
 }
 %end
 

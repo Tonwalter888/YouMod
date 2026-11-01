@@ -160,7 +160,8 @@ static NSString *YMByteCountString(unsigned long long bytes) {
 - (void)viewDidLoad {
     [super viewDidLoad];
     [self buildModel];
-    self.view.backgroundColor = UIColor.systemBackgroundColor;
+    // Frosted + light-gray dialog background.
+    YouModApplyFrostedPanelBackgroundToView(self.view);
     self.view.tintColor = UIColor.systemPurpleColor;
 
     UILabel *titleLabel = [UILabel new];

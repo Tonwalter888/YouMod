@@ -41,6 +41,11 @@ static void YMStartupVideoRefreshSettings(UIViewController *presenter) {
 static YMStartupVideoView *sStartupVideoView;
 static __weak YTStartupAnimationViewController *sStartupAnimationController;
 
+// While the startup video plays, every other player is cut off: paused and blocked
+// from resuming. The startup video's own player is exempt.
+static BOOL sStartupVideoPlaying = NO;
+static __weak AVPlayer *sStartupVideoPlayer = nil;
+
 @implementation YMStartupVideoView
 + (Class)layerClass {
     return AVPlayerLayer.class;
@@ -53,6 +58,8 @@ static __weak YTStartupAnimationViewController *sStartupAnimationController;
 - (void)dismiss {
     if (self.dismissed) return;
     self.dismissed = YES;
+    sStartupVideoPlaying = NO;
+    sStartupVideoPlayer = nil;
     [self.player pause];
     if (self.changedAudioSessionCategory) {
         AVAudioSession *audioSession = AVAudioSession.sharedInstance;
@@ -284,6 +291,11 @@ static void YMStartupVideoPlay(YTStartupAnimationViewController *controller) {
     player.muted = NO;
     player.volume = 1.0;
 
+    // Cut off every other player before the startup video starts.
+    sStartupVideoPlaying = YES;
+    sStartupVideoPlayer = player;
+    YouModPauseAllPlayers();
+
     __weak YMStartupVideoView *weakView = videoView;
     videoView.endObserver = [[NSNotificationCenter defaultCenter] addObserverForName:AVPlayerItemDidPlayToEndTimeNotification object:player.currentItem queue:NSOperationQueue.mainQueue usingBlock:^(__unused NSNotification *note) {
         [weakView dismiss];
@@ -299,5 +311,20 @@ static void YMStartupVideoPlay(YTStartupAnimationViewController *controller) {
 - (void)playLottieAnimation {
     %orig;
     if (INTFORVAL(StartupAnimation) == 3 && sStartupVideoView && !sStartupVideoView.dismissed) YMStartupVideoPlay(self);
+}
+%end
+
+// Global cutoff: no player may run while the startup video plays.
+%hook AVPlayer
+- (void)play {
+    if (sStartupVideoPlaying && self != sStartupVideoPlayer) {
+        [self pause];
+        return;
+    }
+    %orig;
+}
+- (void)setRate:(float)rate {
+    if (rate > 0 && sStartupVideoPlaying && self != sStartupVideoPlayer) return;
+    %orig;
 }
 %end

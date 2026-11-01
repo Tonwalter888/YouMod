@@ -168,8 +168,6 @@
 "HIDE_CAST_BUTTON_NAVBAR_DESC" = "隐藏导航栏中的投屏按钮。";
 "HIDE_MESSAGES_BUTTON" = "Hide messages button";
 "HIDE_MESSAGES_BUTTON_DESC" = "Hide messages button in the navigation bar.";
-"HIDE_MORE_BUTTON_NAV" = "Hide more button";
-"HIDE_MORE_BUTTON_NAV_DESC" = "Hide the more (three-dot) button in the navigation bar.";
 
 "FEED" = "信息流";
 "HIDE_SUBBAR" = "隐藏子栏";
@@ -472,8 +470,6 @@
 "DISABLES_SHORTS_PIP_DESC" = "尝试禁用 Shorts 画中画，可能无法 100% 禁用。";
 "DISABLE_HINTS" = "禁用提示";
 "DISABLE_HINTS_DESC" = "禁用教程提示和互动弹窗。";
-"BLOCK_UPGRADE_DIALOGS" = "屏蔽升级弹窗";
-"BLOCK_UPGRADE_DIALOGS_DESC" = "屏蔽 YouTube 要求升级应用的弹窗。";
 "ARE_YOU_THERE_DIALOG" = "隐藏“你还在吗？”弹窗";
 "ARE_YOU_THERE_DIALOG_DESC" = "当您在应用中长时间不活动时隐藏弹窗。";
 "FIXES_SLOW_MINIPLAYER" = "修复迷你播放器缓慢";
@@ -482,8 +478,6 @@
 "DISABLES_NEW_MINIPLAYER_DESC" = "使用旧版迷你播放器替代新版，仅适用于旧版 YouTube。";
 "DISABLES_SNACK_BAR" = "禁用 Snackbar 提示";
 "DISABLES_SNACK_BAR_DESC" = "按下某些按钮或在应用中执行操作时禁用 Snackbar 提示。";
-"HIDE_STARTUP_ANIMATIONS" = "隐藏 YouTube 启动动画";
-"HIDE_STARTUP_ANIMATIONS_DESC" = "打开应用时隐藏 YouTube 的启动动画。";
 "HIDE_LIKE_DISLIKE_VOTES" = "隐藏点赞/不喜欢投票数";
 "HIDE_LIKE_DISLIKE_VOTES_DESC" = "隐藏点赞或不喜欢视频时弹出的消息。";
 "FLYOUT_MENU" = "浮动菜单";

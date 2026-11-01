@@ -21,15 +21,13 @@
 // Try to disable Shorts PiP
 - (BOOL)shortsPlayerGlobalConfigEnableReelsPictureInPicture { return IS_ENABLED(DisablesShortsPiP) ? NO : %orig; }
 - (BOOL)shortsPlayerGlobalConfigEnableReelsPictureInPictureIos { return IS_ENABLED(DisablesShortsPiP) ? NO : %orig; }
-// Startup animation: modes 1/3 force it on, mode 2 off; default honors YouTube and the hide toggle.
+// Startup animation: modes 1/3 force it on, mode 2 off; default honors YouTube.
 - (BOOL)mainAppCoreClientIosEnableStartupAnimation {
     NSInteger mode = INTFORVAL(StartupAnimation);
-    if (mode == 1 || mode == 3) return YES;
-    if (mode == 2) return NO;
-    return IS_ENABLED(HideStartupAni) ? NO : %orig;
+    if (mode == 1) return YES;
+    else if (mode == 2) return NO;
+    return %orig;
 }
-// Prevent YouTube from asking "Are you there?"
-- (BOOL)enableYouthereCommandsOnIos { return IS_ENABLED(BlockUpgradeDialogs) ? NO : %orig; }
 // Fixes slow miniplayer
 - (BOOL)enableIosFloatingMiniplayerDoubleTapToResize { return IS_ENABLED(FixesSlowMiniPlayer) ? NO : %orig; }
 // Use old miniplayer
@@ -43,6 +41,27 @@
 
 %hook YTHotConfig
 - (BOOL)shortsPlayerGlobalConfigEnableReelsPictureInPictureAllowedFromPlayer { return IS_ENABLED(DisablesShortsPiP) ? NO : %orig; }
+%end
+
+%hook YTGlobalConfig
+- (BOOL)shouldBlockUpgradeDialog { return YES; }
+- (BOOL)shouldShowUpgradeDialog { return NO; }
+- (BOOL)shouldShowUpgrade { return NO; }
+- (BOOL)shouldForceUpgrade { return NO; }
+- (BOOL)enableYouthereCommandsOnIos { return IS_ENABLED(HideAreYouThereDialog) ? NO : %orig; }
+%end
+
+%hook YTVersionUtils
++ (NSString *)appVersionLong {
+    NSString *appVersion = %orig;
+    if ([appVersion compare:@"20.21.6" options:NSNumericSearch] == NSOrderedAscending) return @"20.21.6";
+    return appVersion;
+}
++ (NSString *)appVersion {
+    NSString *appVersion = %orig;
+    if ([appVersion compare:@"20.21.6" options:NSNumericSearch] == NSOrderedAscending) return @"20.21.6";
+    return appVersion;
+}
 %end
 
 %hook YTReelModel
@@ -72,14 +91,6 @@
 %hook YTUserDefaults
 - (BOOL)areHintsDisabled { return IS_ENABLED(DisableHints) ? YES : %orig; }
 - (void)setHintsDisabled:(BOOL)arg { %orig(IS_ENABLED(DisableHints) ? YES : arg); }
-%end
-
-// Block upgrade dialogs
-%hook YTGlobalConfig
-// - (BOOL)shouldBlockUpgradeDialog { return IS_ENABLED(BlockUpgradeDialogs) ? YES : %orig; }
-- (BOOL)shouldShowUpgradeDialog { return IS_ENABLED(BlockUpgradeDialogs) ? NO : %orig; }
-- (BOOL)shouldShowUpgrade { return IS_ENABLED(BlockUpgradeDialogs) ? NO : %orig; }
-- (BOOL)shouldForceUpgrade { return IS_ENABLED(BlockUpgradeDialogs) ? NO : %orig; }
 %end
 
 %hook YTYouThereController

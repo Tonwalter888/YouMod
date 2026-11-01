@@ -223,8 +223,6 @@
 "HIDE_CAST_BUTTON_NAVBAR_DESC" = "Hide cast button in the navigation bar.";
 "HIDE_MESSAGES_BUTTON" = "Hide messages button";
 "HIDE_MESSAGES_BUTTON_DESC" = "Hide messages button in the navigation bar.";
-"HIDE_MORE_BUTTON_NAV" = "Hide more button";
-"HIDE_MORE_BUTTON_NAV_DESC" = "Hide the more (three-dot) button in the navigation bar.";
 
 "FEED" = "Feed";
 "HIDE_SUBBAR" = "Hide subbar";
@@ -527,8 +525,6 @@
 "DISABLES_SHORTS_PIP_DESC" = "Try to disables Shorts PiP, this might not 100% disables it.";
 "DISABLE_HINTS" = "Disable hints";
 "DISABLE_HINTS_DESC" = "Disable the tutorial hints and interactive pop-ups.";
-"BLOCK_UPGRADE_DIALOGS" = "Block upgrade dialogs";
-"BLOCK_UPGRADE_DIALOGS_DESC" = "Block the YouTube dialogs that ask you to upgrade the app.";
 "ARE_YOU_THERE_DIALOG" = "Hide 'Are you there?' dialog";
 "ARE_YOU_THERE_DIALOG_DESC" = "Hide the dialog when you are inactive in the app for too long.";
 "FIXES_SLOW_MINIPLAYER" = "Fixes slows miniplayer";
@@ -537,8 +533,6 @@
 "DISABLES_NEW_MINIPLAYER_DESC" = "Use the old-style miniplayer instead of the new one, this only works in older YouTube versions.";
 "DISABLES_SNACK_BAR" = "Disables snack bar";
 "DISABLES_SNACK_BAR_DESC" = "Disables snack bar when pressing some buttons or doing something in the app.";
-"HIDE_STARTUP_ANIMATIONS" = "Hide YouTube's startup animations";
-"HIDE_STARTUP_ANIMATIONS_DESC" = "Hide YouTube's startup animations when opening the app.";
 "STARTUP_ANIMATION" = "Startup animation";
 "STARTUP_ANIMATION_DESC" = "Choose YouTube's startup animation or use a video from Photos.";
 "STARTUP_ANIMATION_SHOW" = "Show";

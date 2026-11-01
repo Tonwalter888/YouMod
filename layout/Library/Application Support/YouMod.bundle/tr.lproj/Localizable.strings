@@ -170,8 +170,6 @@
 "HIDE_CAST_BUTTON_NAVBAR_DESC" = "Gezinme çubuğundaki yayınla butonunu gizler.";
 "HIDE_MESSAGES_BUTTON" = "Hide messages button";
 "HIDE_MESSAGES_BUTTON_DESC" = "Hide messages button in the navigation bar.";
-"HIDE_MORE_BUTTON_NAV" = "Hide more button";
-"HIDE_MORE_BUTTON_NAV_DESC" = "Hide the more (three-dot) button in the navigation bar.";
 
 "FEED" = "Akış";
 "HIDE_SUBBAR" = "Alt çubuğu gizle";
@@ -474,8 +472,6 @@
 "DISABLES_SHORTS_PIP_DESC" = "Shorts PiP (Resim içinde Resim) modunu devre dışı bırakmayı dener, tamamen engellemeyebilir.";
 "DISABLE_HINTS" = "İpuçlarını devre dışı bırak";
 "DISABLE_HINTS_DESC" = "Eğitim ipuçlarını ve etkileşimli pencereleri devre dışı bırakır.";
-"BLOCK_UPGRADE_DIALOGS" = "Güncelleme pencerelerini engelle";
-"BLOCK_UPGRADE_DIALOGS_DESC" = "YouTube'un uygulamayı güncellemenizi isteyen pencerelerini engeller.";
 "ARE_YOU_THERE_DIALOG" = "'Orada mısınız?' penceresini gizle";
 "ARE_YOU_THERE_DIALOG_DESC" = "Uygulamada uzun süre işlem yapmadığınızda çıkan pencereyi gizler.";
 "FIXES_SLOW_MINIPLAYER" = "Yavaş mini oynatıcıyı düzelt";
@@ -484,8 +480,6 @@
 "DISABLES_NEW_MINIPLAYER_DESC" = "Yeni stil yerine eski stil mini oynatıcıyı kullanır, yalnızca eski YouTube sürümlerinde çalışır.";
 "DISABLES_SNACK_BAR" = "Açılır bildirim çubuğunu devre dışı bırak";
 "DISABLES_SNACK_BAR_DESC" = "Bazı butonlara basıldığında veya işlem yapıldığında çıkan alt bildirim çubuğunu devre dışı bırakır.";
-"HIDE_STARTUP_ANIMATIONS" = "YouTube başlangıç animasyonlarını gizle";
-"HIDE_STARTUP_ANIMATIONS_DESC" = "Uygulama açılırken YouTube'un başlangıç animasyonlarını gizler.";
 "HIDE_LIKE_DISLIKE_VOTES" = "Beğenme/Beğenmeme bildirimlerini gizle";
 "HIDE_LIKE_DISLIKE_VOTES_DESC" = "Videoları beğendiğinizde/beğenmediğinizde çıkan bildirim mesajlarını gizler.";
 "FLYOUT_MENU" = "Açılır menü";

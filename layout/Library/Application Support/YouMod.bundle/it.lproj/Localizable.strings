@@ -168,8 +168,6 @@
 "HIDE_CAST_BUTTON_NAVBAR_DESC" = "Nasconde il pulsante di trasmissione nella barra di navigazione.";
 "HIDE_MESSAGES_BUTTON" = "Hide messages button";
 "HIDE_MESSAGES_BUTTON_DESC" = "Hide messages button in the navigation bar.";
-"HIDE_MORE_BUTTON_NAV" = "Hide more button";
-"HIDE_MORE_BUTTON_NAV_DESC" = "Hide the more (three-dot) button in the navigation bar.";
 
 "FEED" = "Feed";
 "HIDE_SUBBAR" = "Nascondi barra dei filtri";
@@ -472,8 +470,6 @@
 "DISABLES_SHORTS_PIP_DESC" = "Tenta di disattivare il PiP per gli Shorts; potrebbe non disattivarlo al 100%.";
 "DISABLE_HINTS" = "Disattiva suggerimenti";
 "DISABLE_HINTS_DESC" = "Disattiva i suggerimenti tutorial e i pop-up interattivi.";
-"BLOCK_UPGRADE_DIALOGS" = "Blocca finestre di aggiornamento";
-"BLOCK_UPGRADE_DIALOGS_DESC" = "Blocca le finestre di YouTube che ti chiedono di aggiornare l'app.";
 "ARE_YOU_THERE_DIALOG" = "Nascondi finestra 'Ci sei ancora?'";
 "ARE_YOU_THERE_DIALOG_DESC" = "Nasconde la finestra mostrata quando resti inattivo nell'app troppo a lungo.";
 "FIXES_SLOW_MINIPLAYER" = "Correggi miniplayer lento";
@@ -482,8 +478,6 @@
 "DISABLES_NEW_MINIPLAYER_DESC" = "Usa il miniplayer vecchio stile al posto di quello nuovo; funziona solo con le versioni precedenti di YouTube.";
 "DISABLES_SNACK_BAR" = "Disattiva snack bar";
 "DISABLES_SNACK_BAR_DESC" = "Disattiva la snack bar quando premi alcuni pulsanti o esegui azioni nell'app.";
-"HIDE_STARTUP_ANIMATIONS" = "Nascondi animazioni di avvio di YouTube";
-"HIDE_STARTUP_ANIMATIONS_DESC" = "Nasconde le animazioni di avvio di YouTube all'apertura dell'app.";
 "HIDE_LIKE_DISLIKE_VOTES" = "Nascondi voti Mi piace/Non mi piace";
 "HIDE_LIKE_DISLIKE_VOTES_DESC" = "Nasconde i messaggi che compaiono quando metti Mi piace/Non mi piace ai video.";
 "FLYOUT_MENU" = "Menu a comparsa";
