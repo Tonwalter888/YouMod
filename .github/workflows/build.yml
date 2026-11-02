@@ -148,7 +148,7 @@ jobs:
             'Codename: ios' \
             'Architectures: iphoneos-arm iphoneos-arm64 iphoneos-arm64e' \
             'Components: main' \
-            'Description: Repository for YouMod's latest builds' > Release
+            "Description: Repository for YouMod's latest builds" > Release
           cat Packages Release
           ls -R .
 
