@@ -1,20 +1,20 @@
 name: Build YouMod
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "pre-release" ]
   workflow_dispatch:
     inputs:
       repo:
         description: 'Repository to build from'
         required: true
-        default: 'Tonwalter888/YouMod'
+        default: 'ZomkaDEV/YouMod'
       branch:
         description: 'Branch to build from'
         required: true
-        default: 'main'
-   
+        default: 'pre-release'
+
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}
   cancel-in-progress: true
 
 jobs:
@@ -23,6 +23,9 @@ jobs:
     runs-on: macos-latest
     permissions:
       contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      VERSION: ${{ github.run_number }}
 
     steps:
       - name: Checkout YouMod
@@ -33,7 +36,7 @@ jobs:
           path: YouMod
 
       - name: Install dependencies
-        run: brew install make ldid gnu-sed autoconf automake libtool pkg-config
+        run: brew install make ldid gnu-sed autoconf automake libtool pkg-config dpkg
 
       - name: Set PATH environment variables
         run: |
@@ -89,10 +92,17 @@ jobs:
       - name: Fix Theos od broken pipe issue
         run: sed -i '' 's/od -c "$i" | head/od -c "$i" 2>\/dev\/null | head/g' $THEOS/bin/convert_xml_plist.sh || true
 
+      - name: Stamp version (CI only, not committed)
+        run: |
+          cd YouMod
+          sed -i '' "s/^Version:.*/Version: $VERSION/" control
+          sed -i '' "s/#define YouModVersion @\".*\"/#define YouModVersion @\"$VERSION\"/" Files/Headers/YouMod.h
+          grep '^Version:' control
+          grep 'define YouModVersion' Files/Headers/YouMod.h
+
       - name: Build YouMod
         run: |
           cd YouMod
-          echo "YOUMOD_VERSION=$(grep '^Version:' control | cut -d ' ' -f2)" >> $GITHUB_ENV
           make clean package DEBUG=0 FINALPACKAGE=1
           make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
           make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=roothide
@@ -101,18 +111,50 @@ jobs:
       - name: Upload the tweak .deb(s)
         uses: actions/upload-artifact@v7
         with:
-         name: YouMod v${{ env.YOUMOD_VERSION }}
+         name: YouMod build ${{ env.VERSION }}
          path: ${{ github.workspace }}/*.deb
          if-no-files-found: error
          overwrite: true
 
-      - name: Create a draft release
-        uses: softprops/action-gh-release@v3
+      - name: Update rolling release
+        run: |
+          REPO=${{ github.repository }}
+          SHA=$(git -C YouMod rev-parse HEAD)
+          if gh release view nightly --repo "$REPO" >/dev/null 2>&1; then
+            gh api -X PATCH "repos/$REPO/git/refs/tags/nightly" -f sha="$SHA" -F force=true
+          else
+            gh release create nightly --repo "$REPO" --target "$SHA" --prerelease \
+              --title "Latest build" --notes "-"
+          fi
+          for a in $(gh release view nightly --repo "$REPO" --json assets -q '.assets[].name'); do
+            gh release delete-asset nightly "$a" --repo "$REPO" -y
+          done
+          gh release upload nightly --repo "$REPO" ./*.deb
+          gh release edit nightly --repo "$REPO" --prerelease \
+            --notes "Build $VERSION - ${SHA::7} - $(git -C YouMod log -1 --pretty=%s)"
+
+      - name: Build APT repo
+        run: |
+          mkdir -p site/debs && cp ./*.deb site/debs/
+          cd site
+          dpkg-scanpackages -m debs > Packages
+          gzip -k Packages
+          bzip2 -k Packages
+          printf '%s\n' \
+            'Origin: YouMod' \
+            'Label: YouMod' \
+            'Suite: stable' \
+            "Version: $VERSION" \
+            'Codename: ios' \
+            'Architectures: iphoneos-arm iphoneos-arm64 iphoneos-arm64e' \
+            'Components: main' \
+            'Description: Repository for YouMod's latest builds' > Release
+          cat Packages Release
+          ls -R .
+
+      - name: Publish APT repo to Pages
+        uses: peaceiris/actions-gh-pages@v4
         with:
-          tag_name: v${{ env.YOUMOD_VERSION }}
-          name: v${{ env.YOUMOD_VERSION }} 
-          files: |
-             dev.water888.youmod_${{ env.YOUMOD_VERSION }}_iphoneos-arm.deb
-             dev.water888.youmod_${{ env.YOUMOD_VERSION }}_iphoneos-arm64.deb
-             dev.water888.youmod_${{ env.YOUMOD_VERSION }}_iphoneos-arm64e.deb
-          draft: true
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: site
+          force_orphan: true

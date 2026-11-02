@@ -319,7 +319,7 @@
 #define RemoveNotifyOption @"YouModRemoveNotifyOption"
 #define RemoveClearScreenOption @"YouModRemoveClearScreenOption"
 #define RemoveAddToLastQueueOption @"YouModRemoveAddToLastQueueOption"
-#define YouModVersion @"2.1.0"
+#define YouModVersion @"DEV"
 // SponsorBlock
 #define SBEnabled @"YouModSBEnabled"
 #define SBShowButton @"YouModSBShowButton"
