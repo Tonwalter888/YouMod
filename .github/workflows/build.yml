@@ -108,13 +108,29 @@ jobs:
           make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=roothide
           mv packages/*.deb ${{ github.workspace }}
 
-      - name: Upload the tweak .deb(s)
+      - name: Upload rootful .deb
         uses: actions/upload-artifact@v7
         with:
-         name: YouMod build ${{ env.VERSION }}
-         path: ${{ github.workspace }}/*.deb
-         if-no-files-found: error
-         overwrite: true
+          name: YouMod build ${{ env.VERSION }} rootful
+          path: ${{ github.workspace }}/*_iphoneos-arm.deb
+          if-no-files-found: error
+          overwrite: true
+
+      - name: Upload rootless .deb
+        uses: actions/upload-artifact@v7
+        with:
+          name: YouMod build ${{ env.VERSION }} rootless
+          path: ${{ github.workspace }}/*_iphoneos-arm64.deb
+          if-no-files-found: error
+          overwrite: true
+
+      - name: Upload roothide .deb
+        uses: actions/upload-artifact@v7
+        with:
+          name: YouMod build ${{ env.VERSION }} roothide
+          path: ${{ github.workspace }}/*_iphoneos-arm64e.deb
+          if-no-files-found: error
+          overwrite: true
 
       - name: Update rolling release
         run: |
@@ -123,19 +139,27 @@ jobs:
           if gh release view nightly --repo "$REPO" >/dev/null 2>&1; then
             gh api -X PATCH "repos/$REPO/git/refs/tags/nightly" -f sha="$SHA" -F force=true
           else
-            gh release create nightly --repo "$REPO" --target "$SHA" --prerelease \
+            gh release create nightly --repo "$REPO" --target "$SHA" \
               --title "Latest build" --notes "-"
           fi
           for a in $(gh release view nightly --repo "$REPO" --json assets -q '.assets[].name'); do
             gh release delete-asset nightly "$a" --repo "$REPO" -y
           done
           gh release upload nightly --repo "$REPO" ./*.deb
-          gh release edit nightly --repo "$REPO" --prerelease \
-            --notes "Build $VERSION - ${SHA::7} - $(git -C YouMod log -1 --pretty=%s)"
+          NOTES=$(printf '%s\n' \
+            '# Add our repository to your package manager!' \
+            "[![Add repository to Sileo](https://img.shields.io/badge/Add%20repository%20to-Sileo-turquoise)](https://tonwalter888.github.io/YouMod/sileo.html) [![Add repository to Zebra](https://img.shields.io/badge/Add%20repository%20to-Zebra-white)](https://tonwalter888.github.io/YouMod/zebra.html)" \
+            '' \
+            "Build $VERSION - ${SHA::7} - $(git -C YouMod log -1 --pretty=%s)")
+          gh release edit nightly --repo "$REPO" --prerelease --notes "$NOTES"
 
       - name: Build APT repo
         run: |
           mkdir -p site/debs && cp ./*.deb site/debs/
+          curl -fsSL "https://github.com/Tonwalter888/YouMod/blob/main/Icon.png?raw=true" -o site/CydiaIcon.png
+          echo '<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width"><title>Add to Sileo</title><script>location.href="sileo://source/https://tonwalter888.github.io/YouMod/"</script><a href="sileo://source/https://tonwalter888.github.io/YouMod/">Add to Sileo</a>' > site/sileo.html
+          echo '<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width"><title>Add to Zebra</title><script>location.href="zbra://sources/add/https://tonwalter888.github.io/YouMod/"</script><a href="zbra://sources/add/https://tonwalter888.github.io/YouMod/">Add to Zebra</a>' > site/zebra.html
+          echo '<a href="https://github.com/Tonwalter888/YouMod">GitHub repo</a> - <a href=sileo.html>Add to Sileo</a> - <a href=zebra.html>Add to Zebra</a>' > site/index.html
           cd site
           dpkg-scanpackages -m debs > Packages
           gzip -k Packages
@@ -148,7 +172,7 @@ jobs:
             'Codename: ios' \
             'Architectures: iphoneos-arm iphoneos-arm64 iphoneos-arm64e' \
             'Components: main' \
-            "Description: Repository for YouMod's latest builds" > Release
+            "Description: Automated repository for YouMod's latest builds" > Release
           cat Packages Release
           ls -R .
 
@@ -158,3 +182,5 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: site
           force_orphan: true
+          user_name: github-actions[bot]
+          user_email: 41898282+github-actions[bot]@users.noreply.github.com
