@@ -1,17 +1,31 @@
 #import "Headers.h"
 
-static NSString *const YouModLatestReleaseAPI = @"https://api.github.com/repos/Tonwalter888/YouMod/releases/latest";
-static NSString *const YouModLatestReleaseURL = @"https://github.com/Tonwalter888/YouMod/releases/latest";
+static NSString *const YouModLatestReleaseAPI = @"https://api.github.com/repos/Tonwalter888/YouMod/releases/tags/nightly";
+static NSString *const YouModLatestReleaseURL = @"https://github.com/Tonwalter888/YouMod/releases/tag/nightly";
 static const NSUInteger YouModReleaseNotesExcerptLength = 280;
 static BOOL YouModUpdateCheckInFlight = NO;
 
-static NSString *YouModVersionFromTag(id value) {
-    if (![value isKindOfClass:[NSString class]]) return nil;
-    NSString *version = [(NSString *)value stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
-    if (version.length > 1 && ([[version substringToIndex:1] caseInsensitiveCompare:@"v"] == NSOrderedSame)) {
-        version = [version substringFromIndex:1];
-    }
-    return version.length ? version : nil;
+// The nightly release body contains a line "Build <n> - <sha> - <commit subject>" (written by CI).
+static NSTextCheckingResult *YouModBuildLine(NSDictionary *release) {
+    NSString *body = release[@"body"];
+    if (![body isKindOfClass:[NSString class]]) return nil;
+    NSRegularExpression *re = [NSRegularExpression regularExpressionWithPattern:@"Build (\\d+) - ([0-9a-f]+) - (.*)" options:0 error:nil];
+    return [re firstMatchInString:body options:0 range:NSMakeRange(0, body.length)];
+}
+
+static NSString *YouModLatestBuild(NSDictionary *release) {
+    NSTextCheckingResult *m = YouModBuildLine(release);
+    return m ? [release[@"body"] substringWithRange:[m rangeAtIndex:1]] : nil;
+}
+
+static NSString *YouModLatestSubject(NSDictionary *release) {
+    NSTextCheckingResult *m = YouModBuildLine(release);
+    return m ? [release[@"body"] substringWithRange:[m rangeAtIndex:3]] : nil;
+}
+
+// Local/dev builds have a non-numeric YouModVersion; treat them as "unknown".
+static NSString *YouModInstalledBuild(void) {
+    return YouModVersion.integerValue > 0 ? YouModVersion : nil;
 }
 
 static NSString *YouModReleaseNotesExcerpt(id value) {
@@ -79,8 +93,8 @@ static void YouModCheckForUpdate(void) {
     YouModFetchLatestRelease(^(NSDictionary *release) {
         YouModUpdateCheckInFlight = NO;
 
-        NSString *latestVersion = YouModVersionFromTag(release[@"tag_name"]);
-        NSString *installedVersion = YouModVersionFromTag(YouModVersion);
+        NSString *latestVersion = YouModLatestBuild(release);
+        NSString *installedVersion = YouModInstalledBuild();
         if (!latestVersion || !installedVersion) return;
 
         [defaults setBool:YES forKey:UpdateHasChecked];
@@ -89,21 +103,21 @@ static void YouModCheckForUpdate(void) {
         if ([[defaults stringForKey:UpdateSkippedVersion] isEqualToString:latestVersion]) return;
         if ([UIApplication sharedApplication].applicationState != UIApplicationStateActive) return;
 
-        YouModPresentUpdateAlert(latestVersion, release[@"body"]);
+        YouModPresentUpdateAlert(latestVersion, YouModLatestSubject(release));
     });
 }
 
 void YouModCheckForUpdateManually(void) {
     YouModFetchLatestRelease(^(NSDictionary *release) {
-        NSString *latestVersion = YouModVersionFromTag(release[@"tag_name"]);
-        NSString *installedVersion = YouModVersionFromTag(YouModVersion);
+        NSString *latestVersion = YouModLatestBuild(release);
+        NSString *installedVersion = YouModInstalledBuild();
         if (!latestVersion || !installedVersion) {
             YouModShowPill(LOC(@"UPDATE_CHECK_FAILED"), NO);
             return;
         }
 
         if (YouModIsNewerVersion(latestVersion, installedVersion)) {
-            YouModPresentUpdateAlert(latestVersion, release[@"body"]);
+            YouModPresentUpdateAlert(latestVersion, YouModLatestSubject(release));
             return;
         }
         YouModShowPill([NSString stringWithFormat:LOC(@"UPDATE_UP_TO_DATE"), installedVersion], YES);

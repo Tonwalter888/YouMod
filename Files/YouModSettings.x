@@ -492,7 +492,7 @@ void YMAnimateThemeChange(UIView *view, void (^changes)(void)) {
     @try {
         ytVersion = [%c(YTVersionUtils) appVersion] ?: @"";
     } @catch (...) {}
-    label.text = [NSString stringWithFormat:@"YouTube %@ • YouMod %@", ytVersion, YouModVersion];
+    label.text = [NSString stringWithFormat:@"YouTube %@ • YouMod build %@ (%@)", ytVersion, YouModVersion, [YouModCommit substringToIndex:MIN((NSUInteger)7, YouModCommit.length)]];
     label.font = [UIFont systemFontOfSize:13 weight:UIFontWeightLight];
     label.textColor = [self ymSecondaryColor];
     label.textAlignment = NSTextAlignmentNatural; // follows RTL/LTR

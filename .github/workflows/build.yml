@@ -92,13 +92,14 @@ jobs:
       - name: Fix Theos od broken pipe issue
         run: sed -i '' 's/od -c "$i" | head/od -c "$i" 2>\/dev\/null | head/g' $THEOS/bin/convert_xml_plist.sh || true
 
-      - name: Stamp version (CI only, not committed)
+      - name: Stamp version
         run: |
           cd YouMod
           sed -i '' "s/^Version:.*/Version: $VERSION/" control
           sed -i '' "s/#define YouModVersion @\".*\"/#define YouModVersion @\"$VERSION\"/" Files/Headers/YouMod.h
+          sed -i '' "s/#define YouModCommit @\".*\"/#define YouModCommit @\"$(git rev-parse HEAD)\"/" Files/Headers/YouMod.h
           grep '^Version:' control
-          grep 'define YouModVersion' Files/Headers/YouMod.h
+          grep 'define YouMod\(Version\|Commit\)' Files/Headers/YouMod.h
 
       - name: Build YouMod
         run: |

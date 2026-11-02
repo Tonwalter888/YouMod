@@ -51,10 +51,10 @@
 "CHECK_UPDATES" = "แจ้งเตือนเมื่อมีอัปเดต YouMod";
 "CHECK_UPDATES_DESC" = "ตรวจสอบการอัปเดตจาก GitHub เมื่อเปิด YouTube ครั้งแรก และลองใหม่อีกไม่กี่ครั้งหากคำขอล้มเหลว";
 "UPDATE" = "อัปเดต";
-"UPDATE_AVAILABLE_MESSAGE" = "มี YouMod เวอร์ชันใหม่ (v. %@) ต้องการอัปเดต tweak หรือไม่?";
+"UPDATE_AVAILABLE_MESSAGE" = "มี YouMod เวอร์ชันใหม่ (build %@) ต้องการอัปเดต tweak หรือไม่?";
 "UPDATE_NOW" = "อัปเดต";
 "UPDATE_SKIP" = "ข้ามเวอร์ชันนี้";
-"UPDATE_UP_TO_DATE" = "YouMod เป็นเวอร์ชันล่าสุดแล้ว (v. %@)";
+"UPDATE_UP_TO_DATE" = "YouMod เป็นเวอร์ชันล่าสุดแล้ว (build %@)";
 "UPDATE_CHECK_FAILED" = "ไม่สามารถตรวจสอบการอัปเดตได้ ลองใหม่ภายหลัง";
 "CHECK_UPDATES_NOW" = "ตรวจสอบการอัปเดตตอนนี้";
 "CHECK_UPDATES_NOW_DESC" = "ตรวจสอบ GitHub หาเวอร์ชัน YouMod ใหม่ทันที";

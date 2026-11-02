@@ -320,6 +320,7 @@
 #define RemoveClearScreenOption @"YouModRemoveClearScreenOption"
 #define RemoveAddToLastQueueOption @"YouModRemoveAddToLastQueueOption"
 #define YouModVersion @"DEV"
+#define YouModCommit @"dev"
 // SponsorBlock
 #define SBEnabled @"YouModSBEnabled"
 #define SBShowButton @"YouModSBShowButton"
