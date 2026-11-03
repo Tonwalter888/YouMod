@@ -1898,13 +1898,13 @@ void YouModFilterVideoButtons(_ASDisplayView *view, NSString *iden) {
 
 static void LogRendererArray(NSString *hookName, NSMutableArray *array) {
 
-    os_log("%{public}@",
-        [NSString stringWithFormat:
+    os_log("%{public}s",
+        [[NSString stringWithFormat:
             @"========== %@ BEGIN ==========",
-            hookName
-        ]);
+            hookName] UTF8String]);
 
     NSUInteger index = 0;
+
     for (GPBMessage *renderer in array) {
 
         NSString *className =
@@ -1916,7 +1916,7 @@ static void LogRendererArray(NSString *hookName, NSMutableArray *array) {
         NSString *debugDescription =
             [renderer debugDescription] ?: @"(null)";
 
-        os_log("%{public}@",
+        NSString *output =
             [NSString stringWithFormat:
                 @"\n[Renderer %lu]\n"
                  "Class: %@\n"
@@ -1928,16 +1928,17 @@ static void LogRendererArray(NSString *hookName, NSMutableArray *array) {
                 description,
                 debugDescription,
                 renderer
-            ]);
+            ];
+
+        os_log("%{public}s", [output UTF8String]);
 
         index++;
     }
 
-    os_log("%{public}@",
-        [NSString stringWithFormat:
+    os_log("%{public}s",
+        [[NSString stringWithFormat:
             @"========== %@ END ==========",
-            hookName
-        ]);
+            hookName] UTF8String]);
 }
 
 %hook YTISlimVideoScrollableActionBarRenderer
