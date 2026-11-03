@@ -1894,68 +1894,18 @@ void YouModFilterVideoButtons(_ASDisplayView *view, NSString *iden) {
 }
 %end
 
-
-// video buttons debugging
-%hook YTSlimVideoScrollableDetailsActionsView
-- (void)createActionViewsFromSupportedRenderers:(id)arg { 
-    NSLog(@"createActionViewsFromSupportedRenderers GOT CALLED");
-    %orig;
-}
-%end
-
-%hook YTSlimVideoDetailsActionView
-
-- (void)didMoveToWindow {
-    %orig;
-    NSLog(@"YTSlimVideoDetailsActionView got called");
-}
-
-%end
-%hook YTSlimVideoScrollableDetailsActionsView
-
-- (void)didMoveToWindow {
-    %orig;
-    NSLog(@"YTSlimVideoScrollableDetailsActionsView got called");
-}
-
-%end
-%hook YTSlimVideoScrollableActionBarCell
-
-- (void)didMoveToWindow {
-    %orig;
-    NSLog(@"YTSlimVideoScrollableActionBarCell got called");
-}
-
-%end
-
 #import <os/log.h>
 
-static os_log_t rendererLog;
+static void LogRendererArray(NSString *hookName, NSMutableArray *array) {
 
-__attribute__((constructor))
-static void InitRendererLog(void) {
-    rendererLog = os_log_create(
-        "com.debug.renderer",
-        "RendererDebug"
-    );
-}
-
-static void LogRendererArray(NSString *hookName, id array) {
-
-    os_log_info(rendererLog,
-                "========== %{public}@ BEGIN ==========",
-                hookName);
-
-    if (![array isKindOfClass:[NSArray class]]) {
-        os_log_info(rendererLog,
-                    "Array is nil or invalid: %{public}@",
-                    array);
-        return;
-    }
+    os_log("%{public}@",
+        [NSString stringWithFormat:
+            @"========== %@ BEGIN ==========",
+            hookName
+        ]);
 
     NSUInteger index = 0;
-
-    for (id renderer in array) {
+    for (GPBMessage *renderer in array) {
 
         NSString *className =
             NSStringFromClass([renderer class]);
@@ -1966,85 +1916,44 @@ static void LogRendererArray(NSString *hookName, id array) {
         NSString *debugDescription =
             [renderer debugDescription] ?: @"(null)";
 
-        os_log_info(rendererLog,
-                    "[Renderer %lu] Class: %{public}@",
-                    (unsigned long)index,
-                    className);
-
-        os_log_info(rendererLog,
-                    "Description: %{public}@",
-                    description);
-
-        os_log_info(rendererLog,
-                    "DebugDescription: %{public}@",
-                    debugDescription);
-
-        os_log_info(rendererLog,
-                    "Address: %p",
-                    renderer);
+        os_log("%{public}@",
+            [NSString stringWithFormat:
+                @"\n[Renderer %lu]\n"
+                 "Class: %@\n"
+                 "Description: %@\n"
+                 "DebugDescription: %@\n"
+                 "Address: %p\n",
+                (unsigned long)index,
+                className,
+                description,
+                debugDescription,
+                renderer
+            ]);
 
         index++;
     }
 
-    os_log_info(rendererLog,
-                "========== %{public}@ END ==========",
-                hookName);
+    os_log("%{public}@",
+        [NSString stringWithFormat:
+            @"========== %@ END ==========",
+            hookName
+        ]);
 }
 
 %hook YTISlimVideoScrollableActionBarRenderer
-
-- (id)actionButtonsArray {
-    id result = %orig;
-    LogRendererArray(@"Scrollable.actionButtonsArray", result);
-    return result;
-}
-
-- (id)actionBarButtonsArray {
-    id result = %orig;
-    LogRendererArray(@"Scrollable.actionBarButtonsArray", result);
-    return result;
-}
-
-- (id)buttonsArray {
-    id result = %orig;
+- (NSMutableArray *)buttonsArray {
+    NSMutableArray *result = %orig;
     LogRendererArray(@"Scrollable.buttonsArray", result);
     return result;
 }
-
-- (id)actionsArray {
-    id result = %orig;
-    LogRendererArray(@"Scrollable.actionsArray", result);
-    return result;
-}
-
 %end
 
 %hook YTISlimVideoActionBarRenderer
-
-- (id)actionButtonsArray {
-    id result = %orig;
-    LogRendererArray(@"ActionBar.actionButtonsArray", result);
-    return result;
-}
-
-- (id)actionBarButtonsArray {
-    id result = %orig;
-    LogRendererArray(@"ActionBar.actionBarButtonsArray", result);
-    return result;
-}
-
-- (id)buttonsArray {
-    id result = %orig;
+- (NSMutableArray *)buttonsArray {
+    NSMutableArray *result = %orig;
     LogRendererArray(@"ActionBar.buttonsArray", result);
     return result;
 }
-
-- (id)actionsArray {
-    id result = %orig;
-    LogRendererArray(@"ActionBar.actionsArray", result);
-    return result;
-}
-
 %end
 
 
