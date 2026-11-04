@@ -1898,7 +1898,7 @@ void YouModFilterVideoButtons(_ASDisplayView *view, NSString *iden) {
 
 static void LogRendererArray(NSString *hookName, NSMutableArray *array) {
 
-    os_log("%{public}s",
+    os_log(OS_LOG_DEFAULT, "%{public}s",
         [[NSString stringWithFormat:
             @"========== %@ BEGIN ==========",
             hookName] UTF8String]);
@@ -1930,12 +1930,12 @@ static void LogRendererArray(NSString *hookName, NSMutableArray *array) {
                 renderer
             ];
 
-        os_log("%{public}s", [output UTF8String]);
+        os_log(OS_LOG_DEFAULT, "%{public}s", [output UTF8String]);
 
         index++;
     }
 
-    os_log("%{public}s",
+    os_log(OS_LOG_DEFAULT, "%{public}s",
         [[NSString stringWithFormat:
             @"========== %@ END ==========",
             hookName] UTF8String]);
@@ -1956,7 +1956,6 @@ static void LogRendererArray(NSString *hookName, NSMutableArray *array) {
     return result;
 }
 %end
-
 
 %ctor {
     %init;
