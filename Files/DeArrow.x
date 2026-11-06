@@ -195,7 +195,7 @@ static const void *kYMDeArrowNodeVideoID = &kYMDeArrowNodeVideoID;
         if (![expected isEqualToString:videoID]) return;
         [node setImage:image];
         // %orig's own download may land after us and overwrite the frame; assert once more.
-        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.7 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
             NSString *current = objc_getAssociatedObject(node, kYMDeArrowNodeVideoID);
             if ([current isEqualToString:videoID]) [node setImage:image];
         });
