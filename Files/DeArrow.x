@@ -35,8 +35,8 @@ static const void *kYMDeArrowNodeVideoID = &kYMDeArrowNodeVideoID;
 
 + (void)applyToNode:(ELMImageNode *)node forURL:(NSURL *)url {
     if (!node || !url) return;
-    NSString *videoID = YMExtractYouTubeVideoID(url.description);
-    if (videoID.length != 11) return;
+    NSString *videoID = YMExtractYouTubeVideoID(url.absoluteString);
+    if (videoID.length != 11 || ![url.host isEqualToString:@"i.ytimg.com"]) return;
 
     // Tag the node; if it gets reused for another video, late callbacks bail out.
     objc_setAssociatedObject(node, kYMDeArrowNodeVideoID, videoID, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
