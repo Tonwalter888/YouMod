@@ -237,6 +237,8 @@
 "REMOVE_ADS_DESC" = "ลบโฆษณาออกจากแอป ยกเว้นเกม";
 "HIDE_SPONSOR_BUTTON" = "ซ่อนปุ่มสปอนเซอร์";
 "HIDE_SPONSOR_BUTTON_DESC" = "ซ่อนปุ่มสปอนเซอร์ใต้วิดีโอและบนโอเวอร์เลย์ Shorts";
+"DEARROW_THUMBNAILS" = "ภาพขนาดย่อ DeArrow";
+"DEARROW_THUMBNAILS_DESC" = "แทนที่ภาพขนาดย่อวิดีโอด้วยภาพขนาดย่อ DeArrow หรือภาพหน้าจอจากเวลาสุ่ม";
 "HOLD_TO_SPEED" = "ความเร็วเมื่อกดค้าง";
 "HOLD_TO_SPEED_DESC" = "ใช้ความเร็วในการเล่นวิดีโอแบบกำหนดเองเมื่อกดค้างที่หน้าจอ";
 "HIDE_AUTOPLAY" = "ซ่อนสวิตซ์เล่นอัตโนมัติ";

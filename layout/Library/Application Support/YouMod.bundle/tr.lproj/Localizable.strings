@@ -240,6 +240,8 @@
 "REMOVE_ADS_DESC" = "Uygulamadaki reklamları kaldırır, oyunlar hariç";
 "HIDE_SPONSOR_BUTTON" = "Hide sponsor button";
 "HIDE_SPONSOR_BUTTON_DESC" = "Hide the sponsor button under the video and in the Shorts overlay.";
+"DEARROW_THUMBNAILS" = "DeArrow thumbnails";
+"DEARROW_THUMBNAILS_DESC" = "Replace video thumbnails with DeArrow thumbnails or random-time screenshots.";
 "HOLD_TO_SPEED" = "Hızlandırmak için basılı tut";
 "HOLD_TO_SPEED_DESC" = "Özel basılı tutarak hızlandırma oranını kullanır.";
 "HIDE_AUTOPLAY" = "Otomatik oynatma anahtarını gizle";

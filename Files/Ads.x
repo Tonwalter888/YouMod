@@ -326,8 +326,11 @@ static BOOL isAdsReelContentModel(YTReelContentModel *model) {
 }
 %end
 
-%hook YTTimelyShelfStateManager
-- (BOOL)isTablet { return YES; }
+%hook YTIPlayerCueRangeSet
+- (NSMutableArray *)playerCueRangesArray {
+    if (self.cueRangeSetIdentifier == 16) return [NSMutableArray array];
+    return %orig;
+}
 %end
 
 %hook YTWatchFloatingMiniplayerBadgeView

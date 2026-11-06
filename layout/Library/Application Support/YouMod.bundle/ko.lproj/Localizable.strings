@@ -238,6 +238,8 @@
 "REMOVE_ADS_DESC" = "게임을 제외한 앱 내 광고를 삭제합니다.";
 "HIDE_SPONSOR_BUTTON" = "Hide sponsor button";
 "HIDE_SPONSOR_BUTTON_DESC" = "Hide the sponsor button under the video and in the Shorts overlay.";
+"DEARROW_THUMBNAILS" = "DeArrow thumbnails";
+"DEARROW_THUMBNAILS_DESC" = "Replace video thumbnails with DeArrow thumbnails or random-time screenshots.";
 "HOLD_TO_SPEED" = "길게 눌러 배속 재생";
 "HOLD_TO_SPEED_DESC" = "길게 누르면 지정한 배속으로 재생됩니다.";
 "HIDE_AUTOPLAY" = "자동재생 스위치 숨기기";

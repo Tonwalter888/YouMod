@@ -238,6 +238,8 @@
 "REMOVE_ADS_DESC" = "Supprime les publicités, sauf les jeux";
 "HIDE_SPONSOR_BUTTON" = "Hide sponsor button";
 "HIDE_SPONSOR_BUTTON_DESC" = "Hide the sponsor button under the video and in the Shorts overlay.";
+"DEARROW_THUMBNAILS" = "DeArrow thumbnails";
+"DEARROW_THUMBNAILS_DESC" = "Replace video thumbnails with DeArrow thumbnails or random-time screenshots.";
 "HOLD_TO_SPEED" = "Maintenir pour accélérer";
 "HOLD_TO_SPEED_DESC" = "Utilise une vitesse de lecture personnalisée lors d'un appui long.";
 "HIDE_AUTOPLAY" = "Masquer le commutateur de lecture automatique";

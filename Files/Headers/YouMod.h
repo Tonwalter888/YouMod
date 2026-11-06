@@ -75,6 +75,7 @@
 #import "YTPlayerBarProgressDecorationView.h"
 #import "YTPlayerBarRectangleDecorationView.h"
 #import "ELMNodeController.h"
+#import "ELMImageNode.h"
 #import <objc/runtime.h>
 #import "GPBMessage.h"
 #import "YTReelNonVideoContentModel.h"
@@ -165,6 +166,7 @@
 #define HideSearchHis @"YouModHideSearchHistoryAndSuggestions"
 #define HideSurveys @"YouModHideSurveys"
 #define HideRelatedVideos @"YouModHideRelatedVideos"
+#define DeArrowEnabled @"YouModDeArrowEnabled"
 // Player
 #define WifiQualityIndex @"YouModWifiQualityIndex"
 #define CellQualityIndex @"YouModCellQualityIndex"
@@ -384,6 +386,10 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 @end
 
 @interface YTContextualWrapView : UIView
+@end
+
+@interface YTIPlayerCueRangeSet : GPBMessage
+@property (nonatomic, assign, readwrite) int cueRangeSetIdentifier;
 @end
 
 @interface YTIBrowseRequest (YouMod)
@@ -1156,6 +1162,12 @@ extern BOOL isPad();
 extern void YouModConfigureSharePopover(UIActivityViewController *activityVC, UIView *sourceView);
 extern void YouModApplyPrevNextReplacement(YTMainAppControlsOverlayView *overlay);
 extern void YouModConfigureRemoteSkipCommands();
+extern NSString *YMExtractYouTubeVideoID(NSString *urlString);
+
+// DeArrow thumbnails (DeArrow.x)
+@interface YMDeArrow : NSObject
++ (void)applyToNode:(ELMImageNode *)node forURL:(NSURL *)url;
+@end
 
 @interface YMFormat : NSObject
 @property (nonatomic, assign) int itag;

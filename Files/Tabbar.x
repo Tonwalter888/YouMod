@@ -250,43 +250,6 @@ static YTIPivotBarSupportedRenderers *YouModNewTab(NSString *pivotID, NSString *
 %end
 */
 
-static NSString *YMExtractYouTubeVideoID(NSString *urlString) {
-    if (!urlString || urlString.length == 0) return nil;
-    NSString *cleanString = [urlString stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
-    if (cleanString.length == 11 && ![cleanString containsString:@"/"] && ![cleanString containsString:@"?"]) return cleanString;
-    NSString *extractedID = nil;
-    NSURL *url = [NSURL URLWithString:cleanString];
-    if (url) {
-        if ([url.host containsString:@"youtu.be"]) {
-            NSString *path = [url.path stringByReplacingOccurrencesOfString:@"/" withString:@""];
-            if (path.length >= 11) extractedID = [path substringToIndex:11];
-        } else if ([url.host containsString:@"youtube.com"]) {
-            if ([url.path containsString:@"/shorts/"] || [url.path containsString:@"/live/"] || [url.path containsString:@"/clip/"]) {
-                NSString *lastPath = [url.path lastPathComponent];
-                if ([lastPath containsString:@"?"]) lastPath = [[lastPath componentsSeparatedByString:@"?"] firstObject];
-                if (lastPath.length >= 11) extractedID = [lastPath substringToIndex:11];
-            } else {
-                NSURLComponents *components = [NSURLComponents componentsWithURL:url resolvingAgainstBaseURL:NO];
-                for (NSURLQueryItem *item in components.queryItems) {
-                    if ([item.name isEqualToString:@"v"] && item.value.length >= 11) {
-                        extractedID = [item.value substringToIndex:11];
-                        break;
-                    }
-                }
-            }
-        }
-    }
-    if (!extractedID) {
-        NSError *error = nil;
-        NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"(?:v=|\\/(?:shorts|live|clip)\\/|youtu\\.be\\/)([a-zA-Z0-9_-]{11})"
-                                                                                options:NSRegularExpressionCaseInsensitive
-                                                                                  error:&error];
-        NSTextCheckingResult *match = [regex firstMatchInString:cleanString options:0 range:NSMakeRange(0, cleanString.length)];
-        if (match && match.numberOfRanges > 1) extractedID = [cleanString substringWithRange:[match rangeAtIndex:1]];
-    }
-    return (extractedID && extractedID.length == 11) ? extractedID : nil;
-}
-
 static NSString *gLastOpenedVideoID = nil;
 
 static void YMOpenLinkFromClipboard(UIViewController *presentingVC, BOOL isRuntime) {

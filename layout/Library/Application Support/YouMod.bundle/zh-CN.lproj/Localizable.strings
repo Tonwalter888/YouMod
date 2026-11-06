@@ -238,6 +238,8 @@
 "REMOVE_ADS_DESC" = "移除应用内的广告，游戏除外";
 "HIDE_SPONSOR_BUTTON" = "Hide sponsor button";
 "HIDE_SPONSOR_BUTTON_DESC" = "Hide the sponsor button under the video and in the Shorts overlay.";
+"DEARROW_THUMBNAILS" = "DeArrow thumbnails";
+"DEARROW_THUMBNAILS_DESC" = "Replace video thumbnails with DeArrow thumbnails or random-time screenshots.";
 "HOLD_TO_SPEED" = "长按加速";
 "HOLD_TO_SPEED_DESC" = "使用自定义长按加速播放倍速。";
 "HIDE_AUTOPLAY" = "隐藏自动播放开关";

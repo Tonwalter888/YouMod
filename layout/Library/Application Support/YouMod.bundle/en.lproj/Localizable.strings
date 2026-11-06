@@ -293,6 +293,8 @@
 "REMOVE_ADS_DESC" = "Removes ads from the app, except Playables";
 "HIDE_SPONSOR_BUTTON" = "Hide sponsor button";
 "HIDE_SPONSOR_BUTTON_DESC" = "Hide the sponsor button under the video and in the Shorts overlay.";
+"DEARROW_THUMBNAILS" = "DeArrow thumbnails";
+"DEARROW_THUMBNAILS_DESC" = "Replace video thumbnails with DeArrow thumbnails or random-time screenshots.";
 "HOLD_TO_SPEED" = "Hold to speed";
 "HOLD_TO_SPEED_DESC" = "Uses custom hold to speed playback rate.";
 "HIDE_AUTOPLAY" = "Hide autoplay switch";

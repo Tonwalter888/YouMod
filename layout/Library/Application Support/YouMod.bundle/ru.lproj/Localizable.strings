@@ -238,6 +238,8 @@
 "REMOVE_ADS_DESC" = "Убирает рекламу из приложения, кроме игр";
 "HIDE_SPONSOR_BUTTON" = "Скрыть кнопку «Спонсировать»";
 "HIDE_SPONSOR_BUTTON_DESC" = "Скрывает кнопку «Спонсировать» под видео и в оверлее Shorts.";
+"DEARROW_THUMBNAILS" = "DeArrow thumbnails";
+"DEARROW_THUMBNAILS_DESC" = "Replace video thumbnails with DeArrow thumbnails or random-time screenshots.";
 "HOLD_TO_SPEED" = "Ускорение удержанием";
 "HOLD_TO_SPEED_DESC" = "Задаёт скорость воспроизведения для режима ускорения удержанием.";
 "HIDE_AUTOPLAY" = "Скрыть переключатель автовоспроизведения";

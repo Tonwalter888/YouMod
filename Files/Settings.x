@@ -273,6 +273,7 @@ static NSArray<YMSettingsItem *> *YMPreferencesItems(void) {
             YMToggle(YMLOC(@"KEEP_SHORTS_SUBSCRIPT"), YMLOC(@"KEEP_SHORTS_SUBSCRIPT_DESC"), KeepShortsSubscript),
             YMToggle(YMLOC(@"HIDE_SEARCH_HISTORY"), YMLOC(@"HIDE_SEARCH_HISTORY_DESC"), HideSearchHis),
             YMToggle(YMLOC(@"HIDE_SPONSOR_BUTTON"), YMLOC(@"HIDE_SPONSOR_BUTTON_DESC"), HideSponsorButton),
+            YMToggle(YMLOC(@"DEARROW_THUMBNAILS"), YMLOC(@"DEARROW_THUMBNAILS_DESC"), DeArrowEnabled),
     ];
     YMRegisterSettingsGroup(YMLOC(@"FEED"), feedItems);
 
@@ -337,7 +338,6 @@ static NSArray<YMSettingsItem *> *YMPreferencesItems(void) {
             YMToggle(YMLOC(@"SKIP_FORWARD"), YMLOC(@"SKIP_FORWARD_DESC"), SkipForwardEnabled),
             [YMSlider(YMLOC(@"FORWARD_SECONDS"), nil, ForwardSeconds, 5, 60, 5, 10) visibleWhenBoolKey:SkipForwardEnabled],
             YMHeader(YMLOC(@"PLAYER_ACTIONS")),
-            YMToggle(YMLOC(@"FIX_PLAYBACK_ISSUES"), YMLOC(@"FIX_PLAYBACK_ISSUES_DESC"), FixPlaybackIssues),
             YMPicker(YMLOC(@"DEFAULT_SPEED"), YMLOC(@"DEFAULT_SPEED_DESC"), AutoSpeedIndex, (@[YMLOC(@"DISABLED"), @"0.25x", @"0.5x", @"0.75x", @"1x", @"1.25x", @"1.5x", @"1.75x", @"2x", @"3x", @"4x", @"5x"]), 0),
             YMToggle(YMLOC(@"FORCE_MINIPLAYER"), YMLOC(@"FORCE_MINIPLAYER_DESC"), ForceMiniPlayer),
             YMToggle(YMLOC(@"HIDE_CONTENT_WARNING"), YMLOC(@"HIDE_CONTENT_WARNING_DESC"), HideContentWarning),
@@ -345,6 +345,7 @@ static NSArray<YMSettingsItem *> *YMPreferencesItems(void) {
             YMToggle(YMLOC(@"AUTO_FULLSCREEN"), YMLOC(@"AUTO_FULLSCREEN_DESC"), AutoFullScreen),
             YMToggle(YMLOC(@"AUTO_EXIT_FULLSCREEN"), YMLOC(@"AUTO_EXIT_FULLSCREEN_DESC"), AutoExitFullScreen),
             YMToggle(YMLOC(@"AUTO_FEED_MUTE"), YMLOC(@"AUTO_FEED_MUTE_DESC"), AutoFeedMute),
+            YMToggle(YMLOC(@"FIX_PLAYBACK_ISSUES"), YMLOC(@"FIX_PLAYBACK_ISSUES_DESC"), FixPlaybackIssues),
             YMHeader(YMLOC(@"GESTURE_HEADER")),
             YMToggle(YMLOC(@"GESTURES"), YMLOC(@"GESTURES_DESC"), GestureControls),
             [YMPicker(YMLOC(@"GESTURE_AREA"), YMLOC(@"GESTURE_AREA_DESC"), GestureActivationArea, (@[@"10%", @"15%", @"20%", @"25%", @"30%", @"35%", @"40%", @"45%", @"50%"]), 1) visibleWhenBoolKey:GestureControls],
