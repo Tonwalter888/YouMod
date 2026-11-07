@@ -75,6 +75,20 @@ void YouModApplyLiquidGlassToView(UIView *view, BOOL wantsBackground) {
     %orig;
     YouModApplyLiquidGlassBackdropToView(self, CGRectGetHeight(self.bounds) / 2.0);
 }
+- (void)setLeadingPadding:(CGFloat)padding { %orig(0); }
+- (void)setTailingPadding:(CGFloat)padding { %orig(0); }
+%end
+
+%hook YTSearchViewController
+- (void)viewWillAppear:(BOOL)animated {
+    %orig;
+    UIView *voiceView = [self valueForKey:@"_voiceButtonContainerView"];
+    if (!voiceView) return;
+    for (UIView *sub in voiceView.subviews) {
+        if (![sub isKindOfClass:%c(UIButton)]) [sub removeFromSuperview];
+        else YouModApplyLiquidGlassToView(sub, YES);
+    }
+}
 %end
 
 %hook YTEngagementPanelHeaderView

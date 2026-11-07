@@ -35,16 +35,15 @@
     YMDownloadProgressView *view = [[YMDownloadProgressView alloc] initWithFrame:CGRectZero];
     view.onCancel = cancelAction;
     view.translatesAutoresizingMaskIntoConstraints = NO;
-    view.backgroundColor = [UIColor colorWithWhite:0.12 alpha:1.0];
+    // Frosted + light-gray dialog background, matching the download sheet and YM pill.
+    YouModApplyFrostedPanelBackgroundToView(view);
     view.layer.cornerRadius = 16.0;
     view.clipsToBounds = YES;
-    view.layer.borderWidth = 0.5;
-    view.layer.borderColor = [UIColor colorWithWhite:0.25 alpha:1.0].CGColor;
 
     // Title label
     UILabel *titleLabel = [[UILabel alloc] init];
     titleLabel.text = message;
-    titleLabel.textColor = [UIColor whiteColor];
+    titleLabel.textColor = UIColor.labelColor;
     titleLabel.font = [UIFont systemFontOfSize:14 weight:UIFontWeightSemibold];
     titleLabel.translatesAutoresizingMaskIntoConstraints = NO;
     view.titleLabel = titleLabel;
@@ -53,7 +52,7 @@
     // Subtitle label (speed + size)
     UILabel *subtitleLabel = [[UILabel alloc] init];
     subtitleLabel.text = @"";
-    subtitleLabel.textColor = [UIColor colorWithWhite:0.55 alpha:1.0];
+    subtitleLabel.textColor = UIColor.secondaryLabelColor;
     subtitleLabel.font = [UIFont systemFontOfSize:12 weight:UIFontWeightRegular];
     subtitleLabel.translatesAutoresizingMaskIntoConstraints = NO;
     view.subtitleLabel = subtitleLabel;
@@ -62,8 +61,8 @@
     // Progress bar
     UIProgressView *progressBar = [[UIProgressView alloc] initWithProgressViewStyle:UIProgressViewStyleDefault];
     progressBar.progress = 0.0;
-    progressBar.trackTintColor = [UIColor colorWithWhite:0.22 alpha:1.0];
-    progressBar.progressTintColor = [UIColor colorWithRed:0.6 green:0.2 blue:0.9 alpha:1.0];
+    progressBar.trackTintColor = [[UIColor labelColor] colorWithAlphaComponent:0.12];
+    progressBar.progressTintColor = UIColor.systemPurpleColor;
     progressBar.translatesAutoresizingMaskIntoConstraints = NO;
     progressBar.layer.cornerRadius = 3.0;
     progressBar.clipsToBounds = YES;
@@ -74,7 +73,7 @@
     UIButton *cancelButton = [UIButton buttonWithType:UIButtonTypeSystem];
     UIImageSymbolConfiguration *config = [UIImageSymbolConfiguration configurationWithPointSize:18 weight:UIImageSymbolWeightMedium];
     [cancelButton setImage:[UIImage systemImageNamed:@"xmark.circle.fill" withConfiguration:config] forState:UIControlStateNormal];
-    cancelButton.tintColor = [UIColor colorWithWhite:0.45 alpha:1.0];
+    cancelButton.tintColor = UIColor.secondaryLabelColor;
     cancelButton.translatesAutoresizingMaskIntoConstraints = NO;
     [cancelButton addTarget:view action:@selector(cancelButtonTapped) forControlEvents:UIControlEventTouchUpInside];
     view.cancelButton = cancelButton;
