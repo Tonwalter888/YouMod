@@ -96,6 +96,18 @@ on:
         required: false
         type: boolean
 
+      minimalnav:
+        description: "Integrate MinimalNav (hides the tab bar, profile button next to search)"
+        default: false
+        required: false
+        type: boolean
+
+      iosgridview:
+        description: "Integrate IOSGridView (two-column home feed like on iPad)"
+        default: false
+        required: false
+        type: boolean
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -111,7 +123,7 @@ jobs:
       - name: Hide Sensitive Inputs
         uses: levibostian/action-hide-sensitive-inputs@v1
         with:
-          exclude_inputs: bundle_id,display_name,youpip,ytuhd,ryd,abconfig,ytweaks,youslider,gonerino,demc,volboost,repo,branch,youquality
+          exclude_inputs: bundle_id,display_name,youpip,ytuhd,ryd,abconfig,ytweaks,youslider,gonerino,demc,volboost,repo,branch,youquality,ytshare,minimalnav,iosgridview
           
       - name: Install MEGA downloader
         if: ${{ startsWith(inputs.ipa_url, 'https://mega.nz/') }}
@@ -146,7 +158,7 @@ jobs:
           echo "YT_VERSION=$(grep -A 1 '<key>CFBundleVersion</key>' ytextracted/Payload/YouTube.app/Info.plist | grep '<string>' | awk -F'[><]' '{print $3}')" >> $GITHUB_ENV
 
       - name: Install Dependencies
-        run: brew install make ldid
+        run: brew install make ldid gnu-sed autoconf automake libtool pkg-config
 
       - name: Install Go
         if: ${{ inputs.gonerino }}
@@ -211,7 +223,7 @@ jobs:
       - name: Fix Theos od broken pipe issue
         run: sed -i '' 's/od -c "$i" | head/od -c "$i" 2>\/dev\/null | head/g' $THEOS/bin/convert_xml_plist.sh || true
 
-      - name: Install cyan and tbd
+      - name: Install cyan
         run: pipx install https://github.com/asdfzxcvbn/pyzule-rw/archive/main.zip
 
       - name: Checkout YouMod
@@ -285,13 +297,21 @@ jobs:
         if: ${{ inputs.youquality }}
         run: git clone --quiet --depth=1 https://github.com/PoomSmart/YouQuality.git
 
+      - name: Clone MinimalNav
+        if: ${{ inputs.minimalnav }}
+        run: git clone --quiet --depth=1 https://github.com/TributeOne/MinimalNav.git
+
+      - name: Clone IOSGridView
+        if: ${{ inputs.iosgridview }}
+        run: git clone --quiet --depth=1 https://github.com/TributeOne/IOSGridView.git
+
       - name: Build YouMod
         run: |
           cd YouMod
           echo "YOUMOD_VERSION=$(grep '^Version:' control | cut -d ' ' -f2)" >> $GITHUB_ENV
           make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
           mv packages/*.deb ${{ github.workspace }}/youmod.deb
-        
+
       - name: Build YouPiP
         if: ${{ inputs.youpip }}
         run: |
@@ -390,6 +410,20 @@ jobs:
           cd YouQuality
           make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
           mv packages/*.deb ${{ github.workspace }}/youquality.deb
+
+      - name: Build MinimalNav
+        if: ${{ inputs.minimalnav }}
+        run: |
+          cd MinimalNav
+          make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
+          mv packages/*.deb ${{ github.workspace }}/minimalnav.deb
+
+      - name: Build IOSGridView
+        if: ${{ inputs.iosgridview }}
+        run: |
+          cd IOSGridView
+          make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
+          mv packages/*.deb ${{ github.workspace }}/iosgridview.deb
           
       - name: Inject Tweaks Into IPA
         run: |
@@ -399,7 +433,169 @@ jobs:
             tweaks="$tweaks $f"
           done
           
-          cyan -i youtube.ipa -o YouMod_${{ env.YT_VERSION }}_v${{ env.YOUMOD_VERSION }}.ipa -uwef $tweaks -n "${{ inputs.display_name }}" -b ${{ inputs.bundle_id }}
+          cyan -i youtube.ipa -o stage.ipa -uwef $tweaks -n "${{ inputs.display_name }}" -b ${{ inputs.bundle_id }}
+
+      # Les load commands injectées par cyan (une par dylib) peuvent dépasser le padding de
+      # l'en-tête Mach-O de YouTube (code à 0x4000) et écraser son code -> SIGILL au lancement.
+      # On mesure la marge ; si elle est négative, on remplace toutes les dylibs injectées par
+      # une seule (TweakLoader.dylib) qui les charge au démarrage, et on restaure le code écrasé.
+      - name: Check Mach-O header room (compact if needed)
+        run: |
+          set -euo pipefail
+          OUT="YouMod_${{ env.YT_VERSION }}_v${{ env.YOUMOD_VERSION }}.ipa"
+          mkdir -p .ci
+          cat > .ci/machohdr.py <<'PY'
+          #!/usr/bin/env python3
+          """Outils Mach-O arm64 (thin) pour le workflow YouMod.
+
+            margin  <exe>                              -> affiche la marge de l'en-tête, code 1 si négative
+            compact <exe_origine> <exe_cyan> <Frameworks> <loader.dylib> <liste_sortie>
+                    -> remplace les LC_LOAD_DYLIB injectés par un seul chargeur
+          """
+          import os
+          import struct
+          import sys
+
+          HDR = 32
+          LC_SEGMENT_64 = 0x19
+          LC_LOAD_DYLIB = 0xC
+          LC_LOAD_WEAK_DYLIB = 0x80000018
+          DYLIB_CMDS = (LC_LOAD_DYLIB, LC_LOAD_WEAK_DYLIB)
+
+
+          def parse(data):
+              magic, _, _, _, ncmds, sizeofcmds, _, _ = struct.unpack_from('<IiiIIIII', data, 0)
+              if magic != 0xFEEDFACF:
+                  sys.exit("Mach-O 64 bits thin attendu (FAT ou 32 bits non gere)")
+              cmds, off = [], HDR
+              for _ in range(ncmds):
+                  cmd, size = struct.unpack_from('<II', data, off)
+                  cmds.append(bytes(data[off:off + size]))
+                  off += size
+              return sizeofcmds, cmds
+
+
+          def first_content(cmds):
+              first = None
+              for c in cmds:
+                  if struct.unpack_from('<I', c, 0)[0] == LC_SEGMENT_64:
+                      for i in range(struct.unpack_from('<I', c, 64)[0]):
+                          o = struct.unpack_from('<I', c, 72 + i * 80 + 48)[0]
+                          if o:
+                              first = o if first is None else min(first, o)
+              return first
+
+
+          def dylib_name(c):
+              off = struct.unpack_from('<I', c, 8)[0]
+              return c[off:].split(b'\0', 1)[0].decode()
+
+
+          def build_load(name):
+              raw = name.encode() + b'\0'
+              size = (24 + len(raw) + 7) & ~7
+              return struct.pack('<IIIIII', LC_LOAD_DYLIB, size, 24, 2, 0x10000, 0x10000) + raw.ljust(size - 24, b'\0')
+
+
+          def report(path):
+              sizeofcmds, cmds = parse(open(path, 'rb').read())
+              first, end = first_content(cmds), HDR + sizeofcmds
+              nlibs = sum(1 for c in cmds if struct.unpack_from('<I', c, 0)[0] in DYLIB_CMDS)
+              print(f"  {os.path.basename(path)}: load commands jusqu'a {end:#x}, "
+                    f"premier contenu a {first:#x}, marge {first - end} octets, {nlibs} dylibs liees")
+              return first - end
+
+
+          def compact(orig_path, new_path, frameworks, loader, list_out):
+              orig = open(orig_path, 'rb').read()
+              new = bytearray(open(new_path, 'rb').read())
+              _, orig_cmds = parse(orig)
+              sizeofcmds, new_cmds = parse(new)
+              first, old_end = first_content(new_cmds), HDR + sizeofcmds
+
+              pool, kept, removed = list(orig_cmds), [], []
+              for c in new_cmds:
+                  if c in pool:                       # commande d'origine : on garde
+                      pool.remove(c)
+                      kept.append(c)
+                      continue
+                  if struct.unpack_from('<I', c, 0)[0] in DYLIB_CMDS:
+                      base = os.path.basename(dylib_name(c))
+                      if base.endswith('.dylib') and os.path.isfile(os.path.join(frameworks, base)):
+                          removed.append(base)        # dylib de tweak injectee : on la retire
+                          continue
+                  kept.append(c)
+
+              if not removed:
+                  sys.exit("Aucune dylib injectee a compacter")
+              loader_cmd = build_load('@rpath/' + loader)
+              if kept and struct.unpack_from('<I', kept[-1], 0)[0] == 0x1D:   # LC_CODE_SIGNATURE doit rester en dernier
+                  kept.insert(len(kept) - 1, loader_cmd)
+              else:
+                  kept.append(loader_cmd)
+              body = b''.join(kept)
+              if HDR + len(body) > first:
+                  sys.exit("Meme compactee, la liste de load commands depasse l'en-tete")
+
+              if old_end > first:                     # restaure le code ecrase par le debordement
+                  new[first:old_end] = orig[first:old_end]
+              new[HDR:first] = body + bytes(first - HDR - len(body))
+              struct.pack_into('<II', new, 16, len(kept), len(body))
+              open(new_path, 'wb').write(new)
+              open(list_out, 'w').write('\n'.join(removed) + '\n')
+              print(f"  {len(removed)} dylibs retirees des load commands, 1 chargeur ajoute")
+
+
+          if __name__ == '__main__':
+              if len(sys.argv) == 3 and sys.argv[1] == 'margin':
+                  sys.exit(0 if report(sys.argv[2]) >= 0 else 1)
+              if len(sys.argv) == 7 and sys.argv[1] == 'compact':
+                  compact(*sys.argv[2:])
+                  sys.exit(0)
+              sys.exit(__doc__)
+          PY
+          cat > .ci/TweakLoader.c <<'EOC'
+          #include <dlfcn.h>
+          #include <stdio.h>
+          #include <string.h>
+          #include "tweaks.h"
+
+          __attribute__((constructor))
+          static void tweakloader_init(void) {
+              Dl_info info;
+              if (!dladdr((const void *)&tweakloader_init, &info) || !info.dli_fname) return;
+              char dir[1024];
+              strlcpy(dir, info.dli_fname, sizeof dir);
+              char *slash = strrchr(dir, '/');
+              if (!slash) return;
+              *slash = 0;
+              for (int i = 0; kTweaks[i]; i++) {
+                  char path[1400];
+                  snprintf(path, sizeof path, "%s/%s", dir, kTweaks[i]);
+                  if (!dlopen(path, RTLD_NOW | RTLD_GLOBAL))
+                      fprintf(stderr, "[TweakLoader] %s: %s\n", kTweaks[i], dlerror());
+              }
+          }
+          EOC
+
+          ORIG=ytextracted/Payload/YouTube.app/YouTube
+          rm -rf staged && unzip -q stage.ipa -d staged
+          APP=staged/Payload/YouTube.app
+
+          echo "Marge de l'en-tête Mach-O (avant puis après injection) :"
+          python3 .ci/machohdr.py margin "$ORIG"
+          if python3 .ci/machohdr.py margin "$APP/YouTube"; then
+            echo "Marge suffisante : aucun compactage nécessaire."
+          else
+            echo "::warning::Les load commands débordent sur le code : compactage des dylibs injectées."
+            python3 .ci/machohdr.py compact "$ORIG" "$APP/YouTube" "$APP/Frameworks" TweakLoader.dylib .ci/removed.txt
+            { echo 'static const char *const kTweaks[] = {'; sed 's/.*/  "&",/' .ci/removed.txt; echo '  0 };'; } > .ci/tweaks.h
+            xcrun --sdk iphoneos clang -arch arm64 -dynamiclib -O2 -miphoneos-version-min=14.0 \
+              -install_name @rpath/TweakLoader.dylib -I.ci \
+              -o "$APP/Frameworks/TweakLoader.dylib" .ci/TweakLoader.c
+            python3 .ci/machohdr.py margin "$APP/YouTube"
+          fi
+          (cd staged && zip -qry "../$OUT" .)
 
       - name: Create a Draft Release
         uses: softprops/action-gh-release@v3
