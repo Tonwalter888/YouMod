@@ -96,6 +96,18 @@ on:
         required: false
         type: boolean
 
+      minimalnav:
+        description: "Integrate MinimalNav (hides the tab bar, profile button next to search)"
+        default: false
+        required: false
+        type: boolean
+
+      iosgridview:
+        description: "Integrate IOSGridView (two-column home feed like on iPad)"
+        default: false
+        required: false
+        type: boolean
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -111,7 +123,7 @@ jobs:
       - name: Hide Sensitive Inputs
         uses: levibostian/action-hide-sensitive-inputs@v1
         with:
-          exclude_inputs: bundle_id,display_name,youpip,ytuhd,ryd,abconfig,ytweaks,youslider,gonerino,demc,volboost,repo,branch,youquality,ytshare
+          exclude_inputs: bundle_id,display_name,youpip,ytuhd,ryd,abconfig,ytweaks,youslider,gonerino,demc,volboost,repo,branch,youquality,ytshare,minimalnav,iosgridview
           
       - name: Install MEGA downloader
         if: ${{ startsWith(inputs.ipa_url, 'https://mega.nz/') }}
@@ -289,6 +301,14 @@ jobs:
         if: ${{ inputs.youquality }}
         run: git clone --quiet --depth=1 https://github.com/PoomSmart/YouQuality.git
 
+      - name: Clone MinimalNav
+        if: ${{ inputs.minimalnav }}
+        run: git clone --quiet --depth=1 https://github.com/TributeOne/MinimalNav.git
+
+      - name: Clone IOSGridView
+        if: ${{ inputs.iosgridview }}
+        run: git clone --quiet --depth=1 https://github.com/TributeOne/IOSGridView.git
+
       - name: Build YouMod
         run: |
           cd YouMod
@@ -394,6 +414,20 @@ jobs:
           cd YouQuality
           make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
           mv packages/*.deb ${{ github.workspace }}/youquality.deb
+
+      - name: Build MinimalNav
+        if: ${{ inputs.minimalnav }}
+        run: |
+          cd MinimalNav
+          make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
+          mv packages/*.deb ${{ github.workspace }}/minimalnav.deb
+
+      - name: Build IOSGridView
+        if: ${{ inputs.iosgridview }}
+        run: |
+          cd IOSGridView
+          make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
+          mv packages/*.deb ${{ github.workspace }}/iosgridview.deb
           
       - name: Inject Tweaks Into IPA
         run: |
