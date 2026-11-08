@@ -54,7 +54,8 @@ static void YouModTranslateText(NSString *text, NSString *targetLang, void (^com
     [self.view addGestureRecognizer:tap];
     
     self.containerView = [[UIView alloc] init];
-    self.containerView.backgroundColor = [UIColor systemGray6Color];
+    // Frosted + light-gray background, matching the translation dialog.
+    YouModApplyFrostedPanelBackgroundToView(self.containerView);
     self.containerView.layer.cornerRadius = 20.0;
     self.containerView.layer.borderWidth = 1.0;
     self.containerView.layer.borderColor = [UIColor separatorColor].CGColor;

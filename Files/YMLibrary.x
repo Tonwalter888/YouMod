@@ -401,14 +401,16 @@ static YMLibraryPlayerPiPDelegate *ymLibraryPiPDelegate(void) {
 
 #pragma mark - Pull-to-refresh control
 
-static const CGFloat ymRefreshTriggerDistance = 64.0;
+static const CGFloat ymRefreshTriggerDistance = 56.0;
 static const CGFloat ymRefreshHiddenTravel = 72.0; // how far the bubble sits above its resting spot
 
 // Pull-to-refresh bubble for the library grid: a floating circle with an arrow that slides into
-// view and rotates as the user drags, then spins while refreshing. Driven by the scroll delegate.
+// view and rotates as the user drags down past the top, then spins while refreshing. Driven by the
+// scroll delegate. Top edge only — rubber-banding at the bottom never triggers a refresh.
 @interface YMLibraryRefreshControl : UIView
 @property (nonatomic, copy) void (^onRefresh)(void);
 @property (nonatomic, readonly, getter=isRefreshing) BOOL refreshing;
+- (void)draggingBeganInScrollView:(UIScrollView *)scrollView;
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView;
 - (void)draggingEndedInScrollView:(UIScrollView *)scrollView;
 - (void)beginRefreshing;
@@ -418,6 +420,7 @@ static const CGFloat ymRefreshHiddenTravel = 72.0; // how far the bubble sits ab
 @interface YMLibraryRefreshControl ()
 @property (nonatomic, strong) UIImageView *iconView;
 @property (nonatomic, assign, getter=isRefreshing) BOOL refreshing; // readwrite privately
+@property (nonatomic, assign) BOOL pullArmed; // the pull crossed the trigger distance during the current drag
 @end
 
 @implementation YMLibraryRefreshControl
@@ -450,31 +453,41 @@ static const CGFloat ymRefreshHiddenTravel = 72.0; // how far the bubble sits ab
     return self;
 }
 
-// How far past an edge the user has dragged (top or bottom overshoot, whichever is larger).
-// Clamping the bottom's max offset keeps short lists from reading as permanently overscrolled.
+// How far the user has dragged past the top edge (clamped so bottom rubber-banding reads as zero).
 - (CGFloat)pullDistanceInScrollView:(UIScrollView *)scrollView {
     CGFloat topPull = -(scrollView.contentOffset.y + scrollView.adjustedContentInset.top);
-    CGFloat maxOffset = scrollView.contentSize.height - scrollView.bounds.size.height + scrollView.adjustedContentInset.bottom;
-    CGFloat bottomPull = scrollView.contentOffset.y - MAX(maxOffset, -scrollView.adjustedContentInset.top);
-    return MAX(topPull, bottomPull);
+    return MAX(topPull, 0);
+}
+
+- (void)draggingBeganInScrollView:(UIScrollView *)scrollView {
+    self.pullArmed = NO;
 }
 
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView {
-    CGFloat pull = [self pullDistanceInScrollView:scrollView];
-    CGFloat progress = MIN(MAX(pull / ymRefreshTriggerDistance, 0), 1);
     if (self.isRefreshing) return;
+    CGFloat pull = [self pullDistanceInScrollView:scrollView];
+    // Latch the gesture the moment the pull crosses the trigger distance (with a tick), so easing
+    // the finger back slightly before lifting can't cancel it the way a release-only check did.
+    if (!self.pullArmed && scrollView.isDragging && pull >= ymRefreshTriggerDistance) {
+        self.pullArmed = YES;
+        UIImpactFeedbackGenerator *feedback = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleLight];
+        [feedback impactOccurred];
+    }
+    CGFloat progress = MIN(MAX(pull / ymRefreshTriggerDistance, 0), 1);
     // The bubble slides down into view and the arrow flips from down to up across the pull.
     self.transform = CGAffineTransformMakeTranslation(0, -ymRefreshHiddenTravel * (1 - progress));
     self.alpha = progress;
     self.iconView.transform = CGAffineTransformMakeRotation(progress * (CGFloat)M_PI);
 }
 
-// Called on finger-up: refresh only when the pull is still past the threshold at release.
+// Called on finger-up: refresh when the pull crossed the trigger distance during this drag and the
+// finger is still pulled down at release (rolling all the way back counts as a cancel).
 - (void)draggingEndedInScrollView:(UIScrollView *)scrollView {
     if (self.isRefreshing) return;
-    if ([self pullDistanceInScrollView:scrollView] >= ymRefreshTriggerDistance) {
+    if (self.pullArmed && [self pullDistanceInScrollView:scrollView] >= ymRefreshTriggerDistance * 0.5) {
         [self beginRefreshing];
     }
+    self.pullArmed = NO;
 }
 
 - (void)beginRefreshing {
@@ -599,7 +612,11 @@ static const CGFloat ymRefreshHiddenTravel = 72.0; // how far the bubble sits ab
 
     _typeGlassView = [UIView new];
     _typeGlassView.translatesAutoresizingMaskIntoConstraints = NO;
-    YouModApplyLiquidGlassBackdropToView(_typeGlassView, 21);
+    // Fixed 42pt pill: pin the radius now since the helper's height/2 only
+    // resolves after the first layout pass (matches the subheader clip curve).
+    YouModApplyLiquidGlassToView(_typeGlassView, YES);
+    _typeGlassView.layer.cornerRadius = 21;
+    _typeGlassView.layer.cornerCurve = kCACornerCurveContinuous;
     [topBar addSubview:_typeGlassView];
     _typeGlassLeadingConstraint = [_typeGlassView.leadingAnchor constraintEqualToAnchor:topBar.leadingAnchor constant:14];
     _typeGlassTrailingConstraint = [_typeGlassView.trailingAnchor constraintEqualToAnchor:topBar.trailingAnchor constant:-14];
@@ -641,7 +658,11 @@ static const CGFloat ymRefreshHiddenTravel = 72.0; // how far the bubble sits ab
     _playlistActionsView.translatesAutoresizingMaskIntoConstraints = NO;
     _playlistActionsView.layer.zPosition = 1;
     _playlistActionsView.hidden = YES;
-    YouModApplyLiquidGlassBackdropToView(_playlistActionsView, 18);
+    // Fixed 36pt pill: pin the radius now since the helper's height/2 only
+    // resolves after the first layout pass.
+    YouModApplyLiquidGlassToView(_playlistActionsView, YES);
+    _playlistActionsView.layer.cornerRadius = 18;
+    _playlistActionsView.layer.cornerCurve = kCACornerCurveContinuous;
     [topBar addSubview:_playlistActionsView];
 
     _addPlaylistButton = [UIButton buttonWithType:UIButtonTypeSystem];
@@ -678,26 +699,26 @@ static const CGFloat ymRefreshHiddenTravel = 72.0; // how far the bubble sits ab
     _collectionView.backgroundColor = ymYouTubeBackgroundColor();
     _collectionView.keyboardDismissMode = UIScrollViewKeyboardDismissModeOnDrag;
     _collectionView.alwaysBounceVertical = YES; // lets the pull-to-refresh gesture work even with few or no items
-    // The collection view extends behind the clear header; only the rounded type-selector pill keeps its glass backdrop.
+    // The grid is clipped to the area below the header so scrolling videos never show up
+    // behind the search bar or the type selector.
     _collectionView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
-    _collectionView.contentInset = UIEdgeInsetsMake(174, 0, 0, 0);
-    _collectionView.scrollIndicatorInsets = _collectionView.contentInset;
+    _collectionView.contentInset = UIEdgeInsetsZero;
     _collectionView.translatesAutoresizingMaskIntoConstraints = NO;
     [_collectionView registerClass:[YMLibraryVideoCell class] forCellWithReuseIdentifier:@"video"];
     [self.view addSubview:_collectionView];
-    [self.view bringSubviewToFront:topBar];
 
     _refreshControl = [YMLibraryRefreshControl new];
     _refreshControl.translatesAutoresizingMaskIntoConstraints = NO;
-    // Floating above the cells at any scroll position, hence the high zPosition.
-    _refreshControl.layer.zPosition = 1000;
-    [_collectionView addSubview:_refreshControl];
+    // Lives outside the clipped grid, parked just below the header; topBar covers it while it
+    // slides down into place.
+    [self.view addSubview:_refreshControl];
     [NSLayoutConstraint activateConstraints:@[
-        [_refreshControl.topAnchor constraintEqualToAnchor:_collectionView.frameLayoutGuide.topAnchor constant:174 + 12],
-        [_refreshControl.centerXAnchor constraintEqualToAnchor:_collectionView.frameLayoutGuide.centerXAnchor],
+        [_refreshControl.topAnchor constraintEqualToAnchor:topBar.bottomAnchor constant:12],
+        [_refreshControl.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
         [_refreshControl.widthAnchor constraintEqualToConstant:44],
         [_refreshControl.heightAnchor constraintEqualToConstant:44],
     ]];
+    [self.view bringSubviewToFront:topBar];
     __weak typeof(self) weakSelf = self;
     _refreshControl.onRefresh = ^{
         [weakSelf reloadWithCompletion:^{
@@ -769,7 +790,7 @@ static const CGFloat ymRefreshHiddenTravel = 72.0; // how far the bubble sits ab
         [_deletePlaylistButton.widthAnchor constraintEqualToConstant:28],
         [_deletePlaylistButton.heightAnchor constraintEqualToConstant:28],
 
-        [_collectionView.topAnchor constraintEqualToAnchor:self.view.topAnchor],
+        [_collectionView.topAnchor constraintEqualToAnchor:topBar.bottomAnchor],
         [_collectionView.bottomAnchor constraintEqualToAnchor:self.view.bottomAnchor],
         [_collectionView.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor],
         [_collectionView.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor],
@@ -829,13 +850,12 @@ static const CGFloat ymRefreshHiddenTravel = 72.0; // how far the bubble sits ab
     NSArray<NSString *> *sorts = @[@"Newest", @"Oldest", @"Largest", @"Smallest", @"A-Z", @"Z-A"];
     id parentResponder = self.hostParentResponder ?: self;
     YTDefaultSheetController *sheet = [%c(YTDefaultSheetController) sheetControllerWithParentResponder:parentResponder];
-    NSString *selectedTitle = [self displayTitleForSort:self.selectedSort ?: @"Newest"];
-    [sheet addHeaderWithTitle:ymLibraryText(@"DOWNLOAD_LIBRARY_SORT_TITLE", @"Sort videos by") subtitle:selectedTitle];
+    [sheet addHeaderWithTitle:ymLibraryText(@"DOWNLOAD_LIBRARY_SORT_TITLE", @"Sort videos by") subtitle:nil];
 
     __weak typeof(self) weakSelf = self;
     for (NSString *sort in sorts) {
         BOOL selected = [sort isEqualToString:self.selectedSort];
-        UIImage *checkImage = selected ? YouModSymbolImageInCanvas(@"checkmark", 24, 18, UIImageSymbolWeightMedium) : nil;
+        UIImage *checkImage = selected ? YouModYTIconImage(YT_CHECK, NO, nil) : nil;
         YTActionSheetAction *action = [%c(YTActionSheetAction) actionWithTitle:[self displayTitleForSort:sort]
                                                                       iconImage:checkImage
                                                                          style:0
@@ -991,8 +1011,8 @@ static const CGFloat ymRefreshHiddenTravel = 72.0; // how far the bubble sits ab
 - (void)traitCollectionDidChange:(UITraitCollection *)previousTraitCollection {
     [super traitCollectionDidChange:previousTraitCollection];
     if (previousTraitCollection.userInterfaceStyle != self.traitCollection.userInterfaceStyle) {
-        YouModApplyLiquidGlassBackdropToView(self.typeGlassView, 21);
-        YouModApplyLiquidGlassBackdropToView(self.playlistActionsView, 18);
+        YouModApplyLiquidGlassToView(self.typeGlassView, YES);
+        YouModApplyLiquidGlassToView(self.playlistActionsView, YES);
         [self updateSearchBarTheme];
     }
 }
@@ -1272,6 +1292,10 @@ static const CGFloat ymRefreshHiddenTravel = 72.0; // how far the bubble sits ab
 }
 
 // The library view controller is the collection view's scroll delegate, so it feeds the refresh control.
+- (void)scrollViewWillBeginDragging:(UIScrollView *)scrollView {
+    if (scrollView == self.collectionView) [self.refreshControl draggingBeganInScrollView:scrollView];
+}
+
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView {
     if (scrollView == self.collectionView) [self.refreshControl scrollViewDidScroll:scrollView];
 }

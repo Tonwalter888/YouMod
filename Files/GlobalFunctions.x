@@ -116,6 +116,13 @@ BOOL isPad() {
     return UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad;
 }
 
+// Physical iPad hardware only: UIDevice.model is not affected by the Device UI
+// override (which hooks userInterfaceIdiom), so settings layout decisions that
+// must ignore that override use this instead of isPad().
+BOOL isPadHardware(void) {
+    return [UIDevice.currentDevice.model isEqualToString:@"iPad"];
+}
+
 void YouModConfigureSharePopover(UIActivityViewController *activityVC, UIView *sourceView) {
     if (isPad() && activityVC) {
         UIView *targetView = sourceView ?: YouModTopViewController(nil).view;

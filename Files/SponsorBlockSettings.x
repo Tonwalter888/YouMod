@@ -201,9 +201,7 @@ static const void *kSBAllFlatRowsKey = &kSBAllFlatRowsKey;
 }
 
 - (void)viewDidLoad {
-    Class ytStyled = objc_getClass("YTStyledViewController");
-    struct objc_super superStruct = { self, ytStyled ?: [UIViewController class] };
-    ((void (*)(struct objc_super *, SEL))objc_msgSendSuper)(&superStruct, @selector(viewDidLoad));
+    [super viewDidLoad];
 
     self.title = @"SponsorBlock";
 
@@ -254,13 +252,15 @@ static const void *kSBAllFlatRowsKey = &kSBAllFlatRowsKey;
 - (void)traitCollectionDidChange:(UITraitCollection *)previousTraitCollection {
     [super traitCollectionDidChange:previousTraitCollection];
     if (previousTraitCollection.userInterfaceStyle != self.traitCollection.userInterfaceStyle) {
-        UIColor *bgColor = (self.traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark)
-            ? [%c(YTColor) black3]
-            : [UIColor systemBackgroundColor];
-        self.view.backgroundColor = bgColor;
-        self.tableView.backgroundColor = bgColor;
-        [self updateSearchBarTheme];
-        [self.tableView reloadData];
+        YMAnimateThemeChange(self.view, ^{
+            UIColor *bgColor = (self.traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark)
+                ? [%c(YTColor) black3]
+                : [UIColor systemBackgroundColor];
+            self.view.backgroundColor = bgColor;
+            self.tableView.backgroundColor = bgColor;
+            [self updateSearchBarTheme];
+            [self.tableView reloadData];
+        });
     }
 }
 
@@ -291,22 +291,7 @@ static const void *kSBAllFlatRowsKey = &kSBAllFlatRowsKey;
 }
 
 - (void)viewWillAppear:(BOOL)animated {
-    Class ytStyled = objc_getClass("YTStyledViewController");
-    struct objc_super superStruct = { self, ytStyled ?: [UIViewController class] };
-    ((void (*)(struct objc_super *, SEL, BOOL))objc_msgSendSuper)(&superStruct, @selector(viewWillAppear:), animated);
-}
-
-- (void)viewDidLayoutSubviews {
-    Class ytStyled = objc_getClass("YTStyledViewController");
-    struct objc_super superStruct = { self, ytStyled ?: [UIViewController class] };
-    ((void (*)(struct objc_super *, SEL))objc_msgSendSuper)(&superStruct, @selector(viewDidLayoutSubviews));
-    YTQTMButton *backButton = [self valueForKey:@"_backButton"];
-
-    if (self.traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark) {
-        backButton.tintColor = [UIColor whiteColor];
-    } else {
-        backButton.tintColor = [UIColor blackColor];
-    }
+    [super viewWillAppear:animated];
 }
 
 - (UIColor *)navBarForegroundColor {
@@ -847,6 +832,11 @@ NSArray<YMSearchRow *> *sbFlatRowsWithRenderer(SBSettingsViewController *rendere
         YMSearchRow *row = [YMSearchRow new];
         row.searchText = [NSString stringWithFormat:@"%@ %@", LOC(def.titleKey), LOC(def.descKey)];
         row.makeCell = ^UITableViewCell *(UITableView *tv) { return [renderer_w toggleCellForRow:i tableView:tv]; };
+        row.onSelect = ^(UIViewController *presenter, void (^reload)(void)) {
+            (void)reload;
+            // Tapping the row (not the switch) enters the SponsorBlock page.
+            YMOpenGroupFromHost(presenter, @"SponsorBlock", nil, YMSubmenuKindSponsorBlock);
+        };
         [rows addObject:row];
     }
 
@@ -858,6 +848,10 @@ NSArray<YMSearchRow *> *sbFlatRowsWithRenderer(SBSettingsViewController *rendere
         else row.searchText = LOC(@"SB_MIN_DURATION_SLIDER");
         row.cellHeight = 70;
         row.makeCell = ^UITableViewCell *(UITableView *tv) { return [renderer_w sliderCellForRow:i tableView:tv]; };
+        row.onSelect = ^(UIViewController *presenter, void (^reload)(void)) {
+            (void)reload;
+            YMOpenGroupFromHost(presenter, @"SponsorBlock", nil, YMSubmenuKindSponsorBlock);
+        };
         [rows addObject:row];
     }
 
@@ -870,6 +864,10 @@ NSArray<YMSearchRow *> *sbFlatRowsWithRenderer(SBSettingsViewController *rendere
         actionRow.searchText = catName;
         actionRow.cellHeight = 48;
         actionRow.makeCell = ^UITableViewCell *(UITableView *tv) { return [renderer_w actionCellForCategory:category name:catName tableView:tv]; };
+        actionRow.onSelect = ^(UIViewController *presenter, void (^reload)(void)) {
+            (void)reload;
+            YMOpenGroupFromHost(presenter, @"SponsorBlock", nil, YMSubmenuKindSponsorBlock);
+        };
         [rows addObject:actionRow];
 
         YMSearchRow *colorRow = [YMSearchRow new];
@@ -917,16 +915,17 @@ NSArray<YMSearchRow *> *sbSearchRows(UIViewController *host) {
 - (void)updateSponsorBlockSectionWithEntry:(id)entry;
 @end
 
-// Pushes the SponsorBlock settings page onto a settings view controller; shared by the native
-// section hook below and the custom YouMod home page so both open the identical styled SB page.
-void YMPushSponsorBlockSettings(id settingsVC) {
-    // Use runtime-registered subclass of YTStyledViewController for YouTube's nav styling
-    Class sbClass = objc_getClass("SBSettingsViewControllerStyled");
-    if (!sbClass) sbClass = [SBSettingsViewController class];
-    // initWithParentResponder: sets up YouTube's DI container (gimme) for nav bar theming
-    id allocated = [sbClass alloc];
-    SBSettingsViewController *sbVC = (SBSettingsViewController *)((id (*)(id, SEL, id))objc_msgSend)(allocated, @selector(initWithParentResponder:), settingsVC);
-    [settingsVC pushViewController:sbVC];
+// Builds the SponsorBlock settings page without presenting it; shared by
+// YMPresentSponsorBlockSettings below and the iPad split view's detail pane.
+UIViewController *YMNewSponsorBlockSettings(void) {
+    return [[SBSettingsViewController alloc] init];
+}
+
+// Opens the SponsorBlock settings page as its own settings modal (no YouTube
+// settings chrome); shared by the native section hook below and the YouMod
+// home page so both open the identical page.
+void YMPresentSponsorBlockSettings(id presenter) {
+    YMPresentSettingsPage(YMNewSponsorBlockSettings(), presenter);
 }
 
 %hook YTSettingsSectionItemManager
@@ -934,45 +933,12 @@ void YMPushSponsorBlockSettings(id settingsVC) {
 %new(v@:@)
 - (void)updateSponsorBlockSectionWithEntry:(id)entry {
     YTSettingsViewController *settingsVC = [self valueForKey:@"_settingsViewControllerDelegate"];
-    YMPushSponsorBlockSettings(settingsVC);
+    YMPresentSponsorBlockSettings(settingsVC);
 }
 
 %end
 
 %ctor {
-    // Register SBSettingsViewControllerStyled as a runtime subclass of YTStyledViewController
-    // with all methods from SBSettingsViewController — gives us YouTube's nav bar styling
-    Class ytStyled = %c(YTStyledViewController);
-    if (ytStyled) {
-        Class sbStyled = objc_allocateClassPair(ytStyled, "SBSettingsViewControllerStyled", 0);
-        if (sbStyled) {
-            // Copy all instance methods from our compiled SBSettingsViewController
-            unsigned int count = 0;
-            Method *methods = class_copyMethodList([SBSettingsViewController class], &count);
-            for (unsigned int i = 0; i < count; i++) {
-                SEL sel = method_getName(methods[i]);
-                IMP imp = method_getImplementation(methods[i]);
-                const char *types = method_getTypeEncoding(methods[i]);
-                class_addMethod(sbStyled, sel, imp, types);
-            }
-            free(methods);
-
-            // Copy properties (for @synthesize ivars)
-            unsigned int propCount = 0;
-            objc_property_t *props = class_copyPropertyList([SBSettingsViewController class], &propCount);
-            for (unsigned int i = 0; i < propCount; i++) {
-                unsigned int attrCount = 0;
-                objc_property_attribute_t *attrs = property_copyAttributeList(props[i], &attrCount);
-                class_addProperty(sbStyled, property_getName(props[i]), attrs, attrCount);
-                free(attrs);
-            }
-            free(props);
-
-            // Copy ivars won't work after registration, but properties use associated objects
-            objc_registerClassPair(sbStyled);
-        }
-    }
-
     // Per-category default action and seek-bar color. Sponsor is the only category that
     // auto-skips by default; the rest are disabled until the user opts in. Entries are
     // generated from sbAllCategories() below so this table stays the sole per-category source.

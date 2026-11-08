@@ -30,16 +30,26 @@ static NSString *GetCacheSize() { // YTLite - @dayanch96
 // here. Tapping the "YouMod" cell in YouTube's settings pushes this page.
 static NSArray<YMSettingsItem *> *gYMYouModHomeItems = nil;
 
-// Push the cached home page (footer variant shows the version footer). settingsVC
-// owns the navigation stack; parentResponder seeds YouTube's theming DI.
-static void YMPushYouModHome(id settingsVC, id parentResponder) {
-    if (!gYMYouModHomeItems || !settingsVC) return;
-    YMPushSubSettingsWithFooter(TweakName, gYMYouModHomeItems, settingsVC, parentResponder);
+// Push the cached home page. settingsVC seeds the modal presentation.
+// Presented as a UIViewController sliding up from the bottom (full-screen) —
+// not pushed into YouTube's settings stack. iPad gets the two-pane split page.
+static void YMPushYouModHome(id settingsVC) {
+    if (!gYMYouModHomeItems) return;
+    UIViewController *root;
+    if (isPadHardware()) {
+        root = YMNewSplitSettings(gYMYouModHomeItems);
+    } else {
+        YMSubSettingsViewController *home = (YMSubSettingsViewController *)YMNewSubSettings(TweakName, gYMYouModHomeItems);
+        home.showsVersionFooter = YES;
+        home.globalSearch = YES;
+        root = home;
+    }
+    YMPresentSettingsPage(root, settingsVC);
 }
 
 // "Tab bar" sub-page items (image list built from the enabled tabs).
 // Shared by the search registration and the home row.
-static NSArray<YMSettingsItem *> *YMTabBarItems(id settingsVC, id parentResponder) {
+static NSArray<YMSettingsItem *> *YMTabBarItems(void) {
     NSDictionary *tabYTIconMap = @{@"home": @(65), @"shorts": @(769), @"subscriptions": @(66), @"library": @(61)};
     NSDictionary *tabBundleIconMap = @{@"history": @"icons/history", @"gaming": @"icons/gaming", @"sports": @"icons/sports", @"notifications": @"icons/noti", @"news": @"icons/news", @"music": @"icons/music", @"watchlater": @"icons/watchlater", @"playlist": @"icons/playlist", @"like": @"icons/like", @"live": @"icons/live", @"post": @"icons/post", @"video": @"icons/video", @"movie": @"icons/movie", @"course": @"icons/course", @"minigame": @"icons/minigame", @"fashion": @"icons/fashion", @"learning": @"icons/learning", @"download": @"icons/download"};
     YTAssetLoader *assetLoader = [[%c(YTAssetLoader) alloc] initWithBundle:YouModBundle()];
@@ -92,8 +102,8 @@ static NSArray<YMSettingsItem *> *YMTabBarItems(id settingsVC, id parentResponde
         YMToggle(YMLOC(@"HIDE_TAB_INDI"), YMLOC(@"HIDE_TAB_INDI_DESC"), HideTabIndi),
         YMToggle(YMLOC(@"HIDE_TAB_LABELS"), YMLOC(@"HIDE_TAB_LABELS_DESC"), HideTabLabels),
         YMNavAction(YMLOC(@"MANAGE_TABS"), YMLOC(@"MANAGE_TABS_DESC"), ^(UIViewController *vc) {
-            (void)vc;
-            YMPushTabOrder(settingsVC, parentResponder);
+            // Pushed like Manage overlay buttons (in-pane on iPad).
+            YMPushTabOrder(vc);
         }),
     ];
 }
@@ -295,8 +305,8 @@ static NSArray<YMSettingsItem *> *YMPreferencesItems(void) {
             [YMToggle(YMLOC(@"LOCK_SPEED"), YMLOC(@"LOCK_SPEED_DESC"), LockSpeed) visibleWhenBoolKey:HoldToSpeedEnabled],
             YMHeader(YMLOC(@"INTERFACE")),
             YMNavAction(YMLOC(@"MANAGE_OVERLAY_BUTTONS"), YMLOC(@"MANAGE_OVERLAY_BUTTONS_DESC"), ^(UIViewController *vc) {
-                (void)vc;
-                YMPushOverlayButtonOrder(settingsViewController, [self parentResponder]);
+                // Opened from the live hosting page at tap time (never a captured VC).
+                YMPushOverlayButtonOrder(vc);
             }),
             YMPicker(YMLOC(@"SLEEP_TIMER_ENTRY"), YMLOC(@"SLEEP_TIMER_ENTRY_DESC"), SleepTimerEntry, (@[YMLOC(@"DISABLED"), YMLOC(@"SLEEP_TIMER_ENTRY_TABBAR"), YMLOC(@"SLEEP_TIMER_ENTRY_OVERLAY"), YMLOC(@"SLEEP_TIMER_ENTRY_BOTH")]), 0),
             YMToggle(YMLOC(@"HIDE_AUTOPLAY"), YMLOC(@"HIDE_AUTOPLAY_DESC"), HideAutoPlayToggle),
@@ -401,7 +411,7 @@ static NSArray<YMSettingsItem *> *YMPreferencesItems(void) {
     YMRegisterSettingsGroup(YMLOC(@"SHORTS"), shortsItems);
 
     // Tab bar
-    NSArray<YMSettingsItem *> *tabbarItems = YMTabBarItems(settingsViewController, [self parentResponder]);
+    NSArray<YMSettingsItem *> *tabbarItems = YMTabBarItems();
     YMRegisterSettingsGroup(YMLOC(@"TABBAR"), tabbarItems);
 
     // Miscellaneous
@@ -468,47 +478,19 @@ static NSArray<YMSettingsItem *> *YMPreferencesItems(void) {
     // then the Developer block and Preferences.
     NSMutableArray<YMSettingsItem *> *homeItems = [NSMutableArray array];
 
-    // Section rows — nav rows pushing their sub-page.
-    [homeItems addObject:[YMNavAction(YMLOC(@"DOWNLOADING"), nil, ^(UIViewController *vc) {
-        (void)vc;
-        YMPushSubSettings(YMLOC(@"DOWNLOADING"), downloadingItems, settingsViewController, [self parentResponder]);
-    }) withIconType:57]];
-    [homeItems addObject:[YMNavAction(YMLOC(@"APPEARANCE"), nil, ^(UIViewController *vc) {
-        (void)vc;
-        YMPushSubSettings(YMLOC(@"APPEARANCE"), appearanceItems, settingsViewController, [self parentResponder]);
-    }) withIconType:921]];
-    [homeItems addObject:[YMNavAction(YMLOC(@"NAVBAR"), nil, ^(UIViewController *vc) {
-        (void)vc;
-        YMPushSubSettings(YMLOC(@"NAVBAR"), navbarItems, settingsViewController, [self parentResponder]);
-    }) withIconType:60]];
-    [homeItems addObject:[YMNavAction(YMLOC(@"FEED"), nil, ^(UIViewController *vc) {
-        (void)vc;
-        YMPushSubSettings(YMLOC(@"FEED"), feedItems, settingsViewController, [self parentResponder]);
-    }) withIconType:193]];
-    [homeItems addObject:[YMNavAction(YMLOC(@"PLAYER"), nil, ^(UIViewController *vc) {
-        (void)vc;
-        YMPushSubSettings(YMLOC(@"PLAYER"), playerItems, settingsViewController, [self parentResponder]);
-    }) withIconType:658]];
-    [homeItems addObject:[YMNavAction(YMLOC(@"SHORTS"), nil, ^(UIViewController *vc) {
-        (void)vc;
-        YMPushSubSettings(YMLOC(@"SHORTS"), shortsItems, settingsViewController, [self parentResponder]);
-    }) withIconType:769]];
-    [homeItems addObject:[YMNavAction(YMLOC(@"TABBAR"), nil, ^(UIViewController *vc) {
-        (void)vc;
-        YMPushSubSettings(YMLOC(@"TABBAR"), tabbarItems, settingsViewController, [self parentResponder]);
-    }) withIconType:66]];
-    [homeItems addObject:[YMNavAction(YMLOC(@"MISCELLANEOUS"), nil, ^(UIViewController *vc) {
-        (void)vc;
-        YMPushSubSettings(YMLOC(@"MISCELLANEOUS"), miscItems, settingsViewController, [self parentResponder]);
-    }) withIconType:1101]];
-    [homeItems addObject:[YMNavAction(@"SponsorBlock", nil, ^(UIViewController *vc) {
-        (void)vc;
-        YMPushSponsorBlockSettings(settingsViewController);
-    }) withIconType:610]];
-    [homeItems addObject:[YMNavAction(YMLOC(@"PERFER_HEADER"), nil, ^(UIViewController *vc) {
-        (void)vc;
-        YMPushSubSettings(YMLOC(@"PERFER_HEADER"), prefItems, settingsViewController, [self parentResponder]);
-    }) withIconType:530]];
+    // Section rows — nav rows carrying their sub-page (pushed on iPhone, shown
+    // in the iPad split view's detail pane). No captured view controllers here:
+    // the page data lives on the row and the push target resolves at tap time.
+    [homeItems addObject:[[YMNavAction(YMLOC(@"DOWNLOADING"), nil, nil) withSubmenuItems:downloadingItems kind:YMSubmenuKindSettings] withIconType:57]];
+    [homeItems addObject:[[YMNavAction(YMLOC(@"APPEARANCE"), nil, nil) withSubmenuItems:appearanceItems kind:YMSubmenuKindSettings] withIconType:921]];
+    [homeItems addObject:[[YMNavAction(YMLOC(@"NAVBAR"), nil, nil) withSubmenuItems:navbarItems kind:YMSubmenuKindSettings] withIconType:60]];
+    [homeItems addObject:[[YMNavAction(YMLOC(@"FEED"), nil, nil) withSubmenuItems:feedItems kind:YMSubmenuKindSettings] withIconType:193]];
+    [homeItems addObject:[[YMNavAction(YMLOC(@"PLAYER"), nil, nil) withSubmenuItems:playerItems kind:YMSubmenuKindSettings] withIconType:658]];
+    [homeItems addObject:[[YMNavAction(YMLOC(@"SHORTS"), nil, nil) withSubmenuItems:shortsItems kind:YMSubmenuKindSettings] withIconType:769]];
+    [homeItems addObject:[[YMNavAction(YMLOC(@"TABBAR"), nil, nil) withSubmenuItems:tabbarItems kind:YMSubmenuKindSettings] withIconType:66]];
+    [homeItems addObject:[[YMNavAction(YMLOC(@"MISCELLANEOUS"), nil, nil) withSubmenuItems:miscItems kind:YMSubmenuKindSettings] withIconType:1101]];
+    [homeItems addObject:[[YMNavAction(@"SponsorBlock", nil, nil) withSubmenuItems:nil kind:YMSubmenuKindSponsorBlock] withIconType:610]];
+    [homeItems addObject:[[YMNavAction(YMLOC(@"PERFER_HEADER"), nil, nil) withSubmenuItems:prefItems kind:YMSubmenuKindSettings] withIconType:530]];
 
     // Developer block (GitHub).
     [homeItems addObject:YMHeader(YMLOC(@"DEV_HEADER"))];
@@ -555,8 +537,7 @@ static NSArray<YMSettingsItem *> *YMPreferencesItems(void) {
     if (index >= 0 && index < (NSInteger)items.count && [items[index].title isEqualToString:TweakName]) {
         UIViewController *sectionVC = [self valueForKey:@"_sectionControllerDelegate"];
         YTSettingsViewController *settingsVC = (YTSettingsViewController *)sectionVC.parentViewController;
-        id parentResponder = [sectionVC valueForKey:@"_parentResponder"];
-        YMPushYouModHome(settingsVC, parentResponder);
+        YMPushYouModHome(settingsVC);
         return;
     }
     %orig;

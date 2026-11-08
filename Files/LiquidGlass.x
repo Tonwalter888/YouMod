@@ -37,19 +37,6 @@ static UIVisualEffectView *YMEnsureGlassBackdrop(UIView *view) {
     return glassView;
 }
 
-void YouModApplyLiquidGlassBackdropToView(UIView *view, CGFloat cornerRadius) {
-    if (!view) return;
-    YMEnsureGlassBackdrop(view);
-    view.backgroundColor = UIColor.clearColor;
-    view.layer.cornerRadius = cornerRadius;
-    view.layer.cornerCurve = kCACornerCurveContinuous;
-    view.layer.masksToBounds = YES;
-    BOOL dark = view.traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark;
-    UIColor *edgeColor = [(dark ? UIColor.whiteColor : UIColor.blackColor) colorWithAlphaComponent:dark ? 0.20 : 0.10];
-    view.layer.borderWidth = 0.5;
-    view.layer.borderColor = edgeColor.CGColor;
-}
-
 // Frosted panel background for dialogs: manual glass blur over a light-gray base.
 void YouModApplyFrostedPanelBackgroundToView(UIView *view) {
     if (!view) return;
@@ -58,6 +45,28 @@ void YouModApplyFrostedPanelBackgroundToView(UIView *view) {
 }
 
 void YouModApplyLiquidGlassToView(UIView *view, BOOL wantsBackground) {
+    view.layer.cornerRadius = CGRectGetHeight(view.bounds) / 2.0;
+    if ([view isKindOfClass:%c(YTLightweightQTMButton)]) {
+        UIView *feedback = [view valueForKey:@"_touchFeedbackView"];
+        feedback.hidden = YES;
+        feedback.alpha = 0;
+        for (UIView *sub in view.subviews) {
+            if ([sub isKindOfClass:%c(YTTouchFeedbackView)]) {
+                sub.hidden = YES;
+                sub.alpha = 0;
+                break;
+            }
+        }
+        for (UIGestureRecognizer *ges in view.gestureRecognizers) {
+            if ([ges isKindOfClass:%c(YTTouchFeedbackGestureRecognizer)]) {
+                UIView *view2 = [[ges valueForKey:@"_controller"] valueForKey:@"_touchFeedbackView"];
+                view2.hidden = YES;
+                view2.alpha = 0;
+                break;
+            }
+        }
+        ((YTLightweightQTMButton *)view).flatButtonHasOpaqueBackground = NO;
+    }
     if (wantsBackground && [view respondsToSelector:@selector(tuui_applyFlexibleClearGlassWithShadowBackground)]) [view tuui_applyFlexibleClearGlassWithShadowBackground];
     else if (!wantsBackground && [view respondsToSelector:@selector(tuui_applyFlexibleSmallGlassBackground)]) [view tuui_applyFlexibleSmallGlassBackground];
 }
@@ -71,9 +80,24 @@ void YouModApplyLiquidGlassToView(UIView *view, BOOL wantsBackground) {
 %end
 
 %hook YTRightNavigationButtons
-- (void)layoutSubviews {
-    %orig;
-    YouModApplyLiquidGlassBackdropToView(self, CGRectGetHeight(self.bounds) / 2.0);
+- (NSArray <YTQTMButton *> *)visibleButtons {
+    NSArray <YTQTMButton *> *buttons = %orig;
+    YouModApplyLiquidGlassToView(self, YES);
+    for (YTQTMButton *button in buttons) {
+        UIView *feedback = [button valueForKey:@"_touchFeedbackView"];
+        feedback.hidden = YES;
+        feedback.alpha = 0;
+        for (UIGestureRecognizer *ges in button.gestureRecognizers) {
+            if ([ges isKindOfClass:%c(YTTouchFeedbackGestureRecognizer)]) {
+                UIView *view = [[ges valueForKey:@"_controller"] valueForKey:@"_touchFeedbackView"];
+                view.hidden = YES;
+                view.alpha = 0;
+                break;
+            }
+        }
+        button.flatButtonHasOpaqueBackground = NO;
+    }
+    return buttons;
 }
 - (void)setLeadingPadding:(CGFloat)padding { %orig(0); }
 - (void)setTailingPadding:(CGFloat)padding { %orig(0); }
@@ -110,13 +134,6 @@ void YouModApplyLiquidGlassToView(UIView *view, BOOL wantsBackground) {
 }
 %end
 
-%hook YTSearchBarView
-- (void)didMoveToWindow {
-    %orig;
-    YouModApplyLiquidGlassToView(self, YES);
-}
-%end
-
 %hook GSKRedMicButton
 - (void)didMoveToWindow {
     %orig;
@@ -129,6 +146,14 @@ void YouModApplyLiquidGlassToView(UIView *view, BOOL wantsBackground) {
     YTQTMButton *orig = %orig;
     if (orig) YouModApplyLiquidGlassToView(orig, YES);
     return orig;
+}
+%end
+
+%hook YTInlineSignInChannelCell
+- (void)didMoveToWindow {
+    %orig;
+    YTQTMButton *button = [self valueForKey:@"_editChannelButton"];
+    if (button) YouModApplyLiquidGlassToView(button, YES);
 }
 %end
 

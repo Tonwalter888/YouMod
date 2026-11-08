@@ -107,6 +107,9 @@
 + (instancetype)eventWithViewController:(UIViewController *)viewController animated:(BOOL)animated firstResponder:(id)firstResponder;
 @end
 
+@interface YTInlineSignInChannelCell : UICollectionViewCell
+@end
+
 #define SABRDownload @"YouModSABRDownload"
 
 #define IS_ENABLED(k) [[NSUserDefaults standardUserDefaults] boolForKey:k]
@@ -921,7 +924,7 @@ typedef NS_ENUM(NSInteger, SBSegmentAction) {
 extern UIView *sbGetNotificationParent(void);
 extern void sbDismissAllNotifications(void);
 extern void sbUpdateOverlayInsetForPivotBar(void);
-extern void YMPresentTabOrderModally(id parentResponder);
+extern void YMPresentTabOrder(id presenter);
 extern void YouModShowPill(NSString *message, BOOL success);
 extern void YouModCheckForUpdateManually(void);
 
@@ -998,7 +1001,7 @@ extern NSArray<YMOverlayButtonSpec *> *YMRegisteredOverlayButtons(void);
 extern NSArray<YMOverlayButtonSpec *> *YMOrderedOverlayButtons(void);
 extern BOOL YMIsOverlayButtonEnabled(NSString *identifier);
 extern BOOL YMIsOverlayButtonBottom(NSString *identifier);
-extern void YMPushOverlayButtonOrder(id settingsVC, id parentResponder);
+extern void YMPushOverlayButtonOrder(id host);
 
 #pragma mark - YouMod Settings Framework (YouModSettings.x)
 
@@ -1012,6 +1015,12 @@ typedef NS_ENUM(NSInteger, YMRowType) {
     YMRowTypeImageSegment,
     YMRowTypeSlider,
     YMRowTypeDeveloper
+};
+
+// Page implementation for nav rows carrying a submenu (YMSettingsItem.submenuKind).
+typedef NS_ENUM(NSInteger, YMSubmenuKind) {
+    YMSubmenuKindSettings = 0,    // regular settings page (submenuItems)
+    YMSubmenuKindSponsorBlock = 1 // SponsorBlock settings page (submenuItems nil)
 };
 
 typedef NS_ENUM(NSInteger, YMVisibilityOperator) {
@@ -1066,6 +1075,13 @@ typedef NS_ENUM(NSInteger, YMVisibilityOperator) {
 @property (nonatomic, strong) NSString *profileURL;
 @property (nonatomic, strong) NSString *avatarURL;
 
+// Nav rows: the page this row opens (pushed on iPhone, shown in the detail pane
+// on iPad). submenuKind selects the page implementation; SponsorBlock rows leave
+// submenuItems nil. Carrying the page data here keeps row taps independent of any
+// view controller captured when the rows were built.
+@property (nonatomic, strong) NSArray<YMSettingsItem *> *submenuItems;
+@property (nonatomic, assign) NSInteger submenuKind;
+
 // Visibility predicates: all must match (AND), or any when matchAnyCondition is YES (OR).
 @property (nonatomic, strong) NSMutableArray<YMVisibilityCondition *> *visibilityConditions;
 @property (nonatomic, assign) BOOL matchAnyCondition;
@@ -1083,6 +1099,7 @@ typedef NS_ENUM(NSInteger, YMVisibilityOperator) {
 
 // Chainable row styling
 - (instancetype)withIconType:(NSInteger)iconType;
+- (instancetype)withSubmenuItems:(NSArray<YMSettingsItem *> *)items kind:(NSInteger)kind;
 
 // Evaluation
 - (BOOL)isVisible;
@@ -1113,8 +1130,6 @@ typedef NS_ENUM(NSInteger, YMVisibilityOperator) {
 @end
 
 // Page pushes and item factories (defined in YouModSettings.x)
-extern void YMPushSubSettings(NSString *title, NSArray<YMSettingsItem *> *items, id settingsVC, id parentResponder);
-extern void YMPushSubSettingsWithFooter(NSString *title, NSArray<YMSettingsItem *> *items, id settingsVC, id parentResponder);
 extern YMSettingsItem *YMToggle(NSString *title, NSString *subtitle, NSString *key);
 extern YMSettingsItem *YMSlider(NSString *title, NSString *subtitle, NSString *key, float min, float max, float step, float defaultValue);
 extern YMSettingsItem *YMPicker(NSString *title, NSString *subtitle, NSString *key, NSArray<NSString *> *options, NSInteger defaultValue);
@@ -1125,9 +1140,35 @@ extern YMSettingsItem *YMSegment(NSString *title, NSString *key, NSArray<NSNumbe
 extern YMSettingsItem *YMTextSegment(NSString *title, NSString *key, NSArray<NSString *> *labels, NSInteger defaultValue);
 extern YMSettingsItem *YMImageSegment(NSString *title, NSString *key, NSArray<UIImage *> *images, NSInteger defaultValue);
 extern YMSettingsItem *YMDeveloper(NSString *name, NSString *role, NSString *profileURL, NSString *avatarBaseURL);
-extern void YMPushTabOrder(id settingsVC, id parentResponder);
+extern void YMPushTabOrder(id host);
 extern void YMRegisterSettingsGroup(NSString *title, NSArray<YMSettingsItem *> *items);
-extern void YMPushSponsorBlockSettings(id settingsVC);
+extern void YMPresentSponsorBlockSettings(id presenter);
+
+// Navigation helpers (defined in YouModSettings.x)
+// UINavigationBarAppearance for the settings pages: solid background and a
+// heavy ("thick") header title font.
+extern UINavigationBarAppearance *YMNavBarAppearance(UIColor *bgColor, UIColor *titleColor);
+// Runs theme (dark/light) color updates as a smooth cross-fade on the given
+// view's window instead of snapping.
+extern void YMAnimateThemeChange(UIView *view, void (^changes)(void));
+// Presents root as the YouMod settings: a full-screen UINavigationController
+// sliding up from the bottom (no YouTube settings chrome). The root page gets a
+// close button; pages pushed inside get the standard back button.
+extern void YMPresentSettingsPage(UIViewController *root, id presenter);
+// Pushes child within the current settings modal navigation stack; presents a
+// new settings modal when host is outside one (entry points). Resolved from the
+// live host at call time — never a captured view controller — so row taps can't
+// dead-end on a stale/detached stack.
+extern void YMPushOntoHost(UIViewController *child, id host);
+// Opens a row's/group's page: routes to the host's groupHandler (iPad split
+// view), otherwise pushes. kind is a YMSubmenuKind.
+extern void YMOpenGroupFromHost(id host, NSString *title, NSArray<YMSettingsItem *> *items, NSInteger kind);
+// Page factories (build without presenting).
+extern UIViewController *YMNewSubSettings(NSString *title, NSArray<YMSettingsItem *> *items);
+extern UIViewController *YMNewSponsorBlockSettings(void); // SponsorBlockSettings.x
+extern UIViewController *YMNewSplitSettings(NSArray<YMSettingsItem *> *sidebarItems); // YMSplitSettings.x
+// YES on physical iPad hardware (ignores the Device UI override).
+extern BOOL isPadHardware(void);
 
 @interface YTSettingsSectionItemManager (YouMod)
 - (void)updateYouModSectionWithEntry:(id)entry;
@@ -1149,6 +1190,70 @@ extern void YMPushSponsorBlockSettings(id settingsVC);
 // settings are editable inline in search. host adopts the rendering VC as a child
 // for correct light/dark traits. Defined in SponsorBlockSettings.x.
 extern NSArray<YMSearchRow *> *sbSearchRows(UIViewController *host);
+
+#pragma mark - YMSubSettingsViewController (YouModSettings.x)
+
+// Called when a row (or search result) that opens a group page is tapped.
+// Return YES to suppress the default push (iPad split view routes the group into
+// its detail pane instead).
+typedef BOOL (^YMGroupSelectionHandler)(NSString *title, NSArray<YMSettingsItem *> *items, NSInteger kind);
+
+// Reusable UIKit-based sub-page for YouMod settings sections. A plain
+// UIViewController living inside the modal settings navigation created by
+// YMPresentSettingsPage.
+@interface YMSubSettingsViewController : UIViewController <UITableViewDelegate, UITableViewDataSource, UISearchBarDelegate>
+- (UITableView *)tableView;
+- (void)setTableView:(UITableView *)tv;
+- (UISearchBar *)searchBar;
+- (void)setSearchBar:(UISearchBar *)sb;
+- (NSString *)navTitle;
+- (void)setNavTitle:(NSString *)t;
+- (NSArray<YMSettingsItem *> *)items;
+- (void)setItems:(NSArray<YMSettingsItem *> *)items;
+- (UIColor *)ymTextColor;
+- (UIColor *)ymSecondaryColor;
+- (UITableViewCell *)cellForItem:(YMSettingsItem *)item tableView:(UITableView *)tableView;
+- (UITableViewCell *)navCellForItem:(YMSettingsItem *)item tableView:(UITableView *)tableView;
+- (void)updateSearchBarTheme;
+
+// Global search (home page): the search bar covers every registered settings group
+// instead of just this page's own rows.
+- (BOOL)globalSearch;
+- (void)setGlobalSearch:(BOOL)global;
+- (NSArray<YMSearchRow *> *)globalSearchIndex;
+- (NSArray<YMSearchRow *> *)filteredSearchRows;
+- (void)setFilteredSearchRows:(NSArray<YMSearchRow *> *)rows;
+// Refilters the global index for the current pageFilter text.
+- (void)updateGlobalSearchResults;
+// YES = per-page search bar filtering this page's own rows. Subclasses can override.
+- (BOOL)usesPageSearch;
+// YES = no search bar (external/driven search, e.g. the iPad split-view results pane).
+- (BOOL)hideSearchBar;
+- (void)setHideSearchBar:(BOOL)hide;
+// Active filter text (nil/empty = not filtering).
+- (NSString *)pageFilter;
+- (void)setPageFilter:(NSString *)filter;
+// Rows currently shown (visible items, or matches while filtering).
+- (NSArray<YMSettingsItem *> *)displayedItems;
+- (void)updateDisplayedItemsAnimated:(BOOL)animated;
+// YES = thin version footer below the rows (set before pushing; home page only).
+- (BOOL)showsVersionFooter;
+- (void)setShowsVersionFooter:(BOOL)shows;
+- (UIView *)ymVersionFooterView;
+
+// iPad split-view hooks (nil on regular pages).
+// Group rows routed here instead of pushed when it returns YES.
+- (YMGroupSelectionHandler)groupHandler;
+- (void)setGroupHandler:(YMGroupSelectionHandler)handler;
+// Per-page search bar text changes routed here instead of filtering this page's
+// rows (the iPad sidebar drives the detail pane's global search with them).
+- (void (^)(NSString *text))searchTextHandler;
+- (void)setSearchTextHandler:(void (^)(NSString *text))handler;
+// Title of the nav row currently shown in a detail pane (draws the grey
+// selection highlight in the iPad sidebar; nil = no highlight).
+- (NSString *)selectedGroupTitle;
+- (void)setSelectedGroupTitle:(NSString *)title;
+@end
 
 extern void YouModPauseAllPlayers(void);
 extern NSBundle *YouModBundle();
@@ -1410,5 +1515,4 @@ extern void YouModApplyOLEDCollectionView(ASCollectionView *view, NSString *iden
 extern void YouModRemoveDrawerAds(YTELMViewController *self);
 extern void YouModRemoveFullscreenActionsButtons(YTELMViewController *controller);
 extern void YouModApplyLiquidGlassToView(UIView *view, BOOL arg);
-extern void YouModApplyLiquidGlassBackdropToView(UIView *view, CGFloat cornerRadius);
 extern void YouModApplyFrostedPanelBackgroundToView(UIView *view);

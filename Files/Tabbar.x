@@ -308,7 +308,7 @@ static BOOL isGestureRegistered = NO;
                                                      image:[UIImage systemImageNamed:@"dock.rectangle"]
                                                 identifier:nil
                                                    handler:^(__kindof UIAction * _Nonnull action) {
-            YMPresentTabOrderModally(nil);
+            YMPresentTabOrder(nil);
         }];
         UIAction *openLinkAction = [UIAction actionWithTitle:LOC(@"OPEN_LINK")
                                                image:[UIImage systemImageNamed:@"link"]
