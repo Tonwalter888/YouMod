@@ -2652,37 +2652,6 @@ UIViewController *YMNewSubSettings(NSString *title, NSArray<YMSettingsItem *> *i
     return vc;
 }
 
-#pragma mark - Runtime Class Registration
-// (Removed: settings pages are plain UIViewControllers in a modal navigation —
-// the YTStyledViewController runtime subclass trick is no longer used.)
-
-%hook YTQTMButton
-- (void)layoutSubviews {
-    %orig;
-    if ([self.accessibilityIdentifier isEqualToString:@"id.ui.title.tab.button"]) {
-        UIColor *customTitle = [self valueForKey:@"_desiredCustomTitleColor"];
-
-        if (isDarkMode(self)) {
-            self.titleLabel.textColor = [UIColor whiteColor];
-            if (customTitle) {
-                [self setValue:[UIColor whiteColor] forKey:@"_desiredCustomTitleColor"];
-            }
-        } else {
-            self.titleLabel.textColor = [UIColor blackColor];
-            if (customTitle) {
-                [self setValue:[UIColor blackColor] forKey:@"_desiredCustomTitleColor"];
-            }
-        }
-    } else if ([self.accessibilityIdentifier isEqualToString:@"id.ui.browse.back.button"]) {
-        if (isDarkMode(self)) {
-            self.tintColor = [UIColor whiteColor];
-        } else {
-            self.tintColor = [UIColor blackColor];
-        }
-    }
-}
-%end
-
 %hook YTPivotBarViewController
 - (void)viewDidLoad {
     %orig;
