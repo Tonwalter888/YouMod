@@ -1829,8 +1829,8 @@ static const void *kYMTabSavedScrollEdgeAppearanceKey = &kYMTabSavedScrollEdgeAp
 - (NSInteger)enabledCount {
     NSInteger count = 0;
     for (NSDictionary *entry in self.tabData) {
-        // Download tab is governed by the Downloading settings, not the
-        // per-tab limit here.
+        // Download tab is governed by the Downloading settings; its share of
+        // the tab limit is added by the caller when it's enabled.
         if ([entry[@"id"] isEqualToString:@"download"]) continue;
         if ([entry[@"enabled"] boolValue]) count++;
     }
@@ -1912,7 +1912,12 @@ static const void *kYMTabSavedScrollEdgeAppearanceKey = &kYMTabSavedScrollEdgeAp
 
     BOOL wantsEnabled = sender.on;
 
-    if (wantsEnabled && [self enabledCount] >= kYMTabMaxEnabled) {
+    // Download Library counts toward the 6-tab limit when it's enabled (its
+    // switch lives in the Downloading settings, but the tab bar shows it).
+    NSInteger tabCount = [self enabledCount];
+    if ([[NSUserDefaults standardUserDefaults] boolForKey:DownloadLibraryTab]) tabCount++;
+
+    if (wantsEnabled && tabCount >= kYMTabMaxEnabled) {
         sender.on = NO;
         YTAlertView *alert = [%c(YTAlertView) infoDialog];
         alert.title = LOC(@"TAB_LIMIT");
