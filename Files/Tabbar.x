@@ -242,13 +242,11 @@ static YTIPivotBarSupportedRenderers *YouModNewTab(NSString *pivotID, NSString *
 }
 %end
 
-/*
 // Hide Tab Bar Indicators
 %hook YTPivotBarIndicatorView
 - (void)setFillColor:(UIColor *)color { %orig(IS_ENABLED(HideTabIndi) ? [UIColor clearColor] : color); }
 - (void)setBorderColor:(UIColor *)color { %orig(IS_ENABLED(HideTabIndi) ? [UIColor clearColor] : color); }
 %end
-*/
 
 static NSString *gLastOpenedVideoID = nil;
 
@@ -334,7 +332,6 @@ static BOOL isGestureRegistered = NO;
         return [UIMenu menuWithTitle:@"" children:menuChildren];
     }];
 }
-- (void)setIndicatorDot:(UIView *)indicatorDot { if (!IS_ENABLED(HideTabIndi)) %orig; }
 %end
 
 // Startup Tab
