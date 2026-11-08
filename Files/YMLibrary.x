@@ -547,7 +547,7 @@ static const CGFloat ymRefreshHiddenTravel = 72.0; // how far the bubble sits ab
 @property (nonatomic, assign) BOOL privateUnlocked;
 @property (nonatomic, assign) BOOL isAuthenticatingPrivate;
 @property (nonatomic, assign) BOOL privateAuthWasBackgrounded;
-- (NSString *)displayTitleForSort:(NSString *)sort;
+- (NSString *)displayTitleForSort:(NSString *)sort isSelected:(BOOL)selected;
 - (void)updateSortMenu;
 - (void)updateSortButtonAccessibilityLabel;
 - (void)rebuildLibraryControls;
@@ -730,7 +730,9 @@ static const CGFloat ymRefreshHiddenTravel = 72.0; // how far the bubble sits ab
         [topBar.topAnchor constraintEqualToAnchor:self.view.topAnchor],
         [topBar.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor],
         [topBar.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor],
-        [topBar.heightAnchor constraintEqualToConstant:174],
+        // Header ends just below the type selector with a small gap (the old
+        // fixed 174pt height left a device-dependent empty strip).
+        [topBar.bottomAnchor constraintEqualToAnchor:_typeGlassView.bottomAnchor constant:10],
 
         [topBarSeparator.leadingAnchor constraintEqualToAnchor:topBar.leadingAnchor],
         [topBarSeparator.trailingAnchor constraintEqualToAnchor:topBar.trailingAnchor],
@@ -828,7 +830,7 @@ static const CGFloat ymRefreshHiddenTravel = 72.0; // how far the bubble sits ab
     return entry ? ymLibraryText(entry[0], entry[1]) : type;
 }
 
-- (NSString *)displayTitleForSort:(NSString *)sort {
+- (NSString *)displayTitleForSort:(NSString *)sort isSelected:(BOOL)selected {
     NSDictionary *labels = @{
         @"Newest": @[@"DOWNLOAD_LIBRARY_SORT_NEWEST", @"Newest"],
         @"Oldest": @[@"DOWNLOAD_LIBRARY_SORT_OLDEST", @"Oldest"],
@@ -838,11 +840,13 @@ static const CGFloat ymRefreshHiddenTravel = 72.0; // how far the bubble sits ab
         @"Z-A": @[@"DOWNLOAD_LIBRARY_SORT_ZA", @"Z-A"],
     };
     NSArray *entry = labels[sort];
-    return entry ? ymLibraryText(entry[0], entry[1]) : sort;
+    NSString *title = entry ? ymLibraryText(entry[0], entry[1]) : sort;
+    // "<checkmark>  <text>" marks the selected option.
+    return selected ? [@"\u2713 " stringByAppendingString:title] : title;
 }
 
 - (void)updateSortButtonAccessibilityLabel {
-    NSString *selectedTitle = [self displayTitleForSort:self.selectedSort ?: @"Newest"];
+    NSString *selectedTitle = [self displayTitleForSort:self.selectedSort ?: @"Newest" isSelected:NO];
     _sortButton.accessibilityLabel = [NSString stringWithFormat:@"Sort by %@", selectedTitle];
 }
 
@@ -850,14 +854,12 @@ static const CGFloat ymRefreshHiddenTravel = 72.0; // how far the bubble sits ab
     NSArray<NSString *> *sorts = @[@"Newest", @"Oldest", @"Largest", @"Smallest", @"A-Z", @"Z-A"];
     id parentResponder = self.hostParentResponder ?: self;
     YTDefaultSheetController *sheet = [%c(YTDefaultSheetController) sheetControllerWithParentResponder:parentResponder];
-    [sheet addHeaderWithTitle:ymLibraryText(@"DOWNLOAD_LIBRARY_SORT_TITLE", @"Sort videos by") subtitle:nil];
+    [sheet addHeaderWithTitle:nil subtitle:ymLibraryText(@"DOWNLOAD_LIBRARY_SORT_TITLE", @"Sort videos by")];
 
     __weak typeof(self) weakSelf = self;
     for (NSString *sort in sorts) {
         BOOL selected = [sort isEqualToString:self.selectedSort];
-        UIImage *checkImage = selected ? YouModYTIconImage(YT_CHECK, NO, nil) : nil;
-        YTActionSheetAction *action = [%c(YTActionSheetAction) actionWithTitle:[self displayTitleForSort:sort]
-                                                                      iconImage:checkImage
+        YTActionSheetAction *action = [%c(YTActionSheetAction) actionWithTitle:[self displayTitleForSort:sort isSelected:selected]
                                                                          style:0
                                                                        handler:^(__unused YTActionSheetAction *selectedAction) {
             __strong typeof(weakSelf) strongSelf = weakSelf;

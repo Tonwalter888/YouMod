@@ -736,6 +736,7 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 @end
 
 @interface YTSlimStatusBarControllerImpl : NSObject
+@property (nonatomic, readwrite, assign) NSInteger currentType;
 - (void)updateWithSleepTimerActiveStatus:(BOOL)arg;
 @end
 

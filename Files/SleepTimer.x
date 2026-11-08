@@ -58,6 +58,10 @@ static NSString *YMSleepTimerFormatClock(NSTimeInterval interval) {
 // Last remaining time from YTSingleVideoTime; tells a natural end (< 0.1 s)
 // from a manual video switch.
 @property (nonatomic, assign) CGFloat capturedRemainingTime;
+
+// The minutes the countdown was started with (0 = custom/absolute time). Used to
+// mark the selected option in the sleep-timer action sheet.
+@property (nonatomic, assign) NSInteger startMinutes;
 + (instancetype)shared;
 - (void)startWithMinutes:(NSInteger)minutes;
 - (void)startAtDate:(NSDate *)date;
@@ -118,6 +122,7 @@ static NSString *YMSleepTimerFormatClock(NSTimeInterval interval) {
 - (void)startAtDate:(NSDate *)date {
     [self restoreVolume];
     self.mode = YMSleepTimerModeCountdown;
+    self.startMinutes = 0; // custom/absolute time
     self.endDate = date;
     self.connectionLost = NO;
     [self persist];
@@ -128,11 +133,13 @@ static NSString *YMSleepTimerFormatClock(NSTimeInterval interval) {
 
 - (void)startWithMinutes:(NSInteger)minutes {
     [self startAtDate:[NSDate dateWithTimeIntervalSinceNow:(NSTimeInterval)minutes * 60.0]];
+    self.startMinutes = minutes; // records the preset (startAtDate: resets it)
 }
 
 - (void)startEndOfVideo {
     [self restoreVolume];
     self.mode = YMSleepTimerModeEndOfVideo;
+    self.startMinutes = 0;
     self.endDate = nil;
     YTPlayerViewController *player = YouModCurrentPlayerViewController;
     self.endOfVideoID = [player currentVideoID];
@@ -153,6 +160,7 @@ static NSString *YMSleepTimerFormatClock(NSTimeInterval interval) {
     [self stopTimer];
     self.endDate = nil;
     self.mode = YMSleepTimerModeCountdown;
+    self.startMinutes = 0;
     [self persist];
     [self deactivateSlimBars];
     [self notifyButtons];
@@ -164,6 +172,7 @@ static NSString *YMSleepTimerFormatClock(NSTimeInterval interval) {
     [self stopTimer];
     self.endDate = nil;
     self.mode = YMSleepTimerModeCountdown;
+    self.startMinutes = 0;
     self.endOfVideoID = nil;
     [self persist];
     [self deactivateSlimBars];
@@ -184,6 +193,7 @@ static NSString *YMSleepTimerFormatClock(NSTimeInterval interval) {
     [self restoreVolumeAfterPause];
     self.endDate = nil;
     self.mode = YMSleepTimerModeCountdown;
+    self.startMinutes = 0;
     [self persist];
     [self deactivateSlimBars];
     [self notifyButtons];
@@ -311,31 +321,24 @@ static NSString *YMSleepTimerFormatClock(NSTimeInterval interval) {
     [[NSNotificationCenter defaultCenter] postNotificationName:@"YouModUpdateSleepTimerButton" object:nil];
 }
 
+// based on my ghidra functions research, the NSInteger currentType function needs to be 6 only
+// otherwise it won't activate and show the bar
 - (void)updateSlimBars {
     if (![self isActive] || self.connectionLost || layoutHidesBar) return;
 
     NSString *text = [self remainingText];
     void (^update)(void) = ^{
+        if (!slimBarThemed) {
+            slimBarController.currentType = 6;
+            [slimBarController updateWithSleepTimerActiveStatus:YES];   
+            slimBarThemed = YES;
+        } else if (slimBarController.currentType != 6) return;
         if (isNewYTSlimStatusBarConfig()) {
-            if (!slimBarThemed) {
-                [slimBarController updateWithSleepTimerActiveStatus:YES];
-                if (!sleepTimerConfig) createSleepTimerConfig(text);
-                else sleepTimerConfig.text = text;
-                for (YTSlimStatusBarView *barView in slimBarSet) [barView updateWithConfiguration:sleepTimerConfig];
-                slimBarThemed = YES;
-            } else {
-                if (!sleepTimerConfig) createSleepTimerConfig(text);
-                else sleepTimerConfig.text = text;
-                for (YTSlimStatusBarView *barView in slimBarSet) [barView updateWithConfiguration:sleepTimerConfig];
-            }
+            if (!sleepTimerConfig) createSleepTimerConfig(text);
+            else sleepTimerConfig.text = text;
+            for (YTSlimStatusBarView *barView in slimBarSet) [barView updateWithConfiguration:sleepTimerConfig];
         } else {
-            if (!slimBarThemed) {
-                [slimBarController updateWithSleepTimerActiveStatus:YES];
-                for (YTSlimStatusBarView *barView in slimBarSet) [barView updateAppearanceToSleepTimerActiveWithText:text];
-                slimBarThemed = YES;
-            } else {
-                for (YTSlimStatusBarView *barView in slimBarSet) [barView updateAppearanceToSleepTimerActiveWithText:text];
-            }
+            for (YTSlimStatusBarView *barView in slimBarSet) [barView updateAppearanceToSleepTimerActiveWithText:text];
         }
     };
     if ([NSThread isMainThread]) update();
@@ -476,8 +479,14 @@ void YMSleepTimerPresentPicker(UIView *sourceView) {
             [sheet addAction:off];
         }
 
-        for (NSNumber *minutes in @[@15, @30, @45, @60]) {
-            YTActionSheetAction *duration = [%c(YTActionSheetAction) actionWithTitle:[NSString stringWithFormat:LOC(@"SLEEP_TIMER_MINUTES_FMT"), [minutes integerValue]]
+        // ✓ marks the currently selected option (the running timer's mode).
+        BOOL countdownActive = [timer isActive] && timer.mode == YMSleepTimerModeCountdown;
+        NSArray<NSNumber *> *presets = @[@15, @30, @45, @60];
+
+        for (NSNumber *minutes in presets) {
+            NSString *title = [NSString stringWithFormat:LOC(@"SLEEP_TIMER_MINUTES_FMT"), [minutes integerValue]];
+            if (countdownActive && timer.startMinutes == [minutes integerValue]) title = [@"\u2713 " stringByAppendingString:title];
+            YTActionSheetAction *duration = [%c(YTActionSheetAction) actionWithTitle:title
                                                                             subtitle:nil
                                                                            iconImage:nil
                                                                             handler:^(__unused YTActionSheetAction *action) {
@@ -487,7 +496,9 @@ void YMSleepTimerPresentPicker(UIView *sourceView) {
         }
 
         if (YouModCurrentPlayerViewController) {
-            YTActionSheetAction *endOfVideo = [%c(YTActionSheetAction) actionWithTitle:LOC(@"SLEEP_TIMER_END_OF_VIDEO")
+            NSString *endOfVideoTitle = LOC(@"SLEEP_TIMER_END_OF_VIDEO");
+            if ([timer isActive] && timer.mode == YMSleepTimerModeEndOfVideo) endOfVideoTitle = [@"\u2713 " stringByAppendingString:endOfVideoTitle];
+            YTActionSheetAction *endOfVideo = [%c(YTActionSheetAction) actionWithTitle:endOfVideoTitle
                                                                             subtitle:timeLeftText
                                                                             iconImage:nil
                                                                             handler:^(__unused YTActionSheetAction *action) {
@@ -496,7 +507,10 @@ void YMSleepTimerPresentPicker(UIView *sourceView) {
             [sheet addAction:endOfVideo];
         }
 
-        YTActionSheetAction *customTime = [%c(YTActionSheetAction) actionWithTitle:LOC(@"SLEEP_TIMER_CUSTOM_TIME")
+        // A running custom countdown (not one of the presets) marks this row.
+        NSString *customTitle = LOC(@"SLEEP_TIMER_CUSTOM_TIME");
+        if (countdownActive && ![presets containsObject:@(timer.startMinutes)]) customTitle = [@"\u2713 " stringByAppendingString:customTitle];
+        YTActionSheetAction *customTime = [%c(YTActionSheetAction) actionWithTitle:customTitle
                                                                           subtitle:nil
                                                                          iconImage:nil
                                                                           handler:^(__unused YTActionSheetAction *action) {
