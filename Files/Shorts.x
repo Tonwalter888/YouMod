@@ -97,6 +97,24 @@ static void YouModRemoveShortsOverlayButton(_ASDisplayView *dpView) {
 }
 %end
 
+// YT 21.4x: Shorts are hosted by YTReelContainerViewController + YTShortsContentPresenter, not YTReelPlayerViewController
+%hook YTReelContainerViewController
+- (void)handleLoopBehavior {
+    NSInteger action = INTFORVAL(ShortsActionIndex);
+    if (action == 0) return %orig;
+    if (action == 1) {
+        id delegate = [self valueForKey:@"_delegate"];
+        SEL next = @selector(playbackSequentialItemControllerDidRequestNextReel:isAutoAdvance:);
+        if ([delegate respondsToSelector:next]) [delegate playbackSequentialItemControllerDidRequestNextReel:self isAutoAdvance:YES];
+    }
+}
+- (void)setupPlayerForPiP { if (!IS_ENABLED(DisablesShortsPiP)) %orig; }
+%end
+
+%hook YTReelPlayerBarIntegrationController
+- (void)updatePlayerBarVisibility:(BOOL)visible { %orig(IS_ENABLED(ShowShortsSeekbar) ? YES : visible); }
+%end
+
 %hook YTReelContainerViewController
 - (void)loadPlayerBarAndShowIfNeeded {
     %orig;
@@ -248,6 +266,88 @@ void YouModFilterShortsDisplayView(_ASDisplayView *view, NSString *iden) {
     _ASDisplayView *check = view;
     while (view.subviews.count == 1) view = view.subviews[0];
     if (view.subviews.count > 1 && view != check) YouModRemoveShortsOverlayButton(view.subviews[1]);
+}
+%end
+
+static id YouModAppViewController(void) {
+    id vc = [[[UIApplication sharedApplication] delegate] window].rootViewController;
+    return [vc respondsToSelector:@selector(hidePivotBar)] ? vc : nil;
+}
+
+%hook YTShortsContentPresenterView
+%property (nonatomic, retain) UILongPressGestureRecognizer *YouModExitShortsOnlyGesture;
+%property (nonatomic, retain) UIPinchGestureRecognizer *YouModPinchGesture;
+- (void)didMoveToWindow {
+    %orig;
+    if (!self.window) return;
+    UIView *overlay = [self valueForKey:@"_overlayView"];
+    overlay.alpha = !isFullscreenEnabled;
+    if ((IS_ENABLED(ShortsOnly) && isShortsOnlyOn) || (IS_ENABLED(FullScreenShorts) && isFullscreenEnabled)) [YouModAppViewController() performSelector:@selector(hidePivotBar)];
+    if (IS_ENABLED(ShortsOnly) && isShortsOnlyOn) {
+        if (self.YouModExitShortsOnlyGesture) return;
+        self.YouModExitShortsOnlyGesture = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(YouModTurnOffShortsOnly:)];
+        self.YouModExitShortsOnlyGesture.numberOfTouchesRequired = 2;
+        self.YouModExitShortsOnlyGesture.minimumPressDuration = 0.5;
+        self.YouModExitShortsOnlyGesture.delegate = (id<UIGestureRecognizerDelegate>)self;
+        [self addGestureRecognizer:self.YouModExitShortsOnlyGesture];
+    } else if (IS_ENABLED(FullScreenShorts) && !self.YouModPinchGesture) {
+        [self YouModAddPinchGesture];
+    }
+}
+%new
+- (void)YouModAddPinchGesture {
+    self.YouModPinchGesture = [[UIPinchGestureRecognizer alloc] initWithTarget:self action:@selector(YouModHandlePinch:)];
+    self.YouModPinchGesture.delegate = (id<UIGestureRecognizerDelegate>)self;
+    self.YouModPinchGesture.cancelsTouchesInView = NO;
+    [self addGestureRecognizer:self.YouModPinchGesture];
+}
+%new
+- (void)YouModTurnOffShortsOnly:(UILongPressGestureRecognizer *)gesture {
+    if (gesture.state != UIGestureRecognizerStateBegan) return;
+    isShortsOnlyOn = NO;
+    [self removeGestureRecognizer:self.YouModExitShortsOnlyGesture];
+    self.YouModExitShortsOnlyGesture = nil;
+    [YouModPillView showSuccessInView:sbGetNotificationParent() message:LOC(@"SHORTS_ONLY_DISABLED") duration:3.0];
+    [YouModAppViewController() performSelector:@selector(showPivotBar)];
+    UIView *overlay = [self valueForKey:@"_overlayView"];
+    [UIView animateWithDuration:0.3 animations:^{ overlay.alpha = 1; }];
+    if (IS_ENABLED(FullScreenShorts)) [self YouModAddPinchGesture];
+}
+%new
+- (void)YouModHandlePinch:(UIPinchGestureRecognizer *)gesture {
+    if (!IS_ENABLED(FullScreenShorts) || (gesture.state != UIGestureRecognizerStateBegan && gesture.state != UIGestureRecognizerStateChanged)) return;
+
+    BOOL shouldEnableFullscreen;
+    if (gesture.scale >= 1.05) shouldEnableFullscreen = YES;
+    else if (gesture.scale <= 0.95) shouldEnableFullscreen = NO;
+    else return;
+
+    UIViewController *appVC = YouModAppViewController();
+    if (!appVC || ![appVC respondsToSelector:@selector(isPivotBarHidden)]) return;
+
+    BOOL isTabBarHidden = [appVC performSelector:@selector(isPivotBarHidden)];
+    BOOL fullscreenChanged = shouldEnableFullscreen != isFullscreenEnabled;
+    BOOL tabBarNeedsUpdate = shouldEnableFullscreen != isTabBarHidden;
+    if (!fullscreenChanged && !tabBarNeedsUpdate) return;
+
+    isFullscreenEnabled = shouldEnableFullscreen;
+    if (tabBarNeedsUpdate) {
+        if (shouldEnableFullscreen) [appVC performSelector:@selector(hidePivotBar)];
+        else [appVC performSelector:@selector(showPivotBar)];
+    }
+    if (fullscreenChanged) {
+        UIView *overlay = [self valueForKey:@"_overlayView"];
+        [UIView animateWithDuration:0.3 animations:^{ overlay.alpha = shouldEnableFullscreen ? 0 : 1; }];
+    }
+}
+%new
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldBeRequiredToFailByGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
+    return (gestureRecognizer == self.YouModExitShortsOnlyGesture && [otherGestureRecognizer isKindOfClass:[UILongPressGestureRecognizer class]])
+        || (gestureRecognizer == self.YouModPinchGesture && [otherGestureRecognizer isKindOfClass:[UIPinchGestureRecognizer class]]);
+}
+%new
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
+    return gestureRecognizer != self.YouModExitShortsOnlyGesture && gestureRecognizer != self.YouModPinchGesture;
 }
 %end
 

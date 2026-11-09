@@ -452,6 +452,19 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 @property (nonatomic, strong, readwrite) YTPlayerViewController *player;
 @end
 
+@interface NSObject (YouModReelDelegate)
+- (void)playbackSequentialItemControllerDidRequestNextReel:(id)controller isAutoAdvance:(BOOL)auto_;
+@end
+
+@interface YTReelPlayerBarIntegrationController : NSObject
+@end
+
+@interface YTShortsContentPresenterView (YouMod) <UIGestureRecognizerDelegate>
+@property (nonatomic, retain) UILongPressGestureRecognizer *YouModExitShortsOnlyGesture;
+@property (nonatomic, retain) UIPinchGestureRecognizer *YouModPinchGesture;
+- (void)YouModAddPinchGesture;
+@end
+
 @interface YTHeaderView : UIView
 - (void)setStickyNavHeaderEnabled:(BOOL)arg;
 @end
