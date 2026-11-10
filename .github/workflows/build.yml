@@ -1,17 +1,18 @@
 name: Build YouMod
 on:
   push:
-    branches: [ "main", "pre-release" ]
+    branches: [ "main" ]
+    paths-ignore: [ "**/README.md" ]
   workflow_dispatch:
     inputs:
       repo:
         description: 'Repository to build from'
         required: true
-        default: 'ZomkaDEV/YouMod'
+        default: 'Tonwalter888/YouMod'
       branch:
         description: 'Branch to build from'
         required: true
-        default: 'pre-release'
+        default: 'main'
 
 concurrency:
   group: ${{ github.workflow }}
@@ -149,17 +150,17 @@ jobs:
           gh release upload nightly --repo "$REPO" ./*.deb
           NOTES=$(printf '%s\n' \
             '# Add our repository to your package manager!' \
-            "[![Add repository to Sileo](https://img.shields.io/badge/Add%20repository%20to-Sileo-turquoise)](https://tonwalter888.github.io/YouMod/sileo.html) [![Add repository to Zebra](https://img.shields.io/badge/Add%20repository%20to-Zebra-white)](https://tonwalter888.github.io/YouMod/zebra.html)" \
+            "[![Add repository to Sileo](https://img.shields.io/badge/Add%20repository%20to-Sileo-turquoise)](https://tonwalter888.github.io/youmod-repo/sileo.html) [![Add repository to Zebra](https://img.shields.io/badge/Add%20repository%20to-Zebra-white)](https://tonwalter888.github.io/youmod-repo/zebra.html)" \
             '' \
             "Build $VERSION - ${SHA::7} - $(git -C YouMod log -1 --pretty=%s)")
-          gh release edit nightly --repo "$REPO" --prerelease --notes "$NOTES"
+          gh release edit nightly --repo "$REPO" --prerelease=false --notes "$NOTES"
 
       - name: Build APT repo
         run: |
           mkdir -p site/debs && cp ./*.deb site/debs/
           curl -fsSL "https://github.com/Tonwalter888/YouMod/blob/main/Icon.png?raw=true" -o site/CydiaIcon.png
-          echo '<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width"><title>Add to Sileo</title><script>location.href="sileo://source/https://tonwalter888.github.io/YouMod/"</script><a href="sileo://source/https://tonwalter888.github.io/YouMod/">Add to Sileo</a>' > site/sileo.html
-          echo '<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width"><title>Add to Zebra</title><script>location.href="zbra://sources/add/https://tonwalter888.github.io/YouMod/"</script><a href="zbra://sources/add/https://tonwalter888.github.io/YouMod/">Add to Zebra</a>' > site/zebra.html
+          echo '<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width"><title>Add to Sileo</title><script>location.href="sileo://source/https://tonwalter888.github.io/youmod-repo/"</script><a href="sileo://source/https://tonwalter888.github.io/youmod-repo/">Add to Sileo</a>' > site/sileo.html
+          echo '<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width"><title>Add to Zebra</title><script>location.href="zbra://sources/add/https://tonwalter888.github.io/youmod-repo/"</script><a href="zbra://sources/add/https://tonwalter888.github.io/youmod-repo/">Add to Zebra</a>' > site/zebra.html
           echo '<a href="https://github.com/Tonwalter888/YouMod">GitHub repo</a> - <a href=sileo.html>Add to Sileo</a> - <a href=zebra.html>Add to Zebra</a>' > site/index.html
           cd site
           dpkg-scanpackages -m debs > Packages
@@ -180,7 +181,9 @@ jobs:
       - name: Publish APT repo to Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          personal_token: ${{ secrets.PAGES_TOKEN }}
+          external_repository: Tonwalter888/youmod-repo
+          publish_branch: main
           publish_dir: site
           force_orphan: true
           user_name: github-actions[bot]

@@ -622,6 +622,18 @@ void YouModHandleDownloadButtonAction(_ASDisplayView *view) {
     [YouModDownloadActions handleDownloadButtonForView:view];
 }
 
+// The overflow (three dots) button is the rightmost button in the Shorts top bar
+static UIButton *YouModRightmostTopBarButton(UIView *view) {
+    UIButton *best = nil;
+    for (UIView *sub in view.subviews) {
+        UIButton *cand = [sub isKindOfClass:[UIButton class]] && !sub.hidden && sub.alpha > 0 && sub.bounds.size.width > 0 && sub.bounds.size.width < 80 ? (UIButton *)sub : nil;
+        UIButton *deep = YouModRightmostTopBarButton(sub);
+        if (deep && (!cand || CGRectGetMaxX([deep convertRect:deep.bounds toView:view]) > CGRectGetMaxX([cand convertRect:cand.bounds toView:view]))) cand = deep;
+        if (cand && (!best || CGRectGetMaxX([cand convertRect:cand.bounds toView:view]) > CGRectGetMaxX([best convertRect:best.bounds toView:view]))) best = cand;
+    }
+    return best;
+}
+
 %hook YTReelWatchRootViewController
 - (void)viewDidLayoutSubviews {
     %orig;
@@ -662,7 +674,13 @@ void YouModHandleDownloadButtonAction(_ASDisplayView *view) {
         [rootView addSubview:downloadBtn];
     }
     CGRect rect = [topView convertRect:topView.bounds toView:rootView];
-    downloadBtn.frame = CGRectMake(CGRectGetMaxX(rect) - 50, CGRectGetMaxY(rect) + 8, 40, 40);
+    CGRect frame = CGRectMake(CGRectGetMaxX(rect) - 50, CGRectGetMaxY(rect) + 8, 40, 40);
+    UIButton *dots = YouModRightmostTopBarButton(topView);
+    if (dots) {
+        CGRect dotsRect = [dots convertRect:dots.bounds toView:rootView];
+        frame = CGRectMake(CGRectGetMidX(dotsRect) - 20, CGRectGetMaxY(dotsRect) + 8, 40, 40);
+    }
+    downloadBtn.frame = frame;
     [rootView bringSubviewToFront:downloadBtn];
 }
 %new
