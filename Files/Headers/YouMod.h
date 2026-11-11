@@ -1531,3 +1531,10 @@ extern void YouModRemoveDrawerAds(YTELMViewController *self);
 extern void YouModRemoveFullscreenActionsButtons(YTELMViewController *controller);
 extern void YouModApplyLiquidGlassToView(UIView *view, BOOL arg);
 extern void YouModApplyFrostedPanelBackgroundToView(UIView *view);
+
+@interface YTTouchFeedbackView : UIView
+@property (nonatomic, assign) BOOL forceCircularTouchFeedback;
+- (void)attachToViewBelowSubviews:(UIView *)view;
+- (void)startTouchBeganAnimation;
+- (void)startTouchEndedAnimationWithCompletion:(void (^)(void))completion;
+@end

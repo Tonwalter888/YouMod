@@ -622,17 +622,22 @@ void YouModHandleDownloadButtonAction(_ASDisplayView *view) {
     [YouModDownloadActions handleDownloadButtonForView:view];
 }
 
-// The overflow (three dots) button is the rightmost button in the Shorts top bar
-static UIButton *YouModRightmostTopBarButton(UIView *view) {
-    UIButton *best = nil;
+static UIView *YouModFindMoreButton(UIView *view) {
+    if ([view.accessibilityIdentifier isEqualToString:@"id.reel_more_button"]) return view;
     for (UIView *sub in view.subviews) {
-        UIButton *cand = [sub isKindOfClass:[UIButton class]] && !sub.hidden && sub.alpha > 0 && sub.bounds.size.width > 0 && sub.bounds.size.width < 80 ? (UIButton *)sub : nil;
-        UIButton *deep = YouModRightmostTopBarButton(sub);
-        if (deep && (!cand || CGRectGetMaxX([deep convertRect:deep.bounds toView:view]) > CGRectGetMaxX([cand convertRect:cand.bounds toView:view]))) cand = deep;
-        if (cand && (!best || CGRectGetMaxX([cand convertRect:cand.bounds toView:view]) > CGRectGetMaxX([best convertRect:best.bounds toView:view]))) best = cand;
+        UIView *found = YouModFindMoreButton(sub);
+        if (found) return found;
     }
-    return best;
+    return nil;
 }
+
+%hook YTReelTopBarView
+- (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event {
+    UIView *btn = [self viewWithTag:1501];
+    if (btn && !btn.hidden && btn.alpha > 0.01 && CGRectContainsPoint(CGRectInset(btn.bounds, -10, -10), [btn convertPoint:point fromView:self])) return btn;
+    return %orig;
+}
+%end
 
 %hook YTReelWatchRootViewController
 - (void)viewDidLayoutSubviews {
@@ -663,29 +668,57 @@ static UIButton *YouModRightmostTopBarButton(UIView *view) {
         return;
     }
     if (!downloadBtn) {
-        UIImageSymbolConfiguration *config = [UIImageSymbolConfiguration configurationWithPointSize:20 weight:UIImageSymbolWeightMedium];
-        UIImage *icon = [UIImage systemImageNamed:@"arrow.down.circle" withConfiguration:config];
-        downloadBtn = [%c(YTQTMButton) iconButton];
-        [downloadBtn setImage:icon forState:UIControlStateNormal];
-        [downloadBtn setTintColor:[UIColor whiteColor]];
+        UIImageSymbolConfiguration *config = [UIImageSymbolConfiguration configurationWithPointSize:20 weight:UIImageSymbolWeightSemibold];
+        downloadBtn = (YTQTMButton *)[UIButton buttonWithType:UIButtonTypeCustom];
+        [downloadBtn setImage:[UIImage systemImageNamed:@"arrow.down" withConfiguration:config] forState:UIControlStateNormal];
+        downloadBtn.tintColor = [UIColor whiteColor];
         downloadBtn.exclusiveTouch = YES;
         downloadBtn.tag = 1501;
+        downloadBtn.frame = CGRectMake(0, 0, 24, 24);
+        YTTouchFeedbackView *feedback = [[%c(YTTouchFeedbackView) alloc] init];
+        feedback.userInteractionEnabled = NO;
+        feedback.forceCircularTouchFeedback = YES;
+        feedback.tag = 1502;
+        [feedback attachToViewBelowSubviews:downloadBtn];
+        [downloadBtn addTarget:self action:@selector(youModShortsDownloadTouchDown:) forControlEvents:UIControlEventTouchDown];
+        [downloadBtn addTarget:self action:@selector(youModShortsDownloadTouchUp:) forControlEvents:UIControlEventTouchUpInside | UIControlEventTouchUpOutside | UIControlEventTouchCancel];
         [downloadBtn addTarget:self action:@selector(didTapYouModShortsDownload:) forControlEvents:UIControlEventTouchUpInside];
-        [rootView addSubview:downloadBtn];
     }
-    CGRect rect = [topView convertRect:topView.bounds toView:rootView];
-    CGRect frame = CGRectMake(CGRectGetMaxX(rect) - 50, CGRectGetMaxY(rect) + 8, 40, 40);
-    UIButton *dots = YouModRightmostTopBarButton(topView);
+    UIView *header = [topView isKindOfClass:%c(YTReelTopBarView)] ? [topView valueForKey:@"_headerView"] : nil;
+    UIView *dots = header ? YouModFindMoreButton(header) : nil;
+    if (header && !dots) {
+        downloadBtn.hidden = YES;
+        UIView *view = rootView;
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.3 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+            if (view.window) [view setNeedsLayout];
+        });
+        return;
+    }
     if (dots) {
-        CGRect dotsRect = [dots convertRect:dots.bounds toView:rootView];
-        frame = CGRectMake(CGRectGetMidX(dotsRect) - 20, CGRectGetMaxY(dotsRect) + 8, 40, 40);
+        UIView *container = dots.superview;
+        if (downloadBtn.superview != container) [container addSubview:downloadBtn];
+        downloadBtn.hidden = NO;
+        downloadBtn.frame = CGRectMake(CGRectGetMinX(dots.frame), CGRectGetMinY(dots.frame) + 48, 24, 24);
+        [container bringSubviewToFront:downloadBtn];
+        return;
     }
-    downloadBtn.frame = frame;
+    UIView *anchor = header ?: topView;
+    if (downloadBtn.superview != rootView) [rootView addSubview:downloadBtn];
+    CGRect rect = [anchor convertRect:anchor.bounds toView:rootView];
+    downloadBtn.frame = CGRectMake(CGRectGetMaxX(rect) - 50, CGRectGetMaxY(rect) + 8, 40, 40);
     [rootView bringSubviewToFront:downloadBtn];
 }
 %new
+- (void)youModShortsDownloadTouchDown:(UIButton *)button {
+    [(YTTouchFeedbackView *)[button viewWithTag:1502] startTouchBeganAnimation];
+}
+%new
+- (void)youModShortsDownloadTouchUp:(UIButton *)button {
+    [(YTTouchFeedbackView *)[button viewWithTag:1502] startTouchEndedAnimationWithCompletion:nil];
+}
+%new
 - (void)didTapYouModShortsDownload:(YTQTMButton *)button {
-    YTReelWatchRootViewController *presenter = (YTReelWatchRootViewController *)button._viewControllerForAncestor;
+    YTReelWatchRootViewController *presenter = self;
     YouModDownloadParentResponder = [presenter valueForKey:@"_parentResponder"];
     [YouModDownloadActions showDownloadManagerForPlayer:presenter.player presenter:presenter sender:button isShorts:YES];
 }

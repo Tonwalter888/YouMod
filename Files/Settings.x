@@ -555,6 +555,7 @@ static NSArray<YMSettingsItem *> *YMPreferencesItems(void) {
         BackgroundPlayback: @YES,
         DownloadManager: @YES,
         DownloadLibraryTab: @YES,
+        AddDownloadToShorts: @YES,
         SBButtonKey: @YES,
         DisableHints: @YES,
         RewindSeconds: @10.0,
