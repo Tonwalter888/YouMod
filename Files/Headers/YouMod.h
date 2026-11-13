@@ -83,6 +83,7 @@
 #import "GOOShrinkWrapView.h"
 #import "YTShortsContentPresenterView.h"
 #import "YTReelContainerView.h"
+#import "YTTabTitlesView.h"
 
 // For Settings.x and SponsorBlockSettings.x
 #import <roothide.h>
