@@ -10,7 +10,7 @@
 - (void)didMoveToWindow {
     %orig;
     NSString *renderer = [[self._viewControllerForAncestor.parentViewController valueForKey:@"_renderer"] description];
-    if ([renderer containsString:@"FEwhat_to_watch"]) [self removeFromSuperview]
+    if ([renderer containsString:@"FEwhat_to_watch"]) [self removeFromSuperview];
 }
 %end
 
