@@ -54,7 +54,8 @@ static void YouModTranslateText(NSString *text, NSString *targetLang, void (^com
     [self.view addGestureRecognizer:tap];
     
     self.containerView = [[UIView alloc] init];
-    self.containerView.backgroundColor = [UIColor systemGray6Color];
+    // Frosted + light-gray background, matching the translation dialog.
+    YouModApplyFrostedPanelBackgroundToView(self.containerView);
     self.containerView.layer.cornerRadius = 20.0;
     self.containerView.layer.borderWidth = 1.0;
     self.containerView.layer.borderColor = [UIColor separatorColor].CGColor;
@@ -208,13 +209,13 @@ static void YouModTranslateText(NSString *text, NSString *targetLang, void (^com
 - (void)viewDidLoad {
     [super viewDidLoad];
     
-    self.view.backgroundColor = [UIColor systemBackgroundColor];
+    // Frosted + light-gray background, extending under the header.
+    YouModApplyFrostedPanelBackgroundToView(self.view);
     self.title = LOC(@"TRANSLATION");
 
     if (self.navigationController) {
         UINavigationBarAppearance *appearance = [[UINavigationBarAppearance alloc] init];
-        [appearance configureWithOpaqueBackground];
-        appearance.backgroundColor = [UIColor systemBackgroundColor];
+        [appearance configureWithTransparentBackground];
         appearance.titleTextAttributes = @{
             NSForegroundColorAttributeName: [UIColor labelColor],
             NSFontAttributeName: [UIFont boldSystemFontOfSize:17]
@@ -282,9 +283,7 @@ static void YouModTranslateText(NSString *text, NSString *targetLang, void (^com
 
     self.reloadButton = [UIButton buttonWithType:UIButtonTypeSystem];
     self.reloadButton.translatesAutoresizingMaskIntoConstraints = NO;
-    UIImageSymbolConfiguration *reloadConfig = [UIImageSymbolConfiguration configurationWithPointSize:15 weight:UIFontWeightMedium];
-    UIImage *reloadImage = [UIImage systemImageNamed:@"arrow.clockwise" withConfiguration:reloadConfig];
-    [self.reloadButton setImage:reloadImage forState:UIControlStateNormal];
+    [self.reloadButton setImage:YouModSymbolImageInCanvas(@"arrow.clockwise", 24, 15, UIImageSymbolWeightMedium) forState:UIControlStateNormal];
     self.reloadButton.tintColor = [UIColor systemRedColor];
     self.reloadButton.hidden = YES;
     [self.reloadButton addTarget:self action:@selector(performTranslation) forControlEvents:UIControlEventTouchUpInside];
@@ -330,9 +329,7 @@ static void YouModTranslateText(NSString *text, NSString *targetLang, void (^com
 
 - (UIBarButtonItem *)createEqualBarButtonWithSymbol:(NSString *)symbolName action:(SEL)action {
     UIButton *button = [UIButton buttonWithType:UIButtonTypeSystem];
-    UIImageSymbolConfiguration *config = [UIImageSymbolConfiguration configurationWithPointSize:15 weight:UIFontWeightMedium];
-    UIImage *image = [UIImage systemImageNamed:symbolName withConfiguration:config];
-    [button setImage:image forState:UIControlStateNormal];
+    [button setImage:YouModSymbolImageInCanvas(symbolName, 24, 15, UIImageSymbolWeightMedium) forState:UIControlStateNormal];
     button.tintColor = [UIColor labelColor];
     
     button.translatesAutoresizingMaskIntoConstraints = NO;
@@ -384,22 +381,15 @@ static void YouModTranslateText(NSString *text, NSString *targetLang, void (^com
         [feedback impactOccurred];
 
         UIView *parent = sbGetNotificationParent();
-        [SBSkipNotificationView showSuccessInView:parent message:LOC(@"COPIED_TO_CLIPBOARD") duration:3.0];
+        [YouModPillView showSuccessInView:parent message:LOC(@"COPIED_TO_CLIPBOARD") duration:3.0];
     }
 }
 
-- (void)shareTapped:(id)sender {
+- (void)shareTapped:(UIView *)sender {
     if (self.translationState != YouModTranslationStateSuccess || self.resultTextView.text.length == 0) return;
     
     UIActivityViewController *activityVC = [[UIActivityViewController alloc] initWithActivityItems:@[self.resultTextView.text] applicationActivities:nil];
-    if (activityVC.popoverPresentationController) {
-        if ([sender isKindOfClass:[UIBarButtonItem class]]) {
-            activityVC.popoverPresentationController.barButtonItem = (UIBarButtonItem *)sender;
-        } else if ([sender isKindOfClass:[UIView class]]) {
-            activityVC.popoverPresentationController.sourceView = (UIView *)sender;
-            activityVC.popoverPresentationController.sourceRect = ((UIView *)sender).bounds;
-        }
-    }
+    YouModConfigureSharePopover(activityVC, self.view);
     [self presentViewController:activityVC animated:YES completion:nil];
 }
 
