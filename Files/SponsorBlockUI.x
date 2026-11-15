@@ -26,14 +26,22 @@ static const NSInteger SBMarkerContextMiniplayer = 3;
     return NO;
 }
 
-+ (void)applyMarkerContainerRounding:(CALayer *)container barHeight:(CGFloat)barHeight {
-    if (!container || barHeight <= 0) return;
-    container.masksToBounds = YES;
-    container.cornerRadius = barHeight / 2.0;
-}
-
 static const NSInteger SBMarkerRoundsLeft = 1;
 static const NSInteger SBMarkerRoundsRight = 2;
+
+// Capsule-rounds only the requested container ends; mode is the round-left/right bitmask (0 = square).
++ (void)applyMarkerContainerRounding:(CALayer *)container mode:(NSInteger)mode barHeight:(CGFloat)barHeight {
+    if (!container || barHeight <= 0) return;
+    if (mode == 0) {
+        container.cornerRadius = 0.0;
+        return;
+    }
+    container.masksToBounds = YES;
+    container.cornerRadius = barHeight / 2.0;
+    if ((mode & SBMarkerRoundsLeft) && (mode & SBMarkerRoundsRight)) return;
+    container.maskedCorners = ((mode & SBMarkerRoundsLeft) ? kCALayerMinXMinYCorner | kCALayerMinXMaxYCorner : 0)
+                            | ((mode & SBMarkerRoundsRight) ? kCALayerMaxXMinYCorner | kCALayerMaxXMaxYCorner : 0);
+}
 
 + (void)applyMarkerEndRounding:(CALayer *)markerLayer mode:(NSInteger)mode barWidth:(CGFloat)barWidth barHeight:(CGFloat)barHeight {
     if (!markerLayer || barHeight <= 0 || barWidth <= 0) return;
@@ -74,7 +82,7 @@ static const NSInteger SBMarkerRoundsRight = 2;
     }
 }
 
-+ (CALayer *)makeMarkerLayer:(SBSegment *)segment rangeStart:(CGFloat)rangeStart rangeEnd:(CGFloat)rangeEnd videoStart:(CGFloat)videoStart videoEnd:(CGFloat)videoEnd barWidth:(CGFloat)barWidth barHeight:(CGFloat)barHeight {
++ (CALayer *)makeMarkerLayer:(SBSegment *)segment rangeStart:(CGFloat)rangeStart rangeEnd:(CGFloat)rangeEnd videoEnd:(CGFloat)videoEnd roundedEnds:(BOOL)roundedEnds barWidth:(CGFloat)barWidth barHeight:(CGFloat)barHeight {
     CGFloat viewDuration = rangeEnd - rangeStart;
     BOOL isPoi = [segment.category isEqualToString:@"poi_highlight"];
     CALayer *markerLayer = [CALayer layer];
@@ -92,8 +100,11 @@ static const NSInteger SBMarkerRoundsRight = 2;
         CGFloat overlapEnd = MIN((CGFloat)segment.endTime, rangeEnd);
         if (overlapEnd <= overlapStart) return nil;
 
-        if ((NSInteger)segment.startTime == (NSInteger)videoStart) rounding |= SBMarkerRoundsLeft;
-        if ((NSInteger)segment.endTime == (NSInteger)videoEnd) rounding |= SBMarkerRoundsRight;
+        if (roundedEnds) {
+            // Round only the ends touching the video bounds: left at 0, right at the total time.
+            if ((NSInteger)segment.startTime == 0) rounding |= SBMarkerRoundsLeft;
+            if ((NSInteger)segment.endTime == (NSInteger)videoEnd) rounding |= SBMarkerRoundsRight;
+        }
 
         CGFloat fracStart = (overlapStart - rangeStart) / viewDuration;
         CGFloat fracEnd = (overlapEnd - rangeStart) / viewDuration;
@@ -105,11 +116,10 @@ static const NSInteger SBMarkerRoundsRight = 2;
     return markerLayer;
 }
 
-+ (void)layoutMarkerLayers:(CALayer *)container barWidth:(CGFloat)barWidth barHeight:(CGFloat)barHeight rounded:(BOOL)rounded {
++ (void)layoutMarkerLayers:(CALayer *)container barWidth:(CGFloat)barWidth barHeight:(CGFloat)barHeight {
     if (!container) return;
     [CATransaction begin];
     [CATransaction setDisableActions:YES];
-    if (rounded) [YMSBMarkerHelpers applyMarkerContainerRounding:container barHeight:barHeight];
     for (CALayer *layer in container.sublayers) {
         NSArray *data = objc_getAssociatedObject(layer, @selector(sbSegmentData));
         if (!data || data.count < 3) continue;
@@ -134,7 +144,7 @@ static const NSInteger SBMarkerRoundsRight = 2;
     [CATransaction commit];
 }
 
-+ (void)rebuildMarkersInLayer:(CALayer *)hostLayer segments:(NSArray<SBSegment *> *)segments rangeStart:(CGFloat)rangeStart rangeEnd:(CGFloat)rangeEnd videoStart:(CGFloat)videoStart videoEnd:(CGFloat)videoEnd {
++ (void)rebuildMarkersInLayer:(CALayer *)hostLayer segments:(NSArray<SBSegment *> *)segments rangeStart:(CGFloat)rangeStart rangeEnd:(CGFloat)rangeEnd videoEnd:(CGFloat)videoEnd roundedEnds:(BOOL)roundedEnds {
     if (!hostLayer) return;
     [YMSBMarkerHelpers removeMarkerContainerFromLayer:hostLayer];
     CGFloat barWidth = hostLayer.bounds.size.width;
@@ -145,7 +155,7 @@ static const NSInteger SBMarkerRoundsRight = 2;
     for (SBSegment *segment in segments) {
         SBSegmentAction action = [segment configuredAction];
         if (action == SBSegmentActionDisable) continue;
-        CALayer *markerLayer = [YMSBMarkerHelpers makeMarkerLayer:segment rangeStart:rangeStart rangeEnd:rangeEnd videoStart:videoStart videoEnd:videoEnd barWidth:barWidth barHeight:barHeight];
+        CALayer *markerLayer = [YMSBMarkerHelpers makeMarkerLayer:segment rangeStart:rangeStart rangeEnd:rangeEnd videoEnd:videoEnd roundedEnds:roundedEnds barWidth:barWidth barHeight:barHeight];
         if (markerLayer) {
             markerLayer.name = SBSegmentMarkerLayerName;
             [hostLayer addSublayer:markerLayer];
@@ -175,13 +185,20 @@ static const NSInteger SBMarkerRoundsRight = 2;
     if (view.bounds.size.width <= 0 || barHeight <= 0) return;
 
     CGFloat videoEnd = [[[view valueForKey:@"_model"] playingState] totalTimeSec];
+    BOOL roundEnds = [YMSBMarkerHelpers decorationCanApplyRoundedCorners:view];
+    // Round only the decoration ends touching the video bounds: left at 0, right at the total time.
+    NSInteger endRounding = 0;
+    if (roundEnds) {
+        if ((NSInteger)start == 0) endRounding |= SBMarkerRoundsLeft;
+        if ((NSInteger)end == (NSInteger)videoEnd) endRounding |= SBMarkerRoundsRight;
+    }
     CALayer *container = [CALayer layer];
     container.name = SBSegmentMarkerLayerName;
     container.frame = view.bounds;
-    if ([YMSBMarkerHelpers decorationCanApplyRoundedCorners:view]) [YMSBMarkerHelpers applyMarkerContainerRounding:container barHeight:barHeight];
+    [YMSBMarkerHelpers applyMarkerContainerRounding:container mode:endRounding barHeight:barHeight];
     [view.layer addSublayer:container];
 
-    [YMSBMarkerHelpers rebuildMarkersInLayer:container segments:segments rangeStart:start rangeEnd:end videoStart:start videoEnd:videoEnd];
+    [YMSBMarkerHelpers rebuildMarkersInLayer:container segments:segments rangeStart:start rangeEnd:end videoEnd:videoEnd roundedEnds:roundEnds];
 }
 
 @end
@@ -210,7 +227,7 @@ static const NSInteger SBMarkerRoundsRight = 2;
     }
     CGFloat barWidth = self.bounds.size.width, barHeight = self.bounds.size.height;
     if (barWidth <= 0 || barHeight <= 0) return;
-    [YMSBMarkerHelpers layoutMarkerLayers:self.layer barWidth:barWidth barHeight:barHeight rounded:NO];
+    [YMSBMarkerHelpers layoutMarkerLayers:self.layer barWidth:barWidth barHeight:barHeight];
 }
 %end
 
@@ -223,7 +240,7 @@ static const NSInteger SBMarkerRoundsRight = 2;
     }
     CGFloat barWidth = self.bounds.size.width, barHeight = self.bounds.size.height;
     if (barWidth <= 0 || barHeight <= 0) return;
-    [YMSBMarkerHelpers layoutMarkerLayers:self.layer barWidth:barWidth barHeight:barHeight rounded:NO];
+    [YMSBMarkerHelpers layoutMarkerLayers:self.layer barWidth:barWidth barHeight:barHeight];
 }
 %end
 
@@ -258,7 +275,7 @@ static const NSInteger SBMarkerRoundsRight = 2;
     if ([self.parentViewController isKindOfClass:%c(YTWatchFloatingMiniplayerViewController)]) {
         if (!IS_ENABLED(SBSegmentsInMiniPlayer)) return;
         UIView *progressView = ((YTWatchFloatingMiniplayerViewController *)self.parentViewController).watchFloatingMiniplayerView.progressBarView;
-        [YMSBMarkerHelpers rebuildMarkersInLayer:progressView.layer segments:segments rangeStart:0.0 rangeEnd:totalTime videoStart:0.0 videoEnd:totalTime];
+        [YMSBMarkerHelpers rebuildMarkersInLayer:progressView.layer segments:segments rangeStart:0.0 rangeEnd:totalTime videoEnd:totalTime roundedEnds:NO];
     } else if ([self.activeVideoPlayerOverlay isKindOfClass:%c(YTMainAppVideoPlayerOverlayViewController)]) {
         if (!IS_ENABLED(SBSegmentsInPlayer)) return;
         YTModularPlayerBarView *playerBarView = ((YTMainAppVideoPlayerOverlayViewController *)self.activeVideoPlayerOverlay).playerBarController.playerBar.modularPlayerBar.view;
@@ -285,7 +302,7 @@ static const NSInteger SBMarkerRoundsRight = 2;
                 }
             }
         } else {
-            [YMSBMarkerHelpers rebuildMarkersInLayer:scrubView.scrubber.layer segments:segments rangeStart:0.0 rangeEnd:totalTime videoStart:0.0 videoEnd:totalTime];
+            [YMSBMarkerHelpers rebuildMarkersInLayer:scrubView.scrubber.layer segments:segments rangeStart:0.0 rangeEnd:totalTime videoEnd:totalTime roundedEnds:NO];
         }
     }
 }
