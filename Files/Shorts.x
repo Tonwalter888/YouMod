@@ -30,16 +30,6 @@
 static BOOL isShortsOnlyOn = YES;
 static BOOL isFullscreenEnabled = NO;
 
-/*
-static void YouModMakeAShortsAction(YTReelPlayerViewController *self, YTSingleVideoController *video, YTSingleVideoTime *time) {
-    if (INTFORVAL(ShortsActionIndex) == 0) return;
-    if (floor(time.time) >= floor(video.totalMediaTime)) {
-        if (INTFORVAL(ShortsActionIndex) == 1) [self reelContentViewRequestsAdvanceToNextVideo:nil];
-        else if (INTFORVAL(ShortsActionIndex) == 2) [self reelContentViewRequestsPlayPauseToggle:nil];
-    }
-}
-*/
-
 static void YouModRemoveShortsOverlayButton(_ASDisplayView *dpView) {
     NSDictionary *buttonsList = @{
         @"id.reel_like_button": @(IS_ENABLED(RemoveShortsLikeButton)),
@@ -85,7 +75,7 @@ static void YouModRemoveShortsOverlayButton(_ASDisplayView *dpView) {
     if (INTFORVAL(CaptionTrack) != 0) [main performSelector:@selector(YouModAutoCaptions) withObject:nil afterDelay:0.5];
     if (INTFORVAL(ShortsAutoSpeedIndex) != 0) [main performSelector:@selector(YouModSetAutoSpeed) withObject:nil afterDelay:0.5];
 }
-- (void)restart {
+- (void)maybeLoopPlayback {
     NSInteger action = INTFORVAL(ShortsActionIndex);
     if (action == 0) %orig;
     else if (action == 1) [self reelContentViewRequestsAdvanceToNextVideo:nil];
