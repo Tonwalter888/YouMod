@@ -770,10 +770,13 @@ void YouModApplyPrevNextReplacement(YTMainAppControlsOverlayView *overlay) {
 // Skip Content Warning (https://github.com/qnblackcat/uYouPlus/blob/main/uYouPlus.xm#L452-L454)
 %hook YTPlayabilityResolutionUserActionUIController
 - (void)showConfirmAlert { IS_ENABLED(HideContentWarning) ? [self confirmAlertDidPressConfirm] : %orig; }
+- (void)showElementsInterstitialOverlay { IS_ENABLED(HideContentWarning) ? [self confirmAlertDidPressConfirm] : %orig; }
 %end
 
 %hook YTPlayabilityResolutionUserActionUIControllerImpl
 - (void)showConfirmAlert { IS_ENABLED(HideContentWarning) ? [self confirmAlertDidPressConfirm] : %orig; }
+- (void)showModernDialog { IS_ENABLED(HideContentWarning) ? [self confirmAlertDidPressConfirm] : %orig; }
+- (void)showElementsInterstitialOverlay { IS_ENABLED(HideContentWarning) ? [self confirmAlertDidPressConfirm] : %orig; }
 %end
 
 // Portrait Fullscreen
