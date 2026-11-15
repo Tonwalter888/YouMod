@@ -86,6 +86,7 @@
 #import "Headers/GOOShrinkWrapView.h"
 #import "Headers/YTShortsContentPresenterView.h"
 #import "Headers/YTReelContainerView.h"
+#import "Headers/YTReelWatchRootView.h"
 
 // For Settings.x and SponsorBlockSettings.x
 #import <roothide.h>
