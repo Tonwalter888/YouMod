@@ -30,6 +30,7 @@
 static BOOL isShortsOnlyOn = YES;
 static BOOL isFullscreenEnabled = NO;
 
+/*
 static void YouModMakeAShortsAction(YTReelPlayerViewController *self, YTSingleVideoController *video, YTSingleVideoTime *time) {
     if (INTFORVAL(ShortsActionIndex) == 0) return;
     if (floor(time.time) >= floor(video.totalMediaTime)) {
@@ -37,6 +38,7 @@ static void YouModMakeAShortsAction(YTReelPlayerViewController *self, YTSingleVi
         else if (INTFORVAL(ShortsActionIndex) == 2) [self reelContentViewRequestsPlayPauseToggle:nil];
     }
 }
+*/
 
 static void YouModRemoveShortsOverlayButton(_ASDisplayView *dpView) {
     NSDictionary *buttonsList = @{
@@ -83,9 +85,10 @@ static void YouModRemoveShortsOverlayButton(_ASDisplayView *dpView) {
     if (INTFORVAL(CaptionTrack) != 0) [main performSelector:@selector(YouModAutoCaptions) withObject:nil afterDelay:0.5];
     if (INTFORVAL(ShortsAutoSpeedIndex) != 0) [main performSelector:@selector(YouModSetAutoSpeed) withObject:nil afterDelay:0.5];
 }
-- (void)singleVideo:(YTSingleVideoController *)video currentVideoTimeDidChange:(YTSingleVideoTime *)time {
-    %orig;
-    YouModMakeAShortsAction(self, video, time);
+- (void)restart {
+    NSInteger action = INTFORVAL(ShortsActionIndex);
+    if (action == 0) %orig;
+    else if (action == 1) [self reelContentViewRequestsAdvanceToNextVideo:nil];
 }
 %end
 
