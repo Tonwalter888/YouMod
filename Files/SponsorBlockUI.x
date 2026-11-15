@@ -62,7 +62,7 @@ static const NSInteger SBMarkerRoundsRight = 2;
 
 + (BOOL)decorationCanApplyRoundedCorners:(UIView *)view {
     YTIPlayerBarDecorationModel *model = [view valueForKey:@"_model"];
-    if (!model.style.hasRoundedCorners || model.itemData.startTimeSec > 0 || model.itemData.endTimeSec != model.playingState.totalTimeSec) return NO;
+    if (!model.style.hasRoundedCorners) return NO;
     YTMainAppVideoPlayerOverlayViewController *ovc = (YTMainAppVideoPlayerOverlayViewController *)view._viewControllerForAncestor;
     if (![ovc isKindOfClass:%c(YTMainAppVideoPlayerOverlayViewController)]) return NO;
     return ovc.isFullscreen;
