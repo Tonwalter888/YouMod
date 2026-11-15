@@ -79,14 +79,14 @@ static NSString *accessGroupID() {
     if (info[@"CFBundleIdentifier"]) info[@"CFBundleIdentifier"] = YT_BUNDLE_ID;
     if (info[@"CFBundleDisplayName"]) info[@"CFBundleDisplayName"] = YT_NAME;
     if (info[@"CFBundleName"]) info[@"CFBundleName"] = YT_NAME;
-    if (info[@"UIDesignRequiresCompatibility"]) info[@"UIDesignRequiresCompatibility"] = @NO;
+    if (info[@"UIDesignRequiresCompatibility"] && IS_ENABLED(LiquidGlass)) info[@"UIDesignRequiresCompatibility"] = @NO;
     return info;
 }
 - (id)objectForInfoDictionaryKey:(NSString *)key {
     if (![self isEqual:NSBundle.mainBundle]) return %orig;
     else if ([key isEqualToString:@"CFBundleIdentifier"]) return YT_BUNDLE_ID;
     else if ([key isEqualToString:@"CFBundleDisplayName"] || [key isEqualToString:@"CFBundleName"]) return YT_NAME;
-    else if ([key isEqualToString:@"UIDesignRequiresCompatibility"]) return @NO;
+    else if ([key isEqualToString:@"UIDesignRequiresCompatibility"] && IS_ENABLED(LiquidGlass)) return @NO;
     return %orig;
 }
 %end
@@ -102,49 +102,25 @@ static NSString *accessGroupID() {
 %end
 
 %hook GULKeychainStorage
-- (void)getObjectForKey:(id)key objectClass:(Class)objectClass accessGroup:(id)accessGroup completionHandler:(id)handler {
-    accessGroup = accessGroupID();
-    %orig(key, objectClass, accessGroup, handler);
-}
-- (void)setObject:(id)object forKey:(id)key accessGroup:(id)accessGroup completionHandler:(id)handler {
-    accessGroup = accessGroupID();
-    %orig(object, key, accessGroup, handler);
-}
-- (void)removeObjectForKey:(id)key accessGroup:(id)accessGroup completionHandler:(id)handler {
-    accessGroup = accessGroupID();
-    %orig(key, accessGroup, handler);
-}
-- (void)getObjectFromKeychainForKey:(id)key objectClass:(Class)objectClass accessGroup:(id)accessGroup completionHandler:(id)handler {
-    accessGroup = accessGroupID();
-    %orig(key, objectClass, accessGroup, handler);
-}
-- (id)keychainQueryWithKey:(id)key accessGroup:(id)accessGroup {
-    accessGroup = accessGroupID();
-    return %orig(key, accessGroup);
-}
+- (void)getObjectForKey:(id)key objectClass:(Class)objectClass accessGroup:(id)accessGroup completionHandler:(id)handler { %orig(key, objectClass, accessGroupID(), handler); }
+- (void)setObject:(id)object forKey:(id)key accessGroup:(id)accessGroup completionHandler:(id)handler { %orig(object, key, accessGroupID(), handler); }
+- (void)removeObjectForKey:(id)key accessGroup:(id)accessGroup completionHandler:(id)handler { %orig(key, accessGroupID(), handler); }
+- (void)getObjectFromKeychainForKey:(id)key objectClass:(Class)objectClass accessGroup:(id)accessGroup completionHandler:(id)handler { %orig(key, objectClass, accessGroupID(), handler); }
+- (id)keychainQueryWithKey:(id)key accessGroup:(id)accessGroup { return %orig(key, accessGroupID()); }
 %end
 
 %hook GNPEncryptionConfiguration
-- (id)initWithKeychainAccessGroup:(id)arg {
-    arg = accessGroupID();
-    return %orig(arg);
-}
+- (id)initWithKeychainAccessGroup:(id)arg { return %orig(accessGroupID()); }
 - (id)keychainAccessGroup { return accessGroupID(); }
 %end
 
 %hook FIRInstallationsStore
-- (id)initWithSecureStorage:(id)arg1 accessGroup:(id)arg2 {
-    arg2 = accessGroupID();
-    return %orig(arg1, arg2);
-}
+- (id)initWithSecureStorage:(id)arg1 accessGroup:(id)arg2 { return %orig(arg1, accessGroupID()); }
 - (id)accessGroup { return accessGroupID(); }
 %end
 
 %hook CHMConfiguration
-- (void)setKeychainAccessGroup:(id)arg {
-    arg = accessGroupID();
-    %orig(arg);
-}
+- (void)setKeychainAccessGroup:(id)arg { %orig(accessGroupID()); }
 - (id)keychainAccessGroup { return accessGroupID(); }
 %end
 

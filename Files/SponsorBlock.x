@@ -12,13 +12,6 @@ static const CGFloat SBSegmentEndGuardSeconds = 0.5;
 // The skip banner is delayed so the seek completes first; otherwise the next time-change callback dismisses it.
 static const NSTimeInterval SBSkipNotificationDelaySeconds = 0.3;
 
-// Clamps a stored banner duration to the supported range, falling back to the default when unset or out of range.
-static float SBClampedAlertDuration(NSString *key) {
-    float duration = FLOAT_FOR_KEY(key);
-    if (duration < SBAlertDurationMin || duration > SBAlertDurationMax) return SBAlertDurationDefault;
-    return duration;
-}
-
 @implementation SBPassthroughView
 - (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event {
     UIView *hit = [super hitTest:point withEvent:event];
@@ -104,16 +97,34 @@ void sbDismissAllNotifications(void) {
     }
 }
 
-// Hide the pill overlay instantly and dismiss active notifications so no stale pills
-// persist into the app switcher or re-entering the app.
-static void sbHideOverlayForSnapshot(void) {
+// Tracks the observed scene so observers re-bind when the overlay window is recreated for a new scene.
+static UIWindowScene *sbObservedScene = nil;
+static id sbSceneDeactivateObserver = nil;
+static id sbSceneBackgroundObserver = nil;
+static id sbSceneActivateObserver = nil;
+static id sbAppResignObserver = nil;
+static id sbAppBackgroundObserver = nil;
+static id sbAppActivateObserver = nil;
+static id sbOrientationObserver = nil;
+
+@implementation YMSBHelpers
+
+// Clamps a stored banner duration to the supported range, falling back to the default when unset or out of range.
++ (float)clampedAlertDuration:(NSString *)key {
+    float duration = FLOAT_FOR_KEY(key);
+    if (duration < SBAlertDurationMin || duration > SBAlertDurationMax) return SBAlertDurationDefault;
+    return duration;
+}
+
+// Hides the pill overlay instantly and dismisses active notifications so no stale pills persist into the app switcher.
++ (void)hideOverlayForSnapshot {
     sbDismissAllNotifications();
     if (sbOverlayWindow) sbOverlayWindow.hidden = YES;
 }
 
-// Restore the overlay (faded in) only if notification subviews are present; guarded to the
-// hidden state so the two "became active" notifications don't each re-trigger the fade.
-static void sbRestoreOverlayAfterSnapshot(void) {
+// Fades the overlay back in if notifications are present; guarded to the hidden state so the two
+// "became active" notifications don't each re-trigger the fade.
++ (void)restoreOverlayAfterSnapshot {
     if (!sbOverlayWindow) return;
     UIView *rootView = sbOverlayWindow.rootViewController.view;
     if (!rootView || rootView.subviews.count == 0) {
@@ -129,17 +140,7 @@ static void sbRestoreOverlayAfterSnapshot(void) {
     }
 }
 
-// Tracks the observed scene so observers re-bind when the overlay window is recreated for a new scene.
-static UIWindowScene *sbObservedScene = nil;
-static id sbSceneDeactivateObserver = nil;
-static id sbSceneBackgroundObserver = nil;
-static id sbSceneActivateObserver = nil;
-static id sbAppResignObserver = nil;
-static id sbAppBackgroundObserver = nil;
-static id sbAppActivateObserver = nil;
-static id sbOrientationObserver = nil;
-
-static void sbRegisterOverlayLifecycleObservers(UIWindowScene *targetScene) {
++ (void)registerOverlayLifecycleObservers:(UIWindowScene *)targetScene {
     if (!targetScene || sbObservedScene == targetScene) return;
     NSNotificationCenter *nc = [NSNotificationCenter defaultCenter];
 
@@ -156,22 +157,22 @@ static void sbRegisterOverlayLifecycleObservers(UIWindowScene *targetScene) {
     // Hide on deactivation (the app switcher only goes inactive), restore on activation.
     // queue:nil hides before the snapshot; scene notifications are per-scene, app-level ones are a backstop.
     sbSceneDeactivateObserver = [nc addObserverForName:UISceneWillDeactivateNotification object:targetScene queue:nil usingBlock:^(__unused NSNotification *note) {
-        sbHideOverlayForSnapshot();
+        [YMSBHelpers hideOverlayForSnapshot];
     }];
     sbSceneBackgroundObserver = [nc addObserverForName:UISceneDidEnterBackgroundNotification object:targetScene queue:nil usingBlock:^(__unused NSNotification *note) {
-        sbHideOverlayForSnapshot();
+        [YMSBHelpers hideOverlayForSnapshot];
     }];
     sbSceneActivateObserver = [nc addObserverForName:UISceneDidActivateNotification object:targetScene queue:nil usingBlock:^(__unused NSNotification *note) {
-        sbRestoreOverlayAfterSnapshot();
+        [YMSBHelpers restoreOverlayAfterSnapshot];
     }];
     sbAppResignObserver = [nc addObserverForName:UIApplicationWillResignActiveNotification object:nil queue:nil usingBlock:^(__unused NSNotification *note) {
-        sbHideOverlayForSnapshot();
+        [YMSBHelpers hideOverlayForSnapshot];
     }];
     sbAppBackgroundObserver = [nc addObserverForName:UIApplicationDidEnterBackgroundNotification object:nil queue:nil usingBlock:^(__unused NSNotification *note) {
-        sbHideOverlayForSnapshot();
+        [YMSBHelpers hideOverlayForSnapshot];
     }];
     sbAppActivateObserver = [nc addObserverForName:UIApplicationDidBecomeActiveNotification object:nil queue:nil usingBlock:^(__unused NSNotification *note) {
-        sbRestoreOverlayAfterSnapshot();
+        [YMSBHelpers restoreOverlayAfterSnapshot];
     }];
 
     // Recompute the pivot-bar inset on rotation / tabbar height changes; the call is idempotent.
@@ -180,6 +181,29 @@ static void sbRegisterOverlayLifecycleObservers(UIWindowScene *targetScene) {
         sbUpdateOverlayInsetForPivotBar();
     }];
 }
+
+// Categories whose configured action isn't "disable", in the shared category order.
++ (NSArray<NSString *> *)enabledCategories {
+    NSMutableArray *enabled = [NSMutableArray array];
+    for (NSString *cat in sbAllCategories()) {
+        NSInteger action = [[NSUserDefaults standardUserDefaults] integerForKey:SB_ACTION_KEY(cat)];
+        if (action != SBSegmentActionDisable) {
+            [enabled addObject:cat];
+        }
+    }
+    return enabled;
+}
+
+// Credits the segment's submitter with a view (SponsorBlock stats), as intended by API spec
++ (void)sendViewedSegment:(SBSegment *)segment {
+    if (segment.UUID.length == 0) return;
+    NSString *uuid = [segment.UUID stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:[@"https://sponsor.ajay.app/api/viewedVideoSponsorTime?UUID=" stringByAppendingString:uuid]]];
+    request.HTTPMethod = @"POST";
+    [[[NSURLSession sharedSession] dataTaskWithRequest:request] resume];
+}
+
+@end
 
 UIView *sbGetNotificationParent(void) {
     if (sbOverlayWindow && sbOverlayWindow.windowScene.activationState == UISceneActivationStateUnattached) {
@@ -210,7 +234,7 @@ UIView *sbGetNotificationParent(void) {
         rootVC.view.backgroundColor = [UIColor clearColor];
         sbOverlayWindow.rootViewController = rootVC;
 
-        sbRegisterOverlayLifecycleObservers(activeScene);
+        [YMSBHelpers registerOverlayLifecycleObservers:activeScene];
         sbUpdateOverlayInsetForPivotBar();
     } else {
         if (sbOverlayWindow.hidden) {
@@ -243,17 +267,6 @@ NSArray<NSString *> *sbAllCategories(void) {
     return cats;
 }
 
-static NSArray<NSString *> *sbEnabledCategories() {
-    NSMutableArray *enabled = [NSMutableArray array];
-    for (NSString *cat in sbAllCategories()) {
-        NSInteger action = [[NSUserDefaults standardUserDefaults] integerForKey:SB_ACTION_KEY(cat)];
-        if (action != SBSegmentActionDisable) {
-            [enabled addObject:cat];
-        }
-    }
-    return enabled;
-}
-
 UIColor *SBColorFromHex(NSString *hexString) {
     if (!hexString || hexString.length < 7) return [UIColor whiteColor];
     unsigned int hex = 0;
@@ -263,15 +276,6 @@ UIColor *SBColorFromHex(NSString *hexString) {
                            green:((hex >> 8) & 0xFF) / 255.0
                             blue:(hex & 0xFF) / 255.0
                            alpha:1.0];
-}
-
-// Credits the segment's submitter with a view (SponsorBlock stats), as intended by API spec
-static void sbSendViewedSegment(SBSegment *segment) {
-    if (segment.UUID.length == 0) return;
-    NSString *uuid = [segment.UUID stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
-    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:[@"https://sponsor.ajay.app/api/viewedVideoSponsorTime?UUID=" stringByAppendingString:uuid]]];
-    request.HTTPMethod = @"POST";
-    [[[NSURLSession sharedSession] dataTaskWithRequest:request] resume];
 }
 
 #pragma mark - SBSegment Implementation
@@ -317,7 +321,7 @@ static void sbSendViewedSegment(SBSegment *segment) {
         }
     }
 
-    NSArray *categories = sbEnabledCategories();
+    NSArray *categories = [YMSBHelpers enabledCategories];
     if (categories.count == 0) {
         if (completion) completion(@[]);
         return;
@@ -510,7 +514,7 @@ static void sbSendViewedSegment(SBSegment *segment) {
     if (muting && !self.sbMutedBySegment && ![video isMuted]) {
         self.sbMutedBySegment = YES;
         [video setMuted:YES];
-        sbSendViewedSegment(muting);
+        [YMSBHelpers sendViewedSegment:muting];
     } else if (!muting && self.sbMutedBySegment) {
         self.sbMutedBySegment = NO;
         [video setMuted:NO];
@@ -523,10 +527,10 @@ static void sbSendViewedSegment(SBSegment *segment) {
     for (SBSegment *segment in segments) {
         if (![segment.actionType isEqualToString:@"full"]) continue;
         if ([segment configuredAction] == SBSegmentActionDisable) continue;
-        NSString *catName = [YouModBundle() localizedStringForKey:[NSString stringWithFormat:@"SB_CAT_%@", segment.category] value:segment.category table:nil];
+        NSString *catName = [[YMHelpers bundle] localizedStringForKey:[NSString stringWithFormat:@"SB_CAT_%@", segment.category] value:segment.category table:nil];
         [YouModPillView showSuccessInView:sbGetNotificationParent()
                                           message:[NSString stringWithFormat:LOC(@"SB_FULL_VIDEO_LABEL"), catName]
-                                         duration:SBClampedAlertDuration(SBSkipAlertDuration)];
+                                         duration:[YMSBHelpers clampedAlertDuration:SBSkipAlertDuration]];
         return;
     }
 }
@@ -535,7 +539,7 @@ static void sbSendViewedSegment(SBSegment *segment) {
     // "Always auto-skip" segments stay out of the once-per-segment set so re-entry skips again.
     if ([segment configuredAction] != SBSegmentActionAlwaysSkip) [self.sbSkippedSegments addObject:segment.UUID];
     [self seekToTime:(CGFloat)segment.endTime];
-    sbSendViewedSegment(segment);
+    [YMSBHelpers sendViewedSegment:segment];
 
     if (IS_ENABLED(SBAudioNotification)) {
         AudioServicesPlaySystemSound(SBSkipHapticSoundID);
@@ -543,12 +547,12 @@ static void sbSendViewedSegment(SBSegment *segment) {
 
     if (IS_ENABLED(SBShowNotifications)) {
         useBackwardIconForButton = YES;
-        NSBundle *bundle = YouModBundle();
+        NSBundle *bundle = [YMHelpers bundle];
         NSString *catName = [bundle localizedStringForKey:[NSString stringWithFormat:@"SB_CAT_%@", segment.category] value:segment.category table:nil];
         NSString *message = [NSString stringWithFormat:[bundle localizedStringForKey:@"SB_SKIPPED" value:@"%@ skipped" table:nil], catName];
         NSString *unskipTitle = [bundle localizedStringForKey:@"SB_UNSKIP" value:@"Unskip" table:nil];
 
-        float alertDuration = SBClampedAlertDuration(SBUnskipAlertDuration);
+        float alertDuration = [YMSBHelpers clampedAlertDuration:SBUnskipAlertDuration];
 
         __weak typeof(self) weakSelf = self;
         // Delay the banner so the seek completes first, preventing the time-change callback from dismissing it.
@@ -573,12 +577,12 @@ static void sbSendViewedSegment(SBSegment *segment) {
     [self.sbSkippedSegments addObject:segment.UUID];
 
     useBackwardIconForButton = NO;
-    NSBundle *bundle = YouModBundle();
+    NSBundle *bundle = [YMHelpers bundle];
     NSString *catName = [bundle localizedStringForKey:[NSString stringWithFormat:@"SB_CAT_%@", segment.category] value:segment.category table:nil];
     BOOL isMute = [segment.actionType isEqualToString:@"mute"];
     NSString *message = [NSString stringWithFormat:[bundle localizedStringForKey:isMute ? @"SB_DETECTED_MUTE" : @"SB_DETECTED" value:@"%@ detected" table:nil], catName];
 
-    float alertDuration = SBClampedAlertDuration(SBSkipAlertDuration);
+    float alertDuration = [YMSBHelpers clampedAlertDuration:SBSkipAlertDuration];
 
     UIView *parentView = sbGetNotificationParent();
     __weak typeof(self) weakSelf = self;
@@ -593,7 +597,7 @@ static void sbSendViewedSegment(SBSegment *segment) {
                 [ss sbUpdateMuteAtTime:[ss currentVideoMediaTime]];
             } else {
                 [ss seekToTime:(CGFloat)segment.endTime];
-                sbSendViewedSegment(segment);
+                [YMSBHelpers sendViewedSegment:segment];
             }
         }
         duration:alertDuration];
@@ -616,11 +620,11 @@ static void sbSendViewedSegment(SBSegment *segment) {
             } else if (action == SBSegmentActionAsk) {
                 if (currentTime < seg.startTime) {
                     useBackwardIconForButton = NO;
-                    NSBundle *bundle = YouModBundle();
+                    NSBundle *bundle = [YMHelpers bundle];
                     NSString *message = [bundle localizedStringForKey:@"SB_JUMP_TO_HIGHLIGHT" value:@"Highlight available. Jump to the point?" table:nil];
                     NSString *skipTitle = [bundle localizedStringForKey:@"SB_SKIP_NOW" value:@"Skip" table:nil];
 
-                    float alertDuration = SBClampedAlertDuration(SBSkipAlertDuration);
+                    float alertDuration = [YMSBHelpers clampedAlertDuration:SBSkipAlertDuration];
 
                     UIView *parentView = sbGetNotificationParent();
                     YouModPillView *pill = [YouModPillView showInView:parentView
@@ -649,11 +653,11 @@ static void sbSendViewedSegment(SBSegment *segment) {
 
             if (IS_ENABLED(SBShowNotifications)) {
                 useBackwardIconForButton = YES;
-                NSBundle *bundle = YouModBundle();
+                NSBundle *bundle = [YMHelpers bundle];
                 NSString *message = [bundle localizedStringForKey:@"SB_JUMPED_TO_HIGHLIGHT" value:@"Jumped to highlight" table:nil];
                 NSString *unskipTitle = [bundle localizedStringForKey:@"SB_UNSKIP" value:@"Unskip" table:nil];
 
-                float alertDuration = SBClampedAlertDuration(SBUnskipAlertDuration);
+                float alertDuration = [YMSBHelpers clampedAlertDuration:SBUnskipAlertDuration];
 
                 __weak typeof(self) weakSelf = self;
                 YouModPillView *pill = [YouModPillView showInView:sbGetNotificationParent()

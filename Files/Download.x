@@ -225,16 +225,16 @@ static id YouModDownloadParentResponder = nil;
     NSString *all = [NSString stringWithFormat:@"%@ - %@\n%@", author, title, description];
 
     NSMutableArray *items = [NSMutableArray array];
-    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_ALL_VID_INFO") subtitle:nil icon:YouModYTIconImage(250, NO, nil) handler:^{
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_ALL_VID_INFO") subtitle:nil icon:[YMHelpers ytIconImage:250 useCustomColor:NO customColor:nil] handler:^{
         [self copyTextToPasteboard:all successKey:@"COPIED_VID_INFO"];
     }]];
-    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_AUTHOR") subtitle:nil icon:YouModYTIconImage(250, NO, nil) handler:^{
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_AUTHOR") subtitle:nil icon:[YMHelpers ytIconImage:250 useCustomColor:NO customColor:nil] handler:^{
         [self copyTextToPasteboard:author successKey:@"COPIED_AUTHOR"];
     }]];
-    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_TITLE") subtitle:nil icon:YouModYTIconImage(250, NO, nil) handler:^{
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_TITLE") subtitle:nil icon:[YMHelpers ytIconImage:250 useCustomColor:NO customColor:nil] handler:^{
         [self copyTextToPasteboard:title successKey:@"COPIED_TITLE"];
     }]];
-    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_DESCRIPTION") subtitle:nil icon:YouModYTIconImage(250, NO, nil) handler:^{
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_DESCRIPTION") subtitle:nil icon:[YMHelpers ytIconImage:250 useCustomColor:NO customColor:nil] handler:^{
         [self copyTextToPasteboard:description successKey:@"COPIED_DESCRIPTION"];
     }]];
 
@@ -244,13 +244,13 @@ static id YouModDownloadParentResponder = nil;
 + (void)showThumbnailSheetForPlayer:(YTPlayerViewController *)player presenter:(UIViewController *)presenter sender:(UIView *)sender {
     NSMutableArray *items = [NSMutableArray array];
 
-    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"SAVE_THUMBNAIL") subtitle:nil icon:YouModYTIconImage(57, NO, nil) handler:^{
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"SAVE_THUMBNAIL") subtitle:nil icon:[YMHelpers ytIconImage:57 useCustomColor:NO customColor:nil] handler:^{
         [self downloadThumbnailForPlayer:player presenter:presenter];
     }]];
-    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"SHOW_THUMBNAIL") subtitle:nil icon:YouModYTIconImage(208, NO, nil) handler:^{
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"SHOW_THUMBNAIL") subtitle:nil icon:[YMHelpers ytIconImage:208 useCustomColor:NO customColor:nil] handler:^{
         [self showThumbnailViewerForPlayer:player presenter:presenter];
     }]];
-    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_THUMBNAIL") subtitle:nil icon:YouModYTIconImage(250, NO, nil) handler:^{
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_THUMBNAIL") subtitle:nil icon:[YMHelpers ytIconImage:250 useCustomColor:NO customColor:nil] handler:^{
         [self copyThumbnailForPlayer:player presenter:presenter];
     }]];
 
@@ -267,17 +267,17 @@ static id YouModDownloadParentResponder = nil;
     YTSingleVideo *sgvid = sgvidcon.singleVideo;
 
     if (!sgvid.isLivePlayback) {
-        [items addObject:[YouModMenuItem itemWithTitle:LOC(@"DOWNLOAD_TO_PHOTOS") subtitle:nil icon:YouModYTIconImage(57, NO, nil) handler:^{
+        [items addObject:[YouModMenuItem itemWithTitle:LOC(@"DOWNLOAD_TO_PHOTOS") subtitle:nil icon:[YMHelpers ytIconImage:57 useCustomColor:NO customColor:nil] handler:^{
             [YMDownloadSheet presentForPlayer:player destination:YMDownloadDestinationPhotos isShorts:isShorts presenter:presenter];
         }]];
-        [items addObject:[YouModMenuItem itemWithTitle:LOC(@"DOWNLOAD_TO_FILES") subtitle:LOC(@"DOWNLOAD_TO_FILES_DESC") icon:YouModYTIconImage(isShorts ? 769 : 658, NO, nil) handler:^{
+        [items addObject:[YouModMenuItem itemWithTitle:LOC(@"DOWNLOAD_TO_FILES") subtitle:LOC(@"DOWNLOAD_TO_FILES_DESC") icon:[YMHelpers ytIconImage:isShorts ? 769 : 658 useCustomColor:NO customColor:nil] handler:^{
             [YMDownloadSheet presentForPlayer:player destination:YMDownloadDestinationFiles isShorts:isShorts presenter:presenter];
         }]];
     }
-    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"DOWNLOAD_THUMBNAIL") subtitle:nil icon:YouModYTIconImage(367, NO, nil) handler:^{
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"DOWNLOAD_THUMBNAIL") subtitle:nil icon:[YMHelpers ytIconImage:367 useCustomColor:NO customColor:nil] handler:^{
         [self showThumbnailSheetForPlayer:player presenter:presenter sender:sender];
     }]];
-    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_VID_INFO") subtitle:nil icon:YouModYTIconImage(250, NO, nil) handler:^{
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_VID_INFO") subtitle:nil icon:[YMHelpers ytIconImage:250 useCustomColor:NO customColor:nil] handler:^{
         [self showCopyVideoInfoSheetForPlayer:player presenter:presenter sender:sender];
     }]];
     [self presentMenuForPlayer:player items:items presenter:presenter sender:sender];
@@ -476,7 +476,7 @@ NSString *YouModGlobalAuthHeader = nil;
 + (UIImage *)renderImageFromView:(_ASDisplayView *)view {
     if (!view || view.bounds.size.width <= 0 || view.bounds.size.height <= 0) return nil;
     
-    UIColor *realBgColor = isDarkMode(view) ? [%c(YTColor) black3] : [%c(YTColor) white1];  
+    UIColor *realBgColor = [YMHelpers isDarkMode:view] ? [%c(YTColor) black3] : [%c(YTColor) white1];  
     UIGraphicsBeginImageContextWithOptions(view.bounds.size, NO, [UIScreen mainScreen].scale);
     CGContextRef context = UIGraphicsGetCurrentContext();    
     [realBgColor setFill];
@@ -527,17 +527,17 @@ NSString *YouModGlobalAuthHeader = nil;
     NSString *commentText = [self extractCommentTextFromView:view isPost:NO];
 
     if (commentText && commentText.length > 0) {
-        [items addObject:[YouModMenuItem itemWithTitle:LOC(@"TRANSLATE_COMMENT") subtitle:nil icon:YouModYTIconImage(897, NO, nil) handler:^{
+        [items addObject:[YouModMenuItem itemWithTitle:LOC(@"TRANSLATE_COMMENT") subtitle:nil icon:[YMHelpers ytIconImage:897 useCustomColor:NO customColor:nil] handler:^{
             UIViewController *presenter = view._viewControllerForAncestor;
             [self showTranslationDialog:commentText presenter:presenter];
         }]];
 
-        [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_COMMENT_TEXT") subtitle:nil icon:YouModYTIconImage(243, NO, nil) handler:^{
+        [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_COMMENT_TEXT") subtitle:nil icon:[YMHelpers ytIconImage:243 useCustomColor:NO customColor:nil] handler:^{
             [self copyTextToPasteboard:commentText successKey:@"COPIED_TO_CLIPBOARD"];
         }]];
     }
 
-    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"SAVE_COMMENT_IMAGE") subtitle:nil icon:YouModYTIconImage(367, NO, nil) handler:^{
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"SAVE_COMMENT_IMAGE") subtitle:nil icon:[YMHelpers ytIconImage:367 useCustomColor:NO customColor:nil] handler:^{
         UIImage *image = [self renderImageFromView:view];
         if (image) {
             UIViewController *p = view._viewControllerForAncestor;
@@ -545,7 +545,7 @@ NSString *YouModGlobalAuthHeader = nil;
         }
     }]];
 
-    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_COMMENT_IMAGE") subtitle:nil icon:YouModYTIconImage(208, NO, nil) handler:^{
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_COMMENT_IMAGE") subtitle:nil icon:[YMHelpers ytIconImage:208 useCustomColor:NO customColor:nil] handler:^{
         UIImage *image = [self renderImageFromView:view];
         if (image) {
             [self copyImageToPasteboard:image successKey:@"COPIED_TO_CLIPBOARD"];
@@ -563,17 +563,17 @@ NSString *YouModGlobalAuthHeader = nil;
     NSString *postText = [self extractCommentTextFromView:view isPost:YES];
 
     if (postText && postText.length > 0) {
-        [items addObject:[YouModMenuItem itemWithTitle:LOC(@"TRANSLATE_POST") subtitle:nil icon:YouModYTIconImage(897, NO, nil) handler:^{
+        [items addObject:[YouModMenuItem itemWithTitle:LOC(@"TRANSLATE_POST") subtitle:nil icon:[YMHelpers ytIconImage:897 useCustomColor:NO customColor:nil] handler:^{
             UIViewController *presenter = view._viewControllerForAncestor;
             [self showTranslationDialog:postText presenter:presenter];
         }]];
 
-        [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_POST_TEXT") subtitle:nil icon:YouModYTIconImage(243, NO, nil) handler:^{
+        [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_POST_TEXT") subtitle:nil icon:[YMHelpers ytIconImage:243 useCustomColor:NO customColor:nil] handler:^{
             [self copyTextToPasteboard:postText successKey:@"COPIED_TO_CLIPBOARD"];
         }]];
     }
 
-    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"SAVE_POST_IMAGE") subtitle:nil icon:YouModYTIconImage(367, NO, nil) handler:^{
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"SAVE_POST_IMAGE") subtitle:nil icon:[YMHelpers ytIconImage:367 useCustomColor:NO customColor:nil] handler:^{
         UIImage *image = [self renderImageFromView:view];
         if (image) {
             UIViewController *p = view._viewControllerForAncestor;
@@ -581,7 +581,7 @@ NSString *YouModGlobalAuthHeader = nil;
         }
     }]];
 
-    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_POST_IMAGE") subtitle:nil icon:YouModYTIconImage(208, NO, nil) handler:^{
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"COPY_POST_IMAGE") subtitle:nil icon:[YMHelpers ytIconImage:208 useCustomColor:NO customColor:nil] handler:^{
         UIImage *image = [self renderImageFromView:view];
         if (image) {
             [self copyImageToPasteboard:image successKey:@"COPIED_TO_CLIPBOARD"];

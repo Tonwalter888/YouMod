@@ -4,27 +4,7 @@
 
 #define SABR_ENABLED() 1
 
-// Serial queue guarding all shared engine state; capture hooks and network
-// completions hop here before touching shared state.
-static dispatch_queue_t SABRQueue(void) {
-    static dispatch_queue_t q; static dispatch_once_t o;
-    dispatch_once(&o, ^{ q = dispatch_queue_create("youmod.sabr", DISPATCH_QUEUE_SERIAL); });
-    return q;
-}
-
 #pragma mark - UMP parser
-
-// UMP varint: leading 1-bits of the first byte give total byte count (1..5).
-static NSUInteger SABRReadUMPVarint(const uint8_t *b, NSUInteger len, NSUInteger pos, uint64_t *out) {
-    if (pos >= len) return 0;
-    uint8_t pfx = b[pos]; int size = 1;
-    if (pfx >= 0xF0) size = 5; else if (pfx >= 0xE0) size = 4; else if (pfx >= 0xC0) size = 3; else if (pfx >= 0x80) size = 2;
-    if (pos + size > len) return 0;
-    uint64_t r = 0; int sh = 0;
-    if (size != 5) { sh = 8 - size; r = pfx & ((1u << sh) - 1); }
-    for (int i = 1; i < size; i++) { r |= ((uint64_t)b[pos + i]) << sh; sh += 8; }
-    *out = r; return (NSUInteger)size;
-}
 
 // UMP part type IDs (LuanRT/googlevideo ump_part_id.proto).
 typedef NS_ENUM(NSInteger, SABRPartType) {
@@ -42,21 +22,6 @@ typedef NS_ENUM(NSInteger, SABRPartType) {
 
 // SABR_REDIRECT (part 43) payload: #1 = the replacement videoplayback URL (string).
 static const uint64_t kSABRRedirectURL = 1;
-
-// Parse a UMP stream, calling `handler` per part (type, payload). Returns bytes
-// consumed. MEDIA payloads still include the leading headerId varint.
-static NSUInteger SABRParseUMP(NSData *data, void (^handler)(uint64_t type, const uint8_t *payload, NSUInteger size)) {
-    const uint8_t *b = (const uint8_t *)data.bytes; NSUInteger len = data.length, pos = 0;
-    while (pos < len) {
-        uint64_t type = 0, size = 0;
-        NSUInteger c1 = SABRReadUMPVarint(b, len, pos, &type); if (!c1) break; pos += c1;
-        NSUInteger c2 = SABRReadUMPVarint(b, len, pos, &size); if (!c2) break; pos += c2;
-        if (pos + size > len) break;
-        if (handler) handler(type, b + pos, (NSUInteger)size);
-        pos += (NSUInteger)size;
-    }
-    return pos;
-}
 
 #pragma mark - SABR protobuf field map
 
@@ -129,277 +94,28 @@ static const int kProtoWire64Bit           = 1;
 static const int kProtoWireLengthDelimited = 2;
 static const int kProtoWire32Bit           = 5;
 
-// Read a base-128 varint. Returns bytes consumed (0 on malformed/truncated input).
-static NSUInteger SABRReadProtoVarint(const uint8_t *b, NSUInteger len, NSUInteger pos, uint64_t *out) {
-    uint64_t v = 0; int sh = 0; NSUInteger start = pos;
-    while (pos < len) {
-        uint8_t by = b[pos++];
-        v |= ((uint64_t)(by & 0x7f)) << sh;
-        if (!(by & 0x80)) { if (out) *out = v; return pos - start; }
-        sh += 7; if (sh >= 64) return 0;
-    }
-    return 0;
-}
-
-static void SABRAppendProtoVarint(NSMutableData *d, uint64_t v) {
-    uint8_t buf[10]; int n = 0;
-    do { uint8_t by = v & 0x7f; v >>= 7; if (v) by |= 0x80; buf[n++] = by; } while (v);
-    [d appendBytes:buf length:n];
-}
-static void SABRAppendVarintField(NSMutableData *d, uint64_t field, uint64_t v) {
-    SABRAppendProtoVarint(d, (field << 3) | 0); SABRAppendProtoVarint(d, v);
-}
-static void SABRAppendBytesField(NSMutableData *d, uint64_t field, NSData *bytes) {
-    SABRAppendProtoVarint(d, (field << 3) | 2); SABRAppendProtoVarint(d, bytes.length); [d appendData:bytes];
-}
-
-// Walk ONE level of a protobuf message: handler gets (field number, wire type,
-// whole-field span, payload span) and returns NO to stop early. YES only if the
-// buffer parsed cleanly end-to-end.
-static BOOL SABRIterateTopLevel(NSData *data, BOOL (^handler)(uint64_t field, int wire, NSUInteger fieldStart, NSUInteger fieldEnd, NSUInteger payloadStart, NSUInteger payloadLen)) {
-    const uint8_t *b = (const uint8_t *)data.bytes; NSUInteger len = data.length, pos = 0;
-    while (pos < len) {
-        NSUInteger fieldStart = pos;
-        uint64_t key = 0; NSUInteger kc = SABRReadProtoVarint(b, len, pos, &key); if (!kc) return NO; pos += kc;
-        uint64_t field = key >> 3; int wire = key & 0x7;
-        NSUInteger payloadStart = pos, payloadLen = 0;
-        if (wire == kProtoWireVarint) { uint64_t v; NSUInteger c = SABRReadProtoVarint(b, len, pos, &v); if (!c) return NO; payloadLen = c; pos += c; }
-        else if (wire == kProtoWire64Bit) { if (pos + 8 > len) return NO; payloadLen = 8; pos += 8; }
-        else if (wire == kProtoWireLengthDelimited) { uint64_t l; NSUInteger c = SABRReadProtoVarint(b, len, pos, &l); if (!c || pos + c + l > len) return NO; payloadStart = pos + c; payloadLen = (NSUInteger)l; pos += c + l; }
-        else if (wire == kProtoWire32Bit) { if (pos + 4 > len) return NO; payloadLen = 4; pos += 4; }
-        else return NO;
-        if (handler && !handler(field, wire, fieldStart, pos, payloadStart, payloadLen)) return YES;
-    }
-    return YES;
-}
-
-// Read one varint field's value from a message (first match). Returns whether found.
-static BOOL SABRReadVarintField(NSData *msg, uint64_t field, uint64_t *out) {
-    const uint8_t *b = (const uint8_t *)msg.bytes; NSUInteger len = msg.length;
-    __block BOOL got = NO; __block uint64_t val = 0;
-    SABRIterateTopLevel(msg, ^BOOL(uint64_t f, int w, NSUInteger fs, NSUInteger fe, NSUInteger ps, NSUInteger pl) {
-        if (f == field && w == kProtoWireVarint) { uint64_t v = 0; if (SABRReadProtoVarint(b, len, ps, &v)) { val = v; got = YES; return NO; } }
-        return YES;
-    });
-    if (got && out) *out = val;
-    return got;
-}
-
-// Copy `msg` with varint `field` set to `value` (replaced in place, or appended
-// if absent). Other fields are copied byte-for-byte.
-static NSData *SABRSetVarintField(NSData *msg, uint64_t field, uint64_t value) {
-    const uint8_t *b = (const uint8_t *)msg.bytes;
-    NSMutableData *out = [NSMutableData data];
-    __block BOOL replaced = NO;
-    BOOL ok = SABRIterateTopLevel(msg, ^BOOL(uint64_t f, int w, NSUInteger fs, NSUInteger fe, NSUInteger ps, NSUInteger pl) {
-        if (f == field && w == kProtoWireVarint) { SABRAppendVarintField(out, field, value); replaced = YES; }
-        else [out appendBytes:b + fs length:fe - fs];
-        return YES;
-    });
-    if (!ok) return [msg copy]; // don't corrupt a body we can't parse
-    if (!replaced) SABRAppendVarintField(out, field, value);
-    return out;
-}
-
 #pragma mark - Available formats (#5) → {lastModified, xtags} for a chosen itag
 
-// A resolved download target: itag + the lastModified/xtags copied verbatim from #5.
-@interface YMSABRFormat : NSObject
-@property (nonatomic, assign) uint64_t itag;
-@property (nonatomic, assign) uint64_t lastModified;
-@property (nonatomic, strong) NSData *xtags;   // may be empty; always emitted (matches the real client)
-@property (nonatomic, assign) BOOL found;
-@end
 @implementation YMSABRFormat @end
-
-// Parse a FormatId message → {itag, lastModified, xtags}.
-static YMSABRFormat *SABRParseFormatId(NSData *fmt) {
-    YMSABRFormat *r = [YMSABRFormat new]; r.xtags = [NSData data];
-    const uint8_t *b = (const uint8_t *)fmt.bytes; NSUInteger len = fmt.length;
-    SABRIterateTopLevel(fmt, ^BOOL(uint64_t f, int w, NSUInteger fs, NSUInteger fe, NSUInteger ps, NSUInteger pl) {
-        if (f == kSABRFmtItag && w == kProtoWireVarint)    { uint64_t v = 0; if (SABRReadProtoVarint(b, len, ps, &v)) r.itag = v; }
-        else if (f == kSABRFmtLastMod && w == kProtoWireVarint) { uint64_t v = 0; if (SABRReadProtoVarint(b, len, ps, &v)) r.lastModified = v; }
-        else if (f == kSABRFmtXtags && w == kProtoWireLengthDelimited)   { r.xtags = [fmt subdataWithRange:NSMakeRange(ps, pl)]; }
-        return YES;
-    });
-    return r;
-}
-
-// Resolve a download target for `itag` from the available-format list (#5.#1.#6).
-// Itags can repeat as plain + xtags-tagged variants (soundtrack/DRC live in xtags).
-// `wantXtags` names one variant exactly (the picked soundtrack); nil/empty = no
-// preference → first match, upgraded to an xtags-bearing entry (what the app plays).
-// {itag, lastModified, xtags} is copied as one triple so server matching lines up.
-static YMSABRFormat *SABRResolveFormat(NSData *body, uint64_t itag, NSData *wantXtags) {
-    YMSABRFormat *result = [YMSABRFormat new];
-    BOOL exact = wantXtags.length > 0;
-    SABRIterateTopLevel(body, ^BOOL(uint64_t f5, int w5, NSUInteger fs, NSUInteger fe, NSUInteger ps5, NSUInteger pl5) {
-        if (f5 != kSABRReqUstreamerConfig || w5 != kProtoWireLengthDelimited) return YES;
-        NSData *avail = [body subdataWithRange:NSMakeRange(ps5, pl5)];
-        SABRIterateTopLevel(avail, ^BOOL(uint64_t f1, int w1, NSUInteger fs1, NSUInteger fe1, NSUInteger ps1, NSUInteger pl1) {
-            if (f1 != kSABRAvailInner || w1 != kProtoWireLengthDelimited) return YES;
-            NSData *inner = [avail subdataWithRange:NSMakeRange(ps1, pl1)];
-            SABRIterateTopLevel(inner, ^BOOL(uint64_t f6, int w6, NSUInteger fs6, NSUInteger fe6, NSUInteger ps6, NSUInteger pl6) {
-                if (f6 != kSABRAvailList || w6 != kProtoWireLengthDelimited) return YES;
-                YMSABRFormat *fmt = SABRParseFormatId([inner subdataWithRange:NSMakeRange(ps6, pl6)]);
-                if (fmt.itag != itag) return YES;
-                BOOL take;
-                if (exact) {
-                    take = !result.found && [fmt.xtags isEqualToData:wantXtags];
-                } else {
-                    // Keep the first match, but upgrade to an entry that carries xtags.
-                    take = !result.found || (result.xtags.length == 0 && fmt.xtags.length > 0);
-                }
-                if (take) {
-                    result.itag = fmt.itag; result.lastModified = fmt.lastModified;
-                    result.xtags = fmt.xtags; result.found = YES;
-                }
-                return YES;
-            });
-            return YES;
-        });
-        return NO; // only the first #5
-    });
-    return result;
-}
-
-// Encode FormatId { #1 itag, #2 lastModified, #3 xtags }. xtags is always
-// emitted (empty if none) — matches YTKACE / the real client.
-static NSData *SABREncodeFormatId(YMSABRFormat *fmt) {
-    NSMutableData *d = [NSMutableData data];
-    SABRAppendVarintField(d, kSABRFmtItag, fmt.itag);
-    SABRAppendVarintField(d, kSABRFmtLastMod, fmt.lastModified);
-    SABRAppendBytesField(d, kSABRFmtXtags, fmt.xtags ?: [NSData data]);
-    return d;
-}
-
-// Encode a BufferedRange with the REAL extent just received: segments
-// [startSeg..endSeg] over [startMs, startMs+durationMs). Overstating it makes the
-// server think the track is fully buffered and stop sending its remaining segments.
-static NSData *SABREncodeBufferedRange(YMSABRFormat *fmt, uint64_t startSeg, uint64_t endSeg, uint64_t startMs, uint64_t durationMs) {
-    NSMutableData *tr = [NSMutableData data];
-    SABRAppendVarintField(tr, kSABRTimeRangeStart, startMs);
-    SABRAppendVarintField(tr, kSABRTimeRangeDur, durationMs);
-    SABRAppendVarintField(tr, kSABRTimeRangeScale, kSABRMsPerSecond);
-
-    NSMutableData *br = [NSMutableData data];
-    SABRAppendBytesField(br, kSABRBufFormatId, SABREncodeFormatId(fmt));
-    SABRAppendVarintField(br, kSABRBufStartMs, startMs);
-    SABRAppendVarintField(br, kSABRBufDurationMs, durationMs);
-    SABRAppendVarintField(br, kSABRBufStartSeg, startSeg);
-    SABRAppendVarintField(br, kSABRBufEndSeg, endSeg);
-    SABRAppendBytesField(br, kSABRBufTimeRange, tr);
-    return br;
-}
 
 #pragma mark - Response part decoders (MEDIA_HEADER / FORMAT_INIT)
 
-// Decoded MEDIA_HEADER (UMP part 20): maps a headerId to a format + segment.
-@interface YMSABRMediaHeader : NSObject
-@property (nonatomic, assign) uint64_t headerId;
-@property (nonatomic, assign) uint64_t itag;
-@property (nonatomic, assign) uint64_t sequence;
-@property (nonatomic, assign) uint64_t startMs;
-@property (nonatomic, assign) uint64_t durationMs;
-@property (nonatomic, assign) uint64_t contentLength;
-@property (nonatomic, assign) BOOL isInit;
-@end
 @implementation YMSABRMediaHeader @end
-
-// Convert a TimeRange tick count to milliseconds (rounded).
-static uint64_t SABRTicksToMs(uint64_t ticks, uint64_t timescale) {
-    if (timescale == 0) return 0;
-    return (uint64_t)(((double)ticks / (double)timescale) * (double)kSABRMsPerSecond + 0.5);
-}
-
-static YMSABRMediaHeader *SABRDecodeMediaHeader(const uint8_t *payload, NSUInteger size) {
-    NSData *msg = [NSData dataWithBytesNoCopy:(void *)payload length:size freeWhenDone:NO];
-    YMSABRMediaHeader *h = [YMSABRMediaHeader new];
-    const uint8_t *b = (const uint8_t *)msg.bytes; NSUInteger len = msg.length;
-    SABRIterateTopLevel(msg, ^BOOL(uint64_t f, int w, NSUInteger fs, NSUInteger fe, NSUInteger ps, NSUInteger pl) {
-        if (f == kSABRHdrHeaderId && w == kProtoWireVarint)         { uint64_t v=0; if (SABRReadProtoVarint(b,len,ps,&v)) h.headerId = v; }
-        else if (f == kSABRHdrItag && w == kProtoWireVarint)        { uint64_t v=0; if (SABRReadProtoVarint(b,len,ps,&v)) h.itag = v; }
-        else if (f == kSABRHdrIsInit && w == kProtoWireVarint)      { uint64_t v=0; if (SABRReadProtoVarint(b,len,ps,&v)) h.isInit = (v != 0); }
-        else if (f == kSABRHdrSequence && w == kProtoWireVarint)    { uint64_t v=0; if (SABRReadProtoVarint(b,len,ps,&v)) h.sequence = v; }
-        else if (f == kSABRHdrStartMs && w == kProtoWireVarint)     { uint64_t v=0; if (SABRReadProtoVarint(b,len,ps,&v)) h.startMs = v; }
-        else if (f == kSABRHdrDurationMs && w == kProtoWireVarint)  { uint64_t v=0; if (SABRReadProtoVarint(b,len,ps,&v)) h.durationMs = v; }
-        else if (f == kSABRHdrContentLength && w == kProtoWireVarint){ uint64_t v=0; if (SABRReadProtoVarint(b,len,ps,&v)) h.contentLength = v; }
-        else if (f == kSABRHdrFormatId && w == kProtoWireLengthDelimited && h.itag == 0) { // fallback itag from nested FormatId
-            YMSABRFormat *fmt = SABRParseFormatId([msg subdataWithRange:NSMakeRange(ps, pl)]);
-            if (fmt.itag) h.itag = fmt.itag;
-        }
-        else if (f == kSABRHdrTimeRange && w == kProtoWireLengthDelimited) { // TimeRange — the start/duration source on 21.29
-            NSData *tr = [msg subdataWithRange:NSMakeRange(ps, pl)];
-            uint64_t startTicks = 0, durTicks = 0, timescale = 0;
-            SABRReadVarintField(tr, kSABRTRStartTicks, &startTicks);
-            SABRReadVarintField(tr, kSABRTRDurationTicks, &durTicks);
-            SABRReadVarintField(tr, kSABRTRTimescale, &timescale);
-            if (timescale > 0) {
-                if (h.durationMs == 0 && durTicks) h.durationMs = SABRTicksToMs(durTicks, timescale);
-                if (h.startMs == 0 && startTicks)  h.startMs   = SABRTicksToMs(startTicks, timescale);
-            }
-        }
-        return YES;
-    });
-    return h;
-}
-
-// FORMAT_INITIALIZATION_METADATA (part 42): the authoritative end-of-track marker.
-static void SABRDecodeFormatInit(const uint8_t *payload, NSUInteger size, uint64_t *itag, uint64_t *endSeg, uint64_t *endTimeMs) {
-    NSData *msg = [NSData dataWithBytesNoCopy:(void *)payload length:size freeWhenDone:NO];
-    const uint8_t *b = (const uint8_t *)msg.bytes; NSUInteger len = msg.length;
-    __block uint64_t it = 0;
-    SABRIterateTopLevel(msg, ^BOOL(uint64_t f, int w, NSUInteger fs, NSUInteger fe, NSUInteger ps, NSUInteger pl) {
-        if (f == kSABRInitFormatId && w == kProtoWireLengthDelimited)          { YMSABRFormat *fmt = SABRParseFormatId([msg subdataWithRange:NSMakeRange(ps, pl)]); if (fmt.itag) it = fmt.itag; }
-        else if (f == kSABRInitEndSegment && w == kProtoWireVarint)   { uint64_t v=0; if (SABRReadProtoVarint(b,len,ps,&v) && endSeg) *endSeg = v; }
-        else if (f == kSABRInitEndTimeMs && w == kProtoWireVarint)    { uint64_t v=0; if (SABRReadProtoVarint(b,len,ps,&v) && endTimeMs) *endTimeMs = v; }
-        return YES;
-    });
-    if (itag) *itag = it;
-}
 
 #pragma mark - Per-track download state
 
-// Accumulates one track's media, keyed by ITAG (init and media segments arrive
-// under different headerIds). Written to `fileURL`.
-@interface YMSABRTrack : NSObject
-@property (nonatomic, strong) YMSABRFormat *format;
-@property (nonatomic, strong) NSURL *fileURL;
-@property (nonatomic, strong) NSFileHandle *handle;
-@property (nonatomic, assign) uint64_t downloadedMs;   // real total downloaded duration (sum of segment durations)
-@property (nonatomic, assign) uint64_t lastSequence;   // highest segment index written
-// Per-round window of NEW segments (the buffered_range we report is a delta
-// window, not a cumulative 0..N range).
-@property (nonatomic, assign) uint64_t roundStartMs;
-@property (nonatomic, assign) uint64_t roundDurationMs;
-@property (nonatomic, assign) uint64_t roundFirstSeq;
-@property (nonatomic, assign) uint64_t roundLastSeq;
-@property (nonatomic, assign) BOOL roundHasMedia;
-@property (nonatomic, assign) uint64_t endSegment;     // from FORMAT_INIT (0 = unknown)
-@property (nonatomic, assign) uint64_t endTimeMs;      // from FORMAT_INIT (0 = unknown)
-@property (nonatomic, assign) BOOL initWritten;
-@property (nonatomic, assign) BOOL complete;
-@property (nonatomic, assign) unsigned long long bytesWritten;
-@end
 @implementation YMSABRTrack @end
 
 #pragma mark - Capture layer (permanent): the app's live signed videoplayback request
 
 // Captured request material: tracks the MOST-RECENT videoplayback request (the
-// current video), so switching videos re-captures the new one. Capturing
-// mid-playback is safe — the engine rebuilds buffered ranges and selected formats
-// from scratch. Touched only on SABRQueue.
+// current video), so switching videos re-captures the new one. Touched only on
+// the serial queue.
 static NSURL *gCapURL;
 static NSData *gCapPlainBody;      // pre-Brotli body (from -HTTPBody)
 static NSDictionary *gCapHeaders;
 static NSTimeInterval gCapExpire;  // from the URL's expire= param
-static BOOL gSABRCancel;           // set to abort the active download loop (touched on SABRQueue)
-
-static NSTimeInterval SABRExpireFromURL(NSURL *url) {
-    for (NSURLQueryItem *item in [NSURLComponents componentsWithURL:url resolvingAgainstBaseURL:NO].queryItems)
-        if ([item.name isEqualToString:@"expire"]) return item.value.doubleValue;
-    return 0;
-}
+static BOOL gSABRCancel;           // aborts the active download loop (touched on the serial queue)
 
 %hook HAMDataLoadRequest
 - (NSURLRequest *)buildURLRequest {
@@ -414,15 +130,266 @@ static NSTimeInterval SABRExpireFromURL(NSURL *url) {
             NSURL *url = r.URL;
             NSData *plainCopy = [plain copy];
             NSMutableDictionary *hdrs = [r.allHTTPHeaderFields mutableCopy] ?: [NSMutableDictionary dictionary];
-            dispatch_async(SABRQueue(), ^{
+            dispatch_async([YMSABRHelpers queue], ^{
                 // Most-recent-wins so switching videos captures the new request.
-                gCapURL = url; gCapPlainBody = plainCopy; gCapHeaders = hdrs; gCapExpire = SABRExpireFromURL(url);
+                gCapURL = url; gCapPlainBody = plainCopy; gCapHeaders = hdrs; gCapExpire = [YMSABRHelpers expireFromURL:url];
             });
         }
     } @catch (id ex) {}
     return r;
 }
 %end
+
+@implementation YMSABRHelpers
+
+// Serial queue guarding all shared engine state; capture hooks and network
+// completions hop here before touching shared state.
++ (dispatch_queue_t)queue {
+    static dispatch_queue_t q; static dispatch_once_t o;
+    dispatch_once(&o, ^{ q = dispatch_queue_create("youmod.sabr", DISPATCH_QUEUE_SERIAL); });
+    return q;
+}
+
+// UMP varint: leading 1-bits of the first byte give total byte count (1..5).
++ (NSUInteger)readUMPVarint:(const uint8_t *)b length:(NSUInteger)len position:(NSUInteger)pos out:(uint64_t *)out {
+    if (pos >= len) return 0;
+    uint8_t pfx = b[pos]; int size = 1;
+    if (pfx >= 0xF0) size = 5; else if (pfx >= 0xE0) size = 4; else if (pfx >= 0xC0) size = 3; else if (pfx >= 0x80) size = 2;
+    if (pos + size > len) return 0;
+    uint64_t r = 0; int sh = 0;
+    if (size != 5) { sh = 8 - size; r = pfx & ((1u << sh) - 1); }
+    for (int i = 1; i < size; i++) { r |= ((uint64_t)b[pos + i]) << sh; sh += 8; }
+    *out = r; return (NSUInteger)size;
+}
+
+// Parse a UMP stream, calling `handler` per part (type, payload). Returns bytes
+// consumed. MEDIA payloads still include the leading headerId varint.
++ (NSUInteger)parseUMP:(NSData *)data handler:(void (^)(uint64_t type, const uint8_t *payload, NSUInteger size))handler {
+    const uint8_t *b = (const uint8_t *)data.bytes; NSUInteger len = data.length, pos = 0;
+    while (pos < len) {
+        uint64_t type = 0, size = 0;
+        NSUInteger c1 = [YMSABRHelpers readUMPVarint:b length:len position:pos out:&type]; if (!c1) break; pos += c1;
+        NSUInteger c2 = [YMSABRHelpers readUMPVarint:b length:len position:pos out:&size]; if (!c2) break; pos += c2;
+        if (pos + size > len) break;
+        if (handler) handler(type, b + pos, (NSUInteger)size);
+        pos += (NSUInteger)size;
+    }
+    return pos;
+}
+
+// Read a base-128 varint. Returns bytes consumed (0 on malformed/truncated input).
++ (NSUInteger)readProtoVarint:(const uint8_t *)b length:(NSUInteger)len position:(NSUInteger)pos out:(uint64_t *)out {
+    uint64_t v = 0; int sh = 0; NSUInteger start = pos;
+    while (pos < len) {
+        uint8_t by = b[pos++];
+        v |= ((uint64_t)(by & 0x7f)) << sh;
+        if (!(by & 0x80)) { if (out) *out = v; return pos - start; }
+        sh += 7; if (sh >= 64) return 0;
+    }
+    return 0;
+}
+
++ (void)appendProtoVarint:(NSMutableData *)d value:(uint64_t)v {
+    uint8_t buf[10]; int n = 0;
+    do { uint8_t by = v & 0x7f; v >>= 7; if (v) by |= 0x80; buf[n++] = by; } while (v);
+    [d appendBytes:buf length:n];
+}
+
++ (void)appendVarintField:(NSMutableData *)d field:(uint64_t)field value:(uint64_t)v {
+    [YMSABRHelpers appendProtoVarint:d value:((field << 3) | 0)]; [YMSABRHelpers appendProtoVarint:d value:v];
+}
+
++ (void)appendBytesField:(NSMutableData *)d field:(uint64_t)field bytes:(NSData *)bytes {
+    [YMSABRHelpers appendProtoVarint:d value:((field << 3) | 2)]; [YMSABRHelpers appendProtoVarint:d value:bytes.length]; [d appendData:bytes];
+}
+
+// Walk ONE level of a protobuf message: handler gets (field number, wire type,
+// whole-field span, payload span) and returns NO to stop early. YES only if the
+// buffer parsed cleanly end-to-end.
++ (BOOL)iterateTopLevel:(NSData *)data handler:(BOOL (^)(uint64_t field, int wire, NSUInteger fieldStart, NSUInteger fieldEnd, NSUInteger payloadStart, NSUInteger payloadLen))handler {
+    const uint8_t *b = (const uint8_t *)data.bytes; NSUInteger len = data.length, pos = 0;
+    while (pos < len) {
+        NSUInteger fieldStart = pos;
+        uint64_t key = 0; NSUInteger kc = [YMSABRHelpers readProtoVarint:b length:len position:pos out:&key]; if (!kc) return NO; pos += kc;
+        uint64_t field = key >> 3; int wire = key & 0x7;
+        NSUInteger payloadStart = pos, payloadLen = 0;
+        if (wire == kProtoWireVarint) { uint64_t v; NSUInteger c = [YMSABRHelpers readProtoVarint:b length:len position:pos out:&v]; if (!c) return NO; payloadLen = c; pos += c; }
+        else if (wire == kProtoWire64Bit) { if (pos + 8 > len) return NO; payloadLen = 8; pos += 8; }
+        else if (wire == kProtoWireLengthDelimited) { uint64_t l; NSUInteger c = [YMSABRHelpers readProtoVarint:b length:len position:pos out:&l]; if (!c || pos + c + l > len) return NO; payloadStart = pos + c; payloadLen = (NSUInteger)l; pos += c + l; }
+        else if (wire == kProtoWire32Bit) { if (pos + 4 > len) return NO; payloadLen = 4; pos += 4; }
+        else return NO;
+        if (handler && !handler(field, wire, fieldStart, pos, payloadStart, payloadLen)) return YES;
+    }
+    return YES;
+}
+
+// Read one varint field's value from a message (first match). Returns whether found.
++ (BOOL)readVarintField:(NSData *)msg field:(uint64_t)field out:(uint64_t *)out {
+    const uint8_t *b = (const uint8_t *)msg.bytes; NSUInteger len = msg.length;
+    __block BOOL got = NO; __block uint64_t val = 0;
+    [YMSABRHelpers iterateTopLevel:msg handler:^BOOL(uint64_t f, int w, NSUInteger fs, NSUInteger fe, NSUInteger ps, NSUInteger pl) {
+        if (f == field && w == kProtoWireVarint) { uint64_t v = 0; if ([YMSABRHelpers readProtoVarint:b length:len position:ps out:&v]) { val = v; got = YES; return NO; } }
+        return YES;
+    }];
+    if (got && out) *out = val;
+    return got;
+}
+
+// Copy `msg` with varint `field` set to `value` (replaced in place, or appended
+// if absent). Other fields are copied byte-for-byte.
++ (NSData *)setVarintField:(NSData *)msg field:(uint64_t)field value:(uint64_t)value {
+    const uint8_t *b = (const uint8_t *)msg.bytes;
+    NSMutableData *out = [NSMutableData data];
+    __block BOOL replaced = NO;
+    BOOL ok = [YMSABRHelpers iterateTopLevel:msg handler:^BOOL(uint64_t f, int w, NSUInteger fs, NSUInteger fe, NSUInteger ps, NSUInteger pl) {
+        if (f == field && w == kProtoWireVarint) { [YMSABRHelpers appendVarintField:out field:field value:value]; replaced = YES; }
+        else [out appendBytes:b + fs length:fe - fs];
+        return YES;
+    }];
+    if (!ok) return [msg copy]; // don't corrupt a body we can't parse
+    if (!replaced) [YMSABRHelpers appendVarintField:out field:field value:value];
+    return out;
+}
+
+// Parse a FormatId message → {itag, lastModified, xtags}.
++ (YMSABRFormat *)parseFormatId:(NSData *)fmt {
+    YMSABRFormat *r = [YMSABRFormat new]; r.xtags = [NSData data];
+    const uint8_t *b = (const uint8_t *)fmt.bytes; NSUInteger len = fmt.length;
+    [YMSABRHelpers iterateTopLevel:fmt handler:^BOOL(uint64_t f, int w, NSUInteger fs, NSUInteger fe, NSUInteger ps, NSUInteger pl) {
+        if (f == kSABRFmtItag && w == kProtoWireVarint)    { uint64_t v = 0; if ([YMSABRHelpers readProtoVarint:b length:len position:ps out:&v]) r.itag = v; }
+        else if (f == kSABRFmtLastMod && w == kProtoWireVarint) { uint64_t v = 0; if ([YMSABRHelpers readProtoVarint:b length:len position:ps out:&v]) r.lastModified = v; }
+        else if (f == kSABRFmtXtags && w == kProtoWireLengthDelimited)   { r.xtags = [fmt subdataWithRange:NSMakeRange(ps, pl)]; }
+        return YES;
+    }];
+    return r;
+}
+
+// Resolve a download target for `itag` from the available-format list (#5.#1.#6).
+// Itags can repeat as plain + xtags-tagged variants (soundtrack/DRC live in
+// xtags); `wantXtags` picks one variant exactly (nil/empty = first match,
+// upgraded to an xtags-bearing entry). The triple is copied as one so server
+// matching lines up.
++ (YMSABRFormat *)resolveFormat:(NSData *)body itag:(uint64_t)itag wantXtags:(NSData *)wantXtags {
+    YMSABRFormat *result = [YMSABRFormat new];
+    BOOL exact = wantXtags.length > 0;
+    [YMSABRHelpers iterateTopLevel:body handler:^BOOL(uint64_t f5, int w5, NSUInteger fs, NSUInteger fe, NSUInteger ps5, NSUInteger pl5) {
+        if (f5 != kSABRReqUstreamerConfig || w5 != kProtoWireLengthDelimited) return YES;
+        NSData *avail = [body subdataWithRange:NSMakeRange(ps5, pl5)];
+        [YMSABRHelpers iterateTopLevel:avail handler:^BOOL(uint64_t f1, int w1, NSUInteger fs1, NSUInteger fe1, NSUInteger ps1, NSUInteger pl1) {
+            if (f1 != kSABRAvailInner || w1 != kProtoWireLengthDelimited) return YES;
+            NSData *inner = [avail subdataWithRange:NSMakeRange(ps1, pl1)];
+            [YMSABRHelpers iterateTopLevel:inner handler:^BOOL(uint64_t f6, int w6, NSUInteger fs6, NSUInteger fe6, NSUInteger ps6, NSUInteger pl6) {
+                if (f6 != kSABRAvailList || w6 != kProtoWireLengthDelimited) return YES;
+                YMSABRFormat *fmt = [YMSABRHelpers parseFormatId:[inner subdataWithRange:NSMakeRange(ps6, pl6)]];
+                if (fmt.itag != itag) return YES;
+                BOOL take;
+                if (exact) {
+                    take = !result.found && [fmt.xtags isEqualToData:wantXtags];
+                } else {
+                    // Keep the first match, but upgrade to an entry that carries xtags.
+                    take = !result.found || (result.xtags.length == 0 && fmt.xtags.length > 0);
+                }
+                if (take) {
+                    result.itag = fmt.itag; result.lastModified = fmt.lastModified;
+                    result.xtags = fmt.xtags; result.found = YES;
+                }
+                return YES;
+            }];
+            return YES;
+        }];
+        return NO; // only the first #5
+    }];
+    return result;
+}
+
+// Encode FormatId { #1 itag, #2 lastModified, #3 xtags }. xtags is always
+// emitted (empty if none) — matches YTKACE / the real client.
++ (NSData *)encodeFormatId:(YMSABRFormat *)fmt {
+    NSMutableData *d = [NSMutableData data];
+    [YMSABRHelpers appendVarintField:d field:kSABRFmtItag value:fmt.itag];
+    [YMSABRHelpers appendVarintField:d field:kSABRFmtLastMod value:fmt.lastModified];
+    [YMSABRHelpers appendBytesField:d field:kSABRFmtXtags bytes:fmt.xtags ?: [NSData data]];
+    return d;
+}
+
+// Encode a BufferedRange with the REAL extent just received: segments
+// [startSeg..endSeg] over [startMs, startMs+durationMs). Overstating it makes the
+// server think the track is fully buffered and stop sending its remaining segments.
++ (NSData *)encodeBufferedRange:(YMSABRFormat *)fmt startSeg:(uint64_t)startSeg endSeg:(uint64_t)endSeg startMs:(uint64_t)startMs durationMs:(uint64_t)durationMs {
+    NSMutableData *tr = [NSMutableData data];
+    [YMSABRHelpers appendVarintField:tr field:kSABRTimeRangeStart value:startMs];
+    [YMSABRHelpers appendVarintField:tr field:kSABRTimeRangeDur value:durationMs];
+    [YMSABRHelpers appendVarintField:tr field:kSABRTimeRangeScale value:kSABRMsPerSecond];
+
+    NSMutableData *br = [NSMutableData data];
+    [YMSABRHelpers appendBytesField:br field:kSABRBufFormatId bytes:[YMSABRHelpers encodeFormatId:fmt]];
+    [YMSABRHelpers appendVarintField:br field:kSABRBufStartMs value:startMs];
+    [YMSABRHelpers appendVarintField:br field:kSABRBufDurationMs value:durationMs];
+    [YMSABRHelpers appendVarintField:br field:kSABRBufStartSeg value:startSeg];
+    [YMSABRHelpers appendVarintField:br field:kSABRBufEndSeg value:endSeg];
+    [YMSABRHelpers appendBytesField:br field:kSABRBufTimeRange bytes:tr];
+    return br;
+}
+
+// Convert a TimeRange tick count to milliseconds (rounded).
++ (uint64_t)ticksToMs:(uint64_t)ticks timescale:(uint64_t)timescale {
+    if (timescale == 0) return 0;
+    return (uint64_t)(((double)ticks / (double)timescale) * (double)kSABRMsPerSecond + 0.5);
+}
+
+// Decode MEDIA_HEADER (UMP part 20): maps a headerId to a format + segment.
++ (YMSABRMediaHeader *)decodeMediaHeader:(const uint8_t *)payload size:(NSUInteger)size {
+    NSData *msg = [NSData dataWithBytesNoCopy:(void *)payload length:size freeWhenDone:NO];
+    YMSABRMediaHeader *h = [YMSABRMediaHeader new];
+    const uint8_t *b = (const uint8_t *)msg.bytes; NSUInteger len = msg.length;
+    [YMSABRHelpers iterateTopLevel:msg handler:^BOOL(uint64_t f, int w, NSUInteger fs, NSUInteger fe, NSUInteger ps, NSUInteger pl) {
+        if (f == kSABRHdrHeaderId && w == kProtoWireVarint)         { uint64_t v=0; if ([YMSABRHelpers readProtoVarint:b length:len position:ps out:&v]) h.headerId = v; }
+        else if (f == kSABRHdrItag && w == kProtoWireVarint)        { uint64_t v=0; if ([YMSABRHelpers readProtoVarint:b length:len position:ps out:&v]) h.itag = v; }
+        else if (f == kSABRHdrIsInit && w == kProtoWireVarint)      { uint64_t v=0; if ([YMSABRHelpers readProtoVarint:b length:len position:ps out:&v]) h.isInit = (v != 0); }
+        else if (f == kSABRHdrSequence && w == kProtoWireVarint)    { uint64_t v=0; if ([YMSABRHelpers readProtoVarint:b length:len position:ps out:&v]) h.sequence = v; }
+        else if (f == kSABRHdrStartMs && w == kProtoWireVarint)     { uint64_t v=0; if ([YMSABRHelpers readProtoVarint:b length:len position:ps out:&v]) h.startMs = v; }
+        else if (f == kSABRHdrDurationMs && w == kProtoWireVarint)  { uint64_t v=0; if ([YMSABRHelpers readProtoVarint:b length:len position:ps out:&v]) h.durationMs = v; }
+        else if (f == kSABRHdrContentLength && w == kProtoWireVarint){ uint64_t v=0; if ([YMSABRHelpers readProtoVarint:b length:len position:ps out:&v]) h.contentLength = v; }
+        else if (f == kSABRHdrFormatId && w == kProtoWireLengthDelimited && h.itag == 0) { // fallback itag from nested FormatId
+            YMSABRFormat *fmt = [YMSABRHelpers parseFormatId:[msg subdataWithRange:NSMakeRange(ps, pl)]];
+            if (fmt.itag) h.itag = fmt.itag;
+        }
+        else if (f == kSABRHdrTimeRange && w == kProtoWireLengthDelimited) { // TimeRange — the start/duration source on 21.29
+            NSData *tr = [msg subdataWithRange:NSMakeRange(ps, pl)];
+            uint64_t startTicks = 0, durTicks = 0, timescale = 0;
+            [YMSABRHelpers readVarintField:tr field:kSABRTRStartTicks out:&startTicks];
+            [YMSABRHelpers readVarintField:tr field:kSABRTRDurationTicks out:&durTicks];
+            [YMSABRHelpers readVarintField:tr field:kSABRTRTimescale out:&timescale];
+            if (timescale > 0) {
+                if (h.durationMs == 0 && durTicks) h.durationMs = [YMSABRHelpers ticksToMs:durTicks timescale:timescale];
+                if (h.startMs == 0 && startTicks)  h.startMs   = [YMSABRHelpers ticksToMs:startTicks timescale:timescale];
+            }
+        }
+        return YES;
+    }];
+    return h;
+}
+
+// FORMAT_INITIALIZATION_METADATA (part 42): the authoritative end-of-track marker.
++ (void)decodeFormatInit:(const uint8_t *)payload size:(NSUInteger)size itag:(uint64_t *)itag endSeg:(uint64_t *)endSeg endTimeMs:(uint64_t *)endTimeMs {
+    NSData *msg = [NSData dataWithBytesNoCopy:(void *)payload length:size freeWhenDone:NO];
+    const uint8_t *b = (const uint8_t *)msg.bytes; NSUInteger len = msg.length;
+    __block uint64_t it = 0;
+    [YMSABRHelpers iterateTopLevel:msg handler:^BOOL(uint64_t f, int w, NSUInteger fs, NSUInteger fe, NSUInteger ps, NSUInteger pl) {
+        if (f == kSABRInitFormatId && w == kProtoWireLengthDelimited)          { YMSABRFormat *fmt = [YMSABRHelpers parseFormatId:[msg subdataWithRange:NSMakeRange(ps, pl)]]; if (fmt.itag) it = fmt.itag; }
+        else if (f == kSABRInitEndSegment && w == kProtoWireVarint)   { uint64_t v=0; if ([YMSABRHelpers readProtoVarint:b length:len position:ps out:&v] && endSeg) *endSeg = v; }
+        else if (f == kSABRInitEndTimeMs && w == kProtoWireVarint)    { uint64_t v=0; if ([YMSABRHelpers readProtoVarint:b length:len position:ps out:&v] && endTimeMs) *endTimeMs = v; }
+        return YES;
+    }];
+    if (itag) *itag = it;
+}
+
+// The URL's expire= query value (0 when absent).
++ (NSTimeInterval)expireFromURL:(NSURL *)url {
+    for (NSURLQueryItem *item in [NSURLComponents componentsWithURL:url resolvingAgainstBaseURL:NO].queryItems)
+        if ([item.name isEqualToString:@"expire"]) return item.value.doubleValue;
+    return 0;
+}
 
 #pragma mark - Request builder
 
@@ -433,41 +400,41 @@ static NSTimeInterval SABRExpireFromURL(NSURL *url) {
 //   #1 / #5 / #19 kept byte-for-byte (auth/session/config stay intact)
 // `bufferedRanges` / `selectedFormats` are pre-encoded submessages (nil/empty on
 // the first request).
-static NSData *SABRBuildRequestBody(NSData *orig, YMSABRFormat *videoFmt, YMSABRFormat *audioFmt,
-                                    uint64_t playerTimeMs, NSArray<NSData *> *bufferedRanges,
-                                    NSArray<NSData *> *selectedFormats) {
++ (NSData *)buildRequestBody:(NSData *)orig videoFmt:(YMSABRFormat *)videoFmt audioFmt:(YMSABRFormat *)audioFmt
+               playerTimeMs:(uint64_t)playerTimeMs bufferedRanges:(NSArray<NSData *> *)bufferedRanges
+             selectedFormats:(NSArray<NSData *> *)selectedFormats {
     const uint8_t *b = (const uint8_t *)orig.bytes;
     NSMutableData *out = [NSMutableData data];
-    BOOL parsed = SABRIterateTopLevel(orig, ^BOOL(uint64_t field, int wire, NSUInteger fs, NSUInteger fe, NSUInteger ps, NSUInteger pl) {
+    BOOL parsed = [YMSABRHelpers iterateTopLevel:orig handler:^BOOL(uint64_t field, int wire, NSUInteger fs, NSUInteger fe, NSUInteger ps, NSUInteger pl) {
         // Drop the fields we rebuild; copy everything else verbatim.
         if (field == kSABRReqSelectedFormats || field == kSABRReqBufferedRanges ||
             field == kSABRReqPreferredAudio || field == kSABRReqPreferredVideo ||
             field == kSABRReqPlayerTimeMs) return YES;
         if (field == kSABRReqClientAbrState && wire == 2) {
             // Override player_time_ms (#28) inside the ClientAbrState, keep the rest.
-            NSData *state = SABRSetVarintField([orig subdataWithRange:NSMakeRange(ps, pl)], kSABRAbrStatePlayerTimeMs, playerTimeMs);
-            SABRAppendBytesField(out, kSABRReqClientAbrState, state);
+            NSData *state = [YMSABRHelpers setVarintField:[orig subdataWithRange:NSMakeRange(ps, pl)] field:kSABRAbrStatePlayerTimeMs value:playerTimeMs];
+            [YMSABRHelpers appendBytesField:out field:kSABRReqClientAbrState bytes:state];
             return YES;
         }
         [out appendBytes:b + fs length:fe - fs];
         return YES;
-    });
+    }];
     if (!parsed) return nil;
 
-    SABRAppendVarintField(out, kSABRReqPlayerTimeMs, playerTimeMs);
-    if (audioFmt) SABRAppendBytesField(out, kSABRReqPreferredAudio, SABREncodeFormatId(audioFmt));
-    if (videoFmt) SABRAppendBytesField(out, kSABRReqPreferredVideo, SABREncodeFormatId(videoFmt));
-    for (NSData *sel in selectedFormats) SABRAppendBytesField(out, kSABRReqSelectedFormats, sel);
-    for (NSData *br in bufferedRanges)    SABRAppendBytesField(out, kSABRReqBufferedRanges, br);
+    [YMSABRHelpers appendVarintField:out field:kSABRReqPlayerTimeMs value:playerTimeMs];
+    if (audioFmt) [YMSABRHelpers appendBytesField:out field:kSABRReqPreferredAudio bytes:[YMSABRHelpers encodeFormatId:audioFmt]];
+    if (videoFmt) [YMSABRHelpers appendBytesField:out field:kSABRReqPreferredVideo bytes:[YMSABRHelpers encodeFormatId:videoFmt]];
+    for (NSData *sel in selectedFormats) [YMSABRHelpers appendBytesField:out field:kSABRReqSelectedFormats bytes:sel];
+    for (NSData *br in bufferedRanges)    [YMSABRHelpers appendBytesField:out field:kSABRReqBufferedRanges bytes:br];
     return out;
 }
 
 #pragma mark - Download engine (permanent)
 
 // One network round-trip: POST `body` to the captured signed URL, return the raw
-// UMP response. Called on SABRQueue; the completion must hop back to SABRQueue
-// before touching shared state.
-static void SABRPostOnce(NSURL *url, NSData *body, void (^completion)(NSData *data, NSHTTPURLResponse *http, NSError *err)) {
+// UMP response. Called on the serial queue; the completion must hop back before
+// touching shared state.
++ (void)postOnce:(NSURL *)url body:(NSData *)body completion:(void (^)(NSData *data, NSHTTPURLResponse *http, NSError *err))completion {
     NSMutableURLRequest *req = [NSMutableURLRequest requestWithURL:url];
     req.HTTPMethod = @"POST";
     req.HTTPBody = body;
@@ -485,8 +452,8 @@ static void SABRPostOnce(NSURL *url, NSData *body, void (^completion)(NSData *da
 // Parse one UMP response, routing media to its track by itag. Writes init (once)
 // + media segments, updates lastSequence / duration / per-round window and
 // FORMAT_INIT markers, and reports redirect/reload via out-params.
-static void SABRIngestResponse(NSData *data, NSDictionary<NSNumber *, YMSABRTrack *> *tracks,
-                               NSString **redirectURL, BOOL *reload) {
++ (void)ingestResponse:(NSData *)data tracks:(NSDictionary<NSNumber *, YMSABRTrack *> *)tracks
+           redirectURL:(NSString **)redirectURL reload:(BOOL *)reload {
     NSMutableDictionary<NSNumber *, YMSABRMediaHeader *> *headers = [NSMutableDictionary dictionary]; // headerId -> header
     __block NSString *redirect = nil; __block BOOL sawReload = NO;
 
@@ -496,12 +463,12 @@ static void SABRIngestResponse(NSData *data, NSDictionary<NSNumber *, YMSABRTrac
         t.roundHasMedia = NO; t.roundStartMs = 0; t.roundDurationMs = 0; t.roundFirstSeq = 0; t.roundLastSeq = 0;
     }
 
-    SABRParseUMP(data, ^(uint64_t type, const uint8_t *payload, NSUInteger size) {
+    [YMSABRHelpers parseUMP:data handler:^(uint64_t type, const uint8_t *payload, NSUInteger size) {
         if (type == SABRPartMediaHeader) {
-            YMSABRMediaHeader *h = SABRDecodeMediaHeader(payload, size);
+            YMSABRMediaHeader *h = [YMSABRHelpers decodeMediaHeader:payload size:size];
             headers[@(h.headerId)] = h;
         } else if (type == SABRPartMedia && size > 0) {
-            uint64_t hid = 0; NSUInteger hc = SABRReadUMPVarint(payload, size, 0, &hid);
+            uint64_t hid = 0; NSUInteger hc = [YMSABRHelpers readUMPVarint:payload length:size position:0 out:&hid];
             if (hc == 0 || hc > size) return;
             YMSABRMediaHeader *h = headers[@(hid)];
             YMSABRTrack *track = h ? tracks[@(h.itag)] : nil;
@@ -510,9 +477,8 @@ static void SABRIngestResponse(NSData *data, NSDictionary<NSNumber *, YMSABRTrac
                 if (!track.initWritten) { [track.handle writeData:[NSData dataWithBytes:payload + hc length:size - hc]]; track.bytesWritten += size - hc; track.initWritten = YES; }
                 return;
             }
-            // A segment can arrive more than once (same sequence, different
-            // headerId); only sequences past the high-water mark are new —
-            // duplicates would corrupt the elementary stream.
+            // A segment can arrive more than once (different headerId); only
+            // sequences past the high-water mark are new — duplicates corrupt the stream.
             if (h.sequence <= track.lastSequence) return;
             [track.handle writeData:[NSData dataWithBytes:payload + hc length:size - hc]];
             track.bytesWritten += size - hc;
@@ -529,20 +495,20 @@ static void SABRIngestResponse(NSData *data, NSDictionary<NSNumber *, YMSABRTrac
             track.roundLastSeq = h.sequence;
         } else if (type == SABRPartFormatInit) {
             uint64_t it = 0, endSeg = 0, endMs = 0;
-            SABRDecodeFormatInit(payload, size, &it, &endSeg, &endMs);
+            [YMSABRHelpers decodeFormatInit:payload size:size itag:&it endSeg:&endSeg endTimeMs:&endMs];
             YMSABRTrack *track = tracks[@(it)];
             if (track) { if (endSeg) track.endSegment = endSeg; if (endMs) track.endTimeMs = endMs; }
         } else if (type == SABRPartRedirect) {
             NSData *msg = [NSData dataWithBytesNoCopy:(void *)payload length:size freeWhenDone:NO];
-            SABRIterateTopLevel(msg, ^BOOL(uint64_t f, int w, NSUInteger fs, NSUInteger fe, NSUInteger ps, NSUInteger pl) {
+            [YMSABRHelpers iterateTopLevel:msg handler:^BOOL(uint64_t f, int w, NSUInteger fs, NSUInteger fe, NSUInteger ps, NSUInteger pl) {
                 // -copy detaches from the transient no-copy payload.
                 if (f == kSABRRedirectURL && w == kProtoWireLengthDelimited) redirect = [[[NSString alloc] initWithData:[msg subdataWithRange:NSMakeRange(ps, pl)] encoding:NSUTF8StringEncoding] copy];
                 return NO;
-            });
+            }];
         } else if (type == SABRPartReload) {
             sawReload = YES;
         }
-    });
+    }];
 
     if (redirectURL) *redirectURL = redirect;
     if (reload) *reload = sawReload;
@@ -550,7 +516,7 @@ static void SABRIngestResponse(NSData *data, NSDictionary<NSNumber *, YMSABRTrac
 
 // A track is complete at its last segment (authoritative), or when its real
 // downloaded duration reaches the total (backup check).
-static BOOL SABRTrackDone(YMSABRTrack *track) {
++ (BOOL)trackDone:(YMSABRTrack *)track {
     if (!track.endSegment && !track.endTimeMs) return NO;        // no markers yet → not done
     if (track.endSegment && track.lastSequence >= track.endSegment) return YES;
     if (track.endTimeMs && track.downloadedMs + 500 >= track.endTimeMs) return YES;
@@ -559,7 +525,7 @@ static BOOL SABRTrackDone(YMSABRTrack *track) {
 
 // Fresh unique temp file per track (per download, so stale or concurrent runs
 // can't collide).
-static YMSABRTrack *SABRMakeTrack(YMSABRFormat *fmt, NSString *ext) {
++ (YMSABRTrack *)makeTrack:(YMSABRFormat *)fmt extension:(NSString *)ext {
     NSString *name = [NSString stringWithFormat:@"sabr_%llu_%@.%@", fmt.itag, [NSUUID UUID].UUIDString, ext];
     NSString *path = [NSTemporaryDirectory() stringByAppendingPathComponent:name];
     [[NSFileManager defaultManager] createFileAtPath:path contents:nil attributes:nil];
@@ -573,19 +539,18 @@ static YMSABRTrack *SABRMakeTrack(YMSABRFormat *fmt, NSString *ext) {
 // Orchestrator: download the video + audio itags together (both requested every
 // round; media routed per itag) until each track reaches its last segment, then
 // `completion(videoURL, audioURL, err)` on the main queue. videoItag == 0 =
-// audio-only (videoURL is nil). NB: named SABRRunDownload — SABRDownload is a
-// settings-key macro.
-static void SABRRunDownload(uint64_t videoItag, uint64_t audioItag, NSData *audioXtags,
-                            void (^progress)(float fraction, unsigned long long bytesDownloaded, BOOL isAudio),
-                            void (^completion)(NSURL *videoURL, NSURL *audioURL, NSString *err)) {
-    dispatch_async(SABRQueue(), ^{
+// audio-only (videoURL is nil).
++ (void)runDownloadVideoItag:(uint64_t)videoItag audioItag:(uint64_t)audioItag audioXtags:(NSData *)audioXtags
+                    progress:(void (^)(float fraction, unsigned long long bytesDownloaded, BOOL isAudio))progress
+                  completion:(void (^)(NSURL *videoURL, NSURL *audioURL, NSString *err))completion {
+    dispatch_async([YMSABRHelpers queue], ^{
         if (!gCapURL || !gCapPlainBody.length) {
             dispatch_async(dispatch_get_main_queue(), ^{ completion(nil, nil, @"No request captured yet — play the video for a few seconds first."); });
             return;
         }
         BOOL wantVideo = videoItag != 0;
-        YMSABRFormat *videoFmt = wantVideo ? SABRResolveFormat(gCapPlainBody, videoItag, nil) : nil;
-        YMSABRFormat *audioFmt = SABRResolveFormat(gCapPlainBody, audioItag, audioXtags);
+        YMSABRFormat *videoFmt = wantVideo ? [YMSABRHelpers resolveFormat:gCapPlainBody itag:videoItag wantXtags:nil] : nil;
+        YMSABRFormat *audioFmt = [YMSABRHelpers resolveFormat:gCapPlainBody itag:audioItag wantXtags:audioXtags];
         // A requested soundtrack missing from the available-format list must fail,
         // not fall back (fallback would serve the wrong language).
         if (!audioFmt.found && audioXtags.length > 0) {
@@ -599,8 +564,8 @@ static void SABRRunDownload(uint64_t videoItag, uint64_t audioItag, NSData *audi
         }
 
         gSABRCancel = NO;
-        YMSABRTrack *videoTrack = wantVideo ? SABRMakeTrack(videoFmt, @"mp4") : nil;
-        YMSABRTrack *audioTrack = SABRMakeTrack(audioFmt, @"m4a");
+        YMSABRTrack *videoTrack = wantVideo ? [YMSABRHelpers makeTrack:videoFmt extension:@"mp4"] : nil;
+        YMSABRTrack *audioTrack = [YMSABRHelpers makeTrack:audioFmt extension:@"m4a"];
         // Ordered [video?, audio]; `mainTrack` (video when present, else audio)
         // drives player_time, matching the reference.
         NSArray<YMSABRTrack *> *trackList = wantVideo ? @[videoTrack, audioTrack] : @[audioTrack];
@@ -644,65 +609,58 @@ static void SABRRunDownload(uint64_t videoItag, uint64_t audioItag, NSData *audi
             // buffered extent makes the server stop sending tail segments.
             for (YMSABRTrack *t in trackList) {
                 if (t.roundHasMedia) {
-                    [buffered addObject:SABREncodeBufferedRange(t.format, t.roundFirstSeq, t.roundLastSeq, t.roundStartMs, t.roundDurationMs)];
+                    [buffered addObject:[YMSABRHelpers encodeBufferedRange:t.format startSeg:t.roundFirstSeq endSeg:t.roundLastSeq startMs:t.roundStartMs durationMs:t.roundDurationMs]];
                 }
-                if (t.lastSequence > 0) [selected addObject:SABREncodeFormatId(t.format)];
+                if (t.lastSequence > 0) [selected addObject:[YMSABRHelpers encodeFormatId:t.format]];
             }
             // Drive player_time off the main track's real downloaded total (video
             // when present, else audio) so the playhead pulls segments forward.
             uint64_t driveTime = mainTrack.downloadedMs;
-            NSData *body = SABRBuildRequestBody(gCapPlainBody, videoFmt, audioFmt, driveTime, buffered, selected);
+            NSData *body = [YMSABRHelpers buildRequestBody:gCapPlainBody videoFmt:videoFmt audioFmt:audioFmt playerTimeMs:driveTime bufferedRanges:buffered selectedFormats:selected];
             if (!body) { finish(@"failed to build request body"); return; }
 
-            SABRPostOnce(currentURL, body, ^(NSData *data, NSHTTPURLResponse *http, NSError *err) {
-                dispatch_async(SABRQueue(), ^{
+            [YMSABRHelpers postOnce:currentURL body:body completion:^(NSData *data, NSHTTPURLResponse *http, NSError *err) {
+                dispatch_async([YMSABRHelpers queue], ^{
                     if (err || !http) { finish([NSString stringWithFormat:@"network error: %@", err.localizedDescription ?: @"no response"]); return; }
                     if (http.statusCode != 200 || !data.length) { finish([NSString stringWithFormat:@"HTTP %ld (%lu bytes)", (long)http.statusCode, (unsigned long)data.length]); return; }
 
                     NSMutableDictionary<NSNumber *, NSNumber *> *beforeSeq = [NSMutableDictionary dictionary];
                     for (YMSABRTrack *t in trackList) beforeSeq[@(t.format.itag)] = @(t.lastSequence);
                     NSString *redirect = nil; BOOL reload = NO;
-                    SABRIngestResponse(data, tracks, &redirect, &reload);
+                    [YMSABRHelpers ingestResponse:data tracks:tracks redirectURL:&redirect reload:&reload];
 
                     if (reload) { finish(@"session expired (RELOAD) — replay the video and try again"); return; }
                     if (redirect.length) currentURL = [NSURL URLWithString:redirect] ?: currentURL;
 
-                    BOOL allDone = YES; float fracSum = 0; unsigned long long bytesTotal = 0;
+                    BOOL allDone = YES, advanced = NO; float fracSum = 0; unsigned long long bytesTotal = 0;
                     for (YMSABRTrack *t in trackList) {
-                        t.complete = SABRTrackDone(t);
+                        t.complete = [YMSABRHelpers trackDone:t];
                         if (!t.complete) allDone = NO;
+                        // Stall guard keys off SEQUENCE advancement, not bytes (a stuck
+                        // request still returns the same segment).
+                        if (!t.complete && t.lastSequence > beforeSeq[@(t.format.itag)].unsignedLongLongValue) advanced = YES;
                         fracSum += t.endTimeMs ? MIN(1.0f, (float)t.downloadedMs / (float)t.endTimeMs) : 0;
                         bytesTotal += t.bytesWritten;
                     }
                     BOOL isAudio = (videoTrack != nil && videoTrack.complete && audioTrack != nil && !audioTrack.complete);
                     if (progress) progress(fracSum / (float)trackList.count, bytesTotal, isAudio);
                     if (allDone) { finish(nil); return; }
-                    // Stall guard keys off SEQUENCE advancement, not bytes (a
-                    // stuck request still returns the same segment). Bail after
-                    // several consecutive rounds where no incomplete track advanced.
-                    BOOL advanced = NO;
-                    for (YMSABRTrack *t in trackList)
-                        if (!t.complete && t.lastSequence > beforeSeq[@(t.format.itag)].unsignedLongLongValue) advanced = YES;
+                    // Bail after several consecutive rounds where no incomplete track advanced.
                     emptyRounds = advanced ? 0 : (emptyRounds + 1);
                     if (emptyRounds >= kSABRMaxEmptyRounds) { finish(@"stalled — no forward progress for several rounds"); return; }
                     callRound();
                 });
-            });
+            }];
         };
         box[0] = round;
         round();
     });
 }
 
-#pragma mark - Public entry (called from Download.x)
-
-// Soundtrack identity on the wire: the picked format's xtags (same value the SABR
-// FormatId carries). nil = single-soundtrack video → resolution falls back to
-// "no preference". The accessor's type isn't contractual (undeclared selector on a
-// private protobuf class; the wire field is length-delimited), so both NSData and
-// NSString are read — bailing on an unexpected type would silently serve the
-// default soundtrack instead of the picked one.
-static NSData *SABRXtagsForStream(YTIFormatStream *stream) {
+// Soundtrack identity on the wire: the picked format's xtags (same value the
+// FormatId carries); nil = no preference. The accessor's type isn't contractual
+// (private protobuf class), so both NSData and NSString are read.
++ (NSData *)xtagsForStream:(YTIFormatStream *)stream {
     if (!stream) return nil;
     NSData *xtags = nil;
     @try {
@@ -714,6 +672,9 @@ static NSData *SABRXtagsForStream(YTIFormatStream *stream) {
     } @catch (id ex) {}
     return xtags.length ? xtags : nil;
 }
+@end
+
+#pragma mark - Public entry (called from Download.x)
 
 // Download the chosen mp4 video + m4a audio itags on-device via SABR into two
 // elementary files for the caller's muxer. `progress` (0..1) and `completion` are
@@ -722,19 +683,19 @@ static NSData *SABRXtagsForStream(YTIFormatStream *stream) {
 + (void)downloadVideoItag:(int)videoItag audioItag:(int)audioItag audioStream:(YTIFormatStream *)audioStream
                  progress:(void (^)(float fraction, unsigned long long bytesDownloaded, BOOL isAudio))progress
                completion:(void (^)(NSURL *videoURL, NSURL *audioURL, NSString *err))completion {
-    SABRRunDownload((uint64_t)videoItag, (uint64_t)audioItag, SABRXtagsForStream(audioStream),
-        ^(float f, unsigned long long bytes, BOOL isAudio) { if (progress) dispatch_async(dispatch_get_main_queue(), ^{ progress(f, bytes, isAudio); }); },
-        completion); // SABRRunDownload already delivers completion on the main queue
+    [YMSABRHelpers runDownloadVideoItag:(uint64_t)videoItag audioItag:(uint64_t)audioItag audioXtags:[YMSABRHelpers xtagsForStream:audioStream]
+        progress:^(float f, unsigned long long bytes, BOOL isAudio) { if (progress) dispatch_async(dispatch_get_main_queue(), ^{ progress(f, bytes, isAudio); }); }
+        completion:completion]; // completion is already delivered on the main queue
 }
 + (void)downloadAudioItag:(int)audioItag audioStream:(YTIFormatStream *)audioStream
                  progress:(void (^)(float fraction, unsigned long long bytesDownloaded))progress
                completion:(void (^)(NSURL *audioURL, NSString *err))completion {
     // videoItag 0 → audio-only; deliver just the audio file.
-    SABRRunDownload(0, (uint64_t)audioItag, SABRXtagsForStream(audioStream),
-        ^(float f, unsigned long long bytes, BOOL isAudio) { if (progress) dispatch_async(dispatch_get_main_queue(), ^{ progress(f, bytes); }); },
-        ^(NSURL *videoURL, NSURL *audioURL, NSString *err) { completion(audioURL, err); });
+    [YMSABRHelpers runDownloadVideoItag:0 audioItag:(uint64_t)audioItag audioXtags:[YMSABRHelpers xtagsForStream:audioStream]
+        progress:^(float f, unsigned long long bytes, BOOL isAudio) { if (progress) dispatch_async(dispatch_get_main_queue(), ^{ progress(f, bytes); }); }
+        completion:^(NSURL *videoURL, NSURL *audioURL, NSString *err) { completion(audioURL, err); }];
 }
 + (void)cancelCurrent {
-    dispatch_async(SABRQueue(), ^{ gSABRCancel = YES; }); // loop aborts at its next round
+    dispatch_async([YMSABRHelpers queue], ^{ gSABRCancel = YES; }); // loop aborts at its next round
 }
 @end

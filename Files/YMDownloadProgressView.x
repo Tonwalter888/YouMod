@@ -64,7 +64,7 @@
     UIProgressView *progressBar = [[UIProgressView alloc] initWithProgressViewStyle:UIProgressViewStyleDefault];
     progressBar.progress = 0.0;
     progressBar.trackTintColor = [[UIColor labelColor] colorWithAlphaComponent:0.12];
-    progressBar.progressTintColor = YouModAccentColor();
+    progressBar.progressTintColor = [YMHelpers accentColor];
     progressBar.translatesAutoresizingMaskIntoConstraints = NO;
     progressBar.layer.cornerRadius = 3.0;
     progressBar.clipsToBounds = YES;

@@ -201,6 +201,8 @@
 "HIDE_CAST_BUTTON_NAVBAR_DESC" = "Hide cast button in the navigation bar.";
 "HIDE_MESSAGES_BUTTON" = "Hide messages button";
 "HIDE_MESSAGES_BUTTON_DESC" = "Hide messages button in the navigation bar.";
+"HIDE_SHARE_BUTTON_NAVBAR" = "Hide share button";
+"HIDE_SHARE_BUTTON_NAVBAR_DESC" = "Hide share button in the navigation bar.";
 
 "FEED" = "Feed";
 "HIDE_SUBBAR" = "Hide subbar";
@@ -440,6 +442,14 @@
 "REMOVE_SHORTS_REMIX_BUTTON_DESC" = "Removes the remix button from the Shorts overlay.";
 "REMOVE_SHORTS_SOUNDMETADATA_BUTTON" = "Remove sound metadata button";
 "REMOVE_SHORTS_SOUNDMETADATA_BUTTON_DESC" = "Removes the sound metadata button from the Shorts overlay.";
+"REMOVE_SHORTS_ASK_BUTTON" = "Remove ask button";
+"REMOVE_SHORTS_ASK_BUTTON_DESC" = "Removes the ask button from the Shorts overlay.";
+"REMOVE_SHORTS_VIDEO_TITLE" = "Remove video title";
+"REMOVE_SHORTS_VIDEO_TITLE_DESC" = "Removes the video title from the Shorts overlay.";
+"REMOVE_SHORTS_CHANNEL_NAME" = "Remove channel name";
+"REMOVE_SHORTS_CHANNEL_NAME_DESC" = "Removes the channel name from the Shorts overlay.";
+"REMOVE_SHORTS_CHANNEL_PROFILE" = "Remove channel profile";
+"REMOVE_SHORTS_CHANNEL_PROFILE_DESC" = "Removes the channel profile from the Shorts overlay.";
 "REMOVE_SHORTS_SUB_BUTTON" = "Remove subscribe button";
 "REMOVE_SHORTS_SUB_BUTTON_DESC" = "Removes the subscribe button from the Shorts overlay.";
 "REMOVE_SHORTS_PAUSED_SUB_BUTTON" = "Remove subscriptions button";
@@ -500,6 +510,8 @@
 "ZERO_TAB_DESC" = "At least 1 tab has to be enabled.";
 
 "MISCELLANEOUS" = "Miscellaneous";
+"LIQUID_GLASS" = "Liquid glass";
+"LIQUID_GLASS_DESC" = "Applies liquid glass to some elements.";
 "BACKGROUND_PLAYBACK" = "Background playback";
 "BACKGROUND_PLAYBACK_DESC" = "Enables background playback for videos.";
 "DISABLES_SHORTS_PIP" = "Disables Shorts PiP";

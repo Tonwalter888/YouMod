@@ -3,40 +3,44 @@
 #import <os/log.h>
 #import <dlfcn.h>
 
-static os_log_t YMFFmpegLogHandle(void) {
-    static os_log_t handle; static dispatch_once_t once;
-    dispatch_once(&once, ^{ handle = os_log_create("dev.water888.youmod", "ffmpeg"); });
-    return handle;
-}
-#define YMFFmpegLog(fmt, ...) os_log(YMFFmpegLogHandle(), "[YouMod] " fmt, ##__VA_ARGS__)
-
 static Class gFFmpegKitClass = nil;
 static Class gReturnCodeClass = nil;
 static NSString *gLoadFailure = nil;
 static BOOL gFFmpegInitDone = NO;
 
+#define YMFFmpegLog(fmt, ...) os_log([YMFFmpegHelpers logHandle], "[YouMod] " fmt, ##__VA_ARGS__)
+
+// ffmpegKit loading and synchronous command execution.
+@implementation YMFFmpegHelpers
+
++ (os_log_t)logHandle {
+    static os_log_t handle; static dispatch_once_t once;
+    dispatch_once(&once, ^{ handle = os_log_create("dev.water888.youmod", "ffmpeg"); });
+    return handle;
+}
+
 #pragma mark - Loading
 
-static NSArray<NSString *> *YMFFmpegLibraries(void) {
++ (NSArray<NSString *> *)libraries {
     return @[@"libavutil", @"libswresample", @"libswscale",
              @"libavcodec", @"libavformat", @"libavfilter", @"libavdevice"];
 }
 
-static NSString *YMFrameworkBinaryPath(NSString *root, NSString *name) {
++ (NSString *)frameworkBinaryPathForRoot:(NSString *)root name:(NSString *)name {
     return [[root stringByAppendingPathComponent:[name stringByAppendingPathExtension:@"framework"]]
             stringByAppendingPathComponent:name];
 }
 
-static void YMFFmpegEnsureLoaded(void) {
++ (void)ensureLoaded {
     if (gFFmpegInitDone) return;
     gFFmpegInitDone = YES;
-    NSString *root = YouModBundle().bundlePath;
+    NSString *root = [YMHelpers bundle].bundlePath;
     if (root.length == 0) {
         gLoadFailure = @"YouMod.bundle not found";
         return;
     }
-    for (NSString *library in YMFFmpegLibraries()) {
-        NSString *path = YMFrameworkBinaryPath(root, library);
+    for (NSString *library in [YMFFmpegHelpers libraries]) {
+        NSString *path = [YMFFmpegHelpers frameworkBinaryPathForRoot:root name:library];
         if (![[NSFileManager defaultManager] fileExistsAtPath:path]) {
             gLoadFailure = [NSString stringWithFormat:@"missing %@", library];
             YMFFmpegLog("ffmpeg unavailable: %{public}@", gLoadFailure);
@@ -48,7 +52,7 @@ static void YMFFmpegEnsureLoaded(void) {
             return;
         }
     }
-    NSString *facade = YMFrameworkBinaryPath(root, @"ffmpegkit");
+    NSString *facade = [YMFFmpegHelpers frameworkBinaryPathForRoot:root name:@"ffmpegkit"];
     if (!dlopen(facade.UTF8String, RTLD_NOW | RTLD_GLOBAL)) {
         gLoadFailure = [NSString stringWithFormat:@"dlopen ffmpegkit: %s", dlerror() ?: "unknown"];
         YMFFmpegLog("ffmpeg unavailable: %{public}@", gLoadFailure);
@@ -64,20 +68,9 @@ static void YMFFmpegEnsureLoaded(void) {
     YMFFmpegLog("ffmpeg ready (%{public}@)", root.lastPathComponent);
 }
 
-BOOL YMFFmpegIsAvailable(void) {
-    YMFFmpegEnsureLoaded();
-    return gFFmpegKitClass != nil;
-}
-
-NSString *YMFFmpegUnavailableReason(void) {
-    YMFFmpegEnsureLoaded();
-    if (gFFmpegKitClass) return nil;
-    return gLoadFailure ?: @"unknown";
-}
-
 #pragma mark - Running
 
-static BOOL YMFFmpegRunSync(NSArray<NSString *> *arguments, NSString **failureOut) {
++ (BOOL)runSync:(NSArray<NSString *> *)arguments failureOut:(NSString **)failureOut {
     if (!YMFFmpegIsAvailable()) {
         if (failureOut) *failureOut = YMFFmpegUnavailableReason();
         return NO;
@@ -105,6 +98,19 @@ static BOOL YMFFmpegRunSync(NSArray<NSString *> *arguments, NSString **failureOu
     return success;
 }
 
+@end
+
+BOOL YMFFmpegIsAvailable(void) {
+    [YMFFmpegHelpers ensureLoaded];
+    return gFFmpegKitClass != nil;
+}
+
+NSString *YMFFmpegUnavailableReason(void) {
+    [YMFFmpegHelpers ensureLoaded];
+    if (gFFmpegKitClass) return nil;
+    return gLoadFailure ?: @"unknown";
+}
+
 BOOL YMFFmpegConvertStartupVideo(NSURL *inputURL, NSURL *outputURL, NSString **failureOut) {
     if (!inputURL.isFileURL || !outputURL.isFileURL) {
         if (failureOut) *failureOut = @"Startup video conversion requires local files";
@@ -125,7 +131,7 @@ BOOL YMFFmpegConvertStartupVideo(NSURL *inputURL, NSURL *outputURL, NSString **f
         outputURL.path
     ];
     [[NSFileManager defaultManager] removeItemAtURL:outputURL error:nil];
-    return YMFFmpegRunSync(arguments, failureOut);
+    return [YMFFmpegHelpers runSync:arguments failureOut:failureOut];
 }
 
 void YMFFmpegMuxTracks(NSURL *videoURL, NSArray<NSURL *> *audioURLs, NSArray<YMCaptionTrack *> *subtitles,
@@ -196,7 +202,7 @@ void YMFFmpegMuxTracks(NSURL *videoURL, NSArray<NSURL *> *audioURLs, NSArray<YMC
 
         NSString *failure = nil;
         NSDate *started = [NSDate date];
-        BOOL ok = YMFFmpegRunSync(arguments, &failure);
+        BOOL ok = [YMFFmpegHelpers runSync:arguments failureOut:&failure];
         YMFFmpegLog("mux %{public}s in %{public}.0fms%{public}@",
                     ok ? "ok" : "FAILED", [[NSDate date] timeIntervalSinceDate:started] * 1000.0,
                     ok ? @"" : [@" — " stringByAppendingString:failure ?: @"?"]);

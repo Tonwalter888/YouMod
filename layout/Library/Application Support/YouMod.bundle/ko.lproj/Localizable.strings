@@ -139,6 +139,8 @@
 "HIDE_CAST_BUTTON_NAVBAR_DESC" = "내비게이션 바의 캐스트 버튼을 숨깁니다.";
 "HIDE_MESSAGES_BUTTON" = "메시지 버튼 숨기기";
 "HIDE_MESSAGES_BUTTON_DESC" = "내비게이션 바의 메시지 버튼을 숨깁니다.";
+"HIDE_SHARE_BUTTON_NAVBAR" = "Hide share button";
+"HIDE_SHARE_BUTTON_NAVBAR_DESC" = "Hide share button in the navigation bar.";
 
 "FEED" = "피드";
 "HIDE_SUBBAR" = "서브바 숨기기";
@@ -378,6 +380,14 @@
 "REMOVE_SHORTS_REMIX_BUTTON_DESC" = "Shorts 오버레이에서 리믹스 버튼을 제거합니다.";
 "REMOVE_SHORTS_SOUNDMETADATA_BUTTON" = "사운드 메타데이터 버튼 제거";
 "REMOVE_SHORTS_SOUNDMETADATA_BUTTON_DESC" = "Shorts 오버레이에서 사운드 메타데이터 버튼을 제거합니다.";
+"REMOVE_SHORTS_ASK_BUTTON" = "Remove ask button";
+"REMOVE_SHORTS_ASK_BUTTON_DESC" = "Removes the ask button from the Shorts overlay.";
+"REMOVE_SHORTS_VIDEO_TITLE" = "Remove video title";
+"REMOVE_SHORTS_VIDEO_TITLE_DESC" = "Removes the video title from the Shorts overlay.";
+"REMOVE_SHORTS_CHANNEL_NAME" = "Remove channel name";
+"REMOVE_SHORTS_CHANNEL_NAME_DESC" = "Removes the channel name from the Shorts overlay.";
+"REMOVE_SHORTS_CHANNEL_PROFILE" = "Remove channel profile";
+"REMOVE_SHORTS_CHANNEL_PROFILE_DESC" = "Removes the channel profile from the Shorts overlay.";
 "REMOVE_SHORTS_SUB_BUTTON" = "Remove subscribe button";
 "REMOVE_SHORTS_SUB_BUTTON_DESC" = "Removes the subscribe button from the Shorts overlay.";
 "REMOVE_SHORTS_PAUSED_SUB_BUTTON" = "구독 버튼 제거";
@@ -438,6 +448,8 @@
 "ZERO_TAB_DESC" = "최소 1개의 탭은 활성화되어 있어야 합니다.";
 
 "MISCELLANEOUS" = "기타";
+"LIQUID_GLASS" = "Liquid glass";
+"LIQUID_GLASS_DESC" = "Applies liquid glass to some elements.";
 "BACKGROUND_PLAYBACK" = "백그라운드 재생";
 "BACKGROUND_PLAYBACK_DESC" = "동영상의 백그라운드 재생을 활성화합니다.";
 "DISABLES_SHORTS_PIP" = "Shorts PiP 비활성화";

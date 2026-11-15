@@ -673,7 +673,7 @@ static const void *kYMCachedDisplayedItemsKey = &kYMCachedDisplayedItemsKey;
         sb.translatesAutoresizingMaskIntoConstraints = NO;
         sb.placeholder = LOC(@"SEARCH");
         sb.searchBarStyle = UISearchBarStyleMinimal;
-        sb.tintColor = YouModAccentColor();
+        sb.tintColor = [YMHelpers accentColor];
         sb.delegate = self;
         sb.backgroundImage = [[UIImage alloc] init];
         [self.view addSubview:sb];
@@ -957,7 +957,7 @@ static const void *kYMCachedDisplayedItemsKey = &kYMCachedDisplayedItemsKey;
 
     UISwitch *sw = [[UISwitch alloc] init];
     sw.on = IS_ENABLED(item.key);
-    sw.onTintColor = YouModAccentColor();
+    sw.onTintColor = [YMHelpers accentColor];
     objc_setAssociatedObject(sw, kYMSwitchKeyAssoc, item.key, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     [sw addTarget:self action:@selector(toggleChanged:) forControlEvents:UIControlEventValueChanged];
     cell.accessoryView = sw;
@@ -1013,7 +1013,7 @@ static const void *kYMCachedDisplayedItemsKey = &kYMCachedDisplayedItemsKey;
     slider.minimumValue = item.sliderMin;
     slider.maximumValue = item.sliderMax;
     [slider setValue:stored animated:NO];
-    slider.minimumTrackTintColor = YouModAccentColor();
+    slider.minimumTrackTintColor = [YMHelpers accentColor];
     slider.maximumTrackTintColor = [UIColor colorWithWhite:0.3 alpha:1.0];
     objc_setAssociatedObject(slider, kYMSliderKeyAssoc, item.key, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     objc_setAssociatedObject(slider, kYMSliderStepAssoc, @(item.sliderStep), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
@@ -1155,7 +1155,7 @@ static UIImage *YMGrayCircle(CGFloat diameter) {
 
 // Menu row that pushes a page: leading YT icon (RTL-mirrored), title, chevron.
 - (UITableViewCell *)navCellForItem:(YMSettingsItem *)item tableView:(UITableView *)tableView {
-    BOOL isSidebarRow = isPadHardware() && self.ymIsSplitSidebar;
+    BOOL isSidebarRow = [YMHelpers isPadHardware] && self.ymIsSplitSidebar;
     UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:nil];
     cell.backgroundColor = [UIColor clearColor];
     cell.selectionStyle = isSidebarRow ? UITableViewCellSelectionStyleNone : UITableViewCellSelectionStyleDefault;
@@ -1166,7 +1166,7 @@ static UIImage *YMGrayCircle(CGFloat diameter) {
     // pages). Square — no rounded corners.
     if (self.selectedGroupTitle.length > 0 && [self.selectedGroupTitle isEqualToString:item.title]) {
         UIView *bg = [[UIView alloc] init];
-        bg.backgroundColor = [YouModAccentColor() colorWithAlphaComponent:0.18];
+        bg.backgroundColor = [[YMHelpers accentColor] colorWithAlphaComponent:0.18];
         cell.backgroundView = bg;
     }
 
@@ -1187,7 +1187,7 @@ static UIImage *YMGrayCircle(CGFloat diameter) {
         UIImage *img = [YMIconProvider settingsIcon:item.bundleIcon];
         if (img) leadingIcon = [img imageWithTintColor:[self ymTextColor] renderingMode:UIImageRenderingModeAlwaysOriginal];
     } else if (item.iconType > 0) {
-        leadingIcon = YouModYTIconImage(item.iconType, NO, nil);
+        leadingIcon = [YMHelpers ytIconImage:item.iconType useCustomColor:NO customColor:nil];
     }
     if (leadingIcon) {
         UIImageView *iconView = [[UIImageView alloc] init];
@@ -1896,7 +1896,7 @@ static const void *kYMTabSavedScrollEdgeAppearanceKey = &kYMTabSavedScrollEdgeAp
         cell.selectionStyle = UITableViewCellSelectionStyleNone;
 
         sw = [[UISwitch alloc] init];
-        sw.onTintColor = YouModAccentColor();
+        sw.onTintColor = [YMHelpers accentColor];
         [sw addTarget:self action:@selector(tabToggleChanged:) forControlEvents:UIControlEventValueChanged];
         sw.translatesAutoresizingMaskIntoConstraints = NO;
         sw.tag = 999;
@@ -2056,7 +2056,7 @@ void YMPresentTabOrder(id presenter) {
         initWithBarButtonSystemItem:UIBarButtonSystemItemDone
         primaryAction:doneAction];
 
-    UIViewController *from = [presenter isKindOfClass:[UIViewController class]] ? presenter : YouModTopViewController(nil);
+    UIViewController *from = [presenter isKindOfClass:[UIViewController class]] ? presenter : [YMHelpers topViewController:nil];
     while (from.presentedViewController) from = from.presentedViewController;
     [from presentViewController:nav animated:YES completion:nil];
 }
@@ -2368,7 +2368,7 @@ static const void *kYMOverlayMoveInFlightKey = &kYMOverlayMoveInFlightKey;
         cell.selectionStyle = UITableViewCellSelectionStyleNone;
 
         sw = [[UISwitch alloc] init];
-        sw.onTintColor = YouModAccentColor();
+        sw.onTintColor = [YMHelpers accentColor];
         [sw addTarget:self action:@selector(buttonToggleChanged:) forControlEvents:UIControlEventValueChanged];
         sw.translatesAutoresizingMaskIntoConstraints = NO;
         sw.tag = 999;
@@ -2649,7 +2649,7 @@ void YMPresentSettingsPage(UIViewController *root, id presenter) {
     root.navigationItem.backButtonTitle = pageTitle; // "‹ <title>" on pushed pages
     root.navigationItem.leftBarButtonItems = @[closeItem, titleItem];
 
-    UIViewController *from = [presenter isKindOfClass:[UIViewController class]] ? presenter : YouModTopViewController(nil);
+    UIViewController *from = [presenter isKindOfClass:[UIViewController class]] ? presenter : [YMHelpers topViewController:nil];
     while (from.presentedViewController) from = from.presentedViewController;
     [from presentViewController:nav animated:YES completion:nil];
 }

@@ -3,23 +3,7 @@
 #import <Photos/Photos.h>
 #import <os/log.h>
 
-static os_log_t YMDownloadLogHandle(void) {
-    static os_log_t handle; static dispatch_once_t once;
-    dispatch_once(&once, ^{ handle = os_log_create("dev.water888.youmod", "download"); });
-    return handle;
-}
-#define YMDownloadLog(fmt, ...) os_log(YMDownloadLogHandle(), "[YouMod] " fmt, ##__VA_ARGS__)
-
-@interface YMProgressMeter : NSObject
-@property (nonatomic, assign) unsigned long long expectedTotal;
-@property (nonatomic, assign) unsigned long long lastBytes;
-@property (nonatomic, assign) NSTimeInterval lastSample;
-@property (nonatomic, assign) double smoothedBytesPerSecond;
-@property (nonatomic, assign) NSTimeInterval startedAt;
-- (void)observeBytes:(unsigned long long)bytes;
-- (NSString *)statusCaptionForCompletedBytes:(unsigned long long)completedBytes;
-- (double)averageBytesPerSecondFor:(unsigned long long)bytes;
-@end
+#define YMDownloadLog(fmt, ...) os_log([YMDownloadHelpers logHandle], "[YouMod] " fmt, ##__VA_ARGS__)
 
 static BOOL gYMDownloadBusy = NO;
 static YMProgressMeter *gYMDownloadMeter = nil;
@@ -58,19 +42,12 @@ static YMDownloadProgressView *gYMDownloadProgressView = nil;
     }
 }
 
-static NSString *YMDLByteCountString(unsigned long long bytes) {
-    if (bytes < 1) return @"0 B";
-    NSByteCountFormatter *fmt = [NSByteCountFormatter new];
-    fmt.countStyle = NSByteCountFormatterCountStyleFile;
-    return [fmt stringFromByteCount:(long long)bytes];
-}
-
 - (NSString *)statusCaptionForCompletedBytes:(unsigned long long)completedBytes {
     NSMutableArray<NSString *> *parts = [NSMutableArray array];
     if (self.expectedTotal > 0 && completedBytes > 0) {
         unsigned long long done = completedBytes > self.expectedTotal ? self.expectedTotal : completedBytes;
         [parts addObject:[NSString stringWithFormat:@"%@ / %@",
-                          YMDLByteCountString(done), YMDLByteCountString(self.expectedTotal)]];
+                          [YMDownloadHelpers byteCountString:done], [YMDownloadHelpers byteCountString:self.expectedTotal]]];
     }
     if (self.smoothedBytesPerSecond > 1024) {
         NSByteCountFormatter *fmt = [NSByteCountFormatter new];
@@ -157,12 +134,6 @@ void YouModRequestPhotoAccess(void (^completion)(BOOL granted)) {
     }];
 }
 
-static NSString *YMDuplicateSuffix(NSString *fileName) {
-    NSString *base = YouModSanitizedFileName(fileName);
-    NSRange range = [base rangeOfString:@" \\[[A-Za-z0-9_-]{11}\\]$" options:NSRegularExpressionSearch];
-    return range.location == NSNotFound ? nil : [base substringFromIndex:range.location];
-}
-
 void YouModSaveVideoToPhotos(NSURL *fileURL, UIViewController *presenter, void (^completion)(BOOL success, NSError *error)) {
     YouModRequestPhotoAccess(^(BOOL granted) {
         if (!granted) {
@@ -183,7 +154,7 @@ void YouModSaveVideoToPhotos(NSURL *fileURL, UIViewController *presenter, void (
 void YouModShareItem(id item, UIViewController *presenter, UIView *sourceView) {
     if (!item || !presenter) return;
     UIActivityViewController *vc = [[UIActivityViewController alloc] initWithActivityItems:@[item] applicationActivities:nil];
-    YouModConfigureSharePopover(vc, sourceView ?: presenter.view);
+    [YMHelpers configureSharePopover:vc sourceView:sourceView ?: presenter.view];
     [presenter presentViewController:vc animated:YES completion:nil];
 }
 
@@ -241,7 +212,30 @@ void YouModHandlePostDownloadImage(UIImage *image, UIViewController *presenter) 
 
 #pragma mark - Download path
 
-static void YMDownloadFail(NSString *message, NSArray<NSURL *> *temporaries) {
+// Download helpers: logging, file naming/dedup, failure cleanup, thumbnail and
+// library side effects, and the mux-and-finish flow.
+@implementation YMDownloadHelpers
+
++ (os_log_t)logHandle {
+    static os_log_t handle; static dispatch_once_t once;
+    dispatch_once(&once, ^{ handle = os_log_create("dev.water888.youmod", "download"); });
+    return handle;
+}
+
++ (NSString *)byteCountString:(unsigned long long)bytes {
+    if (bytes < 1) return @"0 B";
+    NSByteCountFormatter *fmt = [NSByteCountFormatter new];
+    fmt.countStyle = NSByteCountFormatterCountStyleFile;
+    return [fmt stringFromByteCount:(long long)bytes];
+}
+
++ (NSString *)duplicateSuffix:(NSString *)fileName {
+    NSString *base = YouModSanitizedFileName(fileName);
+    NSRange range = [base rangeOfString:@" \\[[A-Za-z0-9_-]{11}\\]$" options:NSRegularExpressionSearch];
+    return range.location == NSNotFound ? nil : [base substringFromIndex:range.location];
+}
+
++ (void)failWithMessage:(NSString *)message temporaries:(NSArray<NSURL *> *)temporaries {
     for (NSURL *url in temporaries) {
         [[NSFileManager defaultManager] removeItemAtURL:url error:nil];
     }
@@ -254,7 +248,7 @@ static void YMDownloadFail(NSString *message, NSArray<NSURL *> *temporaries) {
     });
 }
 
-static void YMSaveThumbnailAlongsideVideo(NSURL *thumbnailURL, NSURL *videoOutputURL) {
++ (void)saveThumbnail:(NSURL *)thumbnailURL alongsideVideo:(NSURL *)videoOutputURL {
     if (!thumbnailURL || !videoOutputURL) return;
     NSURL *dest = [[videoOutputURL URLByDeletingPathExtension] URLByAppendingPathExtension:@"jpg"];
     [[NSURLSession.sharedSession dataTaskWithURL:thumbnailURL completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
@@ -262,7 +256,7 @@ static void YMSaveThumbnailAlongsideVideo(NSURL *thumbnailURL, NSURL *videoOutpu
     }] resume];
 }
 
-static void YMRecordLibraryDownloadType(NSURL *fileURL, BOOL isShorts) {
++ (void)recordLibraryDownloadTypeForFileURL:(NSURL *)fileURL isShorts:(BOOL)isShorts {
     if (!fileURL || !isShorts) return;
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     NSMutableDictionary *metadata = [[defaults dictionaryForKey:@"YouModDownloadLibraryMetadata"] mutableCopy] ?: [NSMutableDictionary dictionary];
@@ -273,9 +267,9 @@ static void YMRecordLibraryDownloadType(NSURL *fileURL, BOOL isShorts) {
     [defaults setObject:metadata forKey:@"YouModDownloadLibraryMetadata"];
 }
 
-static void YMDownloadMuxAndFinish(NSURL *videoURL, NSArray<NSURL *> *audioURLs, NSArray<YMCaptionTrack *> *subtitles,
-                                   NSString *fileName, YMFormat *video, NSArray<YMFormat *> *audioFormats,
-                                   YMDownloadDestination destination, NSURL *thumbnailURL, BOOL isShorts, UIViewController *presenter) {
++ (void)muxAndFinishWithVideoURL:(NSURL *)videoURL audioURLs:(NSArray<NSURL *> *)audioURLs subtitles:(NSArray<YMCaptionTrack *> *)subtitles
+                        fileName:(NSString *)fileName video:(YMFormat *)video audioFormats:(NSArray<YMFormat *> *)audioFormats
+                     destination:(YMDownloadDestination)destination thumbnailURL:(NSURL *)thumbnailURL isShorts:(BOOL)isShorts presenter:(UIViewController *)presenter {
     NSMutableArray<NSURL *> *temporaries = [NSMutableArray array];
     if (videoURL) [temporaries addObject:videoURL];
     [temporaries addObjectsFromArray:audioURLs];
@@ -314,8 +308,8 @@ static void YMDownloadMuxAndFinish(NSURL *videoURL, NSArray<NSURL *> *audioURLs,
                 [[NSFileManager defaultManager] removeItemAtURL:url error:nil];
             }
             BOOL toPhotos = destination == YMDownloadDestinationPhotos && video && YouModFileIsPhotosCompatible(output);
-            if (video && !toPhotos) YMSaveThumbnailAlongsideVideo(thumbnailURL, output);
-            if (!toPhotos) YMRecordLibraryDownloadType(output, isShorts && video != nil);
+            if (video && !toPhotos) [YMDownloadHelpers saveThumbnail:thumbnailURL alongsideVideo:output];
+            if (!toPhotos) [YMDownloadHelpers recordLibraryDownloadTypeForFileURL:output isShorts:(isShorts && video != nil)];
             dispatch_async(dispatch_get_main_queue(), ^{
                 gYMDownloadBusy = NO;
                 [gYMDownloadProgressView dismiss];
@@ -323,13 +317,13 @@ static void YMDownloadMuxAndFinish(NSURL *videoURL, NSArray<NSURL *> *audioURLs,
                 if (output) YouModHandlePostDownloadFile(output, video != nil, destination, presenter);
             });
         } else {
-            YMDownloadFail(failure ?: LOC(@"DOWNLOAD_FAILED"), temporaries);
+            [YMDownloadHelpers failWithMessage:(failure ?: LOC(@"DOWNLOAD_FAILED")) temporaries:temporaries];
         }
     });
 }
 
-static NSArray<NSURL *> *YMExistingDownloadsForFileName(NSString *fileName) {
-    NSString *suffix = YMDuplicateSuffix(fileName);
++ (NSArray<NSURL *> *)existingDownloadsForFileName:(NSString *)fileName {
+    NSString *suffix = [YMDownloadHelpers duplicateSuffix:fileName];
     if (!suffix) return @[];
     NSSet<NSString *> *exts = [NSSet setWithObjects:@"mp4", @"mkv", @"m4a", @"mka", nil];
     NSMutableArray<NSURL *> *matches = [NSMutableArray array];
@@ -342,6 +336,8 @@ static NSArray<NSURL *> *YMExistingDownloadsForFileName(NSString *fileName) {
     }
     return matches;
 }
+
+@end
 
 void YMDownloadStart(YMFormat *video, NSArray<YMFormat *> *audioTracks, NSArray<YMCaptionTrack *> *captions,
                      NSString *fileName, YMDownloadDestination destination, NSURL *thumbnailURL, BOOL isShorts, UIViewController *presenter) {
@@ -359,7 +355,7 @@ void YMDownloadStart(YMFormat *video, NSArray<YMFormat *> *audioTracks, NSArray<
         return;
     }
     if (destination == YMDownloadDestinationFiles) {
-        NSArray<NSURL *> *existing = YMExistingDownloadsForFileName(fileName);
+        NSArray<NSURL *> *existing = [YMDownloadHelpers existingDownloadsForFileName:fileName];
         if (existing.count > 0) {
             YTAlertView *alert = [%c(YTAlertView) confirmationDialogWithAction:^{
                 for (NSURL *url in existing) {
@@ -380,8 +376,7 @@ void YMDownloadStart(YMFormat *video, NSArray<YMFormat *> *audioTracks, NSArray<
     for (YMFormat *track in audioTracks) expectedTotal += (unsigned long long)track.contentLength;
     gYMDownloadMeter.expectedTotal = expectedTotal;
     __block unsigned long long completedBeforePhase = 0;
-    // Pushes cumulative progress into the download pill (percent, bytes, speed);
-    // phaseFraction is a fallback when expected sizes are unknown.
+    // Pushes cumulative progress into the download pill; phaseFraction is the fallback when expected sizes are unknown.
     void (^reportProgress)(float, unsigned long long, BOOL) = ^(float phaseFraction, unsigned long long completedBytes, BOOL isAudio) {
         [gYMDownloadMeter observeBytes:completedBytes];
         float overall = expectedTotal > 0 ? (float)((double)completedBytes / (double)expectedTotal) : phaseFraction;
@@ -409,7 +404,7 @@ void YMDownloadStart(YMFormat *video, NSArray<YMFormat *> *audioTracks, NSArray<
             reportProgress(fraction, completedBeforePhase + bytes, isAudio);
         } completion:^(NSURL *videoURL, NSURL *audioURL, NSString *err) {
             if (!videoURL || !audioURL || err) {
-                YMDownloadFail(err, @[]);
+                [YMDownloadHelpers failWithMessage:err temporaries:@[]];
                 return;
             }
             NSMutableArray<YMCaptionTrack *> *localCaptions = [NSMutableArray array];
@@ -431,14 +426,14 @@ void YMDownloadStart(YMFormat *video, NSArray<YMFormat *> *audioTracks, NSArray<
             NSMutableArray *nextBox = [NSMutableArray arrayWithObject:[NSNull null]];
             void (^downloadNextAudio)(void) = ^{
                 if (nextAudio >= audioTracks.count) {
-                    YMDownloadMuxAndFinish(videoURL, audioURLs, localCaptions, fileName, video, audioTracks, destination, thumbnailURL, isShorts, presenter);
+                    [YMDownloadHelpers muxAndFinishWithVideoURL:videoURL audioURLs:audioURLs subtitles:localCaptions fileName:fileName video:video audioFormats:audioTracks destination:destination thumbnailURL:thumbnailURL isShorts:isShorts presenter:presenter];
                     return;
                 }
                 YMFormat *next = audioTracks[nextAudio++];
                 [YMSABR downloadAudioItag:next.itag audioStream:next.source progress:^(float fraction, unsigned long long bytes) {
                     reportProgress(fraction, completedBeforePhase + bytes, YES);
                 } completion:^(NSURL *url, NSString *error) {
-                    if (!url || error) { YMDownloadFail(error, audioURLs); return; }
+                    if (!url || error) { [YMDownloadHelpers failWithMessage:error temporaries:audioURLs]; return; }
                     completedBeforePhase += (unsigned long long)next.contentLength;
                     [audioURLs addObject:url];
                     id next = nextBox.firstObject;
@@ -454,7 +449,7 @@ void YMDownloadStart(YMFormat *video, NSArray<YMFormat *> *audioTracks, NSArray<
         NSMutableArray *nextBox = [NSMutableArray arrayWithObject:[NSNull null]];
         void (^downloadNextAudio)(void) = ^{
             if (nextAudio >= audioTracks.count) {
-                YMDownloadMuxAndFinish(nil, audioURLs, @[], fileName, nil, audioTracks, destination, thumbnailURL, NO, presenter);
+                [YMDownloadHelpers muxAndFinishWithVideoURL:nil audioURLs:audioURLs subtitles:@[] fileName:fileName video:nil audioFormats:audioTracks destination:destination thumbnailURL:thumbnailURL isShorts:NO presenter:presenter];
                 return;
             }
             YMFormat *currentAudio = audioTracks[nextAudio++];
@@ -462,7 +457,7 @@ void YMDownloadStart(YMFormat *video, NSArray<YMFormat *> *audioTracks, NSArray<
                 reportProgress(fraction, completedBeforePhase + bytes, YES);
             } completion:^(NSURL *audioURL, NSString *err) {
                 if (!audioURL || err) {
-                    YMDownloadFail(err, audioURLs);
+                    [YMDownloadHelpers failWithMessage:err temporaries:audioURLs];
                     return;
                 }
                 completedBeforePhase += (unsigned long long)currentAudio.contentLength;

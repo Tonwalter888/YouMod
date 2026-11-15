@@ -35,7 +35,7 @@ static const void *kYMDeArrowNodeVideoID = &kYMDeArrowNodeVideoID;
 
 + (void)applyToNode:(ELMImageNode *)node forURL:(NSURL *)url {
     if (!node || !url) return;
-    NSString *videoID = YMExtractYouTubeVideoID(url.absoluteString);
+    NSString *videoID = [YMHelpers extractYouTubeVideoID:url.absoluteString];
     if (videoID.length != 11 || ![url.host isEqualToString:@"i.ytimg.com"]) return;
 
     // Tag the node; if it gets reused for another video, late callbacks bail out.

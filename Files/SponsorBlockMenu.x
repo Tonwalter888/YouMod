@@ -4,9 +4,16 @@
 // SponsorBlock menu: the shield button opens a YouTube-style bottom sheet (toggle, voting, whitelist);
 // sub-screens push onto our form-sheet card dialog (YMSBCardViewController), a nav stack with a table.
 
+// Our engagement panel's ID and the nav controller currently shown in it (see the hooks below).
+static NSString * const SBEngagementPanelID = @"youmod-sponsorblock";
+static UINavigationController *sbEngagementPanelNav = nil;
+
+// Menu helpers (see YMSBMenuHelpers.h).
+@implementation YMSBMenuHelpers
+
 #pragma mark - Small helpers
 
-static NSString *sbFormatTime(float t) {
++ (NSString *)formatTime:(float)t {
     NSInteger total = (NSInteger)lroundf(t);
     if (total < 0) total = 0;
     NSInteger h = total / 3600;
@@ -16,8 +23,8 @@ static NSString *sbFormatTime(float t) {
     return [NSString stringWithFormat:@"%ld:%02ld", (long)m, (long)s];
 }
 
-// Like sbFormatTime but with tenths, for marking segment boundaries.
-static NSString *sbFormatPreciseTime(float t) {
+// Like formatTime but with tenths, for marking segment boundaries.
++ (NSString *)formatPreciseTime:(float)t {
     if (t < 0) t = 0;
     NSInteger tenths = (NSInteger)lroundf(t * 10.0f);
     NSInteger total = tenths / 10;
@@ -28,18 +35,18 @@ static NSString *sbFormatPreciseTime(float t) {
     return [NSString stringWithFormat:@"%ld:%02ld.%ld", (long)m, (long)sec, (long)(tenths % 10)];
 }
 
-static NSString *sbLocalizedCategoryName(NSString *category) {
-    return [YouModBundle() localizedStringForKey:[NSString stringWithFormat:@"SB_CAT_%@", category ?: @""]
++ (NSString *)localizedCategoryName:(NSString *)category {
+    return [[YMHelpers bundle] localizedStringForKey:[NSString stringWithFormat:@"SB_CAT_%@", category ?: @""]
                                             value:category
                                             table:nil];
 }
 
-static UIImage *sbSymbolImage(NSString *symbolName) {
++ (UIImage *)symbolImage:(NSString *)symbolName {
     UIImageSymbolConfiguration *config = [UIImageSymbolConfiguration configurationWithPointSize:18 weight:UIImageSymbolWeightMedium];
     return [[UIImage systemImageNamed:symbolName withConfiguration:config] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
 }
 
-static UIImage *sbDotImage(UIColor *color) {
++ (UIImage *)dotImage:(UIColor *)color {
     UIGraphicsImageRenderer *renderer = [[UIGraphicsImageRenderer alloc] initWithSize:CGSizeMake(18, 18)];
     return [renderer imageWithActions:^(UIGraphicsImageRendererContext *context) {
         UIBezierPath *path = [UIBezierPath bezierPathWithOvalInRect:CGRectMake(2, 2, 14, 14)];
@@ -48,27 +55,15 @@ static UIImage *sbDotImage(UIColor *color) {
     }];
 }
 
-// Uniform icon size for the YouTube action sheet: each SF Symbol is rendered into an exact
-// 24x24 canvas so every row's icon box is identical.
-static UIImage *sbSheetIcon(NSString *symbolName) {
-    return YouModSymbolImageInCanvas(symbolName, 24, 22, UIImageSymbolWeightMedium);
+// Uniform icon size for the YouTube action sheet: each SF Symbol rendered into an exact 24x24 canvas.
++ (UIImage *)sheetIcon:(NSString *)symbolName {
+    return [YMHelpers symbolImageInCanvas:symbolName canvasSize:24 pointSize:22 weight:UIImageSymbolWeightMedium];
 }
 
-#pragma mark - User ID
+#pragma mark - User ID hashing
 
-NSString *sbLocalUserID(void) {
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    NSString *userID = [defaults stringForKey:SBPrivateUserIDKey];
-    if (userID.length >= 30) return userID;
-    // A hyphen-less UUID is 32 hex chars, matching SponsorBlock's local userID requirement.
-    userID = [[[NSUUID UUID] UUIDString] stringByReplacingOccurrencesOfString:@"-" withString:@""];
-    [defaults setObject:userID forKey:SBPrivateUserIDKey];
-    return userID;
-}
-
-// Public userID is the private one hashed with SHA-256 5000 times (SponsorBlock spec);
-// cached so a private-ID change is detected and a manual override survives.
-static NSString *sbHashPublicFromPrivate(NSString *privateID) {
+// SHA-256 5000 times (SponsorBlock spec) — the public userID derived from the private one.
++ (NSString *)hashPublicFromPrivate:(NSString *)privateID {
     NSData *data = [privateID dataUsingEncoding:NSUTF8StringEncoding];
     uint8_t digest[CC_SHA256_DIGEST_LENGTH];
     CC_SHA256(data.bytes, (CC_LONG)data.length, digest);
@@ -82,41 +77,10 @@ static NSString *sbHashPublicFromPrivate(NSString *privateID) {
     return hex;
 }
 
-NSString *sbPublicUserID(void) {
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    NSDictionary *cache = [defaults dictionaryForKey:SBPublicUserIDKey];
-    if ([cache[@"manual"] boolValue]) {
-        NSString *value = cache[@"value"];
-        if (value.length > 0) return value;
-    }
-    NSString *privateID = sbLocalUserID();
-    NSString *value = cache[@"value"];
-    if (value.length > 0 && [cache[@"private"] isEqualToString:privateID]) return value;
-    value = sbHashPublicFromPrivate(privateID);
-    [defaults setObject:@{@"manual": @NO, @"private": privateID, @"value": value} forKey:SBPublicUserIDKey];
-    return value;
-}
-
-void sbSetPrivateUserID(NSString *userID) {
-    if (userID.length < 30) return;
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    [defaults setObject:userID forKey:SBPrivateUserIDKey];
-    // Drop the derived public-ID cache unless the user set a manual override.
-    NSDictionary *cache = [defaults dictionaryForKey:SBPublicUserIDKey];
-    if (![cache[@"manual"] boolValue]) {
-        [defaults removeObjectForKey:SBPublicUserIDKey];
-    }
-}
-
-void sbSetPublicUserIDManual(NSString *userID) {
-    if (userID.length < 30) return;
-    [[NSUserDefaults standardUserDefaults] setObject:@{@"manual": @YES, @"value": userID} forKey:SBPublicUserIDKey];
-}
-
 #pragma mark - Whitelist + channel info
 
 // Same as Download.x's YouModPlayerDataForPlayer: contentPlayerResponse when available, playerResponse otherwise.
-static YTIPlayerResponse *sbPlayerDataForPlayer(YTPlayerViewController *player) {
++ (YTIPlayerResponse *)playerDataForPlayer:(YTPlayerViewController *)player {
     YTPlayerResponse *response;
     if ([player respondsToSelector:@selector(contentPlayerResponse)]) {
         response = player.contentPlayerResponse;
@@ -126,20 +90,20 @@ static YTIPlayerResponse *sbPlayerDataForPlayer(YTPlayerViewController *player) 
     return response.playerData;
 }
 
-static NSString *sbCurrentChannelID(YTPlayerViewController *player) {
-    return sbPlayerDataForPlayer(player).videoDetails.channelId;
++ (NSString *)currentChannelID:(YTPlayerViewController *)player {
+    return [YMSBMenuHelpers playerDataForPlayer:player].videoDetails.channelId;
 }
 
-static NSString *sbCurrentChannelName(YTPlayerViewController *player) {
-    return sbPlayerDataForPlayer(player).videoDetails.author;
++ (NSString *)currentChannelName:(YTPlayerViewController *)player {
+    return [YMSBMenuHelpers playerDataForPlayer:player].videoDetails.author;
 }
 
-static NSDictionary *sbWhitelistDictionary(void) {
++ (NSDictionary *)whitelistDictionary {
     NSDictionary *dict = [[NSUserDefaults standardUserDefaults] dictionaryForKey:SBWhitelistKey];
     return dict ?: @{};
 }
 
-static void sbSaveWhitelistDictionary(NSDictionary *dict) {
++ (void)saveWhitelistDictionary:(NSDictionary *)dict {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     if (dict.count == 0) {
         [defaults removeObjectForKey:SBWhitelistKey];
@@ -149,31 +113,24 @@ static void sbSaveWhitelistDictionary(NSDictionary *dict) {
     [defaults synchronize];
 }
 
-static BOOL sbIsChannelWhitelisted(NSString *channelID) {
++ (BOOL)isChannelWhitelisted:(NSString *)channelID {
     if (channelID.length == 0) return NO;
-    return sbWhitelistDictionary()[channelID] != nil;
+    return [YMSBMenuHelpers whitelistDictionary][channelID] != nil;
 }
 
-static void sbSetChannelWhitelisted(NSString *channelID, NSString *channelName, BOOL whitelisted) {
++ (void)setChannelWhitelisted:(NSString *)channelID channelName:(NSString *)channelName whitelisted:(BOOL)whitelisted {
     if (channelID.length == 0) return;
-    NSMutableDictionary *dict = [sbWhitelistDictionary() mutableCopy];
+    NSMutableDictionary *dict = [[YMSBMenuHelpers whitelistDictionary] mutableCopy];
     if (whitelisted) {
         dict[channelID] = channelName.length > 0 ? channelName : channelID;
     } else {
         [dict removeObjectForKey:channelID];
     }
-    sbSaveWhitelistDictionary(dict);
-}
-
-BOOL sbActiveForVideo(YTPlayerViewController *player) {
-    if (!IS_ENABLED(SBEnabled) || !IS_ENABLED(SBButtonKey)) return NO;
-    NSString *channelID = sbCurrentChannelID(player);
-    if (channelID && sbIsChannelWhitelisted(channelID)) return NO;
-    return YES;
+    [YMSBMenuHelpers saveWhitelistDictionary:dict];
 }
 
 // Posts a fresh segments notification: fetches segments when SB is (back) on, clears markers when off/whitelisted.
-static void sbPostSegmentsForPlayer(YTPlayerViewController *player, BOOL enabled) {
++ (void)postSegmentsForPlayer:(YTPlayerViewController *)player enabled:(BOOL)enabled {
     if (!player) return;
     NSString *videoID = [player currentVideoID];
     sbInvalidateSegmentCache(videoID);
@@ -193,17 +150,17 @@ static void sbPostSegmentsForPlayer(YTPlayerViewController *player, BOOL enabled
 }
 
 // Re-syncs the current video after a whitelist change so skipping/markers update immediately.
-static void sbRefreshPlayerAfterWhitelistChange(void) {
++ (void)refreshPlayerAfterWhitelistChange {
     YTPlayerViewController *player = YouModCurrentPlayerViewController;
     if (!player) return;
-    NSString *channelID = sbCurrentChannelID(player);
-    BOOL listed = channelID.length > 0 && sbIsChannelWhitelisted(channelID);
-    sbPostSegmentsForPlayer(player, !listed);
+    NSString *channelID = [YMSBMenuHelpers currentChannelID:player];
+    BOOL listed = channelID.length > 0 && [YMSBMenuHelpers isChannelWhitelisted:channelID];
+    [YMSBMenuHelpers postSegmentsForPlayer:player enabled:!listed];
 }
 
-#pragma mark - SBRequest (Write)
+#pragma mark - SBRequest (Write) plumbing
 
-static NSString *sbQueryValue(NSString *value) {
++ (NSString *)queryValue:(NSString *)value {
     static NSCharacterSet *allowed;
     static dispatch_once_t once;
     dispatch_once(&once, ^{
@@ -214,12 +171,11 @@ static NSString *sbQueryValue(NSString *value) {
     return [value ?: @"" stringByAddingPercentEncodingWithAllowedCharacters:allowed];
 }
 
-// All parameters go in the URL query string per the SponsorBlock API.
-// Failed requests carry a plain-text reason in the body (400/403).
-static void sbPostQuery(NSString *path, NSDictionary<NSString *, NSString *> *params, void (^completion)(BOOL success, NSInteger status, NSString *errorMessage)) {
+// All parameters go in the URL query string per the SponsorBlock API; failed requests carry a plain-text reason in the body (400/403).
++ (void)postQuery:(NSString *)path params:(NSDictionary<NSString *, NSString *> *)params completion:(void (^)(BOOL success, NSInteger status, NSString *errorMessage))completion {
     NSMutableArray *pairs = [NSMutableArray array];
     [params enumerateKeysAndObjectsUsingBlock:^(NSString *key, NSString *value, __unused BOOL *stop) {
-        [pairs addObject:[NSString stringWithFormat:@"%@=%@", key, sbQueryValue(value)]];
+        [pairs addObject:[NSString stringWithFormat:@"%@=%@", key, [YMSBMenuHelpers queryValue:value]]];
     }];
     NSString *urlString = [NSString stringWithFormat:@"https://sponsor.ajay.app%@?%@", path, [pairs componentsJoinedByString:@"&"]];
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlString]];
@@ -242,6 +198,204 @@ static void sbPostQuery(NSString *path, NSDictionary<NSString *, NSString *> *pa
     }] resume];
 }
 
+#pragma mark - Engagement panel
+
++ (YTICommand *)engagementPanelShowCommand:(NSString *)title {
+    YTIEngagementPanelTitleHeaderRenderer *titleHeader = [[%c(YTIEngagementPanelTitleHeaderRenderer) alloc] init];
+    titleHeader.title = [%c(YTIFormattedString) formattedStringWithString:title];
+    YTIEngagementPanelSectionListHeaderSupportedRenderers *header = [[%c(YTIEngagementPanelSectionListHeaderSupportedRenderers) alloc] init];
+    header.engagementPanelTitleHeaderRenderer = titleHeader;
+
+    YTIEngagementPanelSectionListRenderer *sectionList = [[%c(YTIEngagementPanelSectionListRenderer) alloc] init];
+    sectionList.panelIdentifier = SBEngagementPanelID;
+    sectionList.header = header;
+    sectionList.supportedOrientations = 1; // portrait and landscape (3 = landscape only)
+    sectionList.allowReplace = YES;        // rebuild on every open instead of reusing a cached panel
+    YTIEngagementPanelSupportedRenderers *panel = [[%c(YTIEngagementPanelSupportedRenderers) alloc] init];
+    panel.engagementPanelSectionListRenderer = sectionList;
+
+    YTIShowEngagementPanelEndpoint *endpoint = [[%c(YTIShowEngagementPanelEndpoint) alloc] init];
+    endpoint.panelIdentifier = SBEngagementPanelID;
+    endpoint.engagementPanel = panel;
+
+    // The endpoint is a YTICommand extension whose descriptor YouTube keeps in a C static (no ObjC accessor) — encode it as that extension field on the wire and let YouTube's parser attach it.
+    static const uint64_t SBShowEngagementPanelEndpointField = 138681778;
+    NSData *payload = [endpoint data];
+    NSMutableData *wire = [NSMutableData data];
+    uint64_t varints[] = {(SBShowEngagementPanelEndpointField << 3) | 2, payload.length}; // tag, length
+    for (int i = 0; i < 2; i++) {
+        uint64_t v = varints[i];
+        while (v >= 0x80) {
+            uint8_t byte = (uint8_t)(v | 0x80);
+            [wire appendBytes:&byte length:1];
+            v >>= 7;
+        }
+        uint8_t byte = (uint8_t)v;
+        [wire appendBytes:&byte length:1];
+    }
+    [wire appendData:payload];
+    return [%c(YTICommand) goog_parseFromData:wire error:nil];
+}
+
++ (Class)engagementPanelClass {
+    return %c(YTEngagementPanelViewControllerImpl) ?: %c(YTMainAppEngagementPanelViewController);
+}
+
++ (UIViewController *)engagementPanelFor:(UIViewController *)card {
+    UIViewController *panel = card.navigationController.parentViewController;
+    return [panel isKindOfClass:[YMSBMenuHelpers engagementPanelClass]] ? panel : nil;
+}
+
++ (BOOL)isOurPanelModel:(id)model {
+    // panelIdentifier is a YTEngagementPanelIdentifier here, not the endpoint's NSString of the same name.
+    YTEngagementPanelIdentifier *panelID = ((id (*)(id, SEL))objc_msgSend)(model, @selector(panelIdentifier));
+    return sbEngagementPanelNav && [panelID.identifierString isEqualToString:SBEngagementPanelID];
+}
+
+#pragma mark - Card + voting
+
+// YouTube restyles navigation bars app-wide and can leave a sheet's title invisible; give our bar explicit dynamic colors and a grouped-table background.
++ (UINavigationController *)cardNavigationController:(YMSBCardViewController *)card {
+    UINavigationController *nav = [[YMSBCardNavigationController alloc] initWithRootViewController:card];
+    nav.modalPresentationStyle = UIModalPresentationFormSheet;
+
+    UIColor *headerBackground = card.sbUsesSubmitColors
+        ? [UIColor colorWithDynamicProvider:^UIColor *(UITraitCollection *trait) {
+            return trait.userInterfaceStyle == UIUserInterfaceStyleDark ? [%c(YTColor) black3] : [UIColor whiteColor];
+        }]
+        : [UIColor systemGroupedBackgroundColor];
+    NSMutableDictionary *titleAttributes = [[NSMutableDictionary alloc] init];
+    titleAttributes[NSForegroundColorAttributeName] = [UIColor labelColor];
+    // Same size as the × close button (16pt), but bold so the title reads heavier than the icon.
+    titleAttributes[NSFontAttributeName] = [UIFont systemFontOfSize:16 weight:UIFontWeightBold];
+    UINavigationBarAppearance *barAppearance = [[UINavigationBarAppearance alloc] init];
+    [barAppearance configureWithOpaqueBackground];
+    barAppearance.backgroundColor = headerBackground;
+    barAppearance.shadowColor = [UIColor clearColor];
+    barAppearance.titleTextAttributes = titleAttributes;
+    nav.navigationBar.standardAppearance = barAppearance;
+    nav.navigationBar.scrollEdgeAppearance = barAppearance;
+    nav.navigationBar.titleTextAttributes = titleAttributes;
+    nav.navigationBar.prefersLargeTitles = NO;
+    return nav;
+}
+
+// выборы, выборы, кандидаты пидоры
++ (void)handleVoteResult:(YTPlayerViewController *)player droppedSegment:(SBSegment *)droppedSegment videoID:(NSString *)videoID success:(BOOL)success errorMessage:(NSString *)errorMessage {
+    if (!success) {
+        NSString *reason = errorMessage.length > 0 ? [NSString stringWithFormat:@"%@ — %@", LOC(@"SB_VOTE_FAILED"), errorMessage] : LOC(@"SB_VOTE_FAILED");
+        YouModShowPill(reason, NO);
+        return;
+    }
+    sbInvalidateSegmentCache(videoID);
+    YouModShowPill(LOC(@"SB_VOTE_SUCCESS"), YES);
+    if (!player || !droppedSegment || ![[player currentVideoID] isEqualToString:videoID]) return;
+    NSMutableArray *remaining = [player.sbSegments mutableCopy];
+    [remaining removeObject:droppedSegment];
+    player.sbSegments = remaining;
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"SBSegmentsDidLoad"
+                                                        object:player
+                                                      userInfo:@{@"segments": remaining ?: @[]}];
+}
+
+// −1 / −0.1 / +0.1 / +1 second buttons for fine-tuning a marked time.
++ (UIView *)nudgeControls:(void (^)(float delta))nudge {
+    UIStackView *stack = [[UIStackView alloc] init];
+    stack.axis = UILayoutConstraintAxisHorizontal;
+    stack.spacing = 4;
+    for (NSNumber *delta in @[@(-1.0f), @(-0.1f), @(0.1f), @(1.0f)]) {
+        float d = delta.floatValue;
+        NSString *title = [NSString stringWithFormat:@"%@%@", d < 0 ? @"\u2212" : @"+", fabsf(d) < 1 ? @".1" : @"1"];
+        UIButton *button = [UIButton systemButtonWithPrimaryAction:[UIAction actionWithTitle:title image:nil identifier:nil handler:^(__unused UIAction *action) {
+            nudge(d);
+        }]];
+        button.titleLabel.font = [UIFont monospacedDigitSystemFontOfSize:14 weight:UIFontWeightSemibold];
+        button.tintColor = [YMHelpers accentColor];
+        button.backgroundColor = [UIColor tertiarySystemFillColor];
+        button.layer.cornerRadius = 8;
+        [button.widthAnchor constraintEqualToConstant:36].active = YES;
+        [button.heightAnchor constraintEqualToConstant:32].active = YES;
+        [stack addArrangedSubview:button];
+    }
+    stack.frame = CGRectMake(0, 0, 4 * 36 + 3 * 4, 32);
+    return stack;
+}
+
+#pragma mark - Whitelist manager
+
++ (NSArray<YMSBCardItem *> *)whitelistManagerItems {
+    NSDictionary *whitelist = [YMSBMenuHelpers whitelistDictionary];
+    NSArray *channelIDs = [whitelist.allKeys sortedArrayUsingSelector:@selector(localizedCaseInsensitiveCompare:)];
+    NSMutableArray<YMSBCardItem *> *items = [NSMutableArray array];
+    for (NSString *channelID in channelIDs) {
+        // No icon on whitelist rows — just the channel name and its ID.
+        [items addObject:[YMSBCardItem itemWithImage:nil
+                                                title:whitelist[channelID]
+                                             subtitle:channelID
+                                            tintColor:nil
+                                               handler:nil]];
+        items.lastObject.identifier = channelID;
+    }
+    return items;
+}
+
+@end
+
+#pragma mark - User ID
+
+NSString *sbLocalUserID(void) {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    NSString *userID = [defaults stringForKey:SBPrivateUserIDKey];
+    if (userID.length >= 30) return userID;
+    // A hyphen-less UUID is 32 hex chars, matching SponsorBlock's local userID requirement.
+    userID = [[[NSUUID UUID] UUIDString] stringByReplacingOccurrencesOfString:@"-" withString:@""];
+    [defaults setObject:userID forKey:SBPrivateUserIDKey];
+    return userID;
+}
+
+// Caches the derived public ID so a private-ID change is detected and a manual override survives.
+NSString *sbPublicUserID(void) {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    NSDictionary *cache = [defaults dictionaryForKey:SBPublicUserIDKey];
+    if ([cache[@"manual"] boolValue]) {
+        NSString *value = cache[@"value"];
+        if (value.length > 0) return value;
+    }
+    NSString *privateID = sbLocalUserID();
+    NSString *value = cache[@"value"];
+    if (value.length > 0 && [cache[@"private"] isEqualToString:privateID]) return value;
+    value = [YMSBMenuHelpers hashPublicFromPrivate:privateID];
+    [defaults setObject:@{@"manual": @NO, @"private": privateID, @"value": value} forKey:SBPublicUserIDKey];
+    return value;
+}
+
+void sbSetPrivateUserID(NSString *userID) {
+    if (userID.length < 30) return;
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [defaults setObject:userID forKey:SBPrivateUserIDKey];
+    // Drop the derived public-ID cache unless the user set a manual override.
+    NSDictionary *cache = [defaults dictionaryForKey:SBPublicUserIDKey];
+    if (![cache[@"manual"] boolValue]) {
+        [defaults removeObjectForKey:SBPublicUserIDKey];
+    }
+}
+
+void sbSetPublicUserIDManual(NSString *userID) {
+    if (userID.length < 30) return;
+    [[NSUserDefaults standardUserDefaults] setObject:@{@"manual": @YES, @"value": userID} forKey:SBPublicUserIDKey];
+}
+
+#pragma mark - Whitelist + channel info
+
+BOOL sbActiveForVideo(YTPlayerViewController *player) {
+    if (!IS_ENABLED(SBEnabled) || !IS_ENABLED(SBButtonKey)) return NO;
+    NSString *channelID = [YMSBMenuHelpers currentChannelID:player];
+    if (channelID && [YMSBMenuHelpers isChannelWhitelisted:channelID]) return NO;
+    return YES;
+}
+
+#pragma mark - SBRequest (Write)
+
 @implementation SBRequest (Write)
 
 + (void)voteOnSegment:(SBSegment *)segment videoID:(NSString *)videoID type:(NSInteger)voteType completion:(void (^)(BOOL success, NSString *errorMessage))completion {
@@ -249,9 +403,9 @@ static void sbPostQuery(NSString *path, NSDictionary<NSString *, NSString *> *pa
         if (completion) completion(NO, nil);
         return;
     }
-    sbPostQuery(@"/api/voteOnSponsorTime",
-                @{@"UUID": segment.UUID, @"videoID": videoID, @"userID": sbLocalUserID(), @"type": [@(voteType) stringValue]},
-                ^(BOOL ok, __unused NSInteger status, NSString *message) { if (completion) completion(ok, message); });
+    [YMSBMenuHelpers postQuery:@"/api/voteOnSponsorTime"
+                       params:@{@"UUID": segment.UUID, @"videoID": videoID, @"userID": sbLocalUserID(), @"type": [@(voteType) stringValue]}
+                   completion:^(BOOL ok, __unused NSInteger status, NSString *message) { if (completion) completion(ok, message); }];
 }
 
 + (void)voteCategoryOnSegment:(SBSegment *)segment videoID:(NSString *)videoID category:(NSString *)category completion:(void (^)(BOOL success, NSString *errorMessage))completion {
@@ -259,9 +413,9 @@ static void sbPostQuery(NSString *path, NSDictionary<NSString *, NSString *> *pa
         if (completion) completion(NO, nil);
         return;
     }
-    sbPostQuery(@"/api/voteOnSponsorTime",
-                @{@"UUID": segment.UUID, @"videoID": videoID, @"userID": sbLocalUserID(), @"category": category},
-                ^(BOOL ok, __unused NSInteger status, NSString *message) { if (completion) completion(ok, message); });
+    [YMSBMenuHelpers postQuery:@"/api/voteOnSponsorTime"
+                       params:@{@"UUID": segment.UUID, @"videoID": videoID, @"userID": sbLocalUserID(), @"category": category}
+                   completion:^(BOOL ok, __unused NSInteger status, NSString *message) { if (completion) completion(ok, message); }];
 }
 
 + (void)submitSegmentForVideoID:(NSString *)videoID category:(NSString *)category start:(float)start end:(float)end duration:(float)duration completion:(void (^)(BOOL success, NSString *errorMessage))completion {
@@ -280,11 +434,11 @@ static void sbPostQuery(NSString *path, NSDictionary<NSString *, NSString *> *pa
     } mutableCopy];
     if (duration > 0) params[@"videoDuration"] = [NSString stringWithFormat:@"%.3f", duration];
 
-    sbPostQuery(@"/api/skipSegments", params, ^(BOOL ok, NSInteger status, NSString *message) {
+    [YMSBMenuHelpers postQuery:@"/api/skipSegments" params:params completion:^(BOOL ok, NSInteger status, NSString *message) {
         if (status == 409) message = LOC(@"SB_SUBMIT_DUPLICATE");
         else if (status == 429) message = LOC(@"SB_SUBMIT_RATE_LIMIT");
         if (completion) completion(ok, message);
-    });
+    }];
 }
 
 @end
@@ -305,71 +459,13 @@ static void sbPostQuery(NSString *path, NSDictionary<NSString *, NSString *> *pa
 
 #pragma mark - Engagement panel
 
-static NSString * const SBEngagementPanelID = @"youmod-sponsorblock";
-static UINavigationController *sbEngagementPanelNav = nil;
-
-static YTICommand *sbEngagementPanelShowCommand(NSString *title) {
-    YTIEngagementPanelTitleHeaderRenderer *titleHeader = [[%c(YTIEngagementPanelTitleHeaderRenderer) alloc] init];
-    titleHeader.title = [%c(YTIFormattedString) formattedStringWithString:title];
-    YTIEngagementPanelSectionListHeaderSupportedRenderers *header = [[%c(YTIEngagementPanelSectionListHeaderSupportedRenderers) alloc] init];
-    header.engagementPanelTitleHeaderRenderer = titleHeader;
-
-    YTIEngagementPanelSectionListRenderer *sectionList = [[%c(YTIEngagementPanelSectionListRenderer) alloc] init];
-    sectionList.panelIdentifier = SBEngagementPanelID;
-    sectionList.header = header;
-    sectionList.supportedOrientations = 1; // portrait and landscape (3 = landscape only)
-    sectionList.allowReplace = YES;        // rebuild on every open instead of reusing a cached panel
-    YTIEngagementPanelSupportedRenderers *panel = [[%c(YTIEngagementPanelSupportedRenderers) alloc] init];
-    panel.engagementPanelSectionListRenderer = sectionList;
-
-    YTIShowEngagementPanelEndpoint *endpoint = [[%c(YTIShowEngagementPanelEndpoint) alloc] init];
-    endpoint.panelIdentifier = SBEngagementPanelID;
-    endpoint.engagementPanel = panel;
-
-    // The endpoint is a YTICommand extension whose descriptor YouTube keeps in a C static (no ObjC
-    // accessor), so encode it as that extension field on the wire and let YouTube's parser attach it.
-    static const uint64_t SBShowEngagementPanelEndpointField = 138681778;
-    NSData *payload = [endpoint data];
-    NSMutableData *wire = [NSMutableData data];
-    uint64_t varints[] = {(SBShowEngagementPanelEndpointField << 3) | 2, payload.length}; // tag, length
-    for (int i = 0; i < 2; i++) {
-        uint64_t v = varints[i];
-        while (v >= 0x80) {
-            uint8_t byte = (uint8_t)(v | 0x80);
-            [wire appendBytes:&byte length:1];
-            v >>= 7;
-        }
-        uint8_t byte = (uint8_t)v;
-        [wire appendBytes:&byte length:1];
-    }
-    [wire appendData:payload];
-    return [%c(YTICommand) goog_parseFromData:wire error:nil];
-}
-
-@interface YMSBCardNavigationController : UINavigationController
-@end
 @implementation YMSBCardNavigationController
 - (void)loadWithModel:(id)model {}
 @end
 
-static Class sbEngagementPanelClass(void) {
-    return %c(YTEngagementPanelViewControllerImpl) ?: %c(YTMainAppEngagementPanelViewController);
-}
-
-static UIViewController *sbEngagementPanelFor(UIViewController *card) {
-    UIViewController *panel = card.navigationController.parentViewController;
-    return [panel isKindOfClass:sbEngagementPanelClass()] ? panel : nil;
-}
-
-static BOOL sbIsOurPanelModel(id model) {
-    // panelIdentifier is a YTEngagementPanelIdentifier here, not the endpoint's NSString of the same name.
-    YTEngagementPanelIdentifier *panelID = ((id (*)(id, SEL))objc_msgSend)(model, @selector(panelIdentifier));
-    return sbEngagementPanelNav && [panelID.identifierString isEqualToString:SBEngagementPanelID];
-}
-
 %hook YTEngagementPanelViewControllerImpl
 - (void)prepareContentViewControllerForModel:(id)model {
-    if (!sbIsOurPanelModel(model)) {
+    if (![YMSBMenuHelpers isOurPanelModel:model]) {
         %orig;
         return;
     }
@@ -379,7 +475,7 @@ static BOOL sbIsOurPanelModel(id model) {
 
 %hook YTMainAppEngagementPanelViewController
 - (void)prepareContentViewControllerForModel:(id)model {
-    if (!sbIsOurPanelModel(model)) {
+    if (![YMSBMenuHelpers isOurPanelModel:model]) {
         %orig;
         return;
     }
@@ -396,14 +492,6 @@ static BOOL sbIsOurPanelModel(id model) {
 %end
 
 #pragma mark - YMSBCardViewController (form sheet)
-
-@interface YMSBCardViewController () <UISearchBarDelegate>
-@property (nonatomic, strong) UITableView *tableView;
-@property (nonatomic, strong) UILabel *emptyLabel;
-@property (nonatomic, strong) NSArray<YMSBCardItem *> *allItems;
-@property (nonatomic, copy) NSString *searchText;
-@property (nonatomic, assign) BOOL sbUsesSubmitColors;
-@end
 
 @implementation YMSBCardViewController {
     NSArray<YMSBCardItem *> *_visibleItems;
@@ -444,7 +532,7 @@ static BOOL sbIsOurPanelModel(id model) {
         }];
     }
 
-    UIBarButtonItem *closeButton = [[UIBarButtonItem alloc] initWithImage:YouModSymbolImageInCanvas(@"xmark", 24, 16, UIImageSymbolWeightMedium)
+    UIBarButtonItem *closeButton = [[UIBarButtonItem alloc] initWithImage:[YMHelpers symbolImageInCanvas:@"xmark" canvasSize:24 pointSize:16 weight:UIImageSymbolWeightMedium]
                                                                     style:UIBarButtonItemStylePlain
                                                                    target:self
                                                                    action:@selector(dismissCard)];
@@ -474,8 +562,7 @@ static BOOL sbIsOurPanelModel(id model) {
         self.searchBar.backgroundImage = [[UIImage alloc] init];
         self.searchBar.translatesAutoresizingMaskIntoConstraints = NO;
 
-        // Wrap the bar in a fixed-height header view: a bare search bar as tableHeaderView
-        // gets mis-sized on inset-grouped tables.
+        // Wrap the bar in a fixed-height header view: a bare search bar as tableHeaderView gets mis-sized on inset-grouped tables.
         UIView *header = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 320, 56)];
         header.backgroundColor = [UIColor clearColor];
         [header addSubview:self.searchBar];
@@ -525,8 +612,7 @@ static BOOL sbIsOurPanelModel(id model) {
     _emptyLabel.hidden = !(self.items.count == 0 && _emptyText.length > 0);
 }
 
-// Re-applies trait-dependent field styling (no border, grayer fill in light mode)
-// on theme changes inside a cross-dissolve.
+// Re-applies trait-dependent field styling (no border, grayer fill in light mode) on theme changes inside a cross-dissolve.
 - (void)sbStyleFieldBorders {
     UIColor *fieldFill = [UIColor colorWithDynamicProvider:^UIColor *(UITraitCollection *trait) {
         return (trait.userInterfaceStyle == UIUserInterfaceStyleDark) ? [UIColor secondarySystemBackgroundColor] : [UIColor systemGray5Color];
@@ -588,7 +674,7 @@ static BOOL sbIsOurPanelModel(id model) {
 
 - (void)viewWillAppear:(BOOL)animated {
     [super viewWillAppear:animated];
-    if (sbEngagementPanelFor(self)) {
+    if ([YMSBMenuHelpers engagementPanelFor:self]) {
         self.navigationItem.rightBarButtonItem = nil;
         BOOL isRoot = self.navigationController.viewControllers.firstObject == self;
         [self.navigationController setNavigationBarHidden:isRoot animated:animated];
@@ -724,8 +810,7 @@ static BOOL sbIsOurPanelModel(id model) {
     if (editingStyle != UITableViewCellEditingStyleDelete) return;
     YMSBCardItem *item = [self itemForRow:indexPath.row];
     if (!item) return;
-    // Model change first, then drop the item from the backing list and animate the row out;
-    // a full reloadData here would cut the animation off.
+    // Model change first, then drop the item from the backing list and animate the row out; a full reloadData here would cut the animation off.
     if (self.onDeleteItem) self.onDeleteItem(self, item);
     NSMutableArray<YMSBCardItem *> *remaining = [self.allItems mutableCopy];
     [remaining removeObject:item];
@@ -740,7 +825,7 @@ static BOOL sbIsOurPanelModel(id model) {
 }
 
 - (void)dismissCard {
-    UIViewController *panel = sbEngagementPanelFor(self);
+    UIViewController *panel = [YMSBMenuHelpers engagementPanelFor:self];
     if (panel) {
         [(YTEngagementPanelViewControllerImpl *)panel didTapCloseButton];
         return;
@@ -748,36 +833,9 @@ static BOOL sbIsOurPanelModel(id model) {
     [self dismissViewControllerAnimated:YES completion:nil];
 }
 
-static UINavigationController *sbCardNavigationController(YMSBCardViewController *card) {
-    UINavigationController *nav = [[YMSBCardNavigationController alloc] initWithRootViewController:card];
-    nav.modalPresentationStyle = UIModalPresentationFormSheet;
-
-    // YouTube restyles navigation bars app-wide and can leave a sheet's title invisible;
-    // give our bar explicit dynamic colors and a grouped-table background.
-    UIColor *headerBackground = card.sbUsesSubmitColors
-        ? [UIColor colorWithDynamicProvider:^UIColor *(UITraitCollection *trait) {
-            return trait.userInterfaceStyle == UIUserInterfaceStyleDark ? [%c(YTColor) black3] : [UIColor whiteColor];
-        }]
-        : [UIColor systemGroupedBackgroundColor];
-    NSMutableDictionary *titleAttributes = [[NSMutableDictionary alloc] init];
-    titleAttributes[NSForegroundColorAttributeName] = [UIColor labelColor];
-    // Same size as the × close button (16pt), but bold so the title reads heavier than the icon.
-    titleAttributes[NSFontAttributeName] = [UIFont systemFontOfSize:16 weight:UIFontWeightBold];
-    UINavigationBarAppearance *barAppearance = [[UINavigationBarAppearance alloc] init];
-    [barAppearance configureWithOpaqueBackground];
-    barAppearance.backgroundColor = headerBackground;
-    barAppearance.shadowColor = [UIColor clearColor];
-    barAppearance.titleTextAttributes = titleAttributes;
-    nav.navigationBar.standardAppearance = barAppearance;
-    nav.navigationBar.scrollEdgeAppearance = barAppearance;
-    nav.navigationBar.titleTextAttributes = titleAttributes;
-    nav.navigationBar.prefersLargeTitles = NO;
-    return nav;
-}
-
 + (UINavigationController *)presentCard:(YMSBCardViewController *)card {
-    UINavigationController *nav = sbCardNavigationController(card);
-    UIViewController *presenter = YouModTopViewController(nil);
+    UINavigationController *nav = [YMSBMenuHelpers cardNavigationController:card];
+    UIViewController *presenter = [YMHelpers topViewController:nil];
     while (presenter.presentedViewController) {
         presenter = presenter.presentedViewController;
     }
@@ -786,12 +844,12 @@ static UINavigationController *sbCardNavigationController(YMSBCardViewController
 }
 
 + (void)presentCardInEngagementPanel:(YMSBCardViewController *)card fromResponder:(id)responder {
-    if (!sbEngagementPanelClass()) {
+    if (![YMSBMenuHelpers engagementPanelClass]) {
         [self presentCard:card];
         return;
     }
-    sbEngagementPanelNav = sbCardNavigationController(card);
-    [[%c(YTCommandResponderEvent) eventWithCommand:sbEngagementPanelShowCommand(card.cardTitle) fromView:nil entry:nil sendClick:NO firstResponder:responder] send];
+    sbEngagementPanelNav = [YMSBMenuHelpers cardNavigationController:card];
+    [[%c(YTCommandResponderEvent) eventWithCommand:[YMSBMenuHelpers engagementPanelShowCommand:card.cardTitle] fromView:nil entry:nil sendClick:NO firstResponder:responder] send];
 }
 
 @end
@@ -812,12 +870,12 @@ static UINavigationController *sbCardNavigationController(YMSBCardViewController
     __weak typeof(self) weakSelf = self;
 
     // Whitelisted channel: SponsorBlock is fully overridden, so only whitelist management is offered.
-    NSString *menuChannelID = sbCurrentChannelID(self);
-    BOOL channelListed = menuChannelID.length > 0 && sbIsChannelWhitelisted(menuChannelID);
+    NSString *menuChannelID = [YMSBMenuHelpers currentChannelID:self];
+    BOOL channelListed = menuChannelID.length > 0 && [YMSBMenuHelpers isChannelWhitelisted:menuChannelID];
 
     if (!channelListed) {
         YTActionSheetAction *toggleAction = [%c(YTActionSheetAction) actionWithTitle:LOC(active ? @"SB_MENU_DISABLE" : @"SB_MENU_ENABLE")
-                                                                            iconImage:sbSheetIcon(active ? @"shield" : @"shield.slash")
+                                                                            iconImage:[YMSBMenuHelpers sheetIcon:(active ? @"shield" : @"shield.slash")]
                                                                                  style:0
                                                                               handler:^(__unused YTActionSheetAction *action) {
             __strong typeof(weakSelf) strongSelf = weakSelf;
@@ -848,7 +906,7 @@ static UINavigationController *sbCardNavigationController(YMSBCardViewController
 
     if (active && self.sbSegments.count > 0) {
         YTActionSheetAction *voteAction = [%c(YTActionSheetAction) actionWithTitle:LOC(@"SB_MENU_VOTE")
-                                                                          iconImage:sbSheetIcon(@"hand.thumbsup")
+                                                                          iconImage:[YMSBMenuHelpers sheetIcon:@"hand.thumbsup"]
                                                                                style:0
                                                                             handler:^(__unused YTActionSheetAction *action) {
             __strong typeof(weakSelf) strongSelf = weakSelf;
@@ -859,7 +917,7 @@ static UINavigationController *sbCardNavigationController(YMSBCardViewController
 
     if (active) {
         YTActionSheetAction *submitAction = [%c(YTActionSheetAction) actionWithTitle:LOC(@"SB_MENU_SUBMIT")
-                                                                            iconImage:sbSheetIcon(@"plus.circle")
+                                                                            iconImage:[YMSBMenuHelpers sheetIcon:@"plus.circle"]
                                                                                  style:0
                                                                               handler:^(__unused YTActionSheetAction *action) {
             __strong typeof(weakSelf) strongSelf = weakSelf;
@@ -869,7 +927,7 @@ static UINavigationController *sbCardNavigationController(YMSBCardViewController
     }
 
     YTActionSheetAction *whitelistAction = [%c(YTActionSheetAction) actionWithTitle:LOC(channelListed ? @"SB_WHITELIST_REMOVE" : @"SB_WHITELIST_ADD")
-                                                                            iconImage:sbSheetIcon(channelListed ? @"checkmark.seal.fill" : @"checkmark.seal")
+                                                                            iconImage:[YMSBMenuHelpers sheetIcon:(channelListed ? @"checkmark.seal.fill" : @"checkmark.seal")]
                                                                                  style:0
                                                                               handler:^(__unused YTActionSheetAction *action) {
         __strong typeof(weakSelf) strongSelf = weakSelf;
@@ -878,24 +936,6 @@ static UINavigationController *sbCardNavigationController(YMSBCardViewController
     [sheet addAction:whitelistAction];
 
     [sheet presentFromView:sourceView animated:YES completion:nil];
-}
-
-// выборы, выборы, кандидаты пидоры
-static void sbHandleVoteResult(YTPlayerViewController *player, SBSegment *droppedSegment, NSString *videoID, BOOL success, NSString *errorMessage) {
-    if (!success) {
-        NSString *reason = errorMessage.length > 0 ? [NSString stringWithFormat:@"%@ — %@", LOC(@"SB_VOTE_FAILED"), errorMessage] : LOC(@"SB_VOTE_FAILED");
-        YouModShowPill(reason, NO);
-        return;
-    }
-    sbInvalidateSegmentCache(videoID);
-    YouModShowPill(LOC(@"SB_VOTE_SUCCESS"), YES);
-    if (!player || !droppedSegment || ![[player currentVideoID] isEqualToString:videoID]) return;
-    NSMutableArray *remaining = [player.sbSegments mutableCopy];
-    [remaining removeObject:droppedSegment];
-    player.sbSegments = remaining;
-    [[NSNotificationCenter defaultCenter] postNotificationName:@"SBSegmentsDidLoad"
-                                                        object:player
-                                                      userInfo:@{@"segments": remaining ?: @[]}];
 }
 
 // Card listing every loaded segment (enabled categories); tapping one pushes the vote options screen.
@@ -918,12 +958,12 @@ static void sbHandleVoteResult(YTPlayerViewController *player, SBSegment *droppe
     card.searchBar = searchBar;
     NSMutableArray<YMSBCardItem *> *items = [NSMutableArray array];
     for (SBSegment *segment in segments) {
-        NSString *catName = sbLocalizedCategoryName(segment.category);
+        NSString *catName = [YMSBMenuHelpers localizedCategoryName:segment.category];
         NSString *subtitle = [NSString stringWithFormat:@"%@ – %@  ·  %@",
-                              sbFormatTime(segment.startTime),
-                              sbFormatTime(segment.endTime),
+                              [YMSBMenuHelpers formatTime:segment.startTime],
+                              [YMSBMenuHelpers formatTime:segment.endTime],
                               [NSString stringWithFormat:LOC(@"SB_VOTES_COUNT"), (long)segment.votes]];
-        [items addObject:[YMSBCardItem itemWithImage:sbDotImage(segment.segmentColor)
+        [items addObject:[YMSBCardItem itemWithImage:[YMSBMenuHelpers dotImage:segment.segmentColor]
                                                 title:catName
                                              subtitle:subtitle
                                             tintColor:[UIColor labelColor]
@@ -941,8 +981,8 @@ static void sbHandleVoteResult(YTPlayerViewController *player, SBSegment *droppe
 - (void)sbPushVoteOptionsForSegment:(SBSegment *)segment fromCard:(YMSBCardViewController *)card {
     __weak typeof(self) weakSelf = self;
     NSString *segmentInfo = [NSString stringWithFormat:@"%@ – %@",
-                             sbFormatTime(segment.startTime),
-                             sbFormatTime(segment.endTime)];
+                             [YMSBMenuHelpers formatTime:segment.startTime],
+                             [YMSBMenuHelpers formatTime:segment.endTime]];
 
     void (^voteHandler)(NSInteger) = ^(NSInteger type) {
         __strong typeof(weakSelf) strongSelf = weakSelf;
@@ -950,31 +990,31 @@ static void sbHandleVoteResult(YTPlayerViewController *player, SBSegment *droppe
         if (!strongSelf) return;
         NSString *videoID = [strongSelf currentVideoID];
         [SBRequest voteOnSegment:segment videoID:videoID type:type completion:^(BOOL success, NSString *errorMessage) {
-            sbHandleVoteResult(weakSelf, type == 0 ? segment : nil, videoID, success, errorMessage);
+            [YMSBMenuHelpers handleVoteResult:weakSelf droppedSegment:(type == 0 ? segment : nil) videoID:videoID success:success errorMessage:errorMessage];
         }];
     };
 
     BOOL canChangeCategory = ![segment.actionType isEqualToString:@"poi"] && ![segment.actionType isEqualToString:@"full"];
 
     YMSBCardViewController *options = [[YMSBCardViewController alloc] init];
-    options.cardTitle = sbLocalizedCategoryName(segment.category);
+    options.cardTitle = [YMSBMenuHelpers localizedCategoryName:segment.category];
     NSMutableArray<YMSBCardItem *> *optionItems = [@[
-        [YMSBCardItem itemWithImage:sbSymbolImage(@"hand.thumbsup.fill")
+        [YMSBCardItem itemWithImage:[YMSBMenuHelpers symbolImage:@"hand.thumbsup.fill"]
                                title:LOC(@"SB_VOTE_UPVOTE")
                             subtitle:segmentInfo
                            tintColor:[UIColor systemGreenColor]
                               handler:^(__unused YMSBCardViewController *c) { voteHandler(1); }],
-        [YMSBCardItem itemWithImage:sbSymbolImage(@"hand.thumbsdown.fill")
+        [YMSBCardItem itemWithImage:[YMSBMenuHelpers symbolImage:@"hand.thumbsdown.fill"]
                                title:LOC(@"SB_VOTE_DOWNVOTE")
                             subtitle:segmentInfo
                            tintColor:[UIColor systemRedColor]
                               handler:^(__unused YMSBCardViewController *c) { voteHandler(0); }],
-        [YMSBCardItem itemWithImage:sbSymbolImage(@"arrow.uturn.backward")
+        [YMSBCardItem itemWithImage:[YMSBMenuHelpers symbolImage:@"arrow.uturn.backward"]
                                title:LOC(@"SB_VOTE_UNDO")
                             subtitle:segmentInfo
                            tintColor:[UIColor labelColor]
                               handler:^(__unused YMSBCardViewController *c) { voteHandler(20); }],
-        [YMSBCardItem itemWithImage:sbSymbolImage(@"backward.end.fill")
+        [YMSBCardItem itemWithImage:[YMSBMenuHelpers symbolImage:@"backward.end.fill"]
                                title:LOC(@"SB_VOTE_JUMP_START")
                             subtitle:segmentInfo
                            tintColor:[UIColor labelColor]
@@ -983,7 +1023,7 @@ static void sbHandleVoteResult(YTPlayerViewController *player, SBSegment *droppe
             __strong typeof(weakSelf) strongSelf = weakSelf;
             if (strongSelf) [strongSelf seekToTime:(CGFloat)segment.startTime];
         }],
-        [YMSBCardItem itemWithImage:sbSymbolImage(@"forward.end.fill")
+        [YMSBCardItem itemWithImage:[YMSBMenuHelpers symbolImage:@"forward.end.fill"]
                                title:LOC(@"SB_VOTE_JUMP_END")
                             subtitle:segmentInfo
                            tintColor:[UIColor labelColor]
@@ -993,7 +1033,7 @@ static void sbHandleVoteResult(YTPlayerViewController *player, SBSegment *droppe
         }],
     ] mutableCopy];
     if (canChangeCategory) {
-        [optionItems insertObject:[YMSBCardItem itemWithImage:sbSymbolImage(@"tag")
+        [optionItems insertObject:[YMSBCardItem itemWithImage:[YMSBMenuHelpers symbolImage:@"tag"]
                                                         title:LOC(@"SB_VOTE_CHANGE_CATEGORY")
                                                      subtitle:segmentInfo
                                                     tintColor:[UIColor labelColor]
@@ -1016,8 +1056,8 @@ static void sbHandleVoteResult(YTPlayerViewController *player, SBSegment *droppe
         if ([category isEqualToString:segment.category] || [category isEqualToString:@"poi_highlight"] || [category isEqualToString:@"exclusive_access"]) continue;
         NSString *hex = [[NSUserDefaults standardUserDefaults] stringForKey:SB_COLOR_KEY(category)];
         UIColor *color = hex ? SBColorFromHex(hex) : [UIColor whiteColor];
-        [items addObject:[YMSBCardItem itemWithImage:sbDotImage(color)
-                                               title:sbLocalizedCategoryName(category)
+        [items addObject:[YMSBCardItem itemWithImage:[YMSBMenuHelpers dotImage:color]
+                                               title:[YMSBMenuHelpers localizedCategoryName:category]
                                             subtitle:nil
                                            tintColor:[UIColor labelColor]
                                               handler:^(__unused YMSBCardViewController *c) {
@@ -1026,7 +1066,7 @@ static void sbHandleVoteResult(YTPlayerViewController *player, SBSegment *droppe
             if (!strongSelf) return;
             NSString *videoID = [strongSelf currentVideoID];
             [SBRequest voteCategoryOnSegment:segment videoID:videoID category:category completion:^(BOOL success, NSString *errorMessage) {
-                sbHandleVoteResult(weakSelf, nil, videoID, success, errorMessage);
+                [YMSBMenuHelpers handleVoteResult:weakSelf droppedSegment:nil videoID:videoID success:success errorMessage:errorMessage];
             }];
         }]];
     }
@@ -1035,29 +1075,6 @@ static void sbHandleVoteResult(YTPlayerViewController *player, SBSegment *droppe
     picker.cardTitle = LOC(@"SB_VOTE_CHANGE_CATEGORY");
     picker.items = items;
     [card.navigationController pushViewController:picker animated:YES];
-}
-
-// −1 / −0.1 / +0.1 / +1 second buttons for fine-tuning a marked time.
-static UIView *sbNudgeControls(void (^nudge)(float delta)) {
-    UIStackView *stack = [[UIStackView alloc] init];
-    stack.axis = UILayoutConstraintAxisHorizontal;
-    stack.spacing = 4;
-    for (NSNumber *delta in @[@(-1.0f), @(-0.1f), @(0.1f), @(1.0f)]) {
-        float d = delta.floatValue;
-        NSString *title = [NSString stringWithFormat:@"%@%@", d < 0 ? @"\u2212" : @"+", fabsf(d) < 1 ? @".1" : @"1"];
-        UIButton *button = [UIButton systemButtonWithPrimaryAction:[UIAction actionWithTitle:title image:nil identifier:nil handler:^(__unused UIAction *action) {
-            nudge(d);
-        }]];
-        button.titleLabel.font = [UIFont monospacedDigitSystemFontOfSize:14 weight:UIFontWeightSemibold];
-        button.tintColor = YouModAccentColor();
-        button.backgroundColor = [UIColor tertiarySystemFillColor];
-        button.layer.cornerRadius = 8;
-        [button.widthAnchor constraintEqualToConstant:36].active = YES;
-        [button.heightAnchor constraintEqualToConstant:32].active = YES;
-        [stack addArrangedSubview:button];
-    }
-    stack.frame = CGRectMake(0, 0, 4 * 36 + 3 * 4, 32);
-    return stack;
 }
 
 // New-segment draft for the current video (-1 means not set yet)
@@ -1111,8 +1128,8 @@ static UIView *sbNudgeControls(void (^nudge)(float delta)) {
 
     NSString *hex = [[NSUserDefaults standardUserDefaults] stringForKey:SB_COLOR_KEY(category)];
     NSMutableArray<YMSBCardItem *> *items = [NSMutableArray array];
-    [items addObject:[YMSBCardItem itemWithImage:sbDotImage(hex ? SBColorFromHex(hex) : [UIColor whiteColor])
-                                           title:sbLocalizedCategoryName(category)
+    [items addObject:[YMSBCardItem itemWithImage:[YMSBMenuHelpers dotImage:(hex ? SBColorFromHex(hex) : [UIColor whiteColor])]
+                                           title:[YMSBMenuHelpers localizedCategoryName:category]
                                         subtitle:LOC(@"SB_SUBMIT_CATEGORY")
                                        tintColor:[UIColor labelColor]
                                          handler:^(YMSBCardViewController *c) {
@@ -1121,8 +1138,8 @@ static UIView *sbNudgeControls(void (^nudge)(float delta)) {
         NSMutableArray<YMSBCardItem *> *pickerItems = [NSMutableArray array];
         for (NSString *cat in sbAllCategories()) {
             NSString *catHex = [[NSUserDefaults standardUserDefaults] stringForKey:SB_COLOR_KEY(cat)];
-            [pickerItems addObject:[YMSBCardItem itemWithImage:sbDotImage(catHex ? SBColorFromHex(catHex) : [UIColor whiteColor])
-                                                         title:sbLocalizedCategoryName(cat)
+            [pickerItems addObject:[YMSBCardItem itemWithImage:[YMSBMenuHelpers dotImage:(catHex ? SBColorFromHex(catHex) : [UIColor whiteColor])]
+                                                         title:[YMSBMenuHelpers localizedCategoryName:cat]
                                                       subtitle:nil
                                                      tintColor:[UIColor labelColor]
                                                        handler:^(YMSBCardViewController *picker) {
@@ -1139,9 +1156,9 @@ static UIView *sbNudgeControls(void (^nudge)(float delta)) {
     }]];
 
     if (!isFull) {
-        [items addObject:[YMSBCardItem itemWithImage:sbSymbolImage(@"arrow.right.to.line")
+        [items addObject:[YMSBCardItem itemWithImage:[YMSBMenuHelpers symbolImage:@"arrow.right.to.line"]
                                                title:LOC(isPoi ? @"SB_SUBMIT_SET_HIGHLIGHT" : @"SB_SUBMIT_SET_START")
-                                            subtitle:start >= 0 ? sbFormatPreciseTime(start) : unset
+                                            subtitle:start >= 0 ? [YMSBMenuHelpers formatPreciseTime:start] : unset
                                            tintColor:[UIColor labelColor]
                                              handler:^(__unused YMSBCardViewController *c) {
             __strong typeof(weakSelf) strongSelf = weakSelf;
@@ -1149,12 +1166,12 @@ static UIView *sbNudgeControls(void (^nudge)(float delta)) {
             draft[@"start"] = @([strongSelf currentVideoMediaTime]);
             refresh();
         }]];
-        if (start >= 0) items.lastObject.accessoryView = sbNudgeControls(^(float delta) { nudge(@"start", delta); });
+        if (start >= 0) items.lastObject.accessoryView = [YMSBMenuHelpers nudgeControls:^(float delta) { nudge(@"start", delta); }];
     }
     if (!isFull && !isPoi) {
-        [items addObject:[YMSBCardItem itemWithImage:sbSymbolImage(@"arrow.left.to.line")
+        [items addObject:[YMSBCardItem itemWithImage:[YMSBMenuHelpers symbolImage:@"arrow.left.to.line"]
                                                title:LOC(@"SB_SUBMIT_SET_END")
-                                            subtitle:end >= 0 ? sbFormatPreciseTime(end) : unset
+                                            subtitle:end >= 0 ? [YMSBMenuHelpers formatPreciseTime:end] : unset
                                            tintColor:[UIColor labelColor]
                                              handler:^(__unused YMSBCardViewController *c) {
             __strong typeof(weakSelf) strongSelf = weakSelf;
@@ -1162,10 +1179,10 @@ static UIView *sbNudgeControls(void (^nudge)(float delta)) {
             draft[@"end"] = @([strongSelf currentVideoMediaTime]);
             refresh();
         }]];
-        if (end >= 0) items.lastObject.accessoryView = sbNudgeControls(^(float delta) { nudge(@"end", delta); });
+        if (end >= 0) items.lastObject.accessoryView = [YMSBMenuHelpers nudgeControls:^(float delta) { nudge(@"end", delta); }];
     }
     if (!isFull && start >= 0) {
-        [items addObject:[YMSBCardItem itemWithImage:sbSymbolImage(@"play.circle")
+        [items addObject:[YMSBCardItem itemWithImage:[YMSBMenuHelpers symbolImage:@"play.circle"]
                                                title:LOC(@"SB_SUBMIT_PREVIEW")
                                             subtitle:nil
                                            tintColor:[UIColor labelColor]
@@ -1177,10 +1194,10 @@ static UIView *sbNudgeControls(void (^nudge)(float delta)) {
         }]];
     }
 
-    [items addObject:[YMSBCardItem itemWithImage:sbSymbolImage(@"paperplane.fill")
+    [items addObject:[YMSBCardItem itemWithImage:[YMSBMenuHelpers symbolImage:@"paperplane.fill"]
                                            title:LOC(@"SB_SUBMIT_SEND")
                                         subtitle:nil
-                                       tintColor:YouModAccentColor()
+                                       tintColor:[YMHelpers accentColor]
                                          handler:^(YMSBCardViewController *c) {
         __strong typeof(weakSelf) strongSelf = weakSelf;
         if (!strongSelf) return;
@@ -1208,7 +1225,7 @@ static UIView *sbNudgeControls(void (^nudge)(float delta)) {
             YouModShowPill(LOC(@"SB_SUBMIT_SUCCESS"), YES);
             if (!ss) return;
             ss.sbDraft = nil;
-            if ([[ss currentVideoID] isEqualToString:videoID]) sbPostSegmentsForPlayer(ss, YES);
+            if ([[ss currentVideoID] isEqualToString:videoID]) [YMSBMenuHelpers postSegmentsForPlayer:ss enabled:YES];
         }];
     }]];
     return items;
@@ -1217,17 +1234,17 @@ static UIView *sbNudgeControls(void (^nudge)(float delta)) {
 // Toggles the current channel on/off the whitelist from the video menu, with a success pill (no confirmation card).
 %new
 - (void)sbToggleWhitelistFromMenu {
-    NSString *channelID = sbCurrentChannelID(self);
+    NSString *channelID = [YMSBMenuHelpers currentChannelID:self];
     if (channelID.length == 0) {
         YouModShowPill(LOC(@"SB_VOTE_FAILED"), NO);
         return;
     }
-    NSString *channelName = sbCurrentChannelName(self) ?: channelID;
-    BOOL wasListed = sbIsChannelWhitelisted(channelID);
-    sbSetChannelWhitelisted(channelID, channelName, !wasListed);
+    NSString *channelName = [YMSBMenuHelpers currentChannelName:self] ?: channelID;
+    BOOL wasListed = [YMSBMenuHelpers isChannelWhitelisted:channelID];
+    [YMSBMenuHelpers setChannelWhitelisted:channelID channelName:channelName whitelisted:!wasListed];
 
     // Removing the whitelist brings skipping/markers back for the current video; adding it clears them.
-    sbPostSegmentsForPlayer(self, wasListed);
+    [YMSBMenuHelpers postSegmentsForPlayer:self enabled:wasListed];
 
     YouModShowPill(LOC(wasListed ? @"SB_WHITELIST_REMOVE" : @"SB_WHITELIST_ADD"), YES);
 }
@@ -1235,22 +1252,6 @@ static UIView *sbNudgeControls(void (^nudge)(float delta)) {
 %end
 
 #pragma mark - Whitelist manager (tab bar entry)
-
-static NSArray<YMSBCardItem *> *sbWhitelistManagerItems(void) {
-    NSDictionary *whitelist = sbWhitelistDictionary();
-    NSArray *channelIDs = [whitelist.allKeys sortedArrayUsingSelector:@selector(localizedCaseInsensitiveCompare:)];
-    NSMutableArray<YMSBCardItem *> *items = [NSMutableArray array];
-    for (NSString *channelID in channelIDs) {
-        // No icon on whitelist rows — just the channel name and its ID.
-        [items addObject:[YMSBCardItem itemWithImage:nil
-                                                title:whitelist[channelID]
-                                             subtitle:channelID
-                                            tintColor:nil
-                                               handler:nil]];
-        items.lastObject.identifier = channelID;
-    }
-    return items;
-}
 
 void YMSBPresentWhitelistManager(void) {
     YMSBCardViewController *card = [[YMSBCardViewController alloc] init];
@@ -1261,14 +1262,14 @@ void YMSBPresentWhitelistManager(void) {
     searchBar.placeholder = LOC(@"SEARCH");
     card.searchBar = searchBar;
     card.emptyText = LOC(@"SB_WHITELIST_EMPTY");
-    card.items = sbWhitelistManagerItems();
+    card.items = [YMSBMenuHelpers whitelistManagerItems];
 
     card.onDeleteItem = ^(YMSBCardViewController *c, YMSBCardItem *item) {
         // Model only — the card animates the row out itself.
         if (item.identifier.length > 0) {
-            sbSetChannelWhitelisted(item.identifier, item.title, NO);
+            [YMSBMenuHelpers setChannelWhitelisted:item.identifier channelName:item.title whitelisted:NO];
         }
-        sbRefreshPlayerAfterWhitelistChange();
+        [YMSBMenuHelpers refreshPlayerAfterWhitelistChange];
     };
 
     [YMSBCardViewController presentCard:card];

@@ -179,23 +179,52 @@
 #import "Headers/SBPassthroughWindow.h"
 #import "Headers/YMSBCardItem.h"
 #import "Headers/YMSBCardViewController.h"
+#import "Headers/YMSBHelpers.h"
+#import "Headers/YMSBMarkerHelpers.h"
 #import "Headers/YMIconProvider.h"
+#import "Headers/YMHelpers.h"
+#import "Headers/YMFFmpegHelpers.h"
+#import "Headers/YMFormatsHelpers.h"
 #import "Headers/YMOverlayButtonSpec.h"
+#import "Headers/YMOverlayHelpers.h"
 #import "Headers/YMSettingsItem.h"
 #import "Headers/YMVisibilityCondition.h"
 #import "Headers/YMSearchRow.h"
 #import "Headers/YMSubSettingsViewController.h"
+#import "Headers/YMSplitSettingsViewController.h"
 #import "Headers/YMDeArrow.h"
 #import "Headers/YMFormat.h"
 #import "Headers/YMCaptionTrack.h"
 #import "Headers/YMDownloadSheet.h"
+#import "Headers/YMDownloadSheetInternal.h"
+#import "Headers/YMDownloadHelpers.h"
+#import "Headers/YMDownloadSheetHelpers.h"
+#import "Headers/YMProgressMeter.h"
 #import "Headers/YouModPillView.h"
 #import "Headers/YMDownloadProgressView.h"
 #import "Headers/YouModThumbnailViewController.h"
 #import "Headers/YouModTranslationViewController.h"
 #import "Headers/YouModLanguagePickerViewController.h"
 #import "Headers/YMSABR.h"
+#import "Headers/YMSABRFormat.h"
+#import "Headers/YMSABRMediaHeader.h"
+#import "Headers/YMSABRTrack.h"
+#import "Headers/YMSABRHelpers.h"
+#import "Headers/SBToggleRow.h"
+#import "Headers/SBColorCircleView.h"
+#import "Headers/SBSettingsViewController.h"
+#import "Headers/SBSearchColorDelegate.h"
+#import "Headers/YTSettingsSectionItemManager+SponsorBlock.h"
+#import "Headers/YMSBCardNavigationController.h"
+#import "Headers/YMSBCardViewController+Private.h"
+#import "Headers/YMSBSettingsHelpers.h"
+#import "Headers/YMSBMenuHelpers.h"
 #import "Headers/YTTouchFeedbackView.h"
+#import "Headers/YTHeaderLogoController.h"
+#import "Headers/YTHeaderLogoControllerImpl.h"
+#import "Headers/YTICommentsResponse.h"
+#import "Headers/YTIInsertItemSectionContentOperation.h"
+#import "Headers/YTISectionListMutationOperations.h"
 #import <AVFoundation/AVFoundation.h>
 #import <AVKit/AVKit.h>
 #import <CoreMedia/CoreMedia.h>
@@ -250,6 +279,7 @@
 #define HideVoiceSearch @"YouModHideVoiceSearchButton"
 #define HideCastButtonNav @"YouModHideCastButtonNavigationBar"
 #define HideMessages @"YouModHideMessagesButton"
+#define HideShareButtonNav @"YouModHideShareButtonNavigationBar"
 // Feed
 #define RemoveAds @"YouModRemoveAds"
 #define HideSubbar @"YouModHideSubbar"
@@ -365,6 +395,10 @@
 #define RemoveShortsPausedLensButton @"YouModRemoveShortsPausedLensButton"
 #define RemoveShortsPausedTrendsButton @"YouModRemoveShortsPausedTrendsButton"
 #define RemoveShortsDisclosure @"YouModRemoveShortsDisclosure"
+#define RemoveShortsAskButton @"YouModRemoveShortsAskButton"
+#define RemoveShortsVideoTitle @"YouModRemoveShortsVideoTitle"
+#define RemoveShortsChannelName @"YouModRemoveShortsChannelName"
+#define RemoveShortsChannelProfile @"YouModRemoveShortsChannelProfile"
 // Tab bar
 #define DefaultTab @"YouModDefaultStartupTab"
 #define TabOrder @"YouModTabOrder"
@@ -372,6 +406,7 @@
 #define HideTabLabels @"YouModHideTabLabels"
 #define UseFrostedTabBar @"YouModUseFrostedTabBar"
 // Miscellaneous
+#define LiquidGlass @"YouModEnablesLiquidGlass"
 #define BackgroundPlayback @"YouModEnablesBackgroundPlayback"
 #define DisablesShortsPiP @"YouModTrytoDisablesShortsPiP"
 #define DisableHints @"YouModDisableHints"
@@ -774,8 +809,6 @@ extern void YMOpenGroupFromHost(id host, NSString *title, NSArray<YMSettingsItem
 extern UIViewController *YMNewSubSettings(NSString *title, NSArray<YMSettingsItem *> *items);
 extern UIViewController *YMNewSponsorBlockSettings(void); // SponsorBlockSettings.x
 extern UIViewController *YMNewSplitSettings(NSArray<YMSettingsItem *> *sidebarItems); // YMSplitSettings.x
-// YES on physical iPad hardware (ignores the Device UI override).
-extern BOOL isPadHardware(void);
 
 // SponsorBlock's searchable rows, rendered by its own cell builders so its
 // settings are editable inline in search. host adopts the rendering VC as a child
@@ -783,20 +816,8 @@ extern BOOL isPadHardware(void);
 extern NSArray<YMSearchRow *> *sbSearchRows(UIViewController *host);
 
 extern void YouModPauseAllPlayers(void);
-extern NSBundle *YouModBundle();
-extern UIColor *YouModAccentColor(void);
-extern UIImage *YouModYTIconImage(NSInteger iconType, BOOL useCustomColor, UIColor *customColor);
-extern UIImage *YouModSymbolImageInCanvas(NSString *symbolName, CGFloat canvasSize, CGFloat pointSize, UIImageSymbolWeight weight);
-extern NSArray *getAllSystemLanguageTitles();
-extern NSArray *getAllSystemLanguageValues();
-extern UIWindow *YouModKeyWindow(void);
-extern UIViewController *YouModTopViewController(UIViewController *root);
-extern BOOL isDarkMode(UIView *view);
-extern BOOL isPad();
-extern void YouModConfigureSharePopover(UIActivityViewController *activityVC, UIView *sourceView);
 extern void YouModApplyPrevNextReplacement(YTMainAppControlsOverlayView *overlay);
 extern void YouModConfigureRemoteSkipCommands();
-extern NSString *YMExtractYouTubeVideoID(NSString *urlString);
 
 extern NSArray<YMCaptionTrack *> *YMCaptionTracksFromPlayer(YTPlayerViewController *player);
 
@@ -827,6 +848,7 @@ extern void YMFFmpegMuxTracks(NSURL *videoURL, NSArray<NSURL *> *audioURLs,
                               void (^completion)(BOOL success, NSString *failure));
 extern BOOL YMFFmpegConvertStartupVideo(NSURL *inputURL, NSURL *outputURL, NSString **failureOut);
 extern BOOL YMStartupVideoFileExists(void);
+extern AVPlayer *YMStartupVideoActivePlayer(void);
 extern void YMStartupVideoPresentPicker(UIViewController *presenter);
 extern void YMStartupVideoDelete(UIViewController *presenter);
 extern void YMStartupVideoDismiss(YTStartupAnimationViewController *controller, BOOL animated);
@@ -869,7 +891,7 @@ extern UIViewController *YouModDownloadLibraryViewController(id hostParentRespon
 
 extern NSString *YouModGlobalAuthHeader;
 
-#define LOC(x) [YouModBundle() localizedStringForKey:x value:nil table:nil]
+#define LOC(x) [[YMHelpers bundle] localizedStringForKey:x value:nil table:nil]
 
 // _ASDisplayView/YTELMViewController centralized helpers
 extern void YouModApplyOLEDToDisplayView(_ASDisplayView *view, NSString *iden);

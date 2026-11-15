@@ -261,14 +261,14 @@ static NSString * const kYMLibraryTypePrivate = @"Private";
 
         _menuButton = [%c(YTQTMButton) iconButton];
         // Rendered into an exact 24x24 canvas so the ellipsis never gets squished or cropped.
-        [_menuButton setImage:YouModSymbolImageInCanvas(@"ellipsis", 24, 22, UIImageSymbolWeightMedium) forState:UIControlStateNormal];
+        [_menuButton setImage:[YMHelpers symbolImageInCanvas:@"ellipsis" canvasSize:24 pointSize:22 weight:UIImageSymbolWeightMedium] forState:UIControlStateNormal];
         _menuButton.tintColor = [UIColor labelColor];
         [_menuButton enableNewTouchFeedback];
         [_menuButton addTarget:self action:@selector(menuTapped) forControlEvents:UIControlEventTouchUpInside];
         _menuButton.translatesAutoresizingMaskIntoConstraints = NO;
 
         _lockButton = [%c(YTQTMButton) iconButton];
-        [_lockButton setImage:YouModSymbolImageInCanvas(@"lock.open", 24, 22, UIImageSymbolWeightMedium) forState:UIControlStateNormal];
+        [_lockButton setImage:[YMHelpers symbolImageInCanvas:@"lock" canvasSize:24 pointSize:22 weight:UIImageSymbolWeightMedium] forState:UIControlStateNormal];
         _lockButton.tintColor = [UIColor labelColor];
         [_lockButton enableNewTouchFeedback];
         [_lockButton addTarget:self action:@selector(lockTapped) forControlEvents:UIControlEventTouchUpInside];
@@ -367,11 +367,11 @@ static NSString * const kYMLibraryTypePrivate = @"Private";
 #pragma mark - Pausing other players
 
 // Pauses YouTube's player (watch page, miniplayer, shorts) plus every AVPlayer in the process.
+// The startup video's own player is exempt so the startup video can keep playing.
 void YouModPauseAllPlayers(void) {
     [YouModCurrentPlayerViewController pause];
-    [[[YMLibraryHelpers liveAVPlayers] allObjects] enumerateObjectsUsingBlock:^(AVPlayer *player, NSUInteger idx, BOOL *stop) {
-        if (player.rate > 0) [player pause];
-    }];
+    AVPlayer *exempt = YMStartupVideoActivePlayer();
+    [[[YMLibraryHelpers liveAVPlayers] allObjects] enumerateObjectsUsingBlock:^(AVPlayer *player, NSUInteger idx, BOOL *stop) { if (player != exempt) [player pause]; }];
 }
 
 %hook AVPlayer
@@ -401,7 +401,7 @@ static AVPlayerViewController *ymLibraryPlayerVC = nil;
         completionHandler(YES);
         return;
     }
-    UIViewController *topVC = YouModTopViewController(nil);
+    UIViewController *topVC = [YMHelpers topViewController:nil];
     [topVC presentViewController:playerViewController animated:YES completion:^{
         completionHandler(YES);
     }];
@@ -437,7 +437,7 @@ static const CGFloat ymRefreshHiddenTravel = 72.0; // how far the bubble sits ab
         self.alpha = 0;
 
         self.iconView = [UIImageView new];
-        self.iconView.image = YouModSymbolImageInCanvas(@"arrow.down", 24, 18, UIImageSymbolWeightMedium);
+        self.iconView.image = [YMHelpers symbolImageInCanvas:@"arrow.down" canvasSize:24 pointSize:18 weight:UIImageSymbolWeightMedium];
         self.iconView.tintColor = [UIColor secondaryLabelColor];
         self.iconView.contentMode = UIViewContentModeCenter;
         self.iconView.translatesAutoresizingMaskIntoConstraints = NO;
@@ -553,7 +553,7 @@ static const CGFloat ymRefreshHiddenTravel = 72.0; // how far the bubble sits ab
     _searchBar.placeholder = LOC(@"SEARCH");
     _searchBar.searchBarStyle = UISearchBarStyleMinimal;
     _searchBar.backgroundImage = [[UIImage alloc] init];
-    _searchBar.tintColor = YouModAccentColor();
+    _searchBar.tintColor = [YMHelpers accentColor];
     _searchBar.translatesAutoresizingMaskIntoConstraints = NO;
 
     _sortButton = [%c(YTQTMButton) iconButton];
@@ -582,7 +582,7 @@ static const CGFloat ymRefreshHiddenTravel = 72.0; // how far the bubble sits ab
     }
 
     _settingsButton = [%c(YTQTMButton) iconButton];
-    [_settingsButton setImage:YouModYTIconImage(44, NO, nil) forState:UIControlStateNormal];
+    [_settingsButton setImage:[YMHelpers ytIconImage:44 useCustomColor:NO customColor:nil] forState:UIControlStateNormal];
     _settingsButton.tintColor = [UIColor labelColor];
     _settingsButton.translatesAutoresizingMaskIntoConstraints = NO;
     [_settingsButton addTarget:self action:@selector(openSettingsTapped) forControlEvents:UIControlEventTouchUpInside];
@@ -608,7 +608,7 @@ static const CGFloat ymRefreshHiddenTravel = 72.0; // how far the bubble sits ab
     }
 
     _moreMenuButton = [%c(YTQTMButton) iconButton];
-    [_moreMenuButton setImage:YouModSymbolImageInCanvas(@"ellipsis", 24, 22, UIImageSymbolWeightMedium) forState:UIControlStateNormal];
+    [_moreMenuButton setImage:[YMHelpers symbolImageInCanvas:@"ellipsis" canvasSize:24 pointSize:22 weight:UIImageSymbolWeightMedium] forState:UIControlStateNormal];
     _moreMenuButton.tintColor = [UIColor labelColor];
     _moreMenuButton.hidden = YES;
     _moreMenuButton.translatesAutoresizingMaskIntoConstraints = NO;
@@ -708,7 +708,7 @@ static const CGFloat ymRefreshHiddenTravel = 72.0; // how far the bubble sits ab
 
     _deletePlaylistButton = [%c(YTQTMButton) iconButton];
     [_deletePlaylistButton setImage:[[UIImage systemImageNamed:@"trash"] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate] forState:UIControlStateNormal];
-    _deletePlaylistButton.tintColor = [UIColor systemRedColor];
+    _deletePlaylistButton.tintColor = [UIColor labelColor];
     _deletePlaylistButton.accessibilityLabel = [YMLibraryHelpers localizedText:@"DOWNLOAD_LIBRARY_DELETE_PLAYLIST" fallback:@"Delete playlist"];
     [_deletePlaylistButton addTarget:self action:@selector(deletePlaylistTapped) forControlEvents:UIControlEventTouchUpInside];
     _deletePlaylistButton.translatesAutoresizingMaskIntoConstraints = NO;
@@ -914,7 +914,7 @@ static const CGFloat ymRefreshHiddenTravel = 72.0; // how far the bubble sits ab
     NSArray<NSString *> *sorts = @[@"Newest", @"Oldest", @"Largest", @"Smallest", @"A-Z", @"Z-A"];
     id parentResponder = self.hostParentResponder ?: self;
     YTDefaultSheetController *sheet = [%c(YTDefaultSheetController) sheetControllerWithParentResponder:parentResponder];
-    [sheet addHeaderWithTitle:nil subtitle:[YMLibraryHelpers localizedText:@"DOWNLOAD_LIBRARY_SORT_TITLE" fallback:@"Sort videos by"]];
+    [sheet addHeaderWithTitle:[YMLibraryHelpers localizedText:@"DOWNLOAD_LIBRARY_SORT_TITLE" fallback:@"Sort videos by"] subtitle:nil];
 
     __weak typeof(self) weakSelf = self;
     [sorts enumerateObjectsUsingBlock:^(NSString *sort, NSUInteger idx, BOOL *stop) {
@@ -1243,7 +1243,7 @@ static const CGFloat ymRefreshHiddenTravel = 72.0; // how far the bubble sits ab
             row.modifiedDate = modifiedDate ?: NSDate.distantPast;
             // Audio rows have no real artwork: the note icon fills a fixed 48pt canvas.
             row.thumbnail = row.isAudio
-                ? YouModSymbolImageInCanvas(@"music.note", 48, 24, UIImageSymbolWeightRegular)
+                ? [YMHelpers symbolImageInCanvas:@"music.note" canvasSize:48 pointSize:24 weight:UIImageSymbolWeightRegular]
                 : [YMLibraryHelpers thumbnailForVideoFile:fileURL];
             [rows addObject:row];
         }];
@@ -1294,7 +1294,7 @@ static const CGFloat ymRefreshHiddenTravel = 72.0; // how far the bubble sits ab
             playlistRow.title = name;
             playlistRow.bytes = itemCount;
             playlistRow.sizeText = [NSString stringWithFormat:[YMLibraryHelpers localizedText:@"DOWNLOAD_LIBRARY_PLAYLIST_ITEM_COUNT" fallback:@"%ld items"], (long)itemCount];
-            playlistRow.thumbnail = YouModSymbolImageInCanvas(@"music.note.list", 48, 24, UIImageSymbolWeightRegular);
+            playlistRow.thumbnail = [YMHelpers symbolImageInCanvas:@"music.note.list" canvasSize:48 pointSize:24 weight:UIImageSymbolWeightRegular];
             playlistRow.modifiedDate = NSDate.distantPast;
             [playlistRows addObject:playlistRow];
         }];
@@ -1414,13 +1414,13 @@ static const CGFloat ymRefreshHiddenTravel = 72.0; // how far the bubble sits ab
     if (playlists.count == 0) return;
     id parentResponder = self.hostParentResponder ?: self;
     YTDefaultSheetController *sheet = [%c(YTDefaultSheetController) sheetControllerWithParentResponder:parentResponder];
-    [sheet addHeaderWithTitle:nil subtitle:[YMLibraryHelpers localizedText:@"DOWNLOAD_LIBRARY_DELETE_PLAYLIST" fallback:@"Delete playlist"]];
+    [sheet addHeaderWithTitle:[YMLibraryHelpers localizedText:@"DOWNLOAD_LIBRARY_DELETE_PLAYLIST" fallback:@"Delete playlist"] subtitle:nil];
     __weak typeof(self) weakSelf = self;
     [playlists enumerateObjectsUsingBlock:^(NSDictionary *playlist, NSUInteger idx, BOOL *stop) {
         NSString *name = playlist[@"name"] ?: @"";
         NSString *playlistID = playlist[@"id"] ?: @"";
         [sheet addAction:[%c(YTActionSheetAction) actionWithTitle:name
-                                                        iconImage:YouModSymbolImageInCanvas(@"trash", 24, 22, UIImageSymbolWeightMedium)
+                                                        iconImage:[YMHelpers symbolImageInCanvas:@"trash" canvasSize:24 pointSize:22 weight:UIImageSymbolWeightMedium]
                                                             style:0
                                                           handler:^(__unused YTActionSheetAction *action) {
             // Delete playlist directly — no confirmation.
@@ -1519,7 +1519,7 @@ static const CGFloat ymRefreshHiddenTravel = 72.0; // how far the bubble sits ab
     }
     id parentResponder = self.hostParentResponder ?: self;
     YTDefaultSheetController *sheet = [%c(YTDefaultSheetController) sheetControllerWithParentResponder:parentResponder];
-    [sheet addHeaderWithTitle:nil subtitle:[YMLibraryHelpers localizedText:@"DOWNLOAD_LIBRARY_ADD_TO_PLAYLIST" fallback:@"Add to playlist"]];
+    [sheet addHeaderWithTitle:[YMLibraryHelpers localizedText:@"DOWNLOAD_LIBRARY_ADD_TO_PLAYLIST" fallback:@"Add to playlist"] subtitle:nil];
     NSString *currentID = row.playlistIDs.firstObject;
     __weak typeof(self) weakSelf = self;
     [playlists enumerateObjectsUsingBlock:^(NSDictionary *playlist, NSUInteger idx, BOOL *stop) {
@@ -1573,7 +1573,7 @@ static const CGFloat ymRefreshHiddenTravel = 72.0; // how far the bubble sits ab
     cell.menuButton.hidden = row.isPlaylist || self.isSelectionMode;
     cell.lockButton.hidden = !row.isPlaylist || self.isSelectionMode;
     if (row.isPlaylist) {
-        [cell.lockButton setImage:YouModSymbolImageInCanvas(row.isLocked ? @"lock" : @"lock.open", 24, 22, UIImageSymbolWeightMedium) forState:UIControlStateNormal];
+        [cell.lockButton setImage:[YMHelpers symbolImageInCanvas:row.isLocked ? @"lock.open" : @"lock" canvasSize:24 pointSize:22 weight:UIImageSymbolWeightMedium] forState:UIControlStateNormal];
         cell.lockButton.accessibilityLabel = [YMLibraryHelpers localizedText:row.isLocked ? @"DOWNLOAD_LIBRARY_UNLOCK_PLAYLIST" : @"DOWNLOAD_LIBRARY_LOCK_PLAYLIST" fallback:row.isLocked ? @"Unlock playlist" : @"Lock playlist"];
     }
     BOOL showCheckbox = self.isSelectionMode;
@@ -1677,52 +1677,52 @@ static const CGFloat ymRefreshHiddenTravel = 72.0; // how far the bubble sits ab
     YTDefaultSheetController *sheet = [%c(YTDefaultSheetController) sheetControllerWithParentResponder:parentResponder];
 
     [sheet addAction:[%c(YTActionSheetAction) actionWithTitle:LOC(@"LIBRARY_RENAME")
-                                                    iconImage:YouModSymbolImageInCanvas(@"pencil", 24, 22, UIImageSymbolWeightMedium)
+                                                    iconImage:[YMHelpers symbolImageInCanvas:@"pencil" canvasSize:24 pointSize:22 weight:UIImageSymbolWeightMedium]
                                                         style:0
                                                       handler:^(__unused YTActionSheetAction *action) {
         [self presentRenameDialogForRow:row];
     }]];
     [sheet addAction:[%c(YTActionSheetAction) actionWithTitle:LOC(@"LIBRARY_SHARE")
-                                                    iconImage:YouModSymbolImageInCanvas(@"square.and.arrow.up", 24, 22, UIImageSymbolWeightMedium)
+                                                    iconImage:[YMHelpers symbolImageInCanvas:@"square.and.arrow.up" canvasSize:24 pointSize:22 weight:UIImageSymbolWeightMedium]
                                                         style:0
                                                       handler:^(__unused YTActionSheetAction *action) {
         YouModShareItem(fileURL, self, sourceView);
     }]];
     [sheet addAction:[%c(YTActionSheetAction) actionWithTitle:[YMLibraryHelpers localizedText:@"DOWNLOAD_LIBRARY_ADD_TO_PLAYLIST" fallback:@"Add to playlist"]
-                                                    iconImage:YouModSymbolImageInCanvas(@"text.badge.plus", 24, 22, UIImageSymbolWeightMedium)
+                                                    iconImage:[YMHelpers symbolImageInCanvas:@"text.badge.plus" canvasSize:24 pointSize:22 weight:UIImageSymbolWeightMedium]
                                                         style:0
                                                       handler:^(__unused YTActionSheetAction *action) {
         [self showPlaylistPickerForRow:row sourceView:sourceView];
     }]];
     NSString *privateActionTitle = [YMLibraryHelpers localizedText:row.isPrivate ? @"DOWNLOAD_LIBRARY_MARK_PUBLIC" : @"DOWNLOAD_LIBRARY_MARK_PRIVATE" fallback:row.isPrivate ? @"Remove from Private" : @"Mark as Private"];
     [sheet addAction:[%c(YTActionSheetAction) actionWithTitle:privateActionTitle
-                                                    iconImage:YouModSymbolImageInCanvas(row.isPrivate ? @"lock.open" : @"lock", 24, 22, UIImageSymbolWeightMedium)
+                                                    iconImage:[YMHelpers symbolImageInCanvas:row.isPrivate ? @"lock.open" : @"lock" canvasSize:24 pointSize:22 weight:UIImageSymbolWeightMedium]
                                                         style:0
                                                       handler:^(__unused YTActionSheetAction *action) {
         [self togglePrivateForRow:row];
     }]];
     if (!row.isAudio) {
         [sheet addAction:[%c(YTActionSheetAction) actionWithTitle:LOC(@"LIBRARY_SAVE_THUMBNAIL")
-                                                        iconImage:YouModSymbolImageInCanvas(@"photo", 24, 22, UIImageSymbolWeightMedium)
+                                                        iconImage:[YMHelpers symbolImageInCanvas:@"photo" canvasSize:24 pointSize:22 weight:UIImageSymbolWeightMedium]
                                                             style:0
                                                           handler:^(__unused YTActionSheetAction *action) {
             [self saveThumbnailToPhotosForRow:row];
         }]];
     }
     [sheet addAction:[%c(YTActionSheetAction) actionWithTitle:LOC(@"LIBRARY_OPEN_VIDEO")
-                                                    iconImage:YouModSymbolImageInCanvas(@"play.rectangle", 24, 22, UIImageSymbolWeightMedium)
+                                                    iconImage:[YMHelpers symbolImageInCanvas:@"play.rectangle" canvasSize:24 pointSize:22 weight:UIImageSymbolWeightMedium]
                                                         style:0
                                                       handler:^(__unused YTActionSheetAction *action) {
         [self openOriginalVideoForRow:row];
     }]];
     [sheet addAction:[%c(YTActionSheetAction) actionWithTitle:LOC(@"LIBRARY_VIEW_INFO")
-                                                    iconImage:YouModSymbolImageInCanvas(@"info.circle", 24, 22, UIImageSymbolWeightMedium)
+                                                    iconImage:[YMHelpers symbolImageInCanvas:@"info.circle" canvasSize:24 pointSize:22 weight:UIImageSymbolWeightMedium]
                                                         style:0
                                                       handler:^(__unused YTActionSheetAction *action) {
         [self presentInfoForRow:row];
     }]];
     [sheet addAction:[%c(YTActionSheetAction) actionWithTitle:LOC(@"LIBRARY_DELETE")
-                                                    iconImage:YouModSymbolImageInCanvas(@"trash", 24, 22, UIImageSymbolWeightMedium)
+                                                    iconImage:[YMHelpers symbolImageInCanvas:@"trash" canvasSize:24 pointSize:22 weight:UIImageSymbolWeightMedium]
                                                         style:0
                                                       handler:^(__unused YTActionSheetAction *action) {
         [self deleteRowAtIndexPath:indexPath];
@@ -1753,7 +1753,7 @@ static const CGFloat ymRefreshHiddenTravel = 72.0; // how far the bubble sits ab
     BOOL showAddToPlaylist = hasVideos && ![self.selectedType isEqualToString:kYMLibraryTypePrivate];
     if (hasVideos) {
     [sheet addAction:[%c(YTActionSheetAction) actionWithTitle:LOC(@"LIBRARY_SHARE")
-                                                    iconImage:YouModSymbolImageInCanvas(@"square.and.arrow.up", 24, 22, UIImageSymbolWeightMedium)
+                                                    iconImage:[YMHelpers symbolImageInCanvas:@"square.and.arrow.up" canvasSize:24 pointSize:22 weight:UIImageSymbolWeightMedium]
                                                         style:0
                                                       handler:^(__unused YTActionSheetAction *action) {
         __strong typeof(weakSelf) strongSelf = weakSelf;
@@ -1765,12 +1765,12 @@ static const CGFloat ymRefreshHiddenTravel = 72.0; // how far the bubble sits ab
         }];
         if (items.count == 0) return;
         UIActivityViewController *vc = [[UIActivityViewController alloc] initWithActivityItems:items applicationActivities:nil];
-        YouModConfigureSharePopover(vc, strongSelf.moreMenuButton);
+        [YMHelpers configureSharePopover:vc sourceView:strongSelf.moreMenuButton];
         [strongSelf presentViewController:vc animated:YES completion:nil];
     }]];
     if (showAddToPlaylist) {
     [sheet addAction:[%c(YTActionSheetAction) actionWithTitle:[YMLibraryHelpers localizedText:@"DOWNLOAD_LIBRARY_ADD_TO_PLAYLIST" fallback:@"Add to playlist"]
-                                                    iconImage:YouModSymbolImageInCanvas(@"text.badge.plus", 24, 22, UIImageSymbolWeightMedium)
+                                                    iconImage:[YMHelpers symbolImageInCanvas:@"text.badge.plus" canvasSize:24 pointSize:22 weight:UIImageSymbolWeightMedium]
                                                         style:0
                                                       handler:^(__unused YTActionSheetAction *action) {
         [weakSelf showBulkPlaylistPickerForSelectedRows];
@@ -1780,7 +1780,7 @@ static const CGFloat ymRefreshHiddenTravel = 72.0; // how far the bubble sits ab
     // Covers playlists too (not video-gated): locks/unlocks them and flags videos private or public.
     if (hasPublicItems) {
     [sheet addAction:[%c(YTActionSheetAction) actionWithTitle:[YMLibraryHelpers localizedText:@"DOWNLOAD_LIBRARY_MARK_PRIVATE" fallback:@"Mark as Private"]
-                                                    iconImage:YouModSymbolImageInCanvas(@"lock", 24, 22, UIImageSymbolWeightMedium)
+                                                    iconImage:[YMHelpers symbolImageInCanvas:@"lock" canvasSize:24 pointSize:22 weight:UIImageSymbolWeightMedium]
                                                         style:0
                                                       handler:^(__unused YTActionSheetAction *action) {
         __strong typeof(weakSelf) strongSelf = weakSelf;
@@ -1795,7 +1795,7 @@ static const CGFloat ymRefreshHiddenTravel = 72.0; // how far the bubble sits ab
     }
     if (hasPrivateItems) {
     [sheet addAction:[%c(YTActionSheetAction) actionWithTitle:[YMLibraryHelpers localizedText:@"DOWNLOAD_LIBRARY_MARK_PUBLIC" fallback:@"Remove from Private"]
-                                                    iconImage:YouModSymbolImageInCanvas(@"lock.open", 24, 22, UIImageSymbolWeightMedium)
+                                                    iconImage:[YMHelpers symbolImageInCanvas:@"lock.open" canvasSize:24 pointSize:22 weight:UIImageSymbolWeightMedium]
                                                         style:0
                                                       handler:^(__unused YTActionSheetAction *action) {
         __strong typeof(weakSelf) strongSelf = weakSelf;
@@ -1810,7 +1810,7 @@ static const CGFloat ymRefreshHiddenTravel = 72.0; // how far the bubble sits ab
     }
     if (hasVideos) {
     [sheet addAction:[%c(YTActionSheetAction) actionWithTitle:LOC(@"LIBRARY_SAVE_THUMBNAIL")
-                                                    iconImage:YouModSymbolImageInCanvas(@"photo", 24, 22, UIImageSymbolWeightMedium)
+                                                    iconImage:[YMHelpers symbolImageInCanvas:@"photo" canvasSize:24 pointSize:22 weight:UIImageSymbolWeightMedium]
                                                         style:0
                                                       handler:^(__unused YTActionSheetAction *action) {
         __strong typeof(weakSelf) strongSelf = weakSelf;
@@ -1835,7 +1835,7 @@ static const CGFloat ymRefreshHiddenTravel = 72.0; // how far the bubble sits ab
     }]];
     }
     [sheet addAction:[%c(YTActionSheetAction) actionWithTitle:LOC(@"LIBRARY_DELETE")
-                                                    iconImage:YouModSymbolImageInCanvas(@"trash", 24, 22, UIImageSymbolWeightMedium)
+                                                    iconImage:[YMHelpers symbolImageInCanvas:@"trash" canvasSize:24 pointSize:22 weight:UIImageSymbolWeightMedium]
                                                         style:0
                                                       handler:^(__unused YTActionSheetAction *action) {
         __strong typeof(weakSelf) strongSelf = weakSelf;
@@ -1893,7 +1893,7 @@ static const CGFloat ymRefreshHiddenTravel = 72.0; // how far the bubble sits ab
 
     id parentResponder = self.hostParentResponder ?: self;
     YTDefaultSheetController *sheet = [%c(YTDefaultSheetController) sheetControllerWithParentResponder:parentResponder];
-    [sheet addHeaderWithTitle:nil subtitle:[YMLibraryHelpers localizedText:@"DOWNLOAD_LIBRARY_ADD_TO_PLAYLIST" fallback:@"Add to playlist"]];
+    [sheet addHeaderWithTitle:[YMLibraryHelpers localizedText:@"DOWNLOAD_LIBRARY_ADD_TO_PLAYLIST" fallback:@"Add to playlist"] subtitle:nil];
     __weak typeof(self) weakSelf = self;
     [playlists enumerateObjectsUsingBlock:^(NSDictionary *playlist, NSUInteger idx, BOOL *stop) {
         NSString *pid = playlist[@"id"] ?: @"";

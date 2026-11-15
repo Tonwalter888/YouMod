@@ -1,6 +1,7 @@
 #import "Headers.h"
 
 static int gNetworkType = 0;
+extern BOOL sStartupVideoPlaying;
 
 @implementation YouModNetworkMonitor
 + (void)startMonitoring {
@@ -713,15 +714,11 @@ void YouModApplyPrevNextReplacement(YTMainAppControlsOverlayView *overlay) {
 
 // Automatically mute video if user wants to
 %hook YTInlineMutedPlaybackStateController // 19.x-20.x
-- (BOOL)inlinePlaybackUnmutedAtStart { return IS_ENABLED(AutoFeedMute) ? NO : %orig; }
+- (void)setInlinePlaybackUnmutedAtStart:(BOOL)arg { %orig(IS_ENABLED(AutoFeedMute) || sStartupVideoPlaying ? NO : arg); }
 %end
 
 %hook YTInlineMutedPlaybackStateControllerImpl // 21.x+
-- (BOOL)inlinePlaybackUnmutedAtStart { return IS_ENABLED(AutoFeedMute) ? NO : %orig; }
-%end
-
-%hook YTCollectionGlobalManagerController // 19.x keeps a second copy here
-- (BOOL)inlinePlaybackUnmutedAtStart { return IS_ENABLED(AutoFeedMute) ? NO : %orig; }
+- (void)setInlinePlaybackUnmutedAtStart:(BOOL)arg { %orig(IS_ENABLED(AutoFeedMute) || sStartupVideoPlaying ? NO : arg); }
 %end
 
 // Exit Fullscreen on Finish
@@ -1062,7 +1059,7 @@ void YouModApplyPrevNextReplacement(YTMainAppControlsOverlayView *overlay) {
     static MPVolumeView *volumeView;
     if (!volumeView) volumeView = [[MPVolumeView alloc] initWithFrame:CGRectMake(-4000, -4000, 1, 1)];
     if (!volumeView.superview) {
-        UIWindow *keyWindow = YouModKeyWindow();
+        UIWindow *keyWindow = [YMHelpers keyWindow];
         if (keyWindow) {
             [keyWindow addSubview:volumeView];
             [volumeView layoutIfNeeded];
@@ -1434,7 +1431,7 @@ void YouModApplyPrevNextReplacement(YTMainAppControlsOverlayView *overlay) {
 %new
 - (void)YouModAutoAudioTrack {
     NSInteger selectedIndex = INTFORVAL(AudioTrackLangIndex);
-    NSArray *langCodes = getAllSystemLanguageValues();
+    NSArray *langCodes = [YMHelpers allSystemLanguageValues];
     NSString *userTargetLang = langCodes[selectedIndex];
     id switchcon = self.audioTrackController;
     NSArray *availableTracks = [switchcon valueForKey:@"_availableAudioTracks"];
@@ -1488,7 +1485,7 @@ void YouModApplyPrevNextReplacement(YTMainAppControlsOverlayView *overlay) {
     NSArray *allTracks = sgvid.availableCaptionTracks;
     if (!allTracks || allTracks.count == 0) return;
     NSInteger selectedIndex = INTFORVAL(CaptionTrackLangIndex);
-    NSArray *langCodes = getAllSystemLanguageValues();
+    NSArray *langCodes = [YMHelpers allSystemLanguageValues];
     NSString *userTargetLang = langCodes[selectedIndex];
     MLInnerTubeCaptionTrack *currentTrack = sgvid.activeCaptionTrack;
     MLInnerTubeCaptionTrack *matchedTrack;

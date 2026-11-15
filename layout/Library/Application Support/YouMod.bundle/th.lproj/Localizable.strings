@@ -139,6 +139,8 @@
 "HIDE_CAST_BUTTON_NAVBAR_DESC" = "ซ่อนปุ่มแคสต์ในแถบนำทาง";
 "HIDE_MESSAGES_BUTTON" = "ซ่อนปุ่มข้อความ";
 "HIDE_MESSAGES_BUTTON_DESC" = "ซ่อนปุ่มข้อความในแถบนำทาง";
+"HIDE_SHARE_BUTTON_NAVBAR" = "ซ่อนปุ่มแชร์";
+"HIDE_SHARE_BUTTON_NAVBAR_DESC" = "ซ่อนปุ่มแชร์ในแถบนำทาง";
 
 "FEED" = "ฟีด";
 "HIDE_SUBBAR" = "ซ่อนแถบหมวดหมู่";
@@ -378,6 +380,14 @@
 "REMOVE_SHORTS_REMIX_BUTTON_DESC" = "ลบปุ่มรีมิกซ์ออกจากโอเวอร์เลย์ Shorts";
 "REMOVE_SHORTS_SOUNDMETADATA_BUTTON" = "ลบปุ่มข้อมูลเสียง";
 "REMOVE_SHORTS_SOUNDMETADATA_BUTTON_DESC" = "ลบปุ่มข้อมูลเสียง/เพลงออกจากโอเวอร์เลย์ Shorts";
+"REMOVE_SHORTS_ASK_BUTTON" = "ลบปุ่มถาม";
+"REMOVE_SHORTS_ASK_BUTTON_DESC" = "ลบปุ่มถามออกจากโอเวอร์เลย์ Shorts";
+"REMOVE_SHORTS_VIDEO_TITLE" = "ลบชื่อคลิป";
+"REMOVE_SHORTS_VIDEO_TITLE_DESC" = "ลบชื่อคลิปออกจากโอเวอร์เลย์ Shorts";
+"REMOVE_SHORTS_CHANNEL_NAME" = "ลบชื่อช่อง";
+"REMOVE_SHORTS_CHANNEL_NAME_DESC" = "ลบชื่อช่องออกจากโอเวอร์เลย์ Shorts";
+"REMOVE_SHORTS_CHANNEL_PROFILE" = "ลบโปรไฟล์ช่อง";
+"REMOVE_SHORTS_CHANNEL_PROFILE_DESC" = "ลบโปรไฟล์ช่องออกจากโอเวอร์เลย์ Shorts";
 "REMOVE_SHORTS_SUB_BUTTON" = "ลบปุ่มติดตาม";
 "REMOVE_SHORTS_SUB_BUTTON_DESC" = "ลบปุ่มติดตามออกจากโอเวอร์เลย์ Shorts";
 "REMOVE_SHORTS_PAUSED_SUB_BUTTON" = "ลบปุ่มการติดตาม";
@@ -438,6 +448,8 @@
 "ZERO_TAB_DESC" = "ต้องเปิดใช้งานอย่างน้อย 1 แท็บ";
 
 "MISCELLANEOUS" = "อื่นๆ";
+"LIQUID_GLASS" = "Liquid Glass";
+"LIQUID_GLASS_DESC" = "เพิ่มเอฟเฟกต์กระจกเหลวให้กับบางองค์ประกอบ";
 "BACKGROUND_PLAYBACK" = "เล่นภายในเบื้องหลัง";
 "BACKGROUND_PLAYBACK_DESC" = "เปิดใช้งานการเล่นวิดีโอภายในเบื้องหลัง";
 "DISABLES_SHORTS_PIP" = "ปิด PiP ของ Shorts";

@@ -43,8 +43,14 @@ static __weak YTStartupAnimationViewController *sStartupAnimationController;
 
 // While the startup video plays, every other player is cut off: paused and blocked
 // from resuming. The startup video's own player is exempt.
-static BOOL sStartupVideoPlaying = NO;
+BOOL sStartupVideoPlaying = NO;
 static __weak AVPlayer *sStartupVideoPlayer = nil;
+
+// Player owned by the startup video while it plays (nil otherwise) — exempt
+// from YouModPauseAllPlayers so the startup video can keep running.
+AVPlayer *YMStartupVideoActivePlayer(void) {
+    return sStartupVideoPlaying ? sStartupVideoPlayer : nil;
+}
 
 @implementation YMStartupVideoView
 + (Class)layerClass {
@@ -309,22 +315,7 @@ static void YMStartupVideoPlay(YTStartupAnimationViewController *controller) {
     %orig;
 }
 - (void)playLottieAnimation {
-    %orig;
     if (INTFORVAL(StartupAnimation) == 3 && sStartupVideoView && !sStartupVideoView.dismissed) YMStartupVideoPlay(self);
-}
-%end
-
-// Global cutoff: no player may run while the startup video plays.
-%hook AVPlayer
-- (void)play {
-    if (sStartupVideoPlaying && self != sStartupVideoPlayer) {
-        [self pause];
-        return;
-    }
-    %orig;
-}
-- (void)setRate:(float)rate {
-    if (rate > 0 && sStartupVideoPlaying && self != sStartupVideoPlayer) return;
     %orig;
 }
 %end

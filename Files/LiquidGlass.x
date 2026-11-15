@@ -11,7 +11,7 @@ BOOL YMHostBundleSupportsLiquidGlass(void) {
     dispatch_once(&onceToken, ^{
         NSString *platformVersion = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"DTPlatformVersion"];
         supported = platformVersion != nil &&
-                    [platformVersion compare:@"26.0" options:NSNumericSearch] != NSOrderedAscending;
+                    [platformVersion compare:@"26.0" options:NSNumericSearch] != NSOrderedAscending && IS_ENABLED(LiquidGlass);
     });
     return supported;
 }
@@ -168,7 +168,7 @@ void YouModApplyLiquidGlassToView(UIView *view, BOOL wantsBackground) {
         button.flatButtonHasOpaqueBackground = NO;
         @try {
             button.disableTouchResponse = YES;
-        } @catch (id ex2) {}
+        } @catch (id ex) {}
     }
     return buttons;
 }
@@ -179,11 +179,7 @@ void YouModApplyLiquidGlassToView(UIView *view, BOOL wantsBackground) {
 %hook YTSearchViewController
 - (void)viewWillAppear:(BOOL)animated {
     %orig;
-    UIView *voiceView = nil;
-    @try {
-        voiceView = [self valueForKey:@"_voiceButtonContainerView"];
-    } @catch (id ex) {}
-    if (!voiceView) return;
+    UIView *voiceView = [self valueForKey:@"_voiceButtonContainerView"];
     for (UIView *sub in voiceView.subviews) {
         if (![sub isKindOfClass:%c(UIButton)]) [sub removeFromSuperview];
         else YouModApplyLiquidGlassToView(sub, YES);
@@ -201,12 +197,10 @@ void YouModApplyLiquidGlassToView(UIView *view, BOOL wantsBackground) {
     if (self.actionButton != nil) YouModApplyLiquidGlassToView(self.actionButton, YES);
     for (UIView *button in self.subviews) {
         if ([button isKindOfClass:%c(YTQTMButton)]) {
-            @try {
-                YTIButtonRenderer *renderer = [button valueForKey:@"_buttonRenderer"];
-                if (renderer == nil) continue;
-                NSString *desc = [renderer description];
-                if ([desc containsString:@"FEcommunity_page"] || [desc containsString:@"live_chat_filter_mode_option.eml"]) YouModApplyLiquidGlassToView(button, YES);
-            } @catch (id ex) {}
+            YTIButtonRenderer *renderer = [button valueForKey:@"_buttonRenderer"];
+            if (renderer == nil) continue;
+            NSString *desc = [renderer description];
+            if ([desc containsString:@"FEcommunity_page"] || [desc containsString:@"live_chat_filter_mode_option.eml"]) YouModApplyLiquidGlassToView(button, YES);
         }
     }
 }
@@ -230,10 +224,8 @@ void YouModApplyLiquidGlassToView(UIView *view, BOOL wantsBackground) {
 %hook YTInlineSignInChannelCell
 - (void)didMoveToWindow {
     %orig;
-    @try {
-        YTQTMButton *button = [self valueForKey:@"_editChannelButton"];
-        if (button) YouModApplyLiquidGlassToView(button, YES);
-    } @catch (id ex) {}
+    YTQTMButton *button = [self valueForKey:@"_editChannelButton"];
+    if (button) YouModApplyLiquidGlassToView(button, YES);
 }
 %end
 
@@ -241,10 +233,8 @@ void YouModApplyLiquidGlassToView(UIView *view, BOOL wantsBackground) {
 - (void)didMoveToWindow {
     %orig;
     for (NSString *ivar in @[@"_chooseAccountButton", @"_alternateAccountButton"]) {
-        @try {
-            YTQTMButton *button = [self valueForKey:ivar];
-            if (button != nil) YouModApplyLiquidGlassToView(button, YES);
-        } @catch (id ex) {}
+        YTQTMButton *button = [self valueForKey:ivar];
+        if (button != nil) YouModApplyLiquidGlassToView(button, YES);
     }
 }
 %end

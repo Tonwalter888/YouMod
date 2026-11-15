@@ -139,6 +139,8 @@
 "HIDE_CAST_BUTTON_NAVBAR_DESC" = "Gezinme çubuğundaki yayınla butonunu gizler.";
 "HIDE_MESSAGES_BUTTON" = "Hide messages button";
 "HIDE_MESSAGES_BUTTON_DESC" = "Hide messages button in the navigation bar.";
+"HIDE_SHARE_BUTTON_NAVBAR" = "Hide share button";
+"HIDE_SHARE_BUTTON_NAVBAR_DESC" = "Hide share button in the navigation bar.";
 
 "FEED" = "Akış";
 "HIDE_SUBBAR" = "Alt çubuğu gizle";
@@ -378,6 +380,14 @@
 "REMOVE_SHORTS_REMIX_BUTTON_DESC" = "Remiks butonunu Shorts katmanından kaldırır.";
 "REMOVE_SHORTS_SOUNDMETADATA_BUTTON" = "Ses bilgisi butonunu kaldır";
 "REMOVE_SHORTS_SOUNDMETADATA_BUTTON_DESC" = "Ses bilgisi butonunu Shorts katmanından kaldırır.";
+"REMOVE_SHORTS_ASK_BUTTON" = "Remove ask button";
+"REMOVE_SHORTS_ASK_BUTTON_DESC" = "Removes the ask button from the Shorts overlay.";
+"REMOVE_SHORTS_VIDEO_TITLE" = "Remove video title";
+"REMOVE_SHORTS_VIDEO_TITLE_DESC" = "Removes the video title from the Shorts overlay.";
+"REMOVE_SHORTS_CHANNEL_NAME" = "Remove channel name";
+"REMOVE_SHORTS_CHANNEL_NAME_DESC" = "Removes the channel name from the Shorts overlay.";
+"REMOVE_SHORTS_CHANNEL_PROFILE" = "Remove channel profile";
+"REMOVE_SHORTS_CHANNEL_PROFILE_DESC" = "Removes the channel profile from the Shorts overlay.";
 "REMOVE_SHORTS_SUB_BUTTON" = "Remove subscribe button";
 "REMOVE_SHORTS_SUB_BUTTON_DESC" = "Removes the subscribe button from the Shorts overlay.";
 "REMOVE_SHORTS_PAUSED_SUB_BUTTON" = "Abonelikler butonunu kaldır";
@@ -438,6 +448,8 @@
 "ZERO_TAB_DESC" = "En az 1 sekmenin etkin olması gerekir.";
 
 "MISCELLANEOUS" = "Çeşitli";
+"LIQUID_GLASS" = "Liquid glass";
+"LIQUID_GLASS_DESC" = "Applies liquid glass to some elements.";
 "BACKGROUND_PLAYBACK" = "Arka planda oynatma";
 "BACKGROUND_PLAYBACK_DESC" = "Videolar için arka planda oynatmayı etkinleştirir.";
 "DISABLES_SHORTS_PIP" = "Shorts PiP'i devre dışı bırak";

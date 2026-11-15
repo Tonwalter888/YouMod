@@ -139,6 +139,8 @@
 "HIDE_CAST_BUTTON_NAVBAR_DESC" = "隐藏导航栏中的投屏按钮。";
 "HIDE_MESSAGES_BUTTON" = "Hide messages button";
 "HIDE_MESSAGES_BUTTON_DESC" = "Hide messages button in the navigation bar.";
+"HIDE_SHARE_BUTTON_NAVBAR" = "Hide share button";
+"HIDE_SHARE_BUTTON_NAVBAR_DESC" = "Hide share button in the navigation bar.";
 
 "FEED" = "信息流";
 "HIDE_SUBBAR" = "隐藏子栏";
@@ -378,6 +380,14 @@
 "REMOVE_SHORTS_REMIX_BUTTON_DESC" = "移除 Shorts 播放界面的混剪按钮。";
 "REMOVE_SHORTS_SOUNDMETADATA_BUTTON" = "移除原声/音频按钮";
 "REMOVE_SHORTS_SOUNDMETADATA_BUTTON_DESC" = "移除 Shorts 播放界面的原声/音频按钮。";
+"REMOVE_SHORTS_ASK_BUTTON" = "Remove ask button";
+"REMOVE_SHORTS_ASK_BUTTON_DESC" = "Removes the ask button from the Shorts overlay.";
+"REMOVE_SHORTS_VIDEO_TITLE" = "Remove video title";
+"REMOVE_SHORTS_VIDEO_TITLE_DESC" = "Removes the video title from the Shorts overlay.";
+"REMOVE_SHORTS_CHANNEL_NAME" = "Remove channel name";
+"REMOVE_SHORTS_CHANNEL_NAME_DESC" = "Removes the channel name from the Shorts overlay.";
+"REMOVE_SHORTS_CHANNEL_PROFILE" = "Remove channel profile";
+"REMOVE_SHORTS_CHANNEL_PROFILE_DESC" = "Removes the channel profile from the Shorts overlay.";
 "REMOVE_SHORTS_SUB_BUTTON" = "Remove subscribe button";
 "REMOVE_SHORTS_SUB_BUTTON_DESC" = "Removes the subscribe button from the Shorts overlay.";
 "REMOVE_SHORTS_PAUSED_SUB_BUTTON" = "移除订阅按钮";
@@ -438,6 +448,8 @@
 "ZERO_TAB_DESC" = "至少需要启用 1 个标签。";
 
 "MISCELLANEOUS" = "其他";
+"LIQUID_GLASS" = "Liquid glass";
+"LIQUID_GLASS_DESC" = "Applies liquid glass to some elements.";
 "BACKGROUND_PLAYBACK" = "后台播放";
 "BACKGROUND_PLAYBACK_DESC" = "为视频启用后台播放功能。";
 "DISABLES_SHORTS_PIP" = "禁用 Shorts 画中画";

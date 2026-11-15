@@ -193,7 +193,7 @@
 %end
 
 %hook UIKeyboardImpl
-+ (BOOL)isFloating { return IS_ENABLED(FloatingKeyboard) && isPad() ? YES : %orig; }
++ (BOOL)isFloating { return IS_ENABLED(FloatingKeyboard) && [YMHelpers isPad] ? YES : %orig; }
 %end
 
 %hook YTEngagementPanelHeaderView

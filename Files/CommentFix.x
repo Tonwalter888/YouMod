@@ -4,9 +4,6 @@
 // so hosts that never learned mutation operations render nothing. The
 // helpers below harvest both kinds back into plain item sections.
 #import "Headers.h"
-#import "Headers/YTICommentsResponse.h"
-#import "Headers/YTIInsertItemSectionContentOperation.h"
-#import "Headers/YTISectionListMutationOperations.h"
 
 extern NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItemSectionRenderer *> *array);
 

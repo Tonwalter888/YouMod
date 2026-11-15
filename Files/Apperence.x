@@ -37,24 +37,24 @@ void YouModApplyOLEDToDisplayView(_ASDisplayView *view, NSString *iden) {
     ];  
     if ([blackViews containsObject:iden]) {
         view.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
-            return isDarkMode(view) ? [UIColor blackColor] : [UIColor clearColor];
+            return [YMHelpers isDarkMode:view] ? [UIColor blackColor] : [UIColor clearColor];
         }];
     } else if ([iden isEqualToString:@"id.elements.components.filter_chip_bar"]) {
         UIColor *dynamicColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
-            return isDarkMode(view) ? [UIColor blackColor] : [UIColor clearColor];
+            return [YMHelpers isDarkMode:view] ? [UIColor blackColor] : [UIColor clearColor];
         }];
         view.backgroundColor = dynamicColor;
         view.superview.backgroundColor = dynamicColor;
     } else if ([controller isKindOfClass:%c(YTActionSheetDialogViewController)] || [controller isKindOfClass:%c(YTBottomSheetController)]) {
         if ([view.superview.accessibilityIdentifier isEqualToString:@"eml.animated_subscribe_button"]) return;
         view.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
-            return isDarkMode(view) ? [UIColor blackColor] : [UIColor clearColor];
+            return [YMHelpers isDarkMode:view] ? [UIColor blackColor] : [UIColor clearColor];
         }];
     } else if ([iden isEqualToString:@"eml.live_chat_text_message"] && [controller isKindOfClass:%c(YCHAsyncLiveChatCollectionViewController)]) {
         YCHAsyncLiveChatCollectionViewController *con = (YCHAsyncLiveChatCollectionViewController *)controller;
         if ([con.view isKindOfClass:%c(YCHAsyncLiveChatImmersiveCollectionView)]) return;
         view.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
-            return isDarkMode(view) ? [UIColor blackColor] : [UIColor whiteColor];
+            return [YMHelpers isDarkMode:view] ? [UIColor blackColor] : [UIColor whiteColor];
         }];
     } else {
         ELMNodeController *nodeCon = view.keepalive_node.nodeController;
@@ -65,7 +65,7 @@ void YouModApplyOLEDToDisplayView(_ASDisplayView *view, NSString *iden) {
         if (desc != nil && ([desc containsString:@"live_chat_buy_flow_panel_header.eml"] 
             || [desc containsString:@"missing_content_view.eml"])) {
             view.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
-                return isDarkMode(view) ? [UIColor blackColor] : [UIColor clearColor];
+                return [YMHelpers isDarkMode:view] ? [UIColor blackColor] : [UIColor clearColor];
             }];
         } else {
             desc = nil;
@@ -76,7 +76,7 @@ void YouModApplyOLEDToDisplayView(_ASDisplayView *view, NSString *iden) {
             }
             if (desc != nil && [desc containsString:@"macro_markers_list_item.eml"]) {
                 view.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
-                    return isDarkMode(view) ? [UIColor blackColor] : [UIColor clearColor];
+                    return [YMHelpers isDarkMode:view] ? [UIColor blackColor] : [UIColor clearColor];
                 }];
             }
         }
@@ -86,14 +86,14 @@ void YouModApplyOLEDToDisplayView(_ASDisplayView *view, NSString *iden) {
 void YouModApplyOLEDCollectionView(ASCollectionView *view, NSString *iden) {
     if (!IS_ENABLED(OLEDTheme) || ![iden isEqualToString:@"eml.chip_bar_collection"]) return;
     view.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
-        return isDarkMode(view) ? [UIColor blackColor] : [UIColor clearColor];
+        return [YMHelpers isDarkMode:view] ? [UIColor blackColor] : [UIColor clearColor];
     }];
 }
 
 %hook YTContextualWrapView
 - (void)setBackgroundColor:(UIColor *)color {
     color = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
-        return isDarkMode(self) ? [UIColor blackColor] : [UIColor whiteColor];
+        return [YMHelpers isDarkMode:self] ? [UIColor blackColor] : [UIColor whiteColor];
     }];
     %orig(color);
 }
@@ -102,7 +102,7 @@ void YouModApplyOLEDCollectionView(ASCollectionView *view, NSString *iden) {
 %hook YTDialogContainerScrollView
 - (void)setBackgroundColor:(UIColor *)color {
     color = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
-        return isDarkMode(self) ? [UIColor blackColor] : [UIColor whiteColor];
+        return [YMHelpers isDarkMode:self] ? [UIColor blackColor] : [UIColor whiteColor];
     }];
     %orig(color);
 }
@@ -111,7 +111,7 @@ void YouModApplyOLEDCollectionView(ASCollectionView *view, NSString *iden) {
 %hook GOODialogView
 - (void)setBackgroundColor:(UIColor *)color {
     color = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
-        return isDarkMode(self) ? [UIColor blackColor] : [UIColor whiteColor];
+        return [YMHelpers isDarkMode:self] ? [UIColor blackColor] : [UIColor whiteColor];
     }];
     %orig(color);
 }
@@ -124,7 +124,7 @@ void YouModApplyOLEDCollectionView(ASCollectionView *view, NSString *iden) {
         if ([sub isKindOfClass:%c(YTELMView)]) {
             UIView *view = sub.subviews[0];
             view.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
-                return isDarkMode(view) ? [UIColor blackColor] : [UIColor whiteColor];
+                return [YMHelpers isDarkMode:view] ? [UIColor blackColor] : [UIColor whiteColor];
             }];
             break;
         }
@@ -139,7 +139,7 @@ void YouModApplyOLEDCollectionView(ASCollectionView *view, NSString *iden) {
     UIViewController *controller = self._viewControllerForAncestor;
     if ([controller isKindOfClass:%c(YTBottomSheetController)] || [controller isKindOfClass:%c(GOOModalWindowViewController)]) return;
     self.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
-        return isDarkMode(self) ? [UIColor blackColor] : [UIColor clearColor];
+        return [YMHelpers isDarkMode:self] ? [UIColor blackColor] : [UIColor clearColor];
     }];
 }
 %end
@@ -148,7 +148,7 @@ void YouModApplyOLEDCollectionView(ASCollectionView *view, NSString *iden) {
 - (void)viewWillAppear:(BOOL)animated {
     UIView *mainView = self.view;
     mainView.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
-        return isDarkMode(mainView) ? [UIColor blackColor] : [UIColor whiteColor];
+        return [YMHelpers isDarkMode:mainView] ? [UIColor blackColor] : [UIColor whiteColor];
     }];
     %orig;
 }
@@ -160,7 +160,7 @@ void YouModApplyOLEDCollectionView(ASCollectionView *view, NSString *iden) {
     if (!view) return;
     UIView *sub = view.subviews.firstObject;
     sub.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
-        return isDarkMode(sub) ? [UIColor blackColor] : [UIColor clearColor];
+        return [YMHelpers isDarkMode:sub] ? [UIColor blackColor] : [UIColor clearColor];
     }];
 }
 %end
@@ -171,7 +171,7 @@ void YouModApplyOLEDCollectionView(ASCollectionView *view, NSString *iden) {
 - (void)displayLayer:(id)arg1 {
     %orig;
     self.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
-        return isDarkMode(self) ? [UIColor blackColor] : [UIColor clearColor];
+        return [YMHelpers isDarkMode:self] ? [UIColor blackColor] : [UIColor clearColor];
     }];
 }
 %end
@@ -181,7 +181,7 @@ void YouModApplyOLEDCollectionView(ASCollectionView *view, NSString *iden) {
     UIKeyboard *keyboard = [%c(UIKeyboard) activeKeyboard];
     UIView *mainView = self.view;
     UIColor *dynamicColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
-        return isDarkMode(mainView) ? [UIColor blackColor] : [UIColor clearColor];
+        return [YMHelpers isDarkMode:mainView] ? [UIColor blackColor] : [UIColor clearColor];
     }];
     [mainView setBackgroundColor:dynamicColor];
     keyboard.backgroundColor = dynamicColor;
@@ -194,7 +194,7 @@ void YouModApplyOLEDCollectionView(ASCollectionView *view, NSString *iden) {
 %hook UIKeyboardDockView
 - (void)layoutSubviews {
     %orig;
-    if (!isDarkMode(self)) return;
+    if (![YMHelpers isDarkMode:self]) return;
 
     // Pre-iOS 26 and iOS 26+ keyboards are styled differently
     __block CGFloat top = CGFLOAT_MAX, btnH = 0;
@@ -247,7 +247,7 @@ void YouModApplyOLEDCollectionView(ASCollectionView *view, NSString *iden) {
     %orig;
     if (![self isKindOfClass:NSClassFromString(@"TUIEmojiSearchInputView")] && ![self isKindOfClass:NSClassFromString(@"_SFAutoFillInputView")]) return;
     self.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
-        return isDarkMode(self) ? [UIColor blackColor] : [UIColor clearColor];
+        return [YMHelpers isDarkMode:self] ? [UIColor blackColor] : [UIColor clearColor];
     }];
 }
 %end
@@ -255,14 +255,14 @@ void YouModApplyOLEDCollectionView(ASCollectionView *view, NSString *iden) {
 %hook UIKBInputBackdropView
 - (void)layoutSubviews {
     %orig;
-    self.hidden = isDarkMode(self);
+    self.hidden = [YMHelpers isDarkMode:self];
 }
 %end
 
 %hook UIKBVisualEffectView
 - (void)layoutSubviews {
     %orig;
-    if (isDarkMode(self)) {
+    if ([YMHelpers isDarkMode:self]) {
         self.backgroundEffects = nil;
         self.backgroundColor = [UIColor blackColor];
         self.hidden = NO;

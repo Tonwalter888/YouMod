@@ -62,21 +62,21 @@ static const void *kASViewKey = &kASViewKey;
         if (IS_ENABLED(RemoveAds)) YouModRemoveDrawerAds(self);
         if (IS_ENABLED(OLEDTheme)) {
             self.view.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
-                return isDarkMode(self.view) ? [UIColor blackColor] : [UIColor whiteColor];
+                return [YMHelpers isDarkMode:self.view] ? [UIColor blackColor] : [UIColor whiteColor];
             }];
         }
     } else if (IS_ENABLED(OLEDTheme) && ([desc containsString:@"report_form_reason_select_page.eml"] || [desc containsString:@"report_form_sign_in_page.eml"] || [desc containsString:@"transcript_panel.eml"])) {
         self.view.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
-            return isDarkMode(self.view) ? [UIColor blackColor] : [UIColor clearColor];
+            return [YMHelpers isDarkMode:self.view] ? [UIColor blackColor] : [UIColor clearColor];
         }];
     } else if (IS_ENABLED(OLEDTheme) && [desc containsString:@"timeline_search_input_form_id"] && [desc containsString:@"search_input.eml"]) {
         self.view.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
-            return isDarkMode(self.view) ? [UIColor blackColor] : [UIColor whiteColor];
+            return [YMHelpers isDarkMode:self.view] ? [UIColor blackColor] : [UIColor whiteColor];
         }];
     } else if (IS_ENABLED(OLEDTheme) && [desc containsString:@"subscriptions_channel_bar.eml"]) {
         UIView *sub = self.view.subviews[0];
         sub.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor * _Nonnull(UITraitCollection * _Nonnull traitCollection) {
-            return isDarkMode(sub) ? [UIColor blackColor] : [UIColor clearColor];
+            return [YMHelpers isDarkMode:sub] ? [UIColor blackColor] : [UIColor clearColor];
         }];
     } else if ([desc containsString:@"quick_actions.eml"]) {
         YouModRemoveFullscreenActionsButtons(self);

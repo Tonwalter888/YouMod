@@ -1,7 +1,10 @@
 #import "Headers.h"
 #import <stdarg.h>
 
-static NSString *YMFormatsLogPath(void) {
+// Debug file log and xtags parsing helpers.
+@implementation YMFormatsHelpers
+
++ (NSString *)logPath {
     static NSString *path = nil; static dispatch_once_t o;
     dispatch_once(&o, ^{
         path = [NSTemporaryDirectory() stringByAppendingPathComponent:@"youmod-formats.log"];
@@ -9,15 +12,15 @@ static NSString *YMFormatsLogPath(void) {
     });
     return path;
 }
-static void YMFormatsLogMsg(NSString *format, ...) {
++ (void)logMsg:(NSString *)format, ... {
     va_list ap; va_start(ap, format);
     NSString *msg = [[NSString alloc] initWithFormat:format arguments:ap];
     va_end(ap);
-    NSFileHandle *fh = [NSFileHandle fileHandleForWritingAtPath:YMFormatsLogPath()];
+    NSFileHandle *fh = [NSFileHandle fileHandleForWritingAtPath:[YMFormatsHelpers logPath]];
     NSString *line = [msg stringByAppendingString:@"\n"];
     @try {
         if (!fh) {
-            [line writeToFile:YMFormatsLogPath() atomically:YES encoding:NSUTF8StringEncoding error:nil];
+            [line writeToFile:[YMFormatsHelpers logPath] atomically:YES encoding:NSUTF8StringEncoding error:nil];
         } else {
             [fh seekToEndOfFile];
             [fh writeData:[line dataUsingEncoding:NSUTF8StringEncoding]];
@@ -25,7 +28,68 @@ static void YMFormatsLogMsg(NSString *format, ...) {
         }
     } @catch (id e) {}
 }
-#define YMFormatsLog(fmt, ...) YMFormatsLogMsg(@"" fmt, ##__VA_ARGS__)
+
+// Decodes the URL-safe base64 xtags TLV: records of 10=Key / 18=Value fields.
++ (NSString *)valueForXtags:(NSString *)xtags forKey:(NSString *)key {
+    if (xtags.length == 0) return nil;
+    NSMutableString *b64 = [xtags mutableCopy];
+    [b64 replaceOccurrencesOfString:@"-" withString:@"+" options:0 range:NSMakeRange(0, b64.length)];
+    [b64 replaceOccurrencesOfString:@"_" withString:@"/" options:0 range:NSMakeRange(0, b64.length)];
+    while ((b64.length & 3) != 0) [b64 appendString:@"="];
+    NSData *data = [[NSData alloc] initWithBase64EncodedString:b64 options:0];
+    if (data.length < 2) return nil;
+    const uint8_t *bytes = (const uint8_t *)data.bytes;
+    NSUInteger total = data.length;
+    NSUInteger pos = 0;
+    while (pos + 1 < total) {
+        if (bytes[pos] != 10) return nil;
+        NSUInteger recEnd = pos + 2 + bytes[pos + 1];
+        if (recEnd > total) return nil;
+        NSString *foundKey = nil;
+        NSString *foundValue = nil;
+        NSUInteger fpos = pos + 2;
+        NSUInteger fend = pos + 3;
+        if (fend < recEnd) {
+            while (YES) {
+                NSUInteger flen = bytes[fend];
+                NSUInteger fvalEnd = fpos + 2 + flen;
+                if (fvalEnd > recEnd) break;
+                uint8_t tag = bytes[fpos];
+                NSString *s = [[NSString alloc] initWithBytes:&bytes[fpos + 2] length:flen encoding:NSUTF8StringEncoding];
+                if (tag == 10) {
+                    foundKey = s;
+                    break;
+                }
+                if (tag == 18) foundValue = s;
+                fend = fvalEnd + 1;
+                fpos = fvalEnd;
+                if (fvalEnd + 1 >= recEnd) break;
+            }
+        }
+        if ([foundKey isEqualToString:key]) return foundValue;
+        pos = recEnd;
+        if (recEnd + 1 >= total) return nil;
+    }
+    return nil;
+}
+
++ (NSArray<NSString *> *)videoCodecPreference {
+    static NSArray<NSString *> *pref = nil;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{ pref = @[@"av01", @"vp09", @"avc1"]; });
+    return pref;
+}
+
++ (NSArray<NSString *> *)audioCodecPreference {
+    static NSArray<NSString *> *pref = nil;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{ pref = @[@"opus", @"mp4a"]; });
+    return pref;
+}
+
+@end
+
+#define YMFormatsLog(fmt, ...) [YMFormatsHelpers logMsg:@"" fmt, ##__VA_ARGS__]
 
 @implementation YMFormat
 
@@ -101,49 +165,6 @@ static void YMFormatsLogMsg(NSString *format, ...) {
 - (id)name;
 @end
 
-static NSString *YMFormatValueForXtagsKey(NSString *xtags, NSString *key) {
-    if (xtags.length == 0) return nil;
-    NSMutableString *b64 = [xtags mutableCopy];
-    [b64 replaceOccurrencesOfString:@"-" withString:@"+" options:0 range:NSMakeRange(0, b64.length)];
-    [b64 replaceOccurrencesOfString:@"_" withString:@"/" options:0 range:NSMakeRange(0, b64.length)];
-    while ((b64.length & 3) != 0) [b64 appendString:@"="];
-    NSData *data = [[NSData alloc] initWithBase64EncodedString:b64 options:0];
-    if (data.length < 2) return nil;
-    const uint8_t *bytes = (const uint8_t *)data.bytes;
-    NSUInteger total = data.length;
-    NSUInteger pos = 0;
-    while (pos + 1 < total) {
-        if (bytes[pos] != 10) return nil;
-        NSUInteger recEnd = pos + 2 + bytes[pos + 1];
-        if (recEnd > total) return nil;
-        NSString *foundKey = nil;
-        NSString *foundValue = nil;
-        NSUInteger fpos = pos + 2;
-        NSUInteger fend = pos + 3;
-        if (fend < recEnd) {
-            while (YES) {
-                NSUInteger flen = bytes[fend];
-                NSUInteger fvalEnd = fpos + 2 + flen;
-                if (fvalEnd > recEnd) break;
-                uint8_t tag = bytes[fpos];
-                NSString *s = [[NSString alloc] initWithBytes:&bytes[fpos + 2] length:flen encoding:NSUTF8StringEncoding];
-                if (tag == 10) {
-                    foundKey = s;
-                    break;
-                }
-                if (tag == 18) foundValue = s;
-                fend = fvalEnd + 1;
-                fpos = fvalEnd;
-                if (fvalEnd + 1 >= recEnd) break;
-            }
-        }
-        if ([foundKey isEqualToString:key]) return foundValue;
-        pos = recEnd;
-        if (recEnd + 1 >= total) return nil;
-    }
-    return nil;
-}
-
 NSArray<YMFormat *> *YMFormatsFromResponse(YTPlayerResponse *response) {
     id streaming = [[response playerData] streamingData];
     NSArray *adaptive = [streaming adaptiveFormatsArray];
@@ -184,8 +205,8 @@ NSArray<YMFormat *> *YMFormatsFromResponse(YTPlayerResponse *response) {
             if (!hdr && [f.qualityLabel containsString:@"HDR"]) hdr = YES;
             f.isHDR = hdr;
         } else {
-            NSString *acont = YMFormatValueForXtagsKey(f.xtags, @"acont");
-            f.isDRC = [YMFormatValueForXtagsKey(f.xtags, @"drc") isEqualToString:@"1"];
+            NSString *acont = [YMFormatsHelpers valueForXtags:f.xtags forKey:@"acont"];
+            f.isDRC = [[YMFormatsHelpers valueForXtags:f.xtags forKey:@"drc"] isEqualToString:@"1"];
             id<YMAudioTrackReading> track = (id<YMAudioTrackReading>)[stream audioTrack];
             if (track) {
                 f.audioTrackID = [track id_p];
@@ -219,32 +240,21 @@ NSArray<YMFormat *> *YMFormatsFromPlayer(YTPlayerViewController *player) {
     return YMFormatsFromResponse(response);
 }
 
-static NSArray<NSString *> *YMVideoCodecPreference(void) {
-    static NSArray<NSString *> *pref = nil;
-    static dispatch_once_t once;
-    dispatch_once(&once, ^{ pref = @[@"av01", @"vp09", @"avc1"]; });
-    return pref;
-}
-
-static NSArray<NSString *> *YMAudioCodecPreference(void) {
-    static NSArray<NSString *> *pref = nil;
-    static dispatch_once_t once;
-    dispatch_once(&once, ^{ pref = @[@"opus", @"mp4a"]; });
-    return pref;
-}
-
 NSArray<NSString *> *YMVideoCodecsInFormats(NSArray<YMFormat *> *formats) {
     NSMutableArray<NSString *> *out = [NSMutableArray array];
-    for (NSString *codec in YMVideoCodecPreference()) {
+    NSMutableSet<NSString *> *seen = [NSMutableSet set];
+    for (NSString *codec in [YMFormatsHelpers videoCodecPreference]) {
         for (YMFormat *f in formats) {
             if (f.isVideo && [f.codec isEqualToString:codec]) {
                 [out addObject:codec];
+                [seen addObject:codec];
                 break;
             }
         }
     }
     for (YMFormat *f in formats) {
-        if (f.isVideo && f.codec.length > 0 && ![out containsObject:f.codec]) {
+        if (f.isVideo && f.codec.length > 0 && ![seen containsObject:f.codec]) {
+            [seen addObject:f.codec];
             [out addObject:f.codec];
         }
     }
@@ -280,16 +290,19 @@ NSArray<YMFormat *> *YMVideoFormatsForCodec(NSArray<YMFormat *> *formats, NSStri
 
 NSArray<NSString *> *YMAudioCodecsInFormats(NSArray<YMFormat *> *formats) {
     NSMutableArray<NSString *> *out = [NSMutableArray array];
-    for (NSString *codec in YMAudioCodecPreference()) {
+    NSMutableSet<NSString *> *seen = [NSMutableSet set];
+    for (NSString *codec in [YMFormatsHelpers audioCodecPreference]) {
         for (YMFormat *f in formats) {
             if (!f.isVideo && [f.codec isEqualToString:codec]) {
                 [out addObject:codec];
+                [seen addObject:codec];
                 break;
             }
         }
     }
     for (YMFormat *f in formats) {
-        if (!f.isVideo && f.codec.length > 0 && ![out containsObject:f.codec]) {
+        if (!f.isVideo && f.codec.length > 0 && ![seen containsObject:f.codec]) {
+            [seen addObject:f.codec];
             [out addObject:f.codec];
         }
     }

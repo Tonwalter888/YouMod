@@ -1,3 +1,3 @@
 @interface YTHeaderView : UIView
-- (void)setStickyNavHeaderEnabled:(BOOL)arg;
+@property (nonatomic, assign, readwrite) BOOL stickyNavHeaderEnabled;
 @end

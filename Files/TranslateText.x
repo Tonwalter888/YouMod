@@ -87,7 +87,7 @@ static void YouModTranslateText(NSString *text, NSString *targetLang, void (^com
     UIButton *cancelButton = [UIButton buttonWithType:UIButtonTypeSystem];
     [cancelButton setTitle:LOC(@"CANCEL") forState:UIControlStateNormal];
     [cancelButton setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
-    cancelButton.backgroundColor = YouModAccentColor();
+    cancelButton.backgroundColor = [YMHelpers accentColor];
     cancelButton.titleLabel.font = [UIFont systemFontOfSize:16 weight:UIFontWeightBold];
     cancelButton.layer.cornerRadius = 14.0;
     cancelButton.clipsToBounds = YES;
@@ -172,12 +172,12 @@ static void YouModTranslateText(NSString *text, NSString *targetLang, void (^com
     cell.textLabel.text = name;
     
     if ([code isEqualToString:self.selectedLangCode]) {
-        cell.textLabel.textColor = YouModAccentColor();
+        cell.textLabel.textColor = [YMHelpers accentColor];
         cell.textLabel.font = [UIFont systemFontOfSize:16 weight:UIFontWeightBold];
         
         UIImage *checkImg = [UIImage systemImageNamed:@"checkmark"];
         cell.imageView.image = [checkImg imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
-        cell.imageView.tintColor = YouModAccentColor();
+        cell.imageView.tintColor = [YMHelpers accentColor];
     } else {
         cell.textLabel.textColor = [UIColor labelColor];
         cell.textLabel.font = [UIFont systemFontOfSize:16 weight:UIFontWeightRegular];
@@ -230,8 +230,8 @@ static void YouModTranslateText(NSString *text, NSString *targetLang, void (^com
 
     self.navigationItem.rightBarButtonItems = @[closeItem, copyItem, shareItem];
 
-    self.languageTitles = getAllSystemLanguageTitles();
-    self.languageCodes = getAllSystemLanguageValues();
+    self.languageTitles = [YMHelpers allSystemLanguageTitles];
+    self.languageCodes = [YMHelpers allSystemLanguageValues];
     
     NSString *preferredLang = [NSLocale preferredLanguages].firstObject;
     NSDictionary *components = preferredLang ? [NSLocale componentsFromLocaleIdentifier:preferredLang] : nil;
@@ -283,7 +283,7 @@ static void YouModTranslateText(NSString *text, NSString *targetLang, void (^com
 
     self.reloadButton = [UIButton buttonWithType:UIButtonTypeSystem];
     self.reloadButton.translatesAutoresizingMaskIntoConstraints = NO;
-    [self.reloadButton setImage:YouModSymbolImageInCanvas(@"arrow.clockwise", 24, 15, UIImageSymbolWeightMedium) forState:UIControlStateNormal];
+    [self.reloadButton setImage:[YMHelpers symbolImageInCanvas:@"arrow.clockwise" canvasSize:24 pointSize:15 weight:UIImageSymbolWeightMedium] forState:UIControlStateNormal];
     self.reloadButton.tintColor = [UIColor systemRedColor];
     self.reloadButton.hidden = YES;
     [self.reloadButton addTarget:self action:@selector(performTranslation) forControlEvents:UIControlEventTouchUpInside];
@@ -329,7 +329,7 @@ static void YouModTranslateText(NSString *text, NSString *targetLang, void (^com
 
 - (UIBarButtonItem *)createEqualBarButtonWithSymbol:(NSString *)symbolName action:(SEL)action {
     UIButton *button = [UIButton buttonWithType:UIButtonTypeSystem];
-    [button setImage:YouModSymbolImageInCanvas(symbolName, 24, 15, UIImageSymbolWeightMedium) forState:UIControlStateNormal];
+    [button setImage:[YMHelpers symbolImageInCanvas:symbolName canvasSize:24 pointSize:15 weight:UIImageSymbolWeightMedium] forState:UIControlStateNormal];
     button.tintColor = [UIColor labelColor];
     
     button.translatesAutoresizingMaskIntoConstraints = NO;
@@ -344,7 +344,7 @@ static void YouModTranslateText(NSString *text, NSString *targetLang, void (^com
 
 - (void)updateLanguageLabelText {
     NSString *langName = self.selectedLangName ?: @"";
-    UIColor *accentColor = YouModAccentColor();
+    UIColor *accentColor = [YMHelpers accentColor];
     UIFont *labelFont = [UIFont systemFontOfSize:14 weight:UIFontWeightMedium];
     
     NSMutableAttributedString *attrString = [[NSMutableAttributedString alloc] initWithString:[NSString stringWithFormat:@"%@ ", langName] attributes:@{
@@ -389,7 +389,7 @@ static void YouModTranslateText(NSString *text, NSString *targetLang, void (^com
     if (self.translationState != YouModTranslationStateSuccess || self.resultTextView.text.length == 0) return;
     
     UIActivityViewController *activityVC = [[UIActivityViewController alloc] initWithActivityItems:@[self.resultTextView.text] applicationActivities:nil];
-    YouModConfigureSharePopover(activityVC, self.view);
+    [YMHelpers configureSharePopover:activityVC sourceView:self.view];
     [self presentViewController:activityVC animated:YES completion:nil];
 }
 
@@ -420,7 +420,7 @@ static void YouModTranslateText(NSString *text, NSString *targetLang, void (^com
     self.translationState = YouModTranslationStateLoading;
     self.reloadButton.hidden = YES;
     self.resultTextView.text = LOC(@"TRANSLATING");
-    self.resultTextView.textColor = YouModAccentColor();
+    self.resultTextView.textColor = [YMHelpers accentColor];
     
     __weak typeof(self) weakSelf = self;
     YouModTranslateText(self.originalText, self.selectedLangCode, ^(NSString *translatedText, NSError *error) {

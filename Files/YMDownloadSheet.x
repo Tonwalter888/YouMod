@@ -10,31 +10,16 @@ typedef NS_ENUM(NSInteger, YMDownloadSheetSection) {
     YMDownloadSheetSectionCaptions = 4,
 };
 
-@interface YMDownloadSheet () <UITableViewDelegate, UITableViewDataSource>
-@property (nonatomic, assign) YMDownloadDestination destination;
-@property (nonatomic, assign) BOOL isShorts;
-@property (nonatomic, copy) NSString *videoTitle;
-@property (nonatomic, copy) NSString *videoID;
-@property (nonatomic, strong) NSURL *thumbnailURL;
-@property (nonatomic, copy) NSString *channelTitle;
-@property (nonatomic, strong) NSArray<YMFormat *> *allFormats;
-@property (nonatomic, strong) NSArray<YMCaptionTrack *> *captions;
-@property (nonatomic, strong) NSArray<NSString *> *tabs;
-@property (nonatomic, strong) NSArray<NSString *> *videoTabs;
-@property (nonatomic, copy) NSString *selectedTab;
-@property (nonatomic, strong) NSArray<NSString *> *audioCodecs;
-@property (nonatomic, copy) NSString *selectedAudioCodec;
-@property (nonatomic, strong) NSArray<YMFormat *> *audioRows;
-@property (nonatomic, strong) NSMutableArray<YMFormat *> *selectedAudios;
-@property (nonatomic, strong) NSArray<YMFormat *> *videoRows;
-@property (nonatomic, strong) YMFormat *selectedVideo;
-@property (nonatomic, strong) NSMutableArray<YMCaptionTrack *> *selectedCaptions;
-@property (nonatomic, strong) NSArray<NSNumber *> *sections;
-@property (nonatomic, strong) UISegmentedControl *videoCodecControl;
-@property (nonatomic, strong) UISegmentedControl *audioCodecControl;
-@property (nonatomic, strong) UILabel *codecHint;
-@property (nonatomic, strong) UITableView *tableView;
-@property (nonatomic, strong) UIButton *downloadButton;
+// Sheet helpers: size formatting for rows and the download button.
+@implementation YMDownloadSheetHelpers
+
++ (NSString *)byteCountString:(unsigned long long)bytes {
+    if (bytes < 1) return nil;
+    NSByteCountFormatter *fmt = [NSByteCountFormatter new];
+    fmt.countStyle = NSByteCountFormatterCountStyleFile;
+    return [fmt stringFromByteCount:(long long)bytes];
+}
+
 @end
 
 @implementation YMDownloadSheet
@@ -66,8 +51,7 @@ typedef NS_ENUM(NSInteger, YMDownloadSheetSection) {
 - (void)presentFrom:(UIViewController *)presenter {
     UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:self];
     nav.navigationBarHidden = YES;
-    // Runtime OS check instead of @available: the Linux theos toolchain can't
-    // link the compiler-rt builtins.
+    // Runtime OS check instead of @available: the Linux theos toolchain can't link the compiler-rt builtins.
     if ([NSProcessInfo processInfo].operatingSystemVersion.majorVersion >= 15) {
         nav.sheetPresentationController.detents = @[[UISheetPresentationControllerDetent largeDetent]];
         nav.sheetPresentationController.prefersGrabberVisible = YES;
@@ -105,14 +89,15 @@ typedef NS_ENUM(NSInteger, YMDownloadSheetSection) {
         if (filtered.count > 0) audioRows = filtered;
     }
     self.audioRows = audioRows;
+    // One indexing pass by track ID (first wins) replaces the per-selection rescan.
+    NSMutableDictionary<NSString *, YMFormat *> *rowByTrackID = [NSMutableDictionary dictionary];
+    for (YMFormat *f in self.audioRows) {
+        if (f.audioTrackID && !rowByTrackID[f.audioTrackID]) rowByTrackID[f.audioTrackID] = f;
+    }
     NSMutableArray<YMFormat *> *kept = [NSMutableArray array];
     for (YMFormat *current in self.selectedAudios) {
-        for (YMFormat *f in self.audioRows) {
-            if ([f.audioTrackID isEqualToString:current.audioTrackID]) {
-                [kept addObject:f];
-                break;
-            }
-        }
+        YMFormat *match = current.audioTrackID ? rowByTrackID[current.audioTrackID] : nil;
+        if (match) [kept addObject:match];
     }
     self.selectedAudios = kept;
     if (self.selectedAudios.count == 0 && self.audioRows.count > 0) {
@@ -150,13 +135,6 @@ typedef NS_ENUM(NSInteger, YMDownloadSheetSection) {
     return total;
 }
 
-static NSString *YMByteCountString(unsigned long long bytes) {
-    if (bytes < 1) return nil;
-    NSByteCountFormatter *fmt = [NSByteCountFormatter new];
-    fmt.countStyle = NSByteCountFormatterCountStyleFile;
-    return [fmt stringFromByteCount:(long long)bytes];
-}
-
 - (void)viewDidLoad {
     [super viewDidLoad];
     [self buildModel];
@@ -168,7 +146,7 @@ static NSString *YMByteCountString(unsigned long long bytes) {
             return (trait.userInterfaceStyle == UIUserInterfaceStyleDark) ? [%c(YTColor) black3] : [UIColor whiteColor];
         }];
     }
-    self.view.tintColor = YouModAccentColor();
+    self.view.tintColor = [YMHelpers accentColor];
 
     UILabel *titleLabel = [UILabel new];
     if (self.channelTitle.length > 0) {
@@ -182,7 +160,7 @@ static NSString *YMByteCountString(unsigned long long bytes) {
     titleLabel.translatesAutoresizingMaskIntoConstraints = NO;
 
     UIButton *closeButton = [UIButton buttonWithType:UIButtonTypeSystem];
-    [closeButton setImage:YouModSymbolImageInCanvas(@"xmark", 24, 17, UIImageSymbolWeightSemibold) forState:UIControlStateNormal];
+    [closeButton setImage:[YMHelpers symbolImageInCanvas:@"xmark" canvasSize:24 pointSize:17 weight:UIImageSymbolWeightSemibold] forState:UIControlStateNormal];
     closeButton.tintColor = UIColor.labelColor;
     closeButton.translatesAutoresizingMaskIntoConstraints = NO;
     [closeButton addTarget:self action:@selector(closeTapped) forControlEvents:UIControlEventTouchUpInside];
@@ -259,12 +237,10 @@ static NSString *YMByteCountString(unsigned long long bytes) {
     return out;
 }
 
-// Animates the rebuildRows result: fades sections in/out and reloads the rows
-// of the sections that actually changed.
+// Animates the rebuildRows result: fades sections in/out and reloads the rows that changed.
 - (void)applyRebuiltRowsFrom:(NSArray<NSNumber *> *)oldSections
                 changedKinds:(NSArray<NSNumber *> *)changedKinds {
-    // Batch updates may only declare section insert/delete, and only when the
-    // section list itself changed — an empty batch trips UIKit's consistency check.
+    // Batch updates may only declare section insert/delete and only when the section list changed — an empty batch trips UIKit's consistency check.
     if (![oldSections isEqualToArray:self.sections]) {
         [self.tableView performBatchUpdates:^{
             for (NSUInteger i = 0; i < oldSections.count; i++) {
@@ -353,7 +329,7 @@ static NSString *YMByteCountString(unsigned long long bytes) {
     } else {
         self.codecHint.text = LOC(@"PHOTOS_CODEC_NOTE");
     }
-    NSString *bytes = YMByteCountString(self.totalBytes);
+    NSString *bytes = [YMDownloadSheetHelpers byteCountString:self.totalBytes];
     if (bytes.length > 0) {
         [self.downloadButton setTitle:[NSString stringWithFormat:@"%@   ·   %@",
                                        LOC(@"DOWNLOAD_BUTTON"), bytes] forState:UIControlStateNormal];
@@ -450,14 +426,14 @@ static NSString *YMByteCountString(unsigned long long bytes) {
         case YMDownloadSheetSectionVideo: {
             YMFormat *f = self.videoRows[indexPath.row];
             cell.textLabel.text = f.displayLabel;
-            cell.detailTextLabel.text = YMByteCountString(f.contentLength);
+            cell.detailTextLabel.text = [YMDownloadSheetHelpers byteCountString:f.contentLength];
             if (f == self.selectedVideo) accessory = UITableViewCellAccessoryCheckmark;
             break;
         }
         case YMDownloadSheetSectionAudio: {
             YMFormat *f = self.audioRows[indexPath.row];
             cell.textLabel.text = f.displayLabel;
-            cell.detailTextLabel.text = YMByteCountString(f.contentLength);
+            cell.detailTextLabel.text = [YMDownloadSheetHelpers byteCountString:f.contentLength];
             if ([self.selectedAudios containsObject:f]) accessory = UITableViewCellAccessoryCheckmark;
             break;
         }

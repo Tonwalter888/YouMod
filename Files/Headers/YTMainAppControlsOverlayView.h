@@ -14,3 +14,9 @@
 - (YTMainAppVideoPlayerOverlayViewController *)eventsDelegate;
 @property (nonatomic, assign, readonly) YTQTMButton *overflowButton;
 @end
+
+// YouMod additions
+@interface YTMainAppControlsOverlayView ()
+- (void)updateQualityButton:(id)arg;
+- (void)updateSpeedButton:(id)arg;
+@end

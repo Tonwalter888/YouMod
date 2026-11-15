@@ -139,6 +139,8 @@
 "HIDE_CAST_BUTTON_NAVBAR_DESC" = "Скрывает кнопку трансляции в панели навигации.";
 "HIDE_MESSAGES_BUTTON" = "Скрыть кнопку сообщений";
 "HIDE_MESSAGES_BUTTON_DESC" = "Скрывает кнопку сообщений на панели навигации.";
+"HIDE_SHARE_BUTTON_NAVBAR" = "Hide share button";
+"HIDE_SHARE_BUTTON_NAVBAR_DESC" = "Hide share button in the navigation bar.";
 
 "FEED" = "Лента";
 "HIDE_SUBBAR" = "Скрыть панель фильтров";
@@ -378,6 +380,14 @@
 "REMOVE_SHORTS_REMIX_BUTTON_DESC" = "Удаляет кнопку «Ремикс» в интерфейсе Shorts.";
 "REMOVE_SHORTS_SOUNDMETADATA_BUTTON" = "Удалить кнопку информации о звуке";
 "REMOVE_SHORTS_SOUNDMETADATA_BUTTON_DESC" = "Удаляет кнопку с информацией о треке/звуке в интерфейсе Shorts.";
+"REMOVE_SHORTS_ASK_BUTTON" = "Remove ask button";
+"REMOVE_SHORTS_ASK_BUTTON_DESC" = "Removes the ask button from the Shorts overlay.";
+"REMOVE_SHORTS_VIDEO_TITLE" = "Remove video title";
+"REMOVE_SHORTS_VIDEO_TITLE_DESC" = "Removes the video title from the Shorts overlay.";
+"REMOVE_SHORTS_CHANNEL_NAME" = "Remove channel name";
+"REMOVE_SHORTS_CHANNEL_NAME_DESC" = "Removes the channel name from the Shorts overlay.";
+"REMOVE_SHORTS_CHANNEL_PROFILE" = "Remove channel profile";
+"REMOVE_SHORTS_CHANNEL_PROFILE_DESC" = "Removes the channel profile from the Shorts overlay.";
 "REMOVE_SHORTS_SUB_BUTTON" = "Убрать кнопку «Подписаться»";
 "REMOVE_SHORTS_SUB_BUTTON_DESC" = "Убирает кнопку «Подписаться» из оверлея Shorts.";
 "REMOVE_SHORTS_PAUSED_SUB_BUTTON" = "Удалить кнопку «Подписки»";
@@ -438,6 +448,8 @@
 "ZERO_TAB_DESC" = "Должна быть включена хотя бы одна вкладка.";
 
 "MISCELLANEOUS" = "Разное";
+"LIQUID_GLASS" = "Liquid glass";
+"LIQUID_GLASS_DESC" = "Applies liquid glass to some elements.";
 "BACKGROUND_PLAYBACK" = "Фоновое воспроизведение";
 "BACKGROUND_PLAYBACK_DESC" = "Включает фоновое воспроизведение видео.";
 "DISABLES_SHORTS_PIP" = "Отключить PiP для Shorts";

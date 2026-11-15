@@ -178,7 +178,7 @@
 
 - (void)moreTapped:(UIButton *)sender {
     UIActivityViewController *activityVC = [[UIActivityViewController alloc] initWithActivityItems:@[self.thumbnailImage] applicationActivities:nil];
-    YouModConfigureSharePopover(activityVC, self.view);
+    [YMHelpers configureSharePopover:activityVC sourceView:self.view];
     [self presentViewController:activityVC animated:YES completion:nil];
 }
 

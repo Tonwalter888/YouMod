@@ -107,7 +107,7 @@ static BOOL isNewYTTabbarLayout = NO;
 
 static YTIPivotBarSupportedRenderers *YouModNewTab(NSString *pivotID, NSString *title, int it) {
     YTIPivotBarSupportedRenderers *tab = [%c(YTIPivotBarSupportedRenderers) new];
-    if (isNewYTTabbarLayout) {
+    if (isNewYTTabbarLayout && [tab.pivotBarIconOnlyItemRenderer respondsToSelector:@selector(setBackgroundStyle:)]) {
         tab.pivotBarIconOnlyItemRenderer.pivotIdentifier = pivotID;
         tab.pivotBarIconOnlyItemRenderer.navigationEndpoint.browseEndpoint.browseId = pivotID;
         tab.pivotBarIconOnlyItemRenderer.icon.iconType = it;
@@ -258,7 +258,7 @@ static void YMOpenLinkFromClipboard(UIViewController *presentingVC, BOOL isRunti
     if (![pasteboard hasStrings]) return;
 
     NSString *rawString = [pasteboard.string stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
-    NSString *videoID = YMExtractYouTubeVideoID(rawString);
+    NSString *videoID = [YMHelpers extractYouTubeVideoID:rawString];
     if (!videoID || videoID.length == 0) return;
     else if (gLastOpenedVideoID && [gLastOpenedVideoID isEqualToString:videoID] && IS_ENABLED(AutoOpenLink) && !isRuntime) return;
 
@@ -315,7 +315,7 @@ static BOOL isGestureRegistered = NO;
                                                image:[UIImage systemImageNamed:@"link"]
                                           identifier:nil
                                              handler:^(__kindof UIAction * _Nonnull action) {
-            UIViewController *topVC = YouModTopViewController(nil);
+            UIViewController *topVC = [YMHelpers topViewController:nil];
             YMOpenLinkFromClipboard(topVC, YES);
         }];
         UIAction *sleepTimerAction = nil;
@@ -434,7 +434,7 @@ static BOOL isTabSelected = NO;
 - (void)sceneDidBecomeActive:(UIScene *)scene {
     %orig;
     if (IS_ENABLED(AutoOpenLink)) {
-        UIViewController *topVC = YouModTopViewController(nil);
+        UIViewController *topVC = [YMHelpers topViewController:nil];
         YMOpenLinkFromClipboard(topVC, NO);
     }
 }
