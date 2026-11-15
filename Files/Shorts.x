@@ -210,7 +210,7 @@ void YouModFilterShortsDisplayView(_ASDisplayView *view, NSString *iden) {
 %hook YTReelWatchRootView
 - (void)setBottomActionBarView:(UIView *)view {
     if (IS_ENABLED(RemoveShortsCommentBar)) {
-        [[self valueForKey:@"_pivotBarProvider"] showPivotBar];
+        [[self valueForKey:@"_pivotBarProvider"] performSelector:@selector(showPivotBar)];
         return;
     }
     %orig;
