@@ -7,3 +7,10 @@
 - (YTSingleVideoController *)currentVideo;
 - (NSString *)videoId;
 @end
+
+@interface YTReelPlayerViewController (YouMod)
+- (void)reelContentViewRequestsAdvanceToNextVideo:(id)arg;
+- (void)reelContentViewRequestsPlayPauseToggle:(id)arg;
+- (id)audioTrackController;
+- (void)YouModAutoAudioTrack:(YTPlayerViewController *)pv;
+@end

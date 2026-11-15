@@ -202,6 +202,11 @@
     return self;
 }
 
+- (instancetype)withBundleIcon:(NSString *)name {
+    self.bundleIcon = name;
+    return self;
+}
+
 - (instancetype)withSubmenuItems:(NSArray<YMSettingsItem *> *)items kind:(NSInteger)kind {
     self.submenuItems = items;
     self.submenuKind = kind;
@@ -373,7 +378,7 @@ void YMRegisterSettingsGroup(NSString *title, NSArray<YMSettingsItem *> *items) 
 }
 
 #pragma mark - YMSubSettingsViewController
-// The class interface lives in Headers/YouMod.h (shared with YMSplitSettings.x).
+// The class interface lives in Headers/YMSubSettingsViewController.h (shared with YMSplitSettings.x).
 
 static const void *kYMTableViewKey = &kYMTableViewKey;
 static const void *kYMSearchBarKey = &kYMSearchBarKey;
@@ -392,6 +397,7 @@ static const void *kYMHideSearchBarKey = &kYMHideSearchBarKey;
 static const void *kYMGroupHandlerKey = &kYMGroupHandlerKey;
 static const void *kYMSearchTextHandlerKey = &kYMSearchTextHandlerKey;
 static const void *kYMSelectedGroupTitleKey = &kYMSelectedGroupTitleKey;
+static const void *kYMIsSplitSidebarKey = &kYMIsSplitSidebarKey;
 
 static NSString *YMFormattedSliderValue(NSString *key, float value) {
     if ([key isEqualToString:HoldToSpeedRate]) {
@@ -466,6 +472,11 @@ void YMAnimateThemeChange(UIView *view, void (^changes)(void)) {
 - (void)setSearchTextHandler:(void (^)(NSString *text))handler { objc_setAssociatedObject(self, kYMSearchTextHandlerKey, handler, OBJC_ASSOCIATION_COPY_NONATOMIC); }
 - (NSString *)selectedGroupTitle { return objc_getAssociatedObject(self, kYMSelectedGroupTitleKey); }
 - (void)setSelectedGroupTitle:(NSString *)title { objc_setAssociatedObject(self, kYMSelectedGroupTitleKey, title, OBJC_ASSOCIATION_COPY_NONATOMIC); }
+
+// YES only for the embedded sidebar page of the iPad split settings — its nav
+// rows get the #2885FF touch feedback (see navCellForItem:).
+- (BOOL)ymIsSplitSidebar { return [objc_getAssociatedObject(self, kYMIsSplitSidebarKey) boolValue]; }
+- (void)setYmIsSplitSidebar:(BOOL)sidebar { objc_setAssociatedObject(self, kYMIsSplitSidebarKey, @(sidebar), OBJC_ASSOCIATION_RETAIN_NONATOMIC); }
 
 - (BOOL)hideSearchBar { return [objc_getAssociatedObject(self, kYMHideSearchBarKey) boolValue]; }
 - (void)setHideSearchBar:(BOOL)hide { objc_setAssociatedObject(self, kYMHideSearchBarKey, @(hide), OBJC_ASSOCIATION_RETAIN_NONATOMIC); }
@@ -607,10 +618,26 @@ static const void *kYMCachedDisplayedItemsKey = &kYMCachedDisplayedItemsKey;
         } else {
             tf.textColor = [UIColor labelColor];
         }
-        tf.backgroundColor = UIColor.clearColor;
         tf.tintColor = sb.tintColor;
         tf.attributedPlaceholder = [[NSAttributedString alloc] initWithString:sb.placeholder ?: @"" attributes:@{NSForegroundColorAttributeName: [UIColor secondaryLabelColor]}];
-        YouModApplyLiquidGlassToView(tf, NO);
+        if (YMHostBundleSupportsLiquidGlass()) {
+            // iOS 26 SDK host: transparent field over the flexible glass.
+            tf.backgroundColor = UIColor.clearColor;
+            YouModApplyLiquidGlassToView(tf, NO);
+            tf.layer.cornerRadius = YMCornerRadiusSearchBar;
+            tf.layer.cornerCurve = kCACornerCurveContinuous;
+            tf.layer.masksToBounds = YES;
+        } else {
+            // Pre-26 host: SB-style gray fill.
+            tf.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor *(UITraitCollection *trait) {
+                return (trait.userInterfaceStyle == UIUserInterfaceStyleDark) ? [UIColor secondarySystemBackgroundColor] : [UIColor systemGray5Color];
+            }];
+            tf.layer.masksToBounds = YES;
+            tf.layer.borderWidth = 0.0;
+            tf.layer.borderColor = nil;
+            tf.layer.cornerRadius = YMCornerRadiusSearchBar;
+            tf.layer.cornerCurve = kCACornerCurveContinuous;
+        }
     }
 }
 
@@ -646,7 +673,7 @@ static const void *kYMCachedDisplayedItemsKey = &kYMCachedDisplayedItemsKey;
         sb.translatesAutoresizingMaskIntoConstraints = NO;
         sb.placeholder = LOC(@"SEARCH");
         sb.searchBarStyle = UISearchBarStyleMinimal;
-        sb.tintColor = [UIColor colorWithRed:0.6 green:0.2 blue:0.9 alpha:1.0];
+        sb.tintColor = YouModAccentColor();
         sb.delegate = self;
         sb.backgroundImage = [[UIImage alloc] init];
         [self.view addSubview:sb];
@@ -813,6 +840,10 @@ static const void *kYMCachedDisplayedItemsKey = &kYMCachedDisplayedItemsKey;
             footer.frame = f;
         }
     }
+
+    // Pre-26 hosts: re-measure the search field's capsule radius now that it
+    // has its real height (bounds are zero when styled in viewDidLoad).
+    if (!YMHostBundleSupportsLiquidGlass()) [self updateSearchBarTheme];
 }
 
 - (UIColor *)navBarForegroundColor {
@@ -926,7 +957,7 @@ static const void *kYMCachedDisplayedItemsKey = &kYMCachedDisplayedItemsKey;
 
     UISwitch *sw = [[UISwitch alloc] init];
     sw.on = IS_ENABLED(item.key);
-    sw.onTintColor = [UIColor colorWithRed:0.6 green:0.2 blue:0.9 alpha:1.0];
+    sw.onTintColor = YouModAccentColor();
     objc_setAssociatedObject(sw, kYMSwitchKeyAssoc, item.key, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     [sw addTarget:self action:@selector(toggleChanged:) forControlEvents:UIControlEventValueChanged];
     cell.accessoryView = sw;
@@ -982,7 +1013,7 @@ static const void *kYMCachedDisplayedItemsKey = &kYMCachedDisplayedItemsKey;
     slider.minimumValue = item.sliderMin;
     slider.maximumValue = item.sliderMax;
     [slider setValue:stored animated:NO];
-    slider.minimumTrackTintColor = [UIColor colorWithRed:0.6 green:0.2 blue:0.9 alpha:1.0];
+    slider.minimumTrackTintColor = YouModAccentColor();
     slider.maximumTrackTintColor = [UIColor colorWithWhite:0.3 alpha:1.0];
     objc_setAssociatedObject(slider, kYMSliderKeyAssoc, item.key, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     objc_setAssociatedObject(slider, kYMSliderStepAssoc, @(item.sliderStep), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
@@ -1124,17 +1155,18 @@ static UIImage *YMGrayCircle(CGFloat diameter) {
 
 // Menu row that pushes a page: leading YT icon (RTL-mirrored), title, chevron.
 - (UITableViewCell *)navCellForItem:(YMSettingsItem *)item tableView:(UITableView *)tableView {
+    BOOL isSidebarRow = isPadHardware() && self.ymIsSplitSidebar;
     UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:nil];
     cell.backgroundColor = [UIColor clearColor];
-    cell.selectionStyle = UITableViewCellSelectionStyleDefault;
+    cell.selectionStyle = isSidebarRow ? UITableViewCellSelectionStyleNone : UITableViewCellSelectionStyleDefault;
     cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
 
-    // iPad sidebar: plain grey highlight on the row whose page is currently in
-    // the detail pane (selectedGroupTitle is nil on regular pages).
+    // iPad sidebar: the YouMod accent color marks the row whose page is
+    // currently in the detail pane (selectedGroupTitle is nil on regular
+    // pages). Square — no rounded corners.
     if (self.selectedGroupTitle.length > 0 && [self.selectedGroupTitle isEqualToString:item.title]) {
         UIView *bg = [[UIView alloc] init];
-        bg.backgroundColor = [UIColor systemGray5Color];
-        bg.layer.cornerRadius = 10;
+        bg.backgroundColor = [YouModAccentColor() colorWithAlphaComponent:0.18];
         cell.backgroundView = bg;
     }
 
@@ -1148,12 +1180,20 @@ static UIImage *YMGrayCircle(CGFloat diameter) {
     NSLayoutXAxisAnchor *textLeading = cell.contentView.leadingAnchor;
     CGFloat textInset = 16;
 
-    if (item.iconType > 0) {
+    UIImage *leadingIcon = nil;
+    if (item.bundleIcon.length > 0) {
+        // YouMod bundle icon (old/new set follows YouTube's icon style), tinted
+        // to match the row text so both themes look right.
+        UIImage *img = [YMIconProvider settingsIcon:item.bundleIcon];
+        if (img) leadingIcon = [img imageWithTintColor:[self ymTextColor] renderingMode:UIImageRenderingModeAlwaysOriginal];
+    } else if (item.iconType > 0) {
+        leadingIcon = YouModYTIconImage(item.iconType, NO, nil);
+    }
+    if (leadingIcon) {
         UIImageView *iconView = [[UIImageView alloc] init];
         iconView.translatesAutoresizingMaskIntoConstraints = NO;
         iconView.contentMode = UIViewContentModeScaleAspectFit;
-        UIImage *icon = YouModYTIconImage(item.iconType, NO, nil);
-        iconView.image = [icon imageFlippedForRightToLeftLayoutDirection];
+        iconView.image = [leadingIcon imageFlippedForRightToLeftLayoutDirection];
         [cell.contentView addSubview:iconView];
         [NSLayoutConstraint activateConstraints:@[
             [iconView.leadingAnchor constraintEqualToAnchor:cell.contentView.leadingAnchor constant:16],
@@ -1429,7 +1469,12 @@ static UIImage *YMGrayCircle(CGFloat diameter) {
         [menuButton setImage:[UIImage systemImageNamed:@"chevron.up.chevron.down"] forState:UIControlStateNormal];
         menuButton.tintColor = [self ymSecondaryColor];
         menuButton.semanticContentAttribute = UISemanticContentAttributeForceRightToLeft;
+        // Unreachable on the iOS 15.0 floor (UIButtonConfiguration always
+        // exists); kept as a legacy fallback, so silence the iOS 15 deprecation.
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
         menuButton.imageEdgeInsets = UIEdgeInsetsMake(0, 6, 0, -6);
+#pragma clang diagnostic pop
     }
 
     NSMutableArray<UIMenuElement *> *menuActions = [NSMutableArray array];
@@ -1597,9 +1642,9 @@ YMSettingsItem *YMDeveloper(NSString *name, NSString *role, NSString *profileURL
 #pragma mark - YMTabOrderViewController
 
 static NSString * const kYMTabIDs[] = {
-    @"home", @"shorts", @"create", @"subscriptions", @"library", @"history", @"gaming", @"sports", @"notifications", @"news", @"music", @"watchlater", @"playlist", @"like", @"live", @"post", @"video", @"movie", @"course", @"minigame", @"fashion", @"learning", @"download"
+    @"home", @"shorts", @"create", @"subscriptions", @"library", @"history", @"gaming", @"sports", @"notifications", @"news", @"music", @"watchlater", @"playlist", @"like", @"live", @"post", @"video", @"movie", @"course", @"minigame", @"fashion", @"learning", @"download", @"charts"
 };
-static const NSInteger kYMTabCount = 23;
+static const NSInteger kYMTabCount = 24;
 static const NSInteger kYMTabMaxEnabled = 6;
 static const NSInteger kYMTabMinEnabled = 1;
 
@@ -1654,22 +1699,17 @@ static const void *kYMTabSavedScrollEdgeAppearanceKey = &kYMTabSavedScrollEdgeAp
     if ([tabID isEqualToString:@"fashion"]) return LOC(@"FASHION_TAB");
     if ([tabID isEqualToString:@"learning"]) return LOC(@"LEARNING_TAB");
     if ([tabID isEqualToString:@"download"]) return LOC(@"DOWNLOAD_LIBRARY_TAB");
+    if ([tabID isEqualToString:@"charts"]) return LOC(@"CHARTS_TAB");
     return tabID;
 }
 
 - (UIImage *)iconForTabID:(NSString *)tabID {
-    static YTAssetLoader *cachedLoader = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        cachedLoader = [[%c(YTAssetLoader) alloc] initWithBundle:YouModBundle()];
-    });
-
     if ([tabID isEqualToString:@"create"]) {
         UIImageSymbolConfiguration *config = [UIImageSymbolConfiguration configurationWithPointSize:18 weight:UIImageSymbolWeightMedium];
         return [[UIImage systemImageNamed:@"plus" withConfiguration:config] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
     }
     NSDictionary *ytIconTypes = @{@"home": @(65), @"shorts": @(769), @"subscriptions": @(66), @"library": @(61)};
-    NSDictionary *bundleIcons = @{@"history": @"icons/history", @"gaming": @"icons/gaming", @"sports": @"icons/sports", @"notifications": @"icons/noti", @"news": @"icons/news", @"music": @"icons/music", @"watchlater": @"icons/watchlater", @"playlist": @"icons/playlist", @"like": @"icons/like", @"live": @"icons/live", @"post": @"icons/post", @"video": @"icons/video", @"movie": @"icons/movie", @"course": @"icons/course", @"minigame": @"icons/minigame", @"fashion": @"icons/fashion", @"learning": @"icons/learning", @"download": @"icons/download"};
+    NSDictionary *bundleIcons = @{@"history": @"history", @"gaming": @"gaming", @"sports": @"sports", @"notifications": @"noti", @"news": @"news", @"music": @"music", @"watchlater": @"watchlater", @"playlist": @"playlist", @"like": @"like", @"live": @"live", @"post": @"post", @"video": @"video", @"movie": @"movie", @"course": @"course", @"minigame": @"minigame", @"fashion": @"fashion", @"learning": @"learning", @"download": @"download", @"charts": @"charts"};
 
     NSNumber *iconType = ytIconTypes[tabID];
     if (iconType) {
@@ -1683,8 +1723,8 @@ static const void *kYMTabSavedScrollEdgeAppearanceKey = &kYMTabSavedScrollEdgeAp
     }
 
     NSString *bundleName = bundleIcons[tabID];
-    if (bundleName && cachedLoader) {
-        UIImage *img = [cachedLoader imageNamed:bundleName];
+    if (bundleName) {
+        UIImage *img = [YMIconProvider tabIcon:bundleName selected:NO];
         if (img) return [img imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
     }
 
@@ -1856,7 +1896,7 @@ static const void *kYMTabSavedScrollEdgeAppearanceKey = &kYMTabSavedScrollEdgeAp
         cell.selectionStyle = UITableViewCellSelectionStyleNone;
 
         sw = [[UISwitch alloc] init];
-        sw.onTintColor = [UIColor colorWithRed:0.6 green:0.2 blue:0.9 alpha:1.0];
+        sw.onTintColor = YouModAccentColor();
         [sw addTarget:self action:@selector(tabToggleChanged:) forControlEvents:UIControlEventValueChanged];
         sw.translatesAutoresizingMaskIntoConstraints = NO;
         sw.tag = 999;
@@ -2328,7 +2368,7 @@ static const void *kYMOverlayMoveInFlightKey = &kYMOverlayMoveInFlightKey;
         cell.selectionStyle = UITableViewCellSelectionStyleNone;
 
         sw = [[UISwitch alloc] init];
-        sw.onTintColor = [UIColor colorWithRed:0.6 green:0.2 blue:0.9 alpha:1.0];
+        sw.onTintColor = YouModAccentColor();
         [sw addTarget:self action:@selector(buttonToggleChanged:) forControlEvents:UIControlEventValueChanged];
         sw.translatesAutoresizingMaskIntoConstraints = NO;
         sw.tag = 999;

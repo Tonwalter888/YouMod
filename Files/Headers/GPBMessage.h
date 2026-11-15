@@ -17,3 +17,7 @@
 - (void)setExtension:(GPBExtensionDescriptor *)extension value:(id)value;
 - (void)mergeFrom:(GPBMessage *)other;
 @end
+
+@interface GPBMessage (YouMod)
++ (instancetype)goog_parseFromData:(NSData *)data error:(NSError **)error; // parses with the app's extension registry
+@end

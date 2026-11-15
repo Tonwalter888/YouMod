@@ -1,0 +1,2 @@
+@interface YTVideoFreeZoomOverlayView : UIView
+@end

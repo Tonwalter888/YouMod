@@ -10,3 +10,14 @@
 + (NSString *)browseIDForSubscriptionsTab;
 + (NSString *)browseIDForWhatToWatch;
 @end
+
+@interface YTIBrowseRequest (YouMod)
++ (NSString *)browseIDForGamingDestination;
++ (NSString *)browseIDForSportsDestination;
++ (NSString *)browseIDForNotificationsInbox;
++ (NSString *)browseIDForHistory;
++ (NSString *)browseIDForWhatToWatch;
++ (NSString *)browseIDForSubscriptionsTab;
++ (NSString *)browseIDForLibraryTab;
++ (NSString *)browseIDForLearningDestination;
+@end

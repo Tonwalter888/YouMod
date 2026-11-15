@@ -160,9 +160,15 @@ static NSString *YMByteCountString(unsigned long long bytes) {
 - (void)viewDidLoad {
     [super viewDidLoad];
     [self buildModel];
-    // Frosted + light-gray dialog background.
-    YouModApplyFrostedPanelBackgroundToView(self.view);
-    self.view.tintColor = UIColor.systemPurpleColor;
+    // YouTube-style dialog background: white in light, YTColor.black3 in dark.
+    if (YMHostBundleSupportsLiquidGlass()) {
+        YouModApplyFrostedPanelBackgroundToView(self.view);
+    } else {
+        self.view.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor *(UITraitCollection *trait) {
+            return (trait.userInterfaceStyle == UIUserInterfaceStyleDark) ? [%c(YTColor) black3] : [UIColor whiteColor];
+        }];
+    }
+    self.view.tintColor = YouModAccentColor();
 
     UILabel *titleLabel = [UILabel new];
     if (self.channelTitle.length > 0) {
@@ -199,7 +205,14 @@ static NSString *YMByteCountString(unsigned long long bytes) {
     UIButton *download = [UIButton buttonWithType:UIButtonTypeSystem];
     self.downloadButton = download;
     download.titleLabel.font = [UIFont systemFontOfSize:17 weight:UIFontWeightSemibold];
-    download.backgroundColor = UIColor.secondarySystemBackgroundColor;
+    if (YMHostBundleSupportsLiquidGlass()) {
+        // More grey base on 26 SDK hosts.
+        download.backgroundColor = [UIColor systemGray5Color];
+    } else {
+        download.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor *(UITraitCollection *trait) {
+            return (trait.userInterfaceStyle == UIUserInterfaceStyleDark) ? [UIColor secondarySystemBackgroundColor] : [UIColor systemGray5Color];
+        }];
+    }
     download.layer.cornerRadius = 12;
     download.translatesAutoresizingMaskIntoConstraints = NO;
     [download addTarget:self action:@selector(startDownload) forControlEvents:UIControlEventTouchUpInside];

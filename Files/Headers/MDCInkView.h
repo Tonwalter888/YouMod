@@ -1,0 +1,2 @@
+@interface MDCInkView : UIView
+@end

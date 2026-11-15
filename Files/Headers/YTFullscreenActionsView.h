@@ -1,0 +1,2 @@
+@interface YTFullscreenActionsView : UIView
+@end

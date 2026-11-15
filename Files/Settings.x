@@ -51,8 +51,7 @@ static void YMPushYouModHome(id settingsVC) {
 // Shared by the search registration and the home row.
 static NSArray<YMSettingsItem *> *YMTabBarItems(void) {
     NSDictionary *tabYTIconMap = @{@"home": @(65), @"shorts": @(769), @"subscriptions": @(66), @"library": @(61)};
-    NSDictionary *tabBundleIconMap = @{@"history": @"icons/history", @"gaming": @"icons/gaming", @"sports": @"icons/sports", @"notifications": @"icons/noti", @"news": @"icons/news", @"music": @"icons/music", @"watchlater": @"icons/watchlater", @"playlist": @"icons/playlist", @"like": @"icons/like", @"live": @"icons/live", @"post": @"icons/post", @"video": @"icons/video", @"movie": @"icons/movie", @"course": @"icons/course", @"minigame": @"icons/minigame", @"fashion": @"icons/fashion", @"learning": @"icons/learning", @"download": @"icons/download"};
-    YTAssetLoader *assetLoader = [[%c(YTAssetLoader) alloc] initWithBundle:YouModBundle()];
+    NSDictionary *tabBundleIconMap = @{@"history": @"history", @"gaming": @"gaming", @"sports": @"sports", @"notifications": @"noti", @"news": @"news", @"music": @"music", @"watchlater": @"watchlater", @"playlist": @"playlist", @"like": @"like", @"live": @"live", @"post": @"post", @"video": @"video", @"movie": @"movie", @"course": @"course", @"minigame": @"minigame", @"fashion": @"fashion", @"learning": @"learning", @"download": @"download", @"charts": @"charts"};
 
     NSMutableArray<UIImage *> *defaultTabImages = [NSMutableArray array];
     NSArray *savedOrder = [[NSUserDefaults standardUserDefaults] arrayForKey:TabOrder];
@@ -72,7 +71,7 @@ static NSArray<YMSettingsItem *> *YMTabBarItems(void) {
             } else {
                 NSString *bundleName = tabBundleIconMap[tabID];
                 if (bundleName) {
-                    UIImage *img = [assetLoader imageNamed:bundleName];
+                    UIImage *img = [YMIconProvider tabIcon:bundleName selected:NO];
                     if (img) {
                         UIImage *whiteImg = [img imageWithTintColor:[UIColor whiteColor] renderingMode:UIImageRenderingModeAlwaysOriginal];
                         [defaultTabImages addObject:whiteImg];
@@ -81,7 +80,7 @@ static NSArray<YMSettingsItem *> *YMTabBarItems(void) {
             }
         }
         if (!downloadInOrder && IS_ENABLED(DownloadLibraryTab)) {
-            UIImage *img = [assetLoader imageNamed:@"icons/download"];
+            UIImage *img = [YMIconProvider tabIcon:@"download" selected:NO];
             if (img) {
                 UIImage *whiteImg = [img imageWithTintColor:[UIColor whiteColor] renderingMode:UIImageRenderingModeAlwaysOriginal];
                 [defaultTabImages addObject:whiteImg];
@@ -481,11 +480,11 @@ static NSArray<YMSettingsItem *> *YMPreferencesItems(void) {
     // Section rows — nav rows carrying their sub-page (pushed on iPhone, shown
     // in the iPad split view's detail pane). No captured view controllers here:
     // the page data lives on the row and the push target resolves at tap time.
-    [homeItems addObject:[[YMNavAction(YMLOC(@"DOWNLOADING"), nil, nil) withSubmenuItems:downloadingItems kind:YMSubmenuKindSettings] withIconType:57]];
-    [homeItems addObject:[[YMNavAction(YMLOC(@"APPEARANCE"), nil, nil) withSubmenuItems:appearanceItems kind:YMSubmenuKindSettings] withIconType:921]];
-    [homeItems addObject:[[YMNavAction(YMLOC(@"NAVBAR"), nil, nil) withSubmenuItems:navbarItems kind:YMSubmenuKindSettings] withIconType:60]];
+    [homeItems addObject:[[YMNavAction(YMLOC(@"DOWNLOADING"), nil, nil) withSubmenuItems:downloadingItems kind:YMSubmenuKindSettings] withBundleIcon:@"download_settings"]];
+    [homeItems addObject:[[YMNavAction(YMLOC(@"APPEARANCE"), nil, nil) withSubmenuItems:appearanceItems kind:YMSubmenuKindSettings] withBundleIcon:@"appearance_settings"]];
+    [homeItems addObject:[[YMNavAction(YMLOC(@"NAVBAR"), nil, nil) withSubmenuItems:navbarItems kind:YMSubmenuKindSettings] withBundleIcon:@"navigationbar_settings"]];
     [homeItems addObject:[[YMNavAction(YMLOC(@"FEED"), nil, nil) withSubmenuItems:feedItems kind:YMSubmenuKindSettings] withIconType:193]];
-    [homeItems addObject:[[YMNavAction(YMLOC(@"PLAYER"), nil, nil) withSubmenuItems:playerItems kind:YMSubmenuKindSettings] withIconType:658]];
+    [homeItems addObject:[[YMNavAction(YMLOC(@"PLAYER"), nil, nil) withSubmenuItems:playerItems kind:YMSubmenuKindSettings] withBundleIcon:@"player_settings"]];
     [homeItems addObject:[[YMNavAction(YMLOC(@"SHORTS"), nil, nil) withSubmenuItems:shortsItems kind:YMSubmenuKindSettings] withIconType:769]];
     [homeItems addObject:[[YMNavAction(YMLOC(@"TABBAR"), nil, nil) withSubmenuItems:tabbarItems kind:YMSubmenuKindSettings] withIconType:66]];
     [homeItems addObject:[[YMNavAction(YMLOC(@"MISCELLANEOUS"), nil, nil) withSubmenuItems:miscItems kind:YMSubmenuKindSettings] withIconType:1101]];

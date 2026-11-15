@@ -1,0 +1,2 @@
+@interface YTReelTopBarView : UIView
+@end

@@ -27,3 +27,10 @@
 - (void)addYogaChild:(id)child;
 - (void)insertYogaChild:(id)child atIndex:(NSUInteger)index;
 @end
+
+@class ELMNodeController; // forward: ELMNodeController.h imports headers needing this class
+
+@interface ASDisplayNode (YouMod)
+- (void)removeYogaChild:(ASDisplayNode *)child;
+- (ELMNodeController *)nodeController;
+@end

@@ -87,7 +87,7 @@ static void YouModTranslateText(NSString *text, NSString *targetLang, void (^com
     UIButton *cancelButton = [UIButton buttonWithType:UIButtonTypeSystem];
     [cancelButton setTitle:LOC(@"CANCEL") forState:UIControlStateNormal];
     [cancelButton setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
-    cancelButton.backgroundColor = [UIColor systemPurpleColor];
+    cancelButton.backgroundColor = YouModAccentColor();
     cancelButton.titleLabel.font = [UIFont systemFontOfSize:16 weight:UIFontWeightBold];
     cancelButton.layer.cornerRadius = 14.0;
     cancelButton.clipsToBounds = YES;
@@ -172,12 +172,12 @@ static void YouModTranslateText(NSString *text, NSString *targetLang, void (^com
     cell.textLabel.text = name;
     
     if ([code isEqualToString:self.selectedLangCode]) {
-        cell.textLabel.textColor = [UIColor systemPurpleColor];
+        cell.textLabel.textColor = YouModAccentColor();
         cell.textLabel.font = [UIFont systemFontOfSize:16 weight:UIFontWeightBold];
         
         UIImage *checkImg = [UIImage systemImageNamed:@"checkmark"];
         cell.imageView.image = [checkImg imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
-        cell.imageView.tintColor = [UIColor systemPurpleColor];
+        cell.imageView.tintColor = YouModAccentColor();
     } else {
         cell.textLabel.textColor = [UIColor labelColor];
         cell.textLabel.font = [UIFont systemFontOfSize:16 weight:UIFontWeightRegular];
@@ -344,12 +344,12 @@ static void YouModTranslateText(NSString *text, NSString *targetLang, void (^com
 
 - (void)updateLanguageLabelText {
     NSString *langName = self.selectedLangName ?: @"";
-    UIColor *purpleColor = [UIColor systemPurpleColor];
+    UIColor *accentColor = YouModAccentColor();
     UIFont *labelFont = [UIFont systemFontOfSize:14 weight:UIFontWeightMedium];
     
     NSMutableAttributedString *attrString = [[NSMutableAttributedString alloc] initWithString:[NSString stringWithFormat:@"%@ ", langName] attributes:@{
         NSFontAttributeName: labelFont,
-        NSForegroundColorAttributeName: purpleColor
+        NSForegroundColorAttributeName: accentColor
     }];
     
     UIImageSymbolConfiguration *config = [UIImageSymbolConfiguration configurationWithFont:labelFont];
@@ -357,7 +357,7 @@ static void YouModTranslateText(NSString *text, NSString *targetLang, void (^com
     
     if (symbol) {
         NSTextAttachment *attachment = [[NSTextAttachment alloc] init];
-        attachment.image = [symbol imageWithTintColor:purpleColor renderingMode:UIImageRenderingModeAlwaysOriginal];
+        attachment.image = [symbol imageWithTintColor:accentColor renderingMode:UIImageRenderingModeAlwaysOriginal];
         
         CGFloat fontCapHeight = labelFont.capHeight;
         CGFloat iconHeight = symbol.size.height;
@@ -420,7 +420,7 @@ static void YouModTranslateText(NSString *text, NSString *targetLang, void (^com
     self.translationState = YouModTranslationStateLoading;
     self.reloadButton.hidden = YES;
     self.resultTextView.text = LOC(@"TRANSLATING");
-    self.resultTextView.textColor = [UIColor systemPurpleColor];
+    self.resultTextView.textColor = YouModAccentColor();
     
     __weak typeof(self) weakSelf = self;
     YouModTranslateText(self.originalText, self.selectedLangCode, ^(NSString *translatedText, NSError *error) {

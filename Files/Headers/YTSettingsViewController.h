@@ -10,3 +10,8 @@
 - (void)pushViewController:(UIViewController *)viewController;
 - (void)reloadData;
 @end
+
+@interface YTSettingsViewController (YouMod)
+- (instancetype)initWithAccountID:(id)accountID parentResponder:(id)parentResponder;
+@property (nonatomic, assign) NSInteger appearance;
+@end

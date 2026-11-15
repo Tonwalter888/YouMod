@@ -1,0 +1,2 @@
+@interface YTWatchFloatingMiniplayerProgressBarView : UIView
+@end

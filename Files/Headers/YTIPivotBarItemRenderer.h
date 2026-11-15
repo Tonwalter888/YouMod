@@ -1,6 +1,7 @@
 #import "YTICommand.h"
 #import "YTIIcon.h"
 #import "YTIThumbnailDetails.h"
+#import "YTIFormattedString.h"
 
 @interface YTIPivotBarItemRenderer : GPBMessage
 @property (nonatomic, copy, readwrite) NSString *pivotIdentifier;
@@ -11,4 +12,8 @@
 @property (nonatomic, strong, readwrite) YTIThumbnailDetails *thumbnail;
 @property (nonatomic, strong, readwrite) YTIFormattedString *title;
 - (int)imageOneOfCase;
+@end
+
+@interface YTIPivotBarItemRenderer (YouMod)
+@property (nonatomic, strong, readwrite) YTIFormattedString *title;
 @end

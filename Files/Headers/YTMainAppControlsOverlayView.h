@@ -7,3 +7,10 @@
 @property (nonatomic, strong, readwrite) YTPlayerViewController *playerViewController;
 - (YTQTMButton *)buttonWithImage:(UIImage *)image accessibilityLabel:(NSString *)accessibilityLabel verticalContentPadding:(CGFloat)verticalContentPadding;
 @end
+
+@class YTMainAppVideoPlayerOverlayViewController; // forward: the VC header imports this view
+
+@interface YTMainAppControlsOverlayView (YouMod)
+- (YTMainAppVideoPlayerOverlayViewController *)eventsDelegate;
+@property (nonatomic, assign, readonly) YTQTMButton *overflowButton;
+@end

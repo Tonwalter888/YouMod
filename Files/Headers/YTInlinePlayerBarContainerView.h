@@ -23,3 +23,14 @@
 - (void)updateIconVisibilityAndLayout;
 - (CGFloat)scrubRangeForScrubX:(CGFloat)arg1;
 @end
+
+@class YTMainAppVideoPlayerOverlayViewController;
+@class YTPlayerViewController;
+
+@interface YTInlinePlayerBarContainerView (YouMod)
+@property (nonatomic, strong) NSString *endTimeString;
+- (UIView *)enterExitFullscreenButton;
+- (BOOL)isPeekableViewVisible;
+- (YTQTMButton *)exitFullscreenButton;
+- (void)youModAddEndTimeForOverlayController:(YTMainAppVideoPlayerOverlayViewController *)ovcon player:(YTPlayerViewController *)player;
+@end

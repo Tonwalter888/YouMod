@@ -5,3 +5,6 @@
 @property (nonatomic, strong, readwrite) YTIPivotBarItemRenderer *renderer;
 @property (nonatomic, strong, readwrite) YTQTMButton *navigationButton;
 @end
+
+@interface YTPivotBarItemView (YouMod) <UIContextMenuInteractionDelegate>
+@end

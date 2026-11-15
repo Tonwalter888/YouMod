@@ -1,2 +1,0 @@
-@interface YTTabTitlesView : UIView
-@end

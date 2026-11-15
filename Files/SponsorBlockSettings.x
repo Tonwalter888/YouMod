@@ -5,10 +5,10 @@
 
 extern UIColor *SBColorFromHex(NSString *hexString);
 
-// Purple accent for the toggle switches and duration sliders on this page
-// (distinct from the player overlay button's accent in SponsorBlock.x).
+// Accent color for the toggle switches and duration sliders on this page
+// (shared YouMod accent, distinct from the player overlay button's accent in SponsorBlock.x).
 static UIColor *SBControlTintColor(void) {
-    return [UIColor colorWithRed:0.6 green:0.2 blue:0.9 alpha:1.0];
+    return YouModAccentColor();
 }
 
 // Tag base for a slider row's value label, offset by the row index so each slider finds its label via viewWithTag:.
@@ -192,11 +192,19 @@ static const void *kSBAllFlatRowsKey = &kSBAllFlatRowsKey;
         UITextField *tf = sb.searchTextField;
         if (self.traitCollection.userInterfaceStyle == UIUserInterfaceStyleDark) {
             tf.textColor = [UIColor whiteColor];
-            tf.backgroundColor = [UIColor colorWithWhite:0.15 alpha:1.0];
         } else {
             tf.textColor = [UIColor labelColor];
-            tf.backgroundColor = [UIColor colorWithWhite:0.94 alpha:1.0];
         }
+        // SB menu style: gray fill, the field rounding itself into a capsule
+        // by its own height — viewDidLayoutSubviews re-measures it, since
+        // bounds are still zero when styled in viewDidLoad.
+        tf.backgroundColor = [UIColor colorWithDynamicProvider:^UIColor *(UITraitCollection *trait) {
+            return (trait.userInterfaceStyle == UIUserInterfaceStyleDark) ? [UIColor secondarySystemBackgroundColor] : [UIColor systemGray5Color];
+        }];
+        tf.layer.masksToBounds = YES;
+        tf.layer.borderWidth = 0.0;
+        tf.layer.borderColor = nil;
+        tf.layer.cornerRadius = CGRectGetHeight(tf.bounds) / 2.0;
     }
 }
 
@@ -262,6 +270,13 @@ static const void *kSBAllFlatRowsKey = &kSBAllFlatRowsKey;
             [self.tableView reloadData];
         });
     }
+}
+
+- (void)viewDidLayoutSubviews {
+    [super viewDidLayoutSubviews];
+    // Re-measure the search field's capsule radius at its real height
+    // (bounds are zero when styled in viewDidLoad).
+    [self updateSearchBarTheme];
 }
 
 #pragma mark - UISearchBarDelegate
@@ -562,7 +577,12 @@ static const void *kSBAllFlatRowsKey = &kSBAllFlatRowsKey;
         [menuButton setImage:[UIImage systemImageNamed:@"chevron.up.chevron.down"] forState:UIControlStateNormal];
         menuButton.tintColor = [self sbSecondaryTextColor];
         menuButton.semanticContentAttribute = UISemanticContentAttributeForceRightToLeft;
+        // Unreachable on the iOS 15.0 floor (UIButtonConfiguration always
+        // exists); kept as a legacy fallback, so silence the iOS 15 deprecation.
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
         menuButton.imageEdgeInsets = UIEdgeInsetsMake(0, 6, 0, -6);
+#pragma clang diagnostic pop
     }
 
     NSArray<NSNumber *> *actionOptions;

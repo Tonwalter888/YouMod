@@ -27,14 +27,6 @@
 - (BOOL)mobileShortsTabInlinedExpandWatchOnDismiss { return IS_ENABLED(ShowShortsSeekbar) ? YES : %orig; }
 %end
 
-static void YouModMakeAShortsAction(YTReelPlayerViewController *self, YTSingleVideoController *video, YTSingleVideoTime *time) {
-    if (INTFORVAL(ShortsActionIndex) == 0) return;
-    if (floor(time.time) >= floor(video.totalMediaTime)) {
-        if (INTFORVAL(ShortsActionIndex) == 1) [self reelContentViewRequestsAdvanceToNextVideo:nil];
-        else if (INTFORVAL(ShortsActionIndex) == 2) [self reelContentViewRequestsPlayPauseToggle:nil];
-    }
-}
-
 static BOOL isShortsOnlyOn = YES;
 static BOOL isFullscreenEnabled = NO;
 
@@ -84,16 +76,18 @@ static void YouModRemoveShortsOverlayButton(_ASDisplayView *dpView) {
 %hook YTReelPlayerViewController
 - (BOOL)shouldAlwaysEnablePlayerBar { return IS_ENABLED(ShowShortsSeekbar) ? YES : %orig; }
 - (BOOL)shouldEnablePlayerBarOnlyOnPause { return IS_ENABLED(ShowShortsSeekbar) ? NO : %orig; }
-- (void)singleVideo:(YTSingleVideoController *)video currentVideoTimeDidChange:(YTSingleVideoTime *)time {
-    %orig;
-    YouModMakeAShortsAction(self, video, time);
-}
 - (void)loadPlayerBar {
     %orig;
     if ((isShortsOnlyOn && IS_ENABLED(ShortsOnly)) || (isFullscreenEnabled && IS_ENABLED(FullScreenShorts))) [[self valueForKey:@"_pivotBarProvider"] performSelector:@selector(hidePivotBar)];
     YTPlayerViewController *main = self.player;
     if (INTFORVAL(CaptionTrack) != 0) [main performSelector:@selector(YouModAutoCaptions) withObject:nil afterDelay:0.5];
     if (INTFORVAL(ShortsAutoSpeedIndex) != 0) [main performSelector:@selector(YouModSetAutoSpeed) withObject:nil afterDelay:0.5];
+}
+- (void)handleLoopBehavior {
+    NSInteger action = INTFORVAL(ShortsActionIndex);
+    if (action == 0) %orig;
+    else if (action == 1) [self reelContentViewRequestsAdvanceToNextVideo:nil];
+    else if (action == 2) [self reelContentViewRequestsPlayPauseToggle:nil];
 }
 %end
 
@@ -102,11 +96,7 @@ static void YouModRemoveShortsOverlayButton(_ASDisplayView *dpView) {
 - (void)handleLoopBehavior {
     NSInteger action = INTFORVAL(ShortsActionIndex);
     if (action == 0) return %orig;
-    if (action == 1) {
-        id delegate = [self valueForKey:@"_delegate"];
-        SEL next = @selector(playbackSequentialItemControllerDidRequestNextReel:isAutoAdvance:);
-        if ([delegate respondsToSelector:next]) [delegate playbackSequentialItemControllerDidRequestNextReel:self isAutoAdvance:YES];
-    }
+    if (action == 1) [[self valueForKey:@"_delegate"] playbackSequentialItemControllerDidRequestNextReel:self isAutoAdvance:YES];
 }
 - (void)setupPlayerForPiP { if (!IS_ENABLED(DisablesShortsPiP)) %orig; }
 %end
@@ -269,8 +259,8 @@ void YouModFilterShortsDisplayView(_ASDisplayView *view, NSString *iden) {
 }
 %end
 
-static id YouModAppViewController(void) {
-    id vc = [[[UIApplication sharedApplication] delegate] window].rootViewController;
+static UIViewController *YouModAppViewController() {
+    UIViewController *vc = [[[UIApplication sharedApplication] delegate] window].rootViewController;
     return [vc respondsToSelector:@selector(hidePivotBar)] ? vc : nil;
 }
 

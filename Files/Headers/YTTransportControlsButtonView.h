@@ -1,0 +1,2 @@
+@interface YTTransportControlsButtonView : UIView
+@end

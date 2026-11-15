@@ -6,14 +6,6 @@
 - (void)setFeedHeaderScrollMode:(int)mode { %orig(IS_ENABLED(HideSubbar) ? 0 : mode); }
 %end
 
-%hook YTTabTitlesView
-- (void)didMoveToWindow {
-    %orig;
-    NSString *renderer = [[self._viewControllerForAncestor.parentViewController valueForKey:@"_renderer"] description];
-    if ([renderer containsString:@"FEwhat_to_watch"]) [self removeFromSuperview];
-}
-%end
-
 // Hide voice search button
 %hook YTSearchViewController
 - (void)viewDidLoad {

@@ -1,0 +1,2 @@
+@interface YTReelWatchPlaybackOverlayView : UIView
+@end

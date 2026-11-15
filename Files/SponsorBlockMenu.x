@@ -1049,7 +1049,7 @@ static UIView *sbNudgeControls(void (^nudge)(float delta)) {
             nudge(d);
         }]];
         button.titleLabel.font = [UIFont monospacedDigitSystemFontOfSize:14 weight:UIFontWeightSemibold];
-        button.tintColor = [UIColor systemPurpleColor];
+        button.tintColor = YouModAccentColor();
         button.backgroundColor = [UIColor tertiarySystemFillColor];
         button.layer.cornerRadius = 8;
         [button.widthAnchor constraintEqualToConstant:36].active = YES;
@@ -1180,7 +1180,7 @@ static UIView *sbNudgeControls(void (^nudge)(float delta)) {
     [items addObject:[YMSBCardItem itemWithImage:sbSymbolImage(@"paperplane.fill")
                                            title:LOC(@"SB_SUBMIT_SEND")
                                         subtitle:nil
-                                       tintColor:[UIColor systemPurpleColor]
+                                       tintColor:YouModAccentColor()
                                          handler:^(YMSBCardViewController *c) {
         __strong typeof(weakSelf) strongSelf = weakSelf;
         if (!strongSelf) return;

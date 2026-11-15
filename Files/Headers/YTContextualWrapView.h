@@ -1,0 +1,2 @@
+@interface YTContextualWrapView : UIView
+@end

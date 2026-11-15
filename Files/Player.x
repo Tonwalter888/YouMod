@@ -2,13 +2,14 @@
 
 static int gNetworkType = 0;
 
-static void startNetworkMonitoring(void) {
+@implementation YouModNetworkMonitor
++ (void)startMonitoring {
     static nw_path_monitor_t monitor;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         monitor = nw_path_monitor_create();
         dispatch_queue_t queue = dispatch_queue_create("com.youmod.network", DISPATCH_QUEUE_SERIAL);
-        
+
         nw_path_monitor_set_update_handler(monitor, ^(nw_path_t path) {
             nw_path_status_t status = nw_path_get_status(path);
             if (status == nw_path_status_satisfied) {
@@ -23,30 +24,70 @@ static void startNetworkMonitoring(void) {
                 gNetworkType = 0;
             }
         });
-        
+
         nw_path_monitor_set_queue(monitor, queue);
         nw_path_monitor_start(monitor);
     });
 }
++ (int)networkType {
+    return gNetworkType;
+}
+@end
 
 #pragma mark - Rewind / Fast-forward on iOS media controls
 
+// Handler tokens for the two skip commands; a non-nil token means the handler is already installed.
+static id gYouModRewindTarget = nil;
+static id gYouModForwardTarget = nil;
+static NSMutableArray *gYouModRemoteCommandTargetProxies = nil;
+
+typedef MPRemoteCommandHandlerStatus (^YouModRemoteCommandHandler)(MPRemoteCommandEvent *event);
+
+@implementation YouModRemoteSkipCommands
+
+// Points the system now-playing skip controls (lock screen, Bluetooth, Control Center, CarPlay) at our
+// per-direction seek, disabling previous/next. Handlers installed once; %hook MPRemoteCommand enforces the state.
++ (void)configure {
+    MPRemoteCommandCenter *cc = [MPRemoteCommandCenter sharedCommandCenter];
+    BOOL back = IS_ENABLED(SkipBackwardEnabled);
+    BOOL fwd = IS_ENABLED(SkipForwardEnabled);
+
+    // Each direction is independent: only the side the user enabled is remapped to a skip.
+    cc.skipBackwardCommand.enabled = back;
+    cc.skipBackwardCommand.preferredIntervals = @[@([self rewindSeconds])];
+    cc.skipForwardCommand.enabled = fwd;
+    cc.skipForwardCommand.preferredIntervals = @[@([self forwardSeconds])];
+    cc.previousTrackCommand.enabled = !back;
+    cc.nextTrackCommand.enabled = !fwd;
+
+    if (!gYouModRewindTarget) {
+        gYouModRewindTarget = [cc.skipBackwardCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *event) {
+            return [self statusForSeek:[self seekByInterval:-[self rewindSeconds]]];
+        }];
+    }
+    if (!gYouModForwardTarget) {
+        gYouModForwardTarget = [cc.skipForwardCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *event) {
+            return [self statusForSeek:[self seekByInterval:[self forwardSeconds]]];
+        }];
+    }
+}
+
 // Skip amount in seconds per direction; falls back to 10 when never set.
-static CGFloat YouModRewindSecondsValue(void) {
++ (CGFloat)rewindSeconds {
     CGFloat s = FLOAT_FOR_KEY(RewindSeconds);
     return s > 0 ? s : 10.0;
 }
 
-static CGFloat YouModForwardSecondsValue(void) {
++ (CGFloat)forwardSeconds {
     CGFloat s = FLOAT_FOR_KEY(ForwardSeconds);
     return s > 0 ? s : 10.0;
 }
 
 // Seeks the active player by delta seconds, clamped to [0, duration]. Returns NO if no player is active.
 // Runs on the main queue since remote command handlers may arrive off-main (Bluetooth/CarPlay).
-static BOOL YouModSeekByInterval(CGFloat delta) {
++ (BOOL)seekByInterval:(CGFloat)delta {
     YTPlayerViewController *player = YouModCurrentPlayerViewController;
-    if (!player || ![player respondsToSelector:@selector(seekToTime:)]) return NO;
+    if (!player) return NO;
     dispatch_async(dispatch_get_main_queue(), ^{
         CGFloat cur = [player currentVideoMediaTime];
         CGFloat dur = [player currentVideoTotalMediaTime];
@@ -58,63 +99,51 @@ static BOOL YouModSeekByInterval(CGFloat delta) {
     return YES;
 }
 
-// Handler tokens for the two skip commands; a non-nil token means the handler is already installed.
-static id gYouModRewindTarget = nil;
-static id gYouModForwardTarget = nil;
-static NSMutableArray *gYouModRemoteCommandTargetProxies = nil;
-
-typedef MPRemoteCommandHandlerStatus (^YouModRemoteCommandHandler)(MPRemoteCommandEvent *event);
-
-static BOOL YouModIsPreviousTrackCommand(MPRemoteCommand *command) {
++ (BOOL)isPreviousTrackCommand:(MPRemoteCommand *)command {
     return command == [MPRemoteCommandCenter sharedCommandCenter].previousTrackCommand;
 }
 
-static BOOL YouModIsNextTrackCommand(MPRemoteCommand *command) {
++ (BOOL)isNextTrackCommand:(MPRemoteCommand *)command {
     return command == [MPRemoteCommandCenter sharedCommandCenter].nextTrackCommand;
 }
 
-static BOOL YouModIsPreviousNextCommand(MPRemoteCommand *command) {
-    return YouModIsPreviousTrackCommand(command) || YouModIsNextTrackCommand(command);
++ (BOOL)isPreviousNextCommand:(MPRemoteCommand *)command {
+    return [self isPreviousTrackCommand:command] || [self isNextTrackCommand:command];
 }
 
-static BOOL YouModIsSkipBackwardCommand(MPRemoteCommand *command) {
++ (BOOL)isSkipBackwardCommand:(MPRemoteCommand *)command {
     return command == [MPRemoteCommandCenter sharedCommandCenter].skipBackwardCommand;
 }
 
-static BOOL YouModIsSkipForwardCommand(MPRemoteCommand *command) {
++ (BOOL)isSkipForwardCommand:(MPRemoteCommand *)command {
     return command == [MPRemoteCommandCenter sharedCommandCenter].skipForwardCommand;
 }
 
-static MPRemoteCommandHandlerStatus YouModStatusForSeek(BOOL handled) {
++ (MPRemoteCommandHandlerStatus)statusForSeek:(BOOL)handled {
     return handled ? MPRemoteCommandHandlerStatusSuccess : MPRemoteCommandHandlerStatusNoSuchContent;
 }
 
 // Remap previous/next track events (Bluetooth/CarPlay/Lock Screen) to seeks when Skip Backward/Forward is on.
 // Otherwise report unhandled so YouTube's default track change applies.
-static BOOL YouModHandlePreviousNextRemoteCommand(MPRemoteCommandEvent *event) {
-    if (YouModIsPreviousTrackCommand(event.command) && IS_ENABLED(SkipBackwardEnabled)) {
-        return YouModSeekByInterval(-YouModRewindSecondsValue());
++ (BOOL)handlePreviousNextRemoteCommand:(MPRemoteCommandEvent *)event {
+    if ([self isPreviousTrackCommand:event.command] && IS_ENABLED(SkipBackwardEnabled)) {
+        return [self seekByInterval:-[self rewindSeconds]];
     }
-    if (YouModIsNextTrackCommand(event.command) && IS_ENABLED(SkipForwardEnabled)) {
-        return YouModSeekByInterval(YouModForwardSecondsValue());
+    if ([self isNextTrackCommand:event.command] && IS_ENABLED(SkipForwardEnabled)) {
+        return [self seekByInterval:[self forwardSeconds]];
     }
     return NO;
 }
 
-@interface YouModRemoteCommandTargetProxy : NSObject
-@property (nonatomic, weak) MPRemoteCommand *command;
-@property (nonatomic, weak) id target;
-@property (nonatomic, assign) SEL action;
-- (MPRemoteCommandHandlerStatus)youModHandleRemoteCommandEvent:(MPRemoteCommandEvent *)event;
 @end
 
 @implementation YouModRemoteCommandTargetProxy
 - (MPRemoteCommandHandlerStatus)youModHandleRemoteCommandEvent:(MPRemoteCommandEvent *)event {
-    if (YouModIsPreviousNextCommand(event.command)) {
-        BOOL remapped = (YouModIsPreviousTrackCommand(event.command) && IS_ENABLED(SkipBackwardEnabled))
-            || (YouModIsNextTrackCommand(event.command) && IS_ENABLED(SkipForwardEnabled));
+    if ([YouModRemoteSkipCommands isPreviousNextCommand:event.command]) {
+        BOOL remapped = ([YouModRemoteSkipCommands isPreviousTrackCommand:event.command] && IS_ENABLED(SkipBackwardEnabled))
+            || ([YouModRemoteSkipCommands isNextTrackCommand:event.command] && IS_ENABLED(SkipForwardEnabled));
         if (remapped) {
-            return YouModStatusForSeek(YouModHandlePreviousNextRemoteCommand(event));
+            return [YouModRemoteSkipCommands statusForSeek:[YouModRemoteSkipCommands handlePreviousNextRemoteCommand:event]];
         }
     }
 
@@ -141,35 +170,14 @@ static BOOL YouModHandlePreviousNextRemoteCommand(MPRemoteCommandEvent *event) {
 // Points the system now-playing skip controls (lock screen, Bluetooth, Control Center, CarPlay) at our
 // per-direction seek, disabling previous/next. Handlers installed once; %hook MPRemoteCommand enforces the state.
 void YouModConfigureRemoteSkipCommands() {
-    MPRemoteCommandCenter *cc = [MPRemoteCommandCenter sharedCommandCenter];
-    BOOL back = IS_ENABLED(SkipBackwardEnabled);
-    BOOL fwd = IS_ENABLED(SkipForwardEnabled);
-
-    // Each direction is independent: only the side the user enabled is remapped to a skip.
-    cc.skipBackwardCommand.enabled = back;
-    cc.skipBackwardCommand.preferredIntervals = @[@(YouModRewindSecondsValue())];
-    cc.skipForwardCommand.enabled = fwd;
-    cc.skipForwardCommand.preferredIntervals = @[@(YouModForwardSecondsValue())];
-    cc.previousTrackCommand.enabled = !back;
-    cc.nextTrackCommand.enabled = !fwd;
-
-    if (!gYouModRewindTarget) {
-        gYouModRewindTarget = [cc.skipBackwardCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *event) {
-            return YouModStatusForSeek(YouModSeekByInterval(-YouModRewindSecondsValue()));
-        }];
-    }
-    if (!gYouModForwardTarget) {
-        gYouModForwardTarget = [cc.skipForwardCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *event) {
-            return YouModStatusForSeek(YouModSeekByInterval(YouModForwardSecondsValue()));
-        }];
-    }
+    [YouModRemoteSkipCommands configure];
 }
 
 // Wrap YouTube's previous/next remote targets so presses seek when Skip Backward/Forward is enabled,
 // and keep YouTube from re-enabling previous/next or disabling skip.
 %hook MPRemoteCommand
 - (void)addTarget:(id)target action:(SEL)action {
-    if (YouModIsPreviousNextCommand(self)) {
+    if ([YouModRemoteSkipCommands isPreviousNextCommand:self]) {
         if (!gYouModRemoteCommandTargetProxies) gYouModRemoteCommandTargetProxies = [NSMutableArray array];
 
         YouModRemoteCommandTargetProxy *proxy = [[YouModRemoteCommandTargetProxy alloc] init];
@@ -186,12 +194,12 @@ void YouModConfigureRemoteSkipCommands() {
 }
 
 - (id)addTargetWithHandler:(YouModRemoteCommandHandler)handler {
-    if (YouModIsPreviousNextCommand(self)) {
+    if ([YouModRemoteSkipCommands isPreviousNextCommand:self]) {
         YouModRemoteCommandHandler wrappedHandler = ^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *event) {
-            BOOL remapped = (YouModIsPreviousTrackCommand(event.command) && IS_ENABLED(SkipBackwardEnabled))
-                || (YouModIsNextTrackCommand(event.command) && IS_ENABLED(SkipForwardEnabled));
+            BOOL remapped = ([YouModRemoteSkipCommands isPreviousTrackCommand:event.command] && IS_ENABLED(SkipBackwardEnabled))
+                || ([YouModRemoteSkipCommands isNextTrackCommand:event.command] && IS_ENABLED(SkipForwardEnabled));
             if (remapped) {
-                return YouModStatusForSeek(YouModHandlePreviousNextRemoteCommand(event));
+                return [YouModRemoteSkipCommands statusForSeek:[YouModRemoteSkipCommands handlePreviousNextRemoteCommand:event]];
             }
             return handler(event);
         };
@@ -204,28 +212,15 @@ void YouModConfigureRemoteSkipCommands() {
 }
 
 - (void)setEnabled:(BOOL)enabled {
-    if (YouModIsPreviousTrackCommand(self) && IS_ENABLED(SkipBackwardEnabled)) {
-        %orig(NO);
-        return;
-    }
-    if (YouModIsNextTrackCommand(self) && IS_ENABLED(SkipForwardEnabled)) {
-        %orig(NO);
-        return;
-    }
-    if (YouModIsSkipBackwardCommand(self) && IS_ENABLED(SkipBackwardEnabled)) {
-        %orig(YES);
-        return;
-    }
-    if (YouModIsSkipForwardCommand(self) && IS_ENABLED(SkipForwardEnabled)) {
-        %orig(YES);
-        return;
-    }
-
-    %orig;
+    if ([YouModRemoteSkipCommands isPreviousTrackCommand:self] && IS_ENABLED(SkipBackwardEnabled)) enabled = NO;
+    else if ([YouModRemoteSkipCommands isNextTrackCommand:self] && IS_ENABLED(SkipForwardEnabled)) enabled = NO;
+    else if ([YouModRemoteSkipCommands isSkipBackwardCommand:self] && IS_ENABLED(SkipBackwardEnabled)) enabled = YES;
+    else if ([YouModRemoteSkipCommands isSkipForwardCommand:self] && IS_ENABLED(SkipForwardEnabled)) enabled = YES;
+    %orig(enabled);
 }
 
 - (void)removeTarget:(id)target action:(SEL)action {
-    if (YouModIsPreviousNextCommand(self) && gYouModRemoteCommandTargetProxies.count > 0) {
+    if ([YouModRemoteSkipCommands isPreviousNextCommand:self] && gYouModRemoteCommandTargetProxies.count > 0) {
         NSArray *proxies = [gYouModRemoteCommandTargetProxies copy];
         for (YouModRemoteCommandTargetProxy *proxy in proxies) {
             BOOL targetMatches = !target || proxy.target == target;
@@ -241,7 +236,7 @@ void YouModConfigureRemoteSkipCommands() {
 }
 
 - (void)removeTarget:(id)target {
-    if (YouModIsPreviousNextCommand(self) && gYouModRemoteCommandTargetProxies.count > 0) {
+    if ([YouModRemoteSkipCommands isPreviousNextCommand:self] && gYouModRemoteCommandTargetProxies.count > 0) {
         NSArray *proxies = [gYouModRemoteCommandTargetProxies copy];
         for (YouModRemoteCommandTargetProxy *proxy in proxies) {
             if (proxy.command == self && (!target || proxy.target == target)) {
@@ -262,31 +257,20 @@ static const void *kYouModSeekRefreshKey = &kYouModSeekRefreshKey;
 static const void *kYouModOverlayRefreshHandlerKey = &kYouModOverlayRefreshHandlerKey;
 static BOOL gYouModEnforcingOverlayReplacement = NO;
 
-static BOOL YouModShouldForcePrevNextReplacement(void) {
-    return IS_ENABLED(ReplacePrevNextButtons) && !IS_ENABLED(HideNextAndPrevButtons);
-}
-
-@interface YouModOverlayRefreshHandler : NSObject
-@property (nonatomic, weak) YTMainAppControlsOverlayView *overlay;
-- (void)refreshSoon;
-@end
-
 @implementation YouModOverlayRefreshHandler
 - (void)refreshSoon {
     YTMainAppControlsOverlayView *overlay = [self overlay];
-    YouModApplyPrevNextReplacement(overlay);
+    [YouModPrevNextReplacement applyToOverlay:overlay];
     if (!overlay) return;
     static const NSTimeInterval kDelays[] = {0.05, 0.15, 0.35, 0.75, 1.5};
     for (size_t i = 0; i < sizeof(kDelays) / sizeof(kDelays[0]); i++) {
         NSTimeInterval delay = kDelays[i];
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delay * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-            YouModApplyPrevNextReplacement(overlay);
+            [YouModPrevNextReplacement applyToOverlay:overlay];
         });
     }
 }
-@end
-
-static YouModOverlayRefreshHandler *YouModRefreshHandlerForOverlay(YTMainAppControlsOverlayView *overlay) {
++ (instancetype)handlerForOverlay:(YTMainAppControlsOverlayView *)overlay {
     YouModOverlayRefreshHandler *handler = objc_getAssociatedObject(overlay, kYouModOverlayRefreshHandlerKey);
     if (!handler) {
         handler = [YouModOverlayRefreshHandler new];
@@ -295,34 +279,15 @@ static YouModOverlayRefreshHandler *YouModRefreshHandlerForOverlay(YTMainAppCont
     }
     return handler;
 }
-
-@interface YouModSeekTapHandler : NSObject
-@property (nonatomic, assign) BOOL rewind;
-@property (nonatomic, weak) YTMainAppControlsOverlayView *overlay;
-- (void)handleTap:(UITapGestureRecognizer *)gr;
 @end
 
 @implementation YouModSeekTapHandler
 - (void)handleTap:(UITapGestureRecognizer *)gr {
-    YouModSeekByInterval(self.rewind ? -YouModRewindSecondsValue() : YouModForwardSecondsValue());
-    YouModOverlayRefreshHandler *refreshHandler = YouModRefreshHandlerForOverlay([self overlay]);
+    [YouModRemoteSkipCommands seekByInterval:(self.rewind ? -[YouModRemoteSkipCommands rewindSeconds] : [YouModRemoteSkipCommands forwardSeconds])];
+    YouModOverlayRefreshHandler *refreshHandler = [YouModOverlayRefreshHandler handlerForOverlay:[self overlay]];
     [refreshHandler refreshSoon];
 }
-@end
-
-@interface YouModSeekRefreshTapHandler : NSObject
-@property (nonatomic, weak) YTMainAppControlsOverlayView *overlay;
-- (void)handleTap:(UITapGestureRecognizer *)gr;
-@end
-
-@implementation YouModSeekRefreshTapHandler
-- (void)handleTap:(UITapGestureRecognizer *)gr {
-    YouModOverlayRefreshHandler *refreshHandler = YouModRefreshHandlerForOverlay([self overlay]);
-    [refreshHandler refreshSoon];
-}
-@end
-
-static YouModSeekTapHandler *YouModRewindTapHandler(YTMainAppControlsOverlayView *overlay) {
++ (instancetype)rewindHandlerForOverlay:(YTMainAppControlsOverlayView *)overlay {
     static YouModSeekTapHandler *handler;
     static dispatch_once_t once;
     dispatch_once(&once, ^{
@@ -332,8 +297,7 @@ static YouModSeekTapHandler *YouModRewindTapHandler(YTMainAppControlsOverlayView
     handler.overlay = overlay;
     return handler;
 }
-
-static YouModSeekTapHandler *YouModForwardTapHandler(YTMainAppControlsOverlayView *overlay) {
++ (instancetype)forwardHandlerForOverlay:(YTMainAppControlsOverlayView *)overlay {
     static YouModSeekTapHandler *handler;
     static dispatch_once_t once;
     dispatch_once(&once, ^{
@@ -343,8 +307,14 @@ static YouModSeekTapHandler *YouModForwardTapHandler(YTMainAppControlsOverlayVie
     handler.overlay = overlay;
     return handler;
 }
+@end
 
-static YouModSeekRefreshTapHandler *YouModSeekRefreshTapHandlerForOverlay(YTMainAppControlsOverlayView *overlay) {
+@implementation YouModSeekRefreshTapHandler
+- (void)handleTap:(UITapGestureRecognizer *)gr {
+    YouModOverlayRefreshHandler *refreshHandler = [YouModOverlayRefreshHandler handlerForOverlay:[self overlay]];
+    [refreshHandler refreshSoon];
+}
++ (instancetype)handlerForOverlay:(YTMainAppControlsOverlayView *)overlay {
     YouModSeekRefreshTapHandler *handler = objc_getAssociatedObject(overlay, kYouModSeekRefreshKey);
     if (!handler) {
         handler = [YouModSeekRefreshTapHandler new];
@@ -353,65 +323,54 @@ static YouModSeekRefreshTapHandler *YouModSeekRefreshTapHandlerForOverlay(YTMain
     }
     return handler;
 }
+@end
 
-static void YouModAttachSeekRemap(UIView *view, YouModSeekTapHandler *handler) {
-    if (!view || objc_getAssociatedObject(view, kYouModSeekRemapKey)) return;
-    view.userInteractionEnabled = YES;
-    UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:handler action:@selector(handleTap:)];
-    tap.cancelsTouchesInView = YES;
-    [view addGestureRecognizer:tap];
-    objc_setAssociatedObject(view, kYouModSeekRemapKey, @YES, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+@implementation YouModPrevNextReplacement
+
++ (BOOL)shouldForceReplacement {
+    return IS_ENABLED(ReplacePrevNextButtons) && !IS_ENABLED(HideNextAndPrevButtons);
 }
 
-static void YouModAttachSeekRefresh(UIView *view, YTMainAppControlsOverlayView *overlay) {
-    static const void *kViewRefreshKey = &kViewRefreshKey;
-    if (!view || objc_getAssociatedObject(view, kViewRefreshKey)) return;
-    UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:YouModSeekRefreshTapHandlerForOverlay(overlay) action:@selector(handleTap:)];
-    tap.cancelsTouchesInView = NO;
-    [view addGestureRecognizer:tap];
-    objc_setAssociatedObject(view, kViewRefreshKey, @YES, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-}
-
-static UIView *YouModOverlayIvarView(id object, const char *name) {
++ (UIView *)overlayIvarView:(id)object name:(const char *)name {
     Ivar ivar = class_getInstanceVariable(object_getClass(object), name);
     if (!ivar) return nil;
     return (UIView *)object_getIvar(object, ivar);
 }
 
-static void YouModSetOverlayIvarHidden(id object, const char *name, BOOL hidden) {
-    UIView *view = YouModOverlayIvarView(object, name);
++ (void)setOverlayIvarHidden:(id)object name:(const char *)name hidden:(BOOL)hidden {
+    UIView *view = [self overlayIvarView:object name:name];
     if (view) view.hidden = hidden;
 }
 
-static YTMainAppControlsOverlayView *YouModOverlayForSubview(UIView *view) {
++ (YTMainAppControlsOverlayView *)overlayForSubview:(UIView *)view {
     for (UIView *v = view; v; v = v.superview) {
         if ([v isKindOfClass:%c(YTMainAppControlsOverlayView)]) return (YTMainAppControlsOverlayView *)v;
     }
     return nil;
 }
 
-static BOOL YouModIsPrevNextSubview(UIView *view, YTMainAppControlsOverlayView *overlay) {
-    return view == YouModOverlayIvarView(overlay, "_previousButtonView")
-        || view == YouModOverlayIvarView(overlay, "_nextButtonView")
-        || view == YouModOverlayIvarView(overlay, "_previousButton")
-        || view == YouModOverlayIvarView(overlay, "_nextButton");
++ (BOOL)isPrevNextSubview:(UIView *)view overlay:(YTMainAppControlsOverlayView *)overlay {
+    return view == [self overlayIvarView:overlay name:"_previousButtonView"]
+        || view == [self overlayIvarView:overlay name:"_nextButtonView"]
+        || view == [self overlayIvarView:overlay name:"_previousButton"]
+        || view == [self overlayIvarView:overlay name:"_nextButton"];
 }
 
-static BOOL YouModIsSeekSubview(UIView *view, YTMainAppControlsOverlayView *overlay) {
-    return view == YouModOverlayIvarView(overlay, "_seekBackwardAccessibilityButtonView")
-        || view == YouModOverlayIvarView(overlay, "_seekForwardAccessibilityButtonView");
++ (BOOL)isSeekSubview:(UIView *)view overlay:(YTMainAppControlsOverlayView *)overlay {
+    return view == [self overlayIvarView:overlay name:"_seekBackwardAccessibilityButtonView"]
+        || view == [self overlayIvarView:overlay name:"_seekForwardAccessibilityButtonView"];
 }
 
-static void YouModEnforcePrevNextVisibility(YTMainAppControlsOverlayView *overlay) {
-    UIView *seekBack = YouModOverlayIvarView(overlay, "_seekBackwardAccessibilityButtonView");
-    UIView *seekFwd = YouModOverlayIvarView(overlay, "_seekForwardAccessibilityButtonView");
++ (void)enforceVisibility:(YTMainAppControlsOverlayView *)overlay {
+    UIView *seekBack = [self overlayIvarView:overlay name:"_seekBackwardAccessibilityButtonView"];
+    UIView *seekFwd = [self overlayIvarView:overlay name:"_seekForwardAccessibilityButtonView"];
     if (!seekBack || !seekFwd) return;
 
     gYouModEnforcingOverlayReplacement = YES;
-    YouModSetOverlayIvarHidden(overlay, "_nextButton", YES);
-    YouModSetOverlayIvarHidden(overlay, "_previousButton", YES);
-    YouModSetOverlayIvarHidden(overlay, "_nextButtonView", YES);
-    YouModSetOverlayIvarHidden(overlay, "_previousButtonView", YES);
+    [self setOverlayIvarHidden:overlay name:"_nextButton" hidden:YES];
+    [self setOverlayIvarHidden:overlay name:"_previousButton" hidden:YES];
+    [self setOverlayIvarHidden:overlay name:"_nextButtonView" hidden:YES];
+    [self setOverlayIvarHidden:overlay name:"_previousButtonView" hidden:YES];
     seekBack.hidden = NO;
     seekFwd.hidden = NO;
     seekBack.userInteractionEnabled = YES;
@@ -420,96 +379,50 @@ static void YouModEnforcePrevNextVisibility(YTMainAppControlsOverlayView *overla
 }
 
 // When seek paddles are unavailable, remap prev/next taps to seek within the video.
-static void YouModRemapPrevNextToSeek(YTMainAppControlsOverlayView *overlay) {
-    YouModAttachSeekRemap(YouModOverlayIvarView(overlay, "_previousButtonView"), YouModRewindTapHandler(overlay));
-    YouModAttachSeekRemap(YouModOverlayIvarView(overlay, "_nextButtonView"), YouModForwardTapHandler(overlay));
-    YouModAttachSeekRemap(YouModOverlayIvarView(overlay, "_previousButton"), YouModRewindTapHandler(overlay));
-    YouModAttachSeekRemap(YouModOverlayIvarView(overlay, "_nextButton"), YouModForwardTapHandler(overlay));
++ (void)remapPrevNextToSeek:(YTMainAppControlsOverlayView *)overlay {
+    [self attachSeekRemap:[self overlayIvarView:overlay name:"_previousButtonView"] handler:[YouModSeekTapHandler rewindHandlerForOverlay:overlay]];
+    [self attachSeekRemap:[self overlayIvarView:overlay name:"_nextButtonView"] handler:[YouModSeekTapHandler forwardHandlerForOverlay:overlay]];
+    [self attachSeekRemap:[self overlayIvarView:overlay name:"_previousButton"] handler:[YouModSeekTapHandler rewindHandlerForOverlay:overlay]];
+    [self attachSeekRemap:[self overlayIvarView:overlay name:"_nextButton"] handler:[YouModSeekTapHandler forwardHandlerForOverlay:overlay]];
 }
 
-void YouModApplyPrevNextReplacement(YTMainAppControlsOverlayView *overlay) {
-    if (!YouModShouldForcePrevNextReplacement()) return;
++ (void)attachSeekRemap:(UIView *)view handler:(YouModSeekTapHandler *)handler {
+    if (!view || objc_getAssociatedObject(view, kYouModSeekRemapKey)) return;
+    view.userInteractionEnabled = YES;
+    UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:handler action:@selector(handleTap:)];
+    tap.cancelsTouchesInView = YES;
+    [view addGestureRecognizer:tap];
+    objc_setAssociatedObject(view, kYouModSeekRemapKey, @YES, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+}
 
-    UIView *seekBack = YouModOverlayIvarView(overlay, "_seekBackwardAccessibilityButtonView");
-    UIView *seekFwd = YouModOverlayIvarView(overlay, "_seekForwardAccessibilityButtonView");
++ (void)attachSeekRefresh:(UIView *)view overlay:(YTMainAppControlsOverlayView *)overlay {
+    static const void *kViewRefreshKey = &kViewRefreshKey;
+    if (!view || objc_getAssociatedObject(view, kViewRefreshKey)) return;
+    UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:[YouModSeekRefreshTapHandler handlerForOverlay:overlay] action:@selector(handleTap:)];
+    tap.cancelsTouchesInView = NO;
+    [view addGestureRecognizer:tap];
+    objc_setAssociatedObject(view, kViewRefreshKey, @YES, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+}
+
++ (void)applyToOverlay:(YTMainAppControlsOverlayView *)overlay {
+    if (![self shouldForceReplacement]) return;
+
+    UIView *seekBack = [self overlayIvarView:overlay name:"_seekBackwardAccessibilityButtonView"];
+    UIView *seekFwd = [self overlayIvarView:overlay name:"_seekForwardAccessibilityButtonView"];
 
     if (seekBack && seekFwd) {
-        YouModEnforcePrevNextVisibility(overlay);
-        YouModAttachSeekRefresh(seekBack, overlay);
-        YouModAttachSeekRefresh(seekFwd, overlay);
+        [self enforceVisibility:overlay];
+        [self attachSeekRefresh:seekBack overlay:overlay];
+        [self attachSeekRefresh:seekFwd overlay:overlay];
     }
 
-    YouModRemapPrevNextToSeek(overlay);
+    [self remapPrevNextToSeek:overlay];
 }
 
-static void YouModAddEndTime(YTInlinePlayerBarContainerView *playerbar, YTPlayerViewController *self, YTMainAppVideoPlayerOverlayViewController *con) {
-    CGFloat rate = [con currentPlaybackRate] != 0 ? [con currentPlaybackRate] : 1.0;
-    CGFloat totalVideo = self.currentVideoTotalMediaTime;
-    NSTimeInterval remainingSeconds = (lround(totalVideo) - lround(self.currentVideoMediaTime)) / rate;
+@end
 
-    NSString *remainingTimeText;
-    NSString *SBTimeRemaining = nil;
-    NSTimeInterval SBTotalTimeRemaining = 0.0;
-    
-    if (IS_ENABLED(SBShowDuration) && self.sbSegments && self.sbSegments.count > 0 && IS_ENABLED(SBButtonKey)) {
-        for (SBSegment *segment in self.sbSegments) {
-            SBSegmentAction action = [segment configuredAction];
-            if (action == SBSegmentActionDisable) continue;
-
-            CGFloat timeValue = segment.endTime - segment.startTime;
-            SBTotalTimeRemaining = SBTotalTimeRemaining + timeValue;
-        }
-        if (SBTotalTimeRemaining != 0.0) { 
-            NSTimeInterval SBRemaining = totalVideo - SBTotalTimeRemaining;
-            int hours = (int)(SBRemaining / 3600);
-            int minutes = (int)(((int)SBRemaining % 3600) / 60);
-            int seconds = (int)((int)SBRemaining % 60);
-            if (hours > 0) {
-                SBTimeRemaining = [NSString stringWithFormat:@"%d:%02d:%02d", hours, minutes, seconds];
-            } else {
-                SBTimeRemaining = [NSString stringWithFormat:@"%d:%02d", minutes, seconds];
-            }
-        }
-    }
-    
-    if (IS_ENABLED(ShowExtraTimeRemaining)) {
-        NSDate *estimatedEndTime = [NSDate dateWithTimeIntervalSinceNow:remainingSeconds];
-        NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
-        [dateFormatter setLocale:[[NSLocale alloc] initWithLocaleIdentifier:@"en_US_POSIX"]];
-        [dateFormatter setDateFormat:IS_ENABLED(Uses24HoursTime) ? @"HH:mm" : @"h:mm a"];
-        remainingTimeText = [dateFormatter stringFromDate:estimatedEndTime];
-    }
-    
-    NSString *safeRemainingTimeText = remainingTimeText ?: @"";
-    NSString *safeSBTimeRemaining = SBTimeRemaining ?: @"";
-
-    YTLabel *durationLabel2 = playerbar.durationLabel;
-    
-    NSString *labelText = durationLabel2.text ?: @"";
-
-    NSString *baseText = labelText;
-    NSRange extraTimeRange = [baseText rangeOfString:@" • "];
-    if (extraTimeRange.location != NSNotFound) {
-        baseText = [baseText substringToIndex:extraTimeRange.location];
-    }
-    NSRange sbRange = [baseText rangeOfString:@" ("];
-    if (sbRange.location != NSNotFound) {
-        baseText = [baseText substringToIndex:sbRange.location];
-    }
-
-    NSMutableString *newLabelText = [NSMutableString stringWithString:baseText];
-    if (IS_ENABLED(SBShowDuration) && safeSBTimeRemaining.length > 0) {
-        [newLabelText appendFormat:@" (%@)", safeSBTimeRemaining];
-    }
-    if (IS_ENABLED(ShowExtraTimeRemaining) && safeRemainingTimeText.length > 0) {
-        [newLabelText appendFormat:@" • %@", safeRemainingTimeText];
-    }
-
-    if (![labelText isEqualToString:newLabelText]) {
-        durationLabel2.text = newLabelText;
-        playerbar.endTimeString = newLabelText;
-        [durationLabel2 sizeToFit];
-    }
+void YouModApplyPrevNextReplacement(YTMainAppControlsOverlayView *overlay) {
+    [YouModPrevNextReplacement applyToOverlay:overlay];
 }
 
 %hook YTInlinePlayerBarContainerView
@@ -595,13 +508,83 @@ static void YouModAddEndTime(YTInlinePlayerBarContainerView *playerbar, YTPlayer
         }
     }
 }
+%new
+- (void)youModAddEndTimeForOverlayController:(YTMainAppVideoPlayerOverlayViewController *)ovcon player:(YTPlayerViewController *)player {
+    CGFloat rate = [ovcon currentPlaybackRate] != 0 ? [ovcon currentPlaybackRate] : 1.0;
+    CGFloat totalVideo = player.currentVideoTotalMediaTime;
+    NSTimeInterval remainingSeconds = (lround(totalVideo) - lround(player.currentVideoMediaTime)) / rate;
+
+    NSString *remainingTimeText;
+    NSString *SBTimeRemaining = nil;
+    NSTimeInterval SBTotalTimeRemaining = 0.0;
+
+    if (IS_ENABLED(SBShowDuration) && player.sbSegments && player.sbSegments.count > 0 && IS_ENABLED(SBButtonKey)) {
+        for (SBSegment *segment in player.sbSegments) {
+            SBSegmentAction action = [segment configuredAction];
+            if (action == SBSegmentActionDisable) continue;
+
+            CGFloat timeValue = segment.endTime - segment.startTime;
+            SBTotalTimeRemaining = SBTotalTimeRemaining + timeValue;
+        }
+        if (SBTotalTimeRemaining != 0.0) {
+            NSTimeInterval SBRemaining = totalVideo - SBTotalTimeRemaining;
+            int hours = (int)(SBRemaining / 3600);
+            int minutes = (int)(((int)SBRemaining % 3600) / 60);
+            int seconds = (int)((int)SBRemaining % 60);
+            if (hours > 0) {
+                SBTimeRemaining = [NSString stringWithFormat:@"%d:%02d:%02d", hours, minutes, seconds];
+            } else {
+                SBTimeRemaining = [NSString stringWithFormat:@"%d:%02d", minutes, seconds];
+            }
+        }
+    }
+
+    if (IS_ENABLED(ShowExtraTimeRemaining)) {
+        NSDate *estimatedEndTime = [NSDate dateWithTimeIntervalSinceNow:remainingSeconds];
+        NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
+        [dateFormatter setLocale:[[NSLocale alloc] initWithLocaleIdentifier:@"en_US_POSIX"]];
+        [dateFormatter setDateFormat:IS_ENABLED(Uses24HoursTime) ? @"HH:mm" : @"h:mm a"];
+        remainingTimeText = [dateFormatter stringFromDate:estimatedEndTime];
+    }
+
+    NSString *safeRemainingTimeText = remainingTimeText ?: @"";
+    NSString *safeSBTimeRemaining = SBTimeRemaining ?: @"";
+
+    YTLabel *durationLabel2 = self.durationLabel;
+
+    NSString *labelText = durationLabel2.text ?: @"";
+
+    NSString *baseText = labelText;
+    NSRange extraTimeRange = [baseText rangeOfString:@" • "];
+    if (extraTimeRange.location != NSNotFound) {
+        baseText = [baseText substringToIndex:extraTimeRange.location];
+    }
+    NSRange sbRange = [baseText rangeOfString:@" ("];
+    if (sbRange.location != NSNotFound) {
+        baseText = [baseText substringToIndex:sbRange.location];
+    }
+
+    NSMutableString *newLabelText = [NSMutableString stringWithString:baseText];
+    if (IS_ENABLED(SBShowDuration) && safeSBTimeRemaining.length > 0) {
+        [newLabelText appendFormat:@" (%@)", safeSBTimeRemaining];
+    }
+    if (IS_ENABLED(ShowExtraTimeRemaining) && safeRemainingTimeText.length > 0) {
+        [newLabelText appendFormat:@" • %@", safeRemainingTimeText];
+    }
+
+    if (![labelText isEqualToString:newLabelText]) {
+        durationLabel2.text = newLabelText;
+        self.endTimeString = newLabelText;
+        [durationLabel2 sizeToFit];
+    }
+}
 - (void)updateCurrentTimeTitleLabel {
     %orig;
     if (!IS_ENABLED(ShowExtraTimeRemaining) && !IS_ENABLED(SBShowDuration)) return;
     YTMainAppVideoPlayerOverlayViewController *ovcon = (YTMainAppVideoPlayerOverlayViewController *)self._viewControllerForAncestor;
     if (![ovcon isKindOfClass:%c(YTMainAppVideoPlayerOverlayViewController)]) return;
     YTPlayerViewController *pvc = (YTPlayerViewController *)ovcon.parentViewController;
-    YouModAddEndTime(self, pvc, ovcon);
+    [self youModAddEndTimeForOverlayController:ovcon player:pvc];
 }
 %end
 
@@ -615,7 +598,7 @@ static void YouModAddEndTime(YTInlinePlayerBarContainerView *playerbar, YTPlayer
 // Pause On Overlay
 - (void)setOverlayVisible:(BOOL)visible {
     %orig;
-    YouModApplyPrevNextReplacement(self);
+    [YouModPrevNextReplacement applyToOverlay:self];
     if (!IS_ENABLED(PauseOnOverlay)) return;
     YTMainAppVideoPlayerOverlayViewController *mainOverlayController = (YTMainAppVideoPlayerOverlayViewController *)self.eventsDelegate;
     YTPlayerViewController *playerViewController = (YTPlayerViewController *)mainOverlayController.parentViewController;
@@ -625,11 +608,11 @@ static void YouModAddEndTime(YTInlinePlayerBarContainerView *playerbar, YTPlayer
 
 %hook YTTransportControlsButtonView
 - (void)setHidden:(BOOL)hidden {
-    if (!gYouModEnforcingOverlayReplacement && YouModShouldForcePrevNextReplacement()) {
-        YTMainAppControlsOverlayView *overlay = YouModOverlayForSubview(self);
+    if (!gYouModEnforcingOverlayReplacement && [YouModPrevNextReplacement shouldForceReplacement]) {
+        YTMainAppControlsOverlayView *overlay = [YouModPrevNextReplacement overlayForSubview:self];
         if (overlay) {
-            if (YouModIsPrevNextSubview(self, overlay)) hidden = YES;
-            else if (YouModIsSeekSubview(self, overlay)) hidden = NO;
+            if ([YouModPrevNextReplacement isPrevNextSubview:self overlay:overlay]) hidden = YES;
+            else if ([YouModPrevNextReplacement isSeekSubview:self overlay:overlay]) hidden = NO;
         }
     }
     %orig(hidden);
@@ -638,9 +621,9 @@ static void YouModAddEndTime(YTInlinePlayerBarContainerView *playerbar, YTPlayer
 
 %hook YTQTMButton
 - (void)setHidden:(BOOL)hidden {
-    if (!gYouModEnforcingOverlayReplacement && YouModShouldForcePrevNextReplacement()) {
-        YTMainAppControlsOverlayView *overlay = YouModOverlayForSubview(self);
-        if (overlay && YouModIsPrevNextSubview(self, overlay)) hidden = YES;
+    if (!gYouModEnforcingOverlayReplacement && [YouModPrevNextReplacement shouldForceReplacement]) {
+        YTMainAppControlsOverlayView *overlay = [YouModPrevNextReplacement overlayForSubview:self];
+        if (overlay && [YouModPrevNextReplacement isPrevNextSubview:self overlay:overlay]) hidden = YES;
     }
     %orig(hidden);
 }
@@ -758,9 +741,11 @@ static void YouModAddEndTime(YTInlinePlayerBarContainerView *playerbar, YTPlayer
     YTPlayerViewController *playerviewController = [playerview valueForKey:@"_playerViewDelegate"];
     YouModConfigureRemoteSkipCommands();
     if (INTFORVAL(AutoDRCAudioIndex) != 0) [playerviewController YouModAutoDRCAudio];
-    if (INTFORVAL(AudioTrack) != 0 || IS_ENABLED(NoDubbedAudioTrack)) [playerviewController performSelector:@selector(YouModAutoAudioTrack) withObject:nil afterDelay:0.5];
-    if (IS_ENABLED(AutoFullScreen)) [playerviewController performSelector:@selector(YouModAutoFullscreen) withObject:nil afterDelay:0.5];
-    if (INTFORVAL(CaptionTrack) != 0) [playerviewController performSelector:@selector(YouModAutoCaptions) withObject:nil afterDelay:0.5];
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        if (INTFORVAL(AudioTrack) != 0 || IS_ENABLED(NoDubbedAudioTrack)) [playerviewController YouModAutoAudioTrack];
+        if (IS_ENABLED(AutoFullScreen)) [playerviewController YouModAutoFullscreen];
+        if (INTFORVAL(CaptionTrack) != 0) [playerviewController YouModAutoCaptions];
+    });
     if (INTFORVAL(AutoSpeedIndex) != 0) [playerviewController YouModSetAutoSpeed];
 }
 %end
@@ -809,10 +794,11 @@ static void YouModAddEndTime(YTInlinePlayerBarContainerView *playerbar, YTPlayer
 %end
 
 // Extra speed - adapted from YouSpeed
-%group Speed
 #define itemCount 13
+
 // Class on 19.x/20.x, protocol from 21.32.4 where the class is ...Impl. Hook both.
-static void YouModApplyExtraSpeedOptions(id controller) {
+@implementation YouModPlaybackSpeed
++ (void)applyExtraSpeedOptions:(id)controller {
     float speeds[] = {0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0, 5.0, 7.5, 10.0};
     id options[itemCount];
     Class optionClass = %c(YTVarispeedSwitchControllerOption);
@@ -823,10 +809,21 @@ static void YouModApplyExtraSpeedOptions(id controller) {
     [controller setValue:[NSArray arrayWithObjects:options count:itemCount] forKey:@"_options"];
 }
 
++ (CGFloat)configuredHoldToSpeedRate {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    NSNumber *storedRate = [defaults objectForKey:HoldToSpeedRate];
+    CGFloat rate = storedRate ? [storedRate floatValue] : 2.0;
+    if (rate <= 0.0) rate = 2.0;
+    rate = fmax(0.25, fmin(rate, 10.0));
+    return 0.25 + round((rate - 0.25) / 0.25) * 0.25;
+}
+@end
+
+%group Speed
 %hook YTVarispeedSwitchController
 - (id)init {
     self = %orig;
-    YouModApplyExtraSpeedOptions(self);
+    [YouModPlaybackSpeed applyExtraSpeedOptions:self];
     return self;
 }
 %end
@@ -834,7 +831,7 @@ static void YouModApplyExtraSpeedOptions(id controller) {
 %hook YTVarispeedSwitchControllerImpl
 - (id)init {
     self = %orig;
-    YouModApplyExtraSpeedOptions(self);
+    [YouModPlaybackSpeed applyExtraSpeedOptions:self];
     return self;
 }
 %end
@@ -855,15 +852,6 @@ static void YouModApplyExtraSpeedOptions(id controller) {
 }
 %end
 %end
-
-static CGFloat YouModConfiguredHoldToSpeedRate(void) {
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    NSNumber *storedRate = [defaults objectForKey:HoldToSpeedRate];
-    CGFloat rate = storedRate ? [storedRate floatValue] : 2.0;
-    if (rate <= 0.0) rate = 2.0;
-    rate = fmax(0.25, fmin(rate, 10.0));
-    return 0.25 + round((rate - 0.25) / 0.25) * 0.25;
-}
 
 %hook YTMainAppVideoPlayerOverlayView
 // setPlayerResponse: sets this directly, so the YTAnnotationsViewController hooks miss it.
@@ -908,10 +896,13 @@ static CGFloat YouModConfiguredHoldToSpeedRate(void) {
     NSInteger kQualityIndex = 0;
     if ([NSProcessInfo processInfo].lowPowerModeEnabled) {
         kQualityIndex = INTFORVAL(LowPowerQualityIndex);
-    } else if (gNetworkType == 1) {
-        kQualityIndex = INTFORVAL(WifiQualityIndex);
-    } else if (gNetworkType == 2) {
-        kQualityIndex = INTFORVAL(CellQualityIndex);
+    } else {
+        int networkType = [YouModNetworkMonitor networkType];
+        if (networkType == 1) {
+            kQualityIndex = INTFORVAL(WifiQualityIndex);
+        } else if (networkType == 2) {
+            kQualityIndex = INTFORVAL(CellQualityIndex);
+        }
     }
     if (kQualityIndex == 0) return;
 
@@ -961,11 +952,7 @@ static CGFloat YouModConfiguredHoldToSpeedRate(void) {
     }
 
     MLQuickMenuVideoQualitySettingFormatConstraint *fc = [%c(MLQuickMenuVideoQualitySettingFormatConstraint) alloc];
-    if ([fc respondsToSelector:@selector(initWithVideoQualitySetting:formatSelectionReason:qualityLabel:resolutionCap:)]) {
-        [self setVideoFormatConstraint:[fc initWithVideoQualitySetting:3 formatSelectionReason:2 qualityLabel:qualityLabel resolutionCap:0]];
-    } else {
-        [self setVideoFormatConstraint:[fc initWithVideoQualitySetting:3 formatSelectionReason:2 qualityLabel:qualityLabel]];
-    }
+    [self setVideoFormatConstraint:[fc initWithVideoQualitySetting:3 formatSelectionReason:2 qualityLabel:qualityLabel]];
 }
 %end
 
@@ -981,7 +968,7 @@ static CGFloat YouModConfiguredHoldToSpeedRate(void) {
 - (void)setUserSelectableFormats:(NSArray <MLFormat *> *)formats {
     if (self.redesignedController == nil) self.redesignedController = [[%c(YTVideoQualitySwitchRedesignedController) alloc] initWithServiceRegistryScope:nil parentResponder:nil];
     [self.redesignedController setValue:[self valueForKey:@"_video"] forKey:@"_video"];
-    NSArray <MLFormat *> *newFormats = [self.redesignedController respondsToSelector:@selector(addRestrictedFormats:)] ? [self.redesignedController addRestrictedFormats:formats] : formats;
+    NSArray <MLFormat *> *newFormats = [self.redesignedController addRestrictedFormats:formats];
     %orig(newFormats);
 }
 - (void)dealloc {
@@ -991,7 +978,9 @@ static CGFloat YouModConfiguredHoldToSpeedRate(void) {
 %end
 %end
 
-static void YouModRequireAncestorPansToFail(UIView *playerView, UIGestureRecognizer *gesture) {
+@implementation YouModPlayerGestures
+
++ (void)requireAncestorPansToFail:(UIView *)playerView gesture:(UIGestureRecognizer *)gesture {
     for (UIView *view = playerView.superview; view && ![view isKindOfClass:[UIWindow class]]; view = view.superview) {
         for (UIGestureRecognizer *other in view.gestureRecognizers) {
             if ([other isKindOfClass:[UIPanGestureRecognizer class]]) [other requireGestureRecognizerToFail:gesture];
@@ -999,7 +988,7 @@ static void YouModRequireAncestorPansToFail(UIView *playerView, UIGestureRecogni
     }
 }
 
-static NSArray<UIGestureRecognizer *> *YouModGesturesAroundPlayer(UIView *playerView) {
++ (NSArray<UIGestureRecognizer *> *)gesturesAroundPlayer:(UIView *)playerView {
     NSMutableArray<UIGestureRecognizer *> *gestures = [NSMutableArray array];
     for (UIView *view = playerView; view && ![view isKindOfClass:[UIWindow class]]; view = view.superview) {
         [gestures addObjectsFromArray:view.gestureRecognizers];
@@ -1014,9 +1003,9 @@ static NSArray<UIGestureRecognizer *> *YouModGesturesAroundPlayer(UIView *player
     return gestures;
 }
 
-static void YouModSuspendGesturesForHold(YTPlayerViewController *player, UIGestureRecognizer *hold) {
++ (void)suspendGesturesForHold:(YTPlayerViewController *)player hold:(UIGestureRecognizer *)hold {
     NSMutableArray<UIGestureRecognizer *> *suspended = [NSMutableArray array];
-    for (UIGestureRecognizer *gesture in YouModGesturesAroundPlayer(player.playerView)) {
+    for (UIGestureRecognizer *gesture in [YouModPlayerGestures gesturesAroundPlayer:player.playerView]) {
         if (gesture == hold || !gesture.enabled) continue;
         gesture.enabled = NO; // Disabling cancels any in-flight recognition.
         [suspended addObject:gesture];
@@ -1024,61 +1013,29 @@ static void YouModSuspendGesturesForHold(YTPlayerViewController *player, UIGestu
     player.YouModGesturesSuspendedByHold = suspended;
 }
 
-static void YouModRestoreGesturesSuspendedByHold(YTPlayerViewController *player) {
++ (void)restoreGesturesSuspendedByHold:(YTPlayerViewController *)player {
     for (UIGestureRecognizer *gesture in player.YouModGesturesSuspendedByHold) gesture.enabled = YES;
     player.YouModGesturesSuspendedByHold = nil;
 }
 
-%hook YTWatchLayerViewController
-// invoked when the player view controller is either created or destroyed
-- (void)watchController:(YTWatchController *)watchController didSetPlayerViewController:(YTPlayerViewController *)playerViewController {
-    if (playerViewController) {
-        YTPlayerView *pv = playerViewController.playerView;
-        if (!playerViewController.YouModPanGesture && (IS_ENABLED(GestureControls) || IS_ENABLED(SeekOnOverlay))) {
-            playerViewController.YouModPanGesture = [[UIPanGestureRecognizer alloc] initWithTarget:playerViewController action:@selector(YouModHandlePanGesture:)];
-            playerViewController.YouModPanGesture.delegate = playerViewController;
-            [pv addGestureRecognizer:playerViewController.YouModPanGesture];
-            UIPanGestureRecognizer *pan = playerViewController.YouModPanGesture;
-            dispatch_async(dispatch_get_main_queue(), ^{
-                YouModRequireAncestorPansToFail(pv, pan);
-            });
-        }
-        if (!playerViewController.YouModTapGesture && IS_ENABLED(PauseTwoFingers)) {
-            playerViewController.YouModTapGesture = [[UITapGestureRecognizer alloc] initWithTarget:playerViewController action:@selector(YouModHandleTapGesture:)];
-            playerViewController.YouModTapGesture.numberOfTouchesRequired = 2;
-            playerViewController.YouModTapGesture.delegate = playerViewController;
-            [pv addGestureRecognizer:playerViewController.YouModTapGesture];
-        }
-        if (!playerViewController.YouModHoldGesture && IS_ENABLED(HoldToSpeedEnabled) && !IS_ENABLED(DisablesLongHold)) {
-            playerViewController.YouModHoldGesture = [[UILongPressGestureRecognizer alloc] initWithTarget:playerViewController action:@selector(YouModHoldToSpeed:)];
-            playerViewController.YouModHoldGesture.minimumPressDuration = 0.3;
-            playerViewController.YouModHoldGesture.numberOfTouchesRequired = 1;
-            playerViewController.YouModHoldGesture.delegate = playerViewController;
-            [pv addGestureRecognizer:playerViewController.YouModHoldGesture];
-        }
-    }
-    %orig;
-}
-%end
-
-static YTMainAppVideoPlayerOverlayView *getMainVideoOverlay(YTPlayerViewController *pvc) {
-    YTMainAppVideoPlayerOverlayViewController *ovcon = [pvc activeVideoPlayerOverlay];
++ (YTMainAppVideoPlayerOverlayView *)mainVideoOverlayForPlayer:(YTPlayerViewController *)player {
+    YTMainAppVideoPlayerOverlayViewController *ovcon = [player activeVideoPlayerOverlay];
     return [ovcon videoPlayerOverlayView];
 }
 
-static BOOL isRelatedVideosPanelEnabled(YTPlayerViewController *pvc) {
-    YTMainAppVideoPlayerOverlayView *ov = getMainVideoOverlay(pvc);
++ (BOOL)isRelatedVideosPanelEnabled:(YTPlayerViewController *)player {
+    YTMainAppVideoPlayerOverlayView *ov = [YouModPlayerGestures mainVideoOverlayForPlayer:player];
     YTFullscreenEngagementOverlayView *fullov = [ov valueForKey:@"_fullscreenEngagementOverlayView"];
     if (fullov) {
         YTRelatedVideosView *relatedview = [fullov valueForKey:@"_relatedVideosView"];
         YTRelatedVideosViewController *relatedcon = [relatedview valueForKey:@"_delegate"];
         return [relatedcon isExpanded];
-    }    
+    }
     return NO;
 }
 
-static CGFloat remainingOverlayWidth(YTPlayerViewController *pvc, CGFloat fullWidth) {
-    YTMainAppVideoPlayerOverlayView *ov = getMainVideoOverlay(pvc);
++ (CGFloat)remainingOverlayWidth:(YTPlayerViewController *)player fullWidth:(CGFloat)fullWidth {
+    YTMainAppVideoPlayerOverlayView *ov = [YouModPlayerGestures mainVideoOverlayForPlayer:player];
     YTEngagementPanelContainerView *engagecontainer = [ov valueForKey:@"_engagementPanelContainerView"];
     if (engagecontainer) {
         if (engagecontainer.engagementPanelState == 3) {
@@ -1101,18 +1058,54 @@ static CGFloat remainingOverlayWidth(YTPlayerViewController *pvc, CGFloat fullWi
     return fullWidth;
 }
 
-static UISlider *YouModVolumeSlider(void) {
++ (UISlider *)volumeSlider {
     static MPVolumeView *volumeView;
     if (!volumeView) volumeView = [[MPVolumeView alloc] initWithFrame:CGRectMake(-4000, -4000, 1, 1)];
     if (!volumeView.superview) {
-        for (UIWindow *w in UIApplication.sharedApplication.windows) {
-            if (w.isKeyWindow) { [w addSubview:volumeView]; [volumeView layoutIfNeeded]; break; }
+        UIWindow *keyWindow = YouModKeyWindow();
+        if (keyWindow) {
+            [keyWindow addSubview:volumeView];
+            [volumeView layoutIfNeeded];
         }
     }
     for (UIView *v in volumeView.subviews)
         if ([v isKindOfClass:UISlider.class]) return (UISlider *)v;
     return nil;
 }
+
+@end
+
+%hook YTWatchLayerViewController
+// invoked when the player view controller is either created or destroyed
+- (void)watchController:(YTWatchController *)watchController didSetPlayerViewController:(YTPlayerViewController *)playerViewController {
+    if (playerViewController) {
+        YTPlayerView *pv = playerViewController.playerView;
+        if (!playerViewController.YouModPanGesture && (IS_ENABLED(GestureControls) || IS_ENABLED(SeekOnOverlay))) {
+            playerViewController.YouModPanGesture = [[UIPanGestureRecognizer alloc] initWithTarget:playerViewController action:@selector(YouModHandlePanGesture:)];
+            playerViewController.YouModPanGesture.delegate = playerViewController;
+            [pv addGestureRecognizer:playerViewController.YouModPanGesture];
+            UIPanGestureRecognizer *pan = playerViewController.YouModPanGesture;
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [YouModPlayerGestures requireAncestorPansToFail:pv gesture:pan];
+            });
+        }
+        if (!playerViewController.YouModTapGesture && IS_ENABLED(PauseTwoFingers)) {
+            playerViewController.YouModTapGesture = [[UITapGestureRecognizer alloc] initWithTarget:playerViewController action:@selector(YouModHandleTapGesture:)];
+            playerViewController.YouModTapGesture.numberOfTouchesRequired = 2;
+            playerViewController.YouModTapGesture.delegate = playerViewController;
+            [pv addGestureRecognizer:playerViewController.YouModTapGesture];
+        }
+        if (!playerViewController.YouModHoldGesture && IS_ENABLED(HoldToSpeedEnabled) && !IS_ENABLED(DisablesLongHold)) {
+            playerViewController.YouModHoldGesture = [[UILongPressGestureRecognizer alloc] initWithTarget:playerViewController action:@selector(YouModHoldToSpeed:)];
+            playerViewController.YouModHoldGesture.minimumPressDuration = 0.3;
+            playerViewController.YouModHoldGesture.numberOfTouchesRequired = 1;
+            playerViewController.YouModHoldGesture.delegate = playerViewController;
+            [pv addGestureRecognizer:playerViewController.YouModHoldGesture];
+        }
+    }
+    %orig;
+}
+%end
 
 %hook YTPlayerViewController
 %property (nonatomic, retain) UIPanGestureRecognizer *YouModPanGesture;
@@ -1129,19 +1122,19 @@ static UISlider *YouModVolumeSlider(void) {
             return NO;
         }
 
-        if (isRelatedVideosPanelEnabled(self)) return NO;          
+        if ([YouModPlayerGestures isRelatedVideosPanelEnabled:self]) return NO;          
 
         UIPanGestureRecognizer *panGesture = (UIPanGestureRecognizer *)gestureRecognizer;
         CGPoint startLocation = [panGesture locationInView:self.view];
         CGPoint velocity = [panGesture velocityInView:self.view];
-        CGFloat activeWidth = remainingOverlayWidth(self, self.view.bounds.size.width);
+        CGFloat activeWidth = [YouModPlayerGestures remainingOverlayWidth:self fullWidth:self.view.bounds.size.width];
         
         if (startLocation.x > activeWidth) return NO;
 
         BOOL isHorizontal = fabs(velocity.x) > fabs(velocity.y);
 
         if (isHorizontal) {
-            YTMainAppVideoPlayerOverlayView *ov = getMainVideoOverlay(self);
+            YTMainAppVideoPlayerOverlayView *ov = [YouModPlayerGestures mainVideoOverlayForPlayer:self];
             YTVideoFreeZoomOverlayView *vidfreeov = ov.videoFreeZoomOverlayView;
             YTVideoFreeZoomOverlayController *vidfreecon = [vidfreeov valueForKey:@"_delegate"];
             return IS_ENABLED(SeekOnOverlay) && vidfreecon.state != 4;
@@ -1215,7 +1208,7 @@ static UISlider *YouModVolumeSlider(void) {
             [playerbarcon didScrub:panGestureRecognizer];
         } else if (currentPanMode == 1) {
             CGPoint startLocation = [panGestureRecognizer locationInView:self.view];
-            CGFloat activeWidth = remainingOverlayWidth(self, self.view.bounds.size.width);
+            CGFloat activeWidth = [YouModPlayerGestures remainingOverlayWidth:self fullWidth:self.view.bounds.size.width];
 
             float areaPercent = 0.15;
             int areaSetting = INTFORVAL(GestureActivationArea);
@@ -1296,7 +1289,7 @@ static UISlider *YouModVolumeSlider(void) {
                 percentString = [NSString stringWithFormat:@" %d%%", (int)(newBrightness * 100)];
             } else if (controlType == 2) {
                 float newVolume = fmaxf(fminf(initialVolume + delta, 1.0), 0.0);
-                UISlider *volumeSlider = YouModVolumeSlider();
+                UISlider *volumeSlider = [YouModPlayerGestures volumeSlider];
                 if (volumeSlider) dispatch_async(dispatch_get_main_queue(), ^{
                     volumeSlider.value = newVolume;
                 });
@@ -1376,7 +1369,7 @@ static UISlider *YouModVolumeSlider(void) {
 %new
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldBeRequiredToFailByGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
     // Only player-internal pans must fail first; ancestor page-scroll pans are
-    // handled by YouModRequireAncestorPansToFail, so vertical swipes aren't blocked.
+    // handled by requireAncestorPansToFail:gesture:, so vertical swipes aren't blocked.
     if (gestureRecognizer == self.YouModPanGesture && [otherGestureRecognizer isKindOfClass:[UIPanGestureRecognizer class]] && [otherGestureRecognizer.view isDescendantOfView:self.playerView]) {
         return YES;
     }
@@ -1390,10 +1383,10 @@ static UISlider *YouModVolumeSlider(void) {
 // Pause using Two fingers
 %new
 - (void)YouModHandleTapGesture:(UITapGestureRecognizer *)tapGestureRecognizer {
-    if (isRelatedVideosPanelEnabled(self)) return;  
+    if ([YouModPlayerGestures isRelatedVideosPanelEnabled:self]) return;  
 
     CGPoint startLocation = [tapGestureRecognizer locationInView:self.view];
-    CGFloat remainingWidth = remainingOverlayWidth(self, self.view.bounds.size.width);
+    CGFloat remainingWidth = [YouModPlayerGestures remainingOverlayWidth:self fullWidth:self.view.bounds.size.width];
     if (startLocation.x > remainingWidth) return;
 
     if (tapGestureRecognizer.state == UIGestureRecognizerStateEnded) {
@@ -1420,7 +1413,7 @@ static UISlider *YouModVolumeSlider(void) {
     }
     if (IS_ENABLED(GlobalSpeedLocked)) {
         if (IS_ENABLED(HoldToSpeedEnabled)) {
-            CGFloat speed = YouModConfiguredHoldToSpeedRate();
+            CGFloat speed = [YouModPlaybackSpeed configuredHoldToSpeedRate];
             [self setPlaybackRate:speed];
             return;
         }
@@ -1589,7 +1582,7 @@ static UISlider *YouModVolumeSlider(void) {
     
     self.YouModSpeedToastLabel.attributedText = attrString;
 
-    CGFloat activeWidth = remainingOverlayWidth(self, self.playerView.bounds.size.width);
+    CGFloat activeWidth = [YouModPlayerGestures remainingOverlayWidth:self fullWidth:self.playerView.bounds.size.width];
     CGFloat maxAvailableWidth = activeWidth * 0.8;
     CGSize maxLabelSize = CGSizeMake(maxAvailableWidth, CGFLOAT_MAX);
     
@@ -1621,16 +1614,16 @@ static UISlider *YouModVolumeSlider(void) {
 %new
 - (void)YouModHoldToSpeed:(UILongPressGestureRecognizer *)gesture {
     if (gesture.state == UIGestureRecognizerStateEnded || gesture.state == UIGestureRecognizerStateCancelled || gesture.state == UIGestureRecognizerStateFailed) {
-        YouModRestoreGesturesSuspendedByHold(self);
+        [YouModPlayerGestures restoreGesturesSuspendedByHold:self];
     }
     if (!IS_ENABLED(HoldToSpeedEnabled) || IS_ENABLED(DisablesLongHold)) return;
-    if (isRelatedVideosPanelEnabled(self)) return;
+    if ([YouModPlayerGestures isRelatedVideosPanelEnabled:self]) return;
 
     CGPoint touchLocation = [gesture locationInView:self.view];
-    CGFloat activeWidth = remainingOverlayWidth(self, self.view.bounds.size.width);
+    CGFloat activeWidth = [YouModPlayerGestures remainingOverlayWidth:self fullWidth:self.view.bounds.size.width];
     if (touchLocation.x > activeWidth) return;
 
-    CGFloat speed = YouModConfiguredHoldToSpeedRate();
+    CGFloat speed = [YouModPlaybackSpeed configuredHoldToSpeedRate];
     
     static CGPoint startLocation;
     static BOOL initialLockState;
@@ -1667,7 +1660,7 @@ static UISlider *YouModVolumeSlider(void) {
             [self YouModShowSpeedToast:speed isLocked:YES];
         }
         holdGestureActive = YES;
-        YouModSuspendGesturesForHold(self, gesture);
+        [YouModPlayerGestures suspendGesturesForHold:self hold:gesture];
     } else if (gesture.state == UIGestureRecognizerStateChanged) {
         if (!holdGestureActive || !IS_ENABLED(LockSpeed)) return;
         
@@ -1894,74 +1887,11 @@ void YouModFilterVideoButtons(_ASDisplayView *view, NSString *iden) {
 }
 %end
 
-#import <os/log.h>
-
-static void LogRendererArray(NSString *hookName, NSMutableArray *array) {
-
-    os_log(OS_LOG_DEFAULT, "%{public}s",
-        [[NSString stringWithFormat:
-            @"========== %@ BEGIN ==========",
-            hookName] UTF8String]);
-
-    NSUInteger index = 0;
-
-    for (GPBMessage *renderer in array) {
-
-        NSString *className =
-            NSStringFromClass([renderer class]);
-
-        NSString *description =
-            [renderer description] ?: @"(null)";
-
-        NSString *debugDescription =
-            [renderer debugDescription] ?: @"(null)";
-
-        NSString *output =
-            [NSString stringWithFormat:
-                @"\n[Renderer %lu]\n"
-                 "Class: %@\n"
-                 "Description: %@\n"
-                 "DebugDescription: %@\n"
-                 "Address: %p\n",
-                (unsigned long)index,
-                className,
-                description,
-                debugDescription,
-                renderer
-            ];
-
-        os_log(OS_LOG_DEFAULT, "%{public}s", [output UTF8String]);
-
-        index++;
-    }
-
-    os_log(OS_LOG_DEFAULT, "%{public}s",
-        [[NSString stringWithFormat:
-            @"========== %@ END ==========",
-            hookName] UTF8String]);
-}
-
-%hook YTISlimVideoScrollableActionBarRenderer
-- (NSMutableArray *)buttonsArray {
-    NSMutableArray *result = %orig;
-    LogRendererArray(@"Scrollable.buttonsArray", result);
-    return result;
-}
-%end
-
-%hook YTISlimVideoActionBarRenderer
-- (NSMutableArray *)buttonsArray {
-    NSMutableArray *result = %orig;
-    LogRendererArray(@"ActionBar.buttonsArray", result);
-    return result;
-}
-%end
-
 %ctor {
     %init;
     YouModConfigureRemoteSkipCommands();
     if (INTFORVAL(WifiQualityIndex) != 0 || INTFORVAL(CellQualityIndex) != 0) {
-        startNetworkMonitoring();
+        [YouModNetworkMonitor startMonitoring];
     }
     if (IS_ENABLED(OldQualityPicker)) {
         %init(OldVideoQuality);

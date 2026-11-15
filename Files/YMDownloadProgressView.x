@@ -37,6 +37,8 @@
     view.translatesAutoresizingMaskIntoConstraints = NO;
     // Frosted + light-gray dialog background, matching the download sheet and YM pill.
     YouModApplyFrostedPanelBackgroundToView(view);
+    // More grey base on 26 SDK hosts.
+    if (YMHostBundleSupportsLiquidGlass()) view.backgroundColor = [UIColor systemGray5Color];
     view.layer.cornerRadius = 16.0;
     view.clipsToBounds = YES;
 
@@ -62,7 +64,7 @@
     UIProgressView *progressBar = [[UIProgressView alloc] initWithProgressViewStyle:UIProgressViewStyleDefault];
     progressBar.progress = 0.0;
     progressBar.trackTintColor = [[UIColor labelColor] colorWithAlphaComponent:0.12];
-    progressBar.progressTintColor = UIColor.systemPurpleColor;
+    progressBar.progressTintColor = YouModAccentColor();
     progressBar.translatesAutoresizingMaskIntoConstraints = NO;
     progressBar.layer.cornerRadius = 3.0;
     progressBar.clipsToBounds = YES;

@@ -1,0 +1,2 @@
+@interface YCHAsyncLiveChatCollectionViewController : UIViewController
+@end

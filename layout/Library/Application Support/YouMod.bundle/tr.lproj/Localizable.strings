@@ -1,7 +1,6 @@
 "INTERFACE" = "Arayüz";
 
 "SEARCH" = "Ara";
-"SEARCH_DESC" = "YouMod ayarlarında ara.";
 
 "URL_COPIED" = "Video bağlantısı kopyalandı";
 "COPY_URL" = "Video bağlantısını kopyala";
@@ -20,7 +19,6 @@
 "SOURCE_CODES" = "Kaynak kodları";
 "SOURCE_CODES_DESC" = "Kodlara göz atın!";
 
-"EXTRA" = "Ekstra";
 "FIX_PLAYBACK_ISSUES" = "Fix playback issues (Experimental)";
 "FIX_PLAYBACK_ISSUES_DESC" = "This option is still experimental and may not work for some users.";
 
@@ -66,13 +64,8 @@
 "UNDER_THE_PLAYER" = "Under the player";
 "OVERLAY" = "Overlay";
 "BOTH" = "Both";
-"POST_DOWNLOAD_ACTION" = "İndirme sonrası işlem";
-"POST_ACTION_SAVE_PHOTOS" = "Fotoğraflar'a kaydet";
-"POST_ACTION_SHARE" = "Paylaş";
-"POST_ACTION_ASK" = "Sor";
 "ADD_SHORTS_DOWNLOAD" = "Shorts'a indirme butonu ekle";
 "ADD_SHORTS_DOWNLOAD_DESC" = "Shorts video katmanına bir indirme butonu ekler.";
-"DOWNLOAD_SHORTS" = "Shorts İndir";
 "COPY_VID_INFO" = "Video bilgilerini kopyala";
 "COPY_TITLE" = "Başlığı kopyala";
 "COPY_DESCRIPTION" = "Açıklamayı kopyala";
@@ -82,14 +75,7 @@
 "COPY_AUTHOR" = "Kanal adını kopyala";
 "COPIED_AUTHOR" = "Kanal adı kopyalandı";
 "SAVE_THUMBNAIL" = "Küçük resmi kaydet";
-"DOWNLOAD_CAPTIONS" = "Altyazıları indir";
-"DOWNLOAD_AUDIO" = "Sesi indir";
-"DOWNLOAD_VIDEO" = "Videoyu indir";
 "OPEN_VID_BEFORE" = "İndirme yöneticisini kullanmadan önce bir video açın";
-"NO_CAPTIONS_URL" = "Geçerli bir altyazı bağlantısı bulunamadı";
-"NO_AUDIO_URL" = "Ses bağlantısı bulunamadı";
-"NO_STREAM_URL" = "Yayın bağlantısı bulunamadı";
-"CAPTIONS_FAILED" = "Altyazılar indirilemedi";
 "NO_CAPTIONS" = "Bu video için altyazı mevcut değil";
 "NO_AUDIO_STREAM_FOUND" = "Ses akışı bulunamadı";
 "NO_VID_AUDIO_STREAM_FOUND" = "Video/Ses akışı bulunamadı";
@@ -101,22 +87,15 @@
 "DOWNLOADING_THUMBNAIL" = "Küçük resim indiriliyor...";
 "DOWNLOADING_AUDIO" = "Ses indiriliyor...";
 "DOWNLOADING_VIDEO" = "Video indiriliyor...";
-"DOWNLOADING_CAPTIONS" = "Altyazılar indiriliyor...";
 "NO_THUMBNAIL_FOUND" = "Küçük resim bulunamadı";
 "DOWNLOAD_FAILED" = "İndirme başarısız";
-"AUDIO_SAVED" = "Ses kaydedildi";
 "DOWNLOAD_COMPLETED" = "İndirme tamamlandı";
 "CANNOT_SAVE_TO_PHOTOS" = "Fotoğraflar'a kaydedilemiyor";
-"FINA_VIDEO" = "Video tamamlanıyor...";
-"MERGING_VID_FALLBACK" = "Video alternatif yöntemle birleştiriliyor...";
 "MERGING_VID" = "Video birleştiriliyor...";
-"CONVERTING" = "Dönüştürülüyor:";
 "ALREADY_DOWNLOADING" = "Zaten indiriliyor";
 "DOWNLOAD_CANCELLED" = "İndirme iptal edildi";
-"TRIMMING_AUDIO" = "Ses kırpılıyor...";
 "SHOW_THUMBNAIL" = "Küçük resmi göster";
 "COPY_THUMBNAIL" = "Küçük resmi kopyala";
-"THUMBNAIL_OPTIONS" = "Küçük resmi indir";
 "COPY" = "Kopyala";
 "COPIED_TO_CLIPBOARD" = "Pano'ya kopyalandı";
 "COPY_COMMENT_TEXT" = "Yorum metnini kopyala";
@@ -131,20 +110,10 @@
 "DOWNLOAD_POST_DESC" = "Uzun basarak gönderi metnini kopyalamaya ve gönderiyi görsel olarak kaydetmeye izin verir.";
 "TRANSLATE_COMMENT" = "Yorumu çevir";
 "TRANSLATE_POST" = "Gönderiyi çevir";
-"SHOW_OPTIONS" = "Seçenekleri göster";
-"ENGLISH" = "İngilizce";
 "TRANSLATION" = "Çeviri";
 "LANGUAGE" = "Dil";
 "TRANSLATING" = "Çevriliyor...";
-"SELECT_LANG" = "Dil seçin";
 "TRANSLATE_FAILED" = "Çeviri başarısız oldu, lütfen tekrar deneyin.";
-"SAVE_CURRENT_IMAGE" = "Mevcut görseli kaydet";
-"COPY_CURRENT_IMAGE" = "Mevcut görseli kopyala";
-"DOWNLOAD_METHOD" = "İndirme yöntemi";
-"DOWNLOAD_METHOD_DESC" = "Videoların nasıl indirileceği. Cihaz içi yöntemi en son YouTube sürümlerinde çalışır.";
-"METHOD_DIRECT" = "Doğrudan";
-"METHOD_ONDEVICE" = "Cihaz içi (SABR)";
-"AUDIO" = "Audio";
 
 "APPEARANCE" = "Görünüm";
 "OLED_THEME" = "OLED karanlık mod";
@@ -460,6 +429,7 @@
 "MINIGAME_TAB" = "Oynatılabilirler";
 "FASHION_TAB" = "Moda ve Güzellik";
 "LEARNING_TAB" = "Öğrenme";
+"CHARTS_TAB" = "Charts";
 "MANAGE_TABS" = "Sekmeleri yönet";
 "MANAGE_TABS_DESC" = "Sekmeleri yeniden sıralayın ve açıp kapatın";
 "TAB_REORDER_HINT" = "Yeniden sıralamak için sürükleyin. Göstermek/gizlemek için anahtarı kullanın.\\nSekme ayarlarına sekme çubuğundaki ilk sekmeye uzun basarak da erişilebilir.";
@@ -546,7 +516,6 @@
 "AUTO_OPEN_LINK" = "Panoyu otomatik kontrol et";
 "AUTO_OPEN_LINK_DESC" = "Uygulama her açıldığında panoda YouTube ile ilgili bağlantı olup olmadığını kontrol eder.\\nDüzgün çalışması için iOS Ayarları → YouTube → Diğer Uygulamalardan Yapıştır bölümüne gidip 'Izin Ver'i seçin.";
 
-"SB_DESCRIPTION" = "Topluluk tarafından gönderilen verileri kullanarak sponsorlu bölümleri otomatik olarak atlayın.";
 "SB_ENABLE" = "SponsorBlock'u Etkinleştir";
 "SB_ENABLE_DESC" = "Sponsorlu bölümleri atlamak için SponsorBlock eklentisini etkinleştirin.";
 "SB_SHOW_BUTTON" = "Katman butonunu göster";
@@ -566,7 +535,6 @@
 "SB_SHOW_FULL_VIDEO_LABEL" = "Tüm video etiketini göster";
 "SB_SHOW_FULL_VIDEO_LABEL_DESC" = "Video, tüm videoyu kapsayan bir kategoriyle (ör. Exclusive Access) etiketlendiğinde bir bildirim gösterir.";
 "SB_CATEGORIES_HEADER" = "Bölüm kategorileri";
-"SB_SEGMENT_COLOR" = "Bölüm rengi";
 
 "SB_ACTION_DISABLE" = "Devre dışı";
 "SB_ACTION_AUTO_SKIP" = "Otomatik atla";
@@ -602,7 +570,6 @@
 "SB_MENU_ENABLE" = "Enable SponsorBlock";
 "SB_MENU_DISABLE" = "Disable SponsorBlock";
 "SB_MENU_VOTE" = "Vote on segments";
-"SB_MENU_WHITELIST" = "Whitelist channel";
 "SB_VOTE_TITLE" = "Segments";
 "SB_VOTES_COUNT" = "%ld votes";
 "SB_VOTE_UPVOTE" = "Upvote";
@@ -635,7 +602,6 @@
 "SB_SUBMIT_INVALID" = "Set a valid start and end first";
 "SB_WHITELIST_ADD" = "Add to whitelist";
 "SB_WHITELIST_REMOVE" = "Remove from whitelist";
-"SB_WHITELIST_DESC" = "SponsorBlock will be disabled for this channel.";
 "SB_WHITELIST_MANAGE" = "Whitelist";
 "SB_WHITELIST_EMPTY" = "No whitelisted channels";
 "SB_WHITELIST_DELETE" = "Delete";
@@ -644,12 +610,10 @@
 "SB_PUBLIC_ID" = "Public User ID";
 "SB_TAP_TO_SHOW" = "Tap to show";
 "SB_COPY_ID" = "Copy ID";
-"SB_EDIT_ID" = "Edit ID";
 "SB_ID_COPIED" = "ID copied";
 "SB_ID_SAVED" = "ID saved";
 "SB_ID_INVALID" = "ID must be at least 30 characters";
 "SB_ID_SAVE" = "Save";
-"SB_ID_CANCEL" = "Cancel";
 
 
 // Keys synced from en.lproj (English base)
@@ -658,14 +622,48 @@
 "DOWNLOAD_LIBRARY_TAB" = "Download library";
 "DOWNLOAD_LIBRARY_TAB_DESC" = "Adds a tab that lists every downloaded video with thumbnails and sizes.";
 "DOWNLOAD_LIBRARY_EMPTY" = "No downloads yet";
-"DOWNLOAD_LIBRARY_DELETE_PLAYLIST_CONFIRM" = "Delete ‘%@’? Downloaded files will stay in the library.";
+"DOWNLOAD_LIBRARY_TYPE_ALL" = "All";
+"DOWNLOAD_LIBRARY_TYPE_VIDEOS" = "Videos";
+"DOWNLOAD_LIBRARY_TYPE_SHORTS" = "Shorts";
+"DOWNLOAD_LIBRARY_TYPE_AUDIO" = "Audio";
+"DOWNLOAD_LIBRARY_TYPE_PLAYLISTS" = "Playlists";
+"DOWNLOAD_LIBRARY_TYPE_PRIVATE" = "Private";
+"DOWNLOAD_LIBRARY_PRIVATE_AUTH_REASON" = "Authenticate to view private downloads";
+"DOWNLOAD_LIBRARY_PRIVATE_AUTH_UNAVAILABLE" = "Set up Face ID, Touch ID, or a device passcode to open Private.";
+"DOWNLOAD_LIBRARY_PRIVATE_AUTH_FAILED" = "Authentication failed. Private downloads remain locked.";
+"DOWNLOAD_LIBRARY_SORT_NEWEST" = "Newest";
+"DOWNLOAD_LIBRARY_SORT_OLDEST" = "Oldest";
+"DOWNLOAD_LIBRARY_SORT_LARGEST" = "Largest";
+"DOWNLOAD_LIBRARY_SORT_SMALLEST" = "Smallest";
+"DOWNLOAD_LIBRARY_SORT_AZ" = "A-Z";
+"DOWNLOAD_LIBRARY_SORT_ZA" = "Z-A";
+"DOWNLOAD_LIBRARY_CREATE_PLAYLIST" = "Create playlist";
+"DOWNLOAD_LIBRARY_DELETE_PLAYLIST" = "Delete playlist";
+"DOWNLOAD_LIBRARY_PLAYLIST_NAME" = "Playlist name";
+"DOWNLOAD_LIBRARY_CREATE" = "Create";
+"DOWNLOAD_LIBRARY_PLAYLIST_EXISTS" = "A playlist with that name already exists";
+"DOWNLOAD_LIBRARY_MARK_PRIVATE" = "Mark as Private";
+"DOWNLOAD_LIBRARY_MARK_PUBLIC" = "Remove from Private";
+"DOWNLOAD_LIBRARY_NO_PLAYLISTS" = "No playlists yet";
+"DOWNLOAD_LIBRARY_CREATE_PLAYLIST_FIRST" = "Create a playlist before adding downloads to it.";
+"DOWNLOAD_LIBRARY_ADD_TO_PLAYLIST" = "Add to playlist";
+"DOWNLOAD_LIBRARY_ADDED_TO_PLAYLIST" = "Added to playlist";
+"DOWNLOAD_LIBRARY_PLAYLIST_ITEM_COUNT" = "%ld items";
+"DOWNLOAD_LIBRARY_PLAYLIST_LOCKED" = "Playlist locked";
+"DOWNLOAD_LIBRARY_PLAYLIST_UNLOCKED" = "Playlist unlocked";
+"DOWNLOAD_LIBRARY_LOCK_PLAYLIST" = "Lock playlist";
+"DOWNLOAD_LIBRARY_UNLOCK_PLAYLIST" = "Unlock playlist";
 
 "LIBRARY_OPEN_VIDEO" = "Open Video on YouTube";
 "LIBRARY_NO_VIDEO_ID" = "Couldn't find this video's ID";
 "LIBRARY_SHARE" = "Share";
 "LIBRARY_SAVE_THUMBNAIL" = "Save Thumbnail to Photos";
+"LIBRARY_SELECT" = "Select";
+"LIBRARY_SELECT_ALL" = "Select All";
+"LIBRARY_SELECT_ITEMS_FIRST" = "Select items first";
 "LIBRARY_VIEW_INFO" = "View Info";
 "LIBRARY_DELETE" = "Delete";
+"LIBRARY_DESELECT_ALL" = "Deselect All";
 "LIBRARY_RENAME" = "Yeniden Adlandır";
 "LIBRARY_RENAME_TITLE" = "Dosyayı Yeniden Adlandır";
 "LIBRARY_RENAMED" = "Dosya yeniden adlandırıldı";
@@ -700,7 +698,6 @@
 "AUDIO_CODEC" = "Audio codec";
 "VIDEO_CODEC" = "Video codec";
 "SUBTITLES" = "Subtitles";
-"NO_SUBTITLES" = "No subtitles";
 "PHOTOS_CODEC_NOTE" = "Due to the codecs that Apple supports, only H.264 video and AAC audio can be downloaded. If you want better quality or more efficient codecs, you have to download the video to files and then open it in a player like VLC.";
 "FILES_HINT_BOTH" = "%@ video and %@ audio are more efficient and higher quality, but the built-in iOS player cannot play them. Use a player like VLC.";
 "FILES_HINT_VIDEO" = "%@ video is more efficient and higher quality, but the built-in iOS player cannot play it. Use a player like VLC.";
@@ -729,16 +726,15 @@
 "STARTUP_VIDEO_PICK_DESC" = "Choose a video from Photos. It will be trimmed to 10 seconds and converted to MP4 at up to 1080p.";
 "STARTUP_VIDEO_DELETE" = "Delete saved startup video";
 "STARTUP_VIDEO_DELETE_DESC" = "Remove the converted video stored on this device.";
-"STARTUP_VIDEO_ERROR" = "Startup video";
 "STARTUP_VIDEO_INVALID" = "Choose a video file.";
 "STARTUP_VIDEO_IMPORT_FAILED" = "Could not read that video.";
 "STARTUP_VIDEO_CONVERT_FAILED" = "Could not convert that video.";
 "STARTUP_VIDEO_SAVED" = "Startup video saved";
-"STARTUP_VIDEO_SAVED_DESC" = "The video is ready to use.";
 "STARTUP_VIDEO_DELETED" = "Startup video deleted";
 "STARTUP_VIDEO_DELETE_FAILED" = "Could not delete the startup video.";
 "STARTUP_VIDEO_DELETE_CONFIRM" = "Delete startup video?";
 "STARTUP_VIDEO_DELETE_CONFIRM_DESC" = "The saved video will be removed from this device.";
+"DELETE" = "Delete";
 "DUPLICATE_DOWNLOAD_TITLE" = "Already downloaded";
 "DUPLICATE_DOWNLOAD_MESSAGE" = "This video is already in your library. Delete the existing file and download it again?";
 "DUPLICATE_DOWNLOAD_REPLACE" = "Delete and download again";

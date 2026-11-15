@@ -1,7 +1,6 @@
 "INTERFACE" = "인터페이스";
 
 "SEARCH" = "검색";
-"SEARCH_DESC" = "YouMod 설정 검색";
 
 "URL_COPIED" = "동영상 링크 복사됨";
 "COPY_URL" = "동영상 링크 복사";
@@ -20,7 +19,6 @@
 "SOURCE_CODES" = "소스 코드";
 "SOURCE_CODES_DESC" = "코드를 확인해보세요!";
 
-"EXTRA" = "기타";
 "FIX_PLAYBACK_ISSUES" = "Fix playback issues (Experimental)";
 "FIX_PLAYBACK_ISSUES_DESC" = "This option is still experimental and may not work for some users.";
 
@@ -66,13 +64,8 @@
 "UNDER_THE_PLAYER" = "플레이어 아래";
 "OVERLAY" = "오버레이";
 "BOTH" = "둘 다";
-"POST_DOWNLOAD_ACTION" = "다운로드 후 동작";
-"POST_ACTION_SAVE_PHOTOS" = "사진 앱에 저장";
-"POST_ACTION_SHARE" = "공유";
-"POST_ACTION_ASK" = "매번 묻기";
 "ADD_SHORTS_DOWNLOAD" = "Shorts에 다운로드 버튼 추가";
 "ADD_SHORTS_DOWNLOAD_DESC" = "Shorts 동영상 오버레이에 다운로드 버튼을 추가합니다.";
-"DOWNLOAD_SHORTS" = "Shorts 다운로드";
 "COPY_VID_INFO" = "동영상 정보 복사";
 "COPY_TITLE" = "제목 복사";
 "COPY_DESCRIPTION" = "설명 복사";
@@ -82,14 +75,7 @@
 "COPY_AUTHOR" = "작성자 복사";
 "COPIED_AUTHOR" = "동영상 작성자 복사됨";
 "SAVE_THUMBNAIL" = "썸네일 저장";
-"DOWNLOAD_CAPTIONS" = "자막 다운로드";
-"DOWNLOAD_AUDIO" = "오디오 다운로드";
-"DOWNLOAD_VIDEO" = "동영상 다운로드";
 "OPEN_VID_BEFORE" = "다운로드 관리자를 사용하기 전에 동영상을 먼저 열어주세요";
-"NO_CAPTIONS_URL" = "유효한 자막 URL을 찾을 수 없습니다";
-"NO_AUDIO_URL" = "오디오 URL을 찾을 수 없습니다";
-"NO_STREAM_URL" = "스트림 URL을 찾을 수 없습니다";
-"CAPTIONS_FAILED" = "자막 다운로드에 실패했습니다";
 "NO_CAPTIONS" = "이 동영상에는 사용 가능한 자막이 없습니다";
 "NO_AUDIO_STREAM_FOUND" = "오디오 스트림을 찾을 수 없습니다";
 "NO_VID_AUDIO_STREAM_FOUND" = "동영상/오디오 스트림을 찾을 수 없습니다";
@@ -101,22 +87,15 @@
 "DOWNLOADING_THUMBNAIL" = "썸네일 다운로드 중...";
 "DOWNLOADING_AUDIO" = "오디오 다운로드 중...";
 "DOWNLOADING_VIDEO" = "동영상 다운로드 중...";
-"DOWNLOADING_CAPTIONS" = "자막 다운로드 중...";
 "NO_THUMBNAIL_FOUND" = "썸네일을 찾을 수 없습니다";
 "DOWNLOAD_FAILED" = "다운로드 실패";
-"AUDIO_SAVED" = "오디오 저장됨";
 "DOWNLOAD_COMPLETED" = "다운로드 완료";
 "CANNOT_SAVE_TO_PHOTOS" = "사진 앱에 저장할 수 없습니다";
-"FINA_VIDEO" = "동영상 마무리 처리 중...";
-"MERGING_VID_FALLBACK" = "대체 방식으로 동영상 병합 중...";
 "MERGING_VID" = "동영상 병합 중...";
-"CONVERTING" = "변환 중:";
 "ALREADY_DOWNLOADING" = "이미 다운로드 중입니다";
 "DOWNLOAD_CANCELLED" = "다운로드가 취소됨";
-"TRIMMING_AUDIO" = "오디오 자르는 중...";
 "SHOW_THUMBNAIL" = "썸네일 보기";
 "COPY_THUMBNAIL" = "썸네일 복사";
-"THUMBNAIL_OPTIONS" = "썸네일 다운로드";
 "COPY" = "복사";
 "COPIED_TO_CLIPBOARD" = "클립보드에 복사됨";
 "COPY_COMMENT_TEXT" = "댓글 텍스트 복사";
@@ -134,15 +113,7 @@
 "TRANSLATION" = "번역";
 "LANGUAGE" = "언어";
 "TRANSLATING" = "번역 중...";
-"SELECT_LANG" = "언어 선택";
 "TRANSLATE_FAILED" = "번역에 실패했습니다. 다시 시도해주세요.";
-"SAVE_CURRENT_IMAGE" = "현재 이미지 저장";
-"COPY_CURRENT_IMAGE" = "현재 이미지 복사";
-"DOWNLOAD_METHOD" = "다운로드 방식";
-"DOWNLOAD_METHOD_DESC" = "동영상을 다운로드하는 방식입니다. 기기 내 처리 방식은 최신 YouTube 버전에서 작동합니다.";
-"METHOD_DIRECT" = "직접";
-"METHOD_ONDEVICE" = "기기 내 처리 (SABR)";
-"AUDIO" = "오디오";
 
 "APPEARANCE" = "화면 표시";
 "OLED_THEME" = "OLED 다크 모드";
@@ -458,6 +429,7 @@
 "MINIGAME_TAB" = "Playables";
 "FASHION_TAB" = "패션 & 뷰티";
 "LEARNING_TAB" = "교육";
+"CHARTS_TAB" = "Charts";
 "MANAGE_TABS" = "탭 관리";
 "MANAGE_TABS_DESC" = "탭 순서 변경 및 켜기/끄기";
 "TAB_REORDER_HINT" = "드래그하여 순서를 변경하세요. 스위치로 표시 여부를 설정할 수 있습니다.\n탭바의 첫 번째 탭을 길게 눌러도 탭 설정에 접근할 수 있습니다.";
@@ -544,7 +516,6 @@
 "AUTO_OPEN_LINK" = "클립보드 자동 확인";
 "AUTO_OPEN_LINK_DESC" = "앱을 열 때마다 클립보드에서 YouTube 관련 링크를 확인합니다.\n정상적으로 작동하려면 iOS 설정 → YouTube → 다른 앱에서 붙여넣기에서 '허용'을 선택하세요.";
 
-"SB_DESCRIPTION" = "커뮤니티가 제출한 데이터를 사용해 스폰서 구간을 자동으로 건너뜁니다.";
 "SB_ENABLE" = "SponsorBlock 사용";
 "SB_ENABLE_DESC" = "스폰서 구간을 건너뛰기 위해 SponsorBlock 확장 기능을 활성화합니다.";
 "SB_SHOW_BUTTON" = "오버레이 버튼 표시";
@@ -564,7 +535,6 @@
 "SB_SHOW_FULL_VIDEO_LABEL" = "전체 동영상 라벨 표시";
 "SB_SHOW_FULL_VIDEO_LABEL_DESC" = "동영상 전체를 대상으로 하는 카테고리(예: Exclusive Access)로 라벨이 지정되면 배너를 표시합니다.";
 "SB_CATEGORIES_HEADER" = "구간 카테고리";
-"SB_SEGMENT_COLOR" = "구간 색상";
 
 "SB_ACTION_DISABLE" = "사용 안함";
 "SB_ACTION_AUTO_SKIP" = "자동 건너뛰기";
@@ -600,7 +570,6 @@
 "SB_MENU_ENABLE" = "SponsorBlock 사용";
 "SB_MENU_DISABLE" = "SponsorBlock 사용 중지";
 "SB_MENU_VOTE" = "구간에 투표";
-"SB_MENU_WHITELIST" = "채널을 화이트리스트에 추가";
 "SB_VOTE_TITLE" = "구간";
 "SB_VOTES_COUNT" = "%ld표";
 "SB_VOTE_UPVOTE" = "찬성 투표";
@@ -633,7 +602,6 @@
 "SB_SUBMIT_INVALID" = "Set a valid start and end first";
 "SB_WHITELIST_ADD" = "화이트리스트에 추가";
 "SB_WHITELIST_REMOVE" = "화이트리스트에서 제거";
-"SB_WHITELIST_DESC" = "이 채널에서는 SponsorBlock이 비활성화됩니다.";
 "SB_WHITELIST_MANAGE" = "화이트리스트";
 "SB_WHITELIST_EMPTY" = "화이트리스트에 등록된 채널이 없습니다";
 "SB_WHITELIST_DELETE" = "삭제";
@@ -642,26 +610,58 @@
 "SB_PUBLIC_ID" = "공개 사용자 ID";
 "SB_TAP_TO_SHOW" = "탭하여 표시";
 "SB_COPY_ID" = "ID 복사";
-"SB_EDIT_ID" = "ID 편집";
 "SB_ID_COPIED" = "ID 복사됨";
 "SB_ID_SAVED" = "ID 저장됨";
 "SB_ID_INVALID" = "ID는 30자 이상이어야 합니다";
 "SB_ID_SAVE" = "저장";
-"SB_ID_CANCEL" = "취소";
 
 "HIDE_AUTO_DUBBED_DOWNLOADS" = "자동 더빙 오디오 트랙 숨기기";
 "HIDE_AUTO_DUBBED_DOWNLOADS_DESC" = "다운로드된 영상의 오디오 트랙 선택 목록에서 AI 자동 더빙 트랙을 숨깁니다.";
 "DOWNLOAD_LIBRARY_TAB" = "다운로드";
 "DOWNLOAD_LIBRARY_TAB_DESC" = "다운로드한 모든 동영상을 썸네일과 용량과 함께 보여주는 탭을 추가합니다.";
 "DOWNLOAD_LIBRARY_EMPTY" = "아직 다운로드한 항목이 없습니다";
-"DOWNLOAD_LIBRARY_DELETE_PLAYLIST_CONFIRM" = "Delete ‘%@’? Downloaded files will stay in the library.";
+"DOWNLOAD_LIBRARY_TYPE_ALL" = "All";
+"DOWNLOAD_LIBRARY_TYPE_VIDEOS" = "Videos";
+"DOWNLOAD_LIBRARY_TYPE_SHORTS" = "Shorts";
+"DOWNLOAD_LIBRARY_TYPE_AUDIO" = "Audio";
+"DOWNLOAD_LIBRARY_TYPE_PLAYLISTS" = "Playlists";
+"DOWNLOAD_LIBRARY_TYPE_PRIVATE" = "Private";
+"DOWNLOAD_LIBRARY_PRIVATE_AUTH_REASON" = "Authenticate to view private downloads";
+"DOWNLOAD_LIBRARY_PRIVATE_AUTH_UNAVAILABLE" = "Set up Face ID, Touch ID, or a device passcode to open Private.";
+"DOWNLOAD_LIBRARY_PRIVATE_AUTH_FAILED" = "Authentication failed. Private downloads remain locked.";
+"DOWNLOAD_LIBRARY_SORT_NEWEST" = "Newest";
+"DOWNLOAD_LIBRARY_SORT_OLDEST" = "Oldest";
+"DOWNLOAD_LIBRARY_SORT_LARGEST" = "Largest";
+"DOWNLOAD_LIBRARY_SORT_SMALLEST" = "Smallest";
+"DOWNLOAD_LIBRARY_SORT_AZ" = "A-Z";
+"DOWNLOAD_LIBRARY_SORT_ZA" = "Z-A";
+"DOWNLOAD_LIBRARY_CREATE_PLAYLIST" = "Create playlist";
+"DOWNLOAD_LIBRARY_DELETE_PLAYLIST" = "Delete playlist";
+"DOWNLOAD_LIBRARY_PLAYLIST_NAME" = "Playlist name";
+"DOWNLOAD_LIBRARY_CREATE" = "Create";
+"DOWNLOAD_LIBRARY_PLAYLIST_EXISTS" = "A playlist with that name already exists";
+"DOWNLOAD_LIBRARY_MARK_PRIVATE" = "Mark as Private";
+"DOWNLOAD_LIBRARY_MARK_PUBLIC" = "Remove from Private";
+"DOWNLOAD_LIBRARY_NO_PLAYLISTS" = "No playlists yet";
+"DOWNLOAD_LIBRARY_CREATE_PLAYLIST_FIRST" = "Create a playlist before adding downloads to it.";
+"DOWNLOAD_LIBRARY_ADD_TO_PLAYLIST" = "Add to playlist";
+"DOWNLOAD_LIBRARY_ADDED_TO_PLAYLIST" = "Added to playlist";
+"DOWNLOAD_LIBRARY_PLAYLIST_ITEM_COUNT" = "%ld items";
+"DOWNLOAD_LIBRARY_PLAYLIST_LOCKED" = "Playlist locked";
+"DOWNLOAD_LIBRARY_PLAYLIST_UNLOCKED" = "Playlist unlocked";
+"DOWNLOAD_LIBRARY_LOCK_PLAYLIST" = "Lock playlist";
+"DOWNLOAD_LIBRARY_UNLOCK_PLAYLIST" = "Unlock playlist";
 
 "LIBRARY_OPEN_VIDEO" = "YouTube에서 동영상 열기";
 "LIBRARY_NO_VIDEO_ID" = "이 동영상의 ID를 찾을 수 없습니다";
 "LIBRARY_SHARE" = "공유";
 "LIBRARY_SAVE_THUMBNAIL" = "썸네일을 사진 앱에 저장";
+"LIBRARY_SELECT" = "Select";
+"LIBRARY_SELECT_ALL" = "Select All";
+"LIBRARY_SELECT_ITEMS_FIRST" = "Select items first";
 "LIBRARY_VIEW_INFO" = "정보 보기";
 "LIBRARY_DELETE" = "삭제";
+"LIBRARY_DESELECT_ALL" = "Deselect All";
 "LIBRARY_RENAME" = "이름 바꾸기";
 "LIBRARY_RENAME_TITLE" = "파일 이름 바꾸기";
 "LIBRARY_RENAMED" = "파일 이름이 변경되었습니다";
@@ -696,7 +696,6 @@
 "AUDIO_CODEC" = "오디오 코덱";
 "VIDEO_CODEC" = "동영상 코덱";
 "SUBTITLES" = "자막";
-"NO_SUBTITLES" = "자막 없음";
 "PHOTOS_CODEC_NOTE" = "Apple이 지원하는 코덱의 제한으로 인해 H.264 동영상과 AAC 오디오만 다운로드할 수 있습니다. 더 높은 품질이나 더 효율적인 코덱이 필요하면 동영상을 라이브러리에 다운로드한 다음 VLC 같은 플레이어에서 열어야 합니다.";
 "FILES_HINT_BOTH" = "%@ 동영상과 %@ 오디오는 더 효율적이고 품질이 높지만 iOS 기본 플레이어에서는 재생할 수 없습니다. VLC 같은 플레이어를 사용하세요.";
 "FILES_HINT_VIDEO" = "%@ 동영상은 더 효율적이고 품질이 높지만 iOS 기본 플레이어에서는 재생할 수 없습니다. VLC 같은 플레이어를 사용하세요.";
@@ -725,16 +724,15 @@
 "STARTUP_VIDEO_PICK_DESC" = "Choose a video from Photos. It will be trimmed to 10 seconds and converted to MP4 at up to 1080p.";
 "STARTUP_VIDEO_DELETE" = "Delete saved startup video";
 "STARTUP_VIDEO_DELETE_DESC" = "Remove the converted video stored on this device.";
-"STARTUP_VIDEO_ERROR" = "Startup video";
 "STARTUP_VIDEO_INVALID" = "Choose a video file.";
 "STARTUP_VIDEO_IMPORT_FAILED" = "Could not read that video.";
 "STARTUP_VIDEO_CONVERT_FAILED" = "Could not convert that video.";
 "STARTUP_VIDEO_SAVED" = "Startup video saved";
-"STARTUP_VIDEO_SAVED_DESC" = "The video is ready to use.";
 "STARTUP_VIDEO_DELETED" = "Startup video deleted";
 "STARTUP_VIDEO_DELETE_FAILED" = "Could not delete the startup video.";
 "STARTUP_VIDEO_DELETE_CONFIRM" = "Delete startup video?";
 "STARTUP_VIDEO_DELETE_CONFIRM_DESC" = "The saved video will be removed from this device.";
+"DELETE" = "Delete";
 "DUPLICATE_DOWNLOAD_TITLE" = "Already downloaded";
 "DUPLICATE_DOWNLOAD_MESSAGE" = "This video is already in your library. Delete the existing file and download it again?";
 "DUPLICATE_DOWNLOAD_REPLACE" = "Delete and download again";

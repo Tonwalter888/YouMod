@@ -1,0 +1,2 @@
+@interface YTWatchFloatingMiniplayerBadgeView : UIView
+@end

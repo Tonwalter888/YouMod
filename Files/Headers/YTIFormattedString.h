@@ -7,3 +7,8 @@
 @property (nonatomic, strong, readwrite) YTIFormattedStringSupportedAccessibilityDatas *accessibility;
 - (NSString *)stringWithFormattingRemoved;
 @end
+
+@interface YTIFormattedString (YouMod)
+- (NSString *)dropdownOptionTitle;
+- (NSString *)stringWithFormattingRemoved;
+@end

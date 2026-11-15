@@ -332,7 +332,7 @@ static NSString *YMSleepTimerFormatClock(NSTimeInterval interval) {
             slimBarController.currentType = 6;
             [slimBarController updateWithSleepTimerActiveStatus:YES];   
             slimBarThemed = YES;
-        } else if (slimBarController.currentType != 6) return;
+        }
         if (isNewYTSlimStatusBarConfig()) {
             if (!sleepTimerConfig) createSleepTimerConfig(text);
             else sleepTimerConfig.text = text;

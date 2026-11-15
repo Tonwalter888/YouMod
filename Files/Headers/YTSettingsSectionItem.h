@@ -25,3 +25,7 @@
 + (instancetype)switchItemWithTitle:(NSString *)title titleDescription:(NSString *)titleDescription accessibilityIdentifier:(NSString *)accessibilityIdentifier switchOn:(BOOL)switchOn switchBlock:(BOOL (^)(YTSettingsCell *, BOOL))switchBlock selectBlock:(BOOL (^)(YTSettingsCell *, NSUInteger))selectBlock settingItemId:(int)settingItemId;
 - (instancetype)initWithTitle:(NSString *)title titleDescription:(NSString *)titleDescription;
 @end
+
+@interface YTSettingsSectionItem (YouMod)
+- (NSNumber *)categoryId;
+@end

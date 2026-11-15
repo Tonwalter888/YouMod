@@ -1,0 +1,2 @@
+@interface YTReelFreeZoomOverlayView : UIView
+@end

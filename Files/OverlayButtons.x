@@ -266,8 +266,16 @@ static YTQTMButton *YMCreateOverlayButton(UIView *parent, YMOverlayButtonSpec *s
         button.titleLabel.adjustsFontSizeToFitWidth = YES;
         button.titleLabel.lineBreakMode = NSLineBreakByClipping; 
         button.titleLabel.baselineAdjustment = UIBaselineAdjustmentAlignCenters;
+        // Intentionally the deprecated legacy insets (iOS 15): YTQTMButton's own
+        // styling must not be clobbered with a UIButtonConfiguration, and on the
+        // legacy layout path these are the only way to zero the textButton
+        // factory's insets. When the button already uses UIButtonConfiguration
+        // these are no-ops anyway (per the deprecation note).
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
         button.contentEdgeInsets = UIEdgeInsetsZero;
         button.titleEdgeInsets = UIEdgeInsetsZero;
+#pragma clang diagnostic pop
         button.contentVerticalAlignment = UIControlContentVerticalAlignmentCenter;
         button.contentHorizontalAlignment = UIControlContentHorizontalAlignmentCenter;
     } else {

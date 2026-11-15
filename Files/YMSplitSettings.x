@@ -189,6 +189,7 @@ YMSplitSetter(SeparatorView, UIView *, kYMSplitSeparatorKey)
     // taps and search text are routed here instead of pushed/filtered there.
     YMSubSettingsViewController *sidebar = (YMSubSettingsViewController *)YMNewSubSettings(nil, self.sidebarItems);
     sidebar.showsVersionFooter = YES;
+    sidebar.ymIsSplitSidebar = YES; // its selected section row carries the YouMod accent color
     __weak typeof(self) weakSelf = self;
     sidebar.groupHandler = ^BOOL(NSString *title, NSArray<YMSettingsItem *> *items, NSInteger kind) {
         [weakSelf selectGroup:title items:items kind:kind];

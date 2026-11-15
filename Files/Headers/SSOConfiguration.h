@@ -1,0 +1,2 @@
+@interface SSOConfiguration : NSObject
+@end

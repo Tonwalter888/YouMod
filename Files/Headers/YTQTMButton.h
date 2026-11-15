@@ -19,3 +19,7 @@
 - (void)setInnerTubeButtonStyle:(YTIButtonRenderer_Style)style;
 - (void)setForegroundColor:(UIColor *)color backgroundColor:(UIColor *)backgroundColor;
 @end
+
+@interface YTQTMButton (YouMod)
+- (void)enableNewTouchFeedback;
+@end

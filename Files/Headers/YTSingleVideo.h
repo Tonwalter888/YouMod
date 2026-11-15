@@ -14,3 +14,7 @@ typedef NS_ENUM(NSInteger, YTSingleVideoType) {
 - (YTPlaybackData *)playbackData;
 - (YTSingleVideoType)videoType;
 @end
+
+@interface YTSingleVideo (YouMod)
+- (BOOL)isLivePlayback;
+@end

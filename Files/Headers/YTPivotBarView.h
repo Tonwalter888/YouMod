@@ -1,0 +1,2 @@
+@interface YTPivotBarView : UIView
+@end

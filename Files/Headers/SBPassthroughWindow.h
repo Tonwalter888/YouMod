@@ -1,0 +1,2 @@
+@interface SBPassthroughWindow : UIWindow
+@end

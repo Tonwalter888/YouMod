@@ -1,0 +1,2 @@
+@interface GSKRedMicButton : UIButton
+@end

@@ -1,7 +1,6 @@
 "INTERFACE" = "Интерфейс";
 
 "SEARCH" = "Поиск";
-"SEARCH_DESC" = "Поиск по настройкам YouMod.";
 
 "URL_COPIED" = "Ссылка на видео скопирована";
 "COPY_URL" = "Скопировать ссылку на видео";
@@ -20,7 +19,6 @@
 "SOURCE_CODES" = "Исходный код";
 "SOURCE_CODES_DESC" = "Взгляните на код!";
 
-"EXTRA" = "Дополнительно";
 "FIX_PLAYBACK_ISSUES" = "Исправить проблемы воспроизведения (бета)";
 "FIX_PLAYBACK_ISSUES_DESC" = "Эта функция пока в бета-версии и может работать не у всех.";
 
@@ -66,13 +64,8 @@
 "UNDER_THE_PLAYER" = "Под плеером";
 "OVERLAY" = "Оверлей";
 "BOTH" = "Оба";
-"POST_DOWNLOAD_ACTION" = "Действие после скачивания";
-"POST_ACTION_SAVE_PHOTOS" = "Сохранить в Фото";
-"POST_ACTION_SHARE" = "Поделиться";
-"POST_ACTION_ASK" = "Спросить";
 "ADD_SHORTS_DOWNLOAD" = "Добавить кнопку «Скачать» в Shorts";
 "ADD_SHORTS_DOWNLOAD_DESC" = "Добавляет кнопку «Скачать» в интерфейс видео Shorts.";
-"DOWNLOAD_SHORTS" = "Скачать Shorts";
 "COPY_VID_INFO" = "Скопировать информацию о видео";
 "COPY_TITLE" = "Скопировать название";
 "COPY_DESCRIPTION" = "Скопировать описание";
@@ -82,14 +75,7 @@
 "COPY_AUTHOR" = "Скопировать автора";
 "COPIED_AUTHOR" = "Автор видео скопирован";
 "SAVE_THUMBNAIL" = "Сохранить превью";
-"DOWNLOAD_CAPTIONS" = "Скачать субтитры";
-"DOWNLOAD_AUDIO" = "Скачать аудио";
-"DOWNLOAD_VIDEO" = "Скачать видео";
 "OPEN_VID_BEFORE" = "Сначала откройте видео, прежде чем использовать менеджер загрузок";
-"NO_CAPTIONS_URL" = "Не найдено корректных ссылок на субтитры";
-"NO_AUDIO_URL" = "Ссылка на аудио не найдена";
-"NO_STREAM_URL" = "Ссылка на поток не найдена";
-"CAPTIONS_FAILED" = "Не удалось скачать субтитры";
 "NO_CAPTIONS" = "Для этого видео нет доступных субтитров";
 "NO_AUDIO_STREAM_FOUND" = "Аудиопотоки не найдены";
 "NO_VID_AUDIO_STREAM_FOUND" = "Видео- и аудиопотоки не найдены";
@@ -101,22 +87,15 @@
 "DOWNLOADING_THUMBNAIL" = "Скачивание превью...";
 "DOWNLOADING_AUDIO" = "Скачивание аудио...";
 "DOWNLOADING_VIDEO" = "Скачивание видео...";
-"DOWNLOADING_CAPTIONS" = "Скачивание субтитров...";
 "NO_THUMBNAIL_FOUND" = "Превью не найдено";
 "DOWNLOAD_FAILED" = "Не удалось скачать";
-"AUDIO_SAVED" = "Аудио сохранено";
 "DOWNLOAD_COMPLETED" = "Скачивание завершено";
 "CANNOT_SAVE_TO_PHOTOS" = "Невозможно сохранить в Фото";
-"FINA_VIDEO" = "Завершение обработки видео...";
-"MERGING_VID_FALLBACK" = "Объединение видео (резервный режим)...";
 "MERGING_VID" = "Объединение видео...";
-"CONVERTING" = "Конвертация в";
 "ALREADY_DOWNLOADING" = "Скачивание уже выполняется";
 "DOWNLOAD_CANCELLED" = "Скачивание отменено";
-"TRIMMING_AUDIO" = "Обрезка аудио...";
 "SHOW_THUMBNAIL" = "Показать превью";
 "COPY_THUMBNAIL" = "Скопировать превью";
-"THUMBNAIL_OPTIONS" = "Скачать превью";
 "COPY" = "Копировать";
 "COPIED_TO_CLIPBOARD" = "Скопировано в буфер обмена";
 "COPY_COMMENT_TEXT" = "Скопировать текст комментария";
@@ -134,15 +113,7 @@
 "TRANSLATION" = "Перевод";
 "LANGUAGE" = "Язык";
 "TRANSLATING" = "Перевод...";
-"SELECT_LANG" = "Выберите язык";
 "TRANSLATE_FAILED" = "Не удалось перевести, попробуйте ещё раз.";
-"SAVE_CURRENT_IMAGE" = "Сохранить текущее изображение";
-"COPY_CURRENT_IMAGE" = "Скопировать текущее изображение";
-"DOWNLOAD_METHOD" = "Способ скачивания";
-"DOWNLOAD_METHOD_DESC" = "Определяет, как скачиваются видео. Режим «На устройстве» работает в последних версиях YouTube.";
-"METHOD_DIRECT" = "Прямой";
-"METHOD_ONDEVICE" = "На устройстве (SABR)";
-"AUDIO" = "Аудио";
 
 "APPEARANCE" = "Оформление";
 "OLED_THEME" = "Тёмная тема OLED";
@@ -458,6 +429,7 @@
 "MINIGAME_TAB" = "Playables";
 "FASHION_TAB" = "Мода и красота";
 "LEARNING_TAB" = "Обучение";
+"CHARTS_TAB" = "Charts";
 "MANAGE_TABS" = "Управление вкладками";
 "MANAGE_TABS_DESC" = "Изменение порядка и видимости вкладок";
 "TAB_REORDER_HINT" = "Перетащите, чтобы изменить порядок. Переключите, чтобы показать/скрыть.\nНастройки вкладок также доступны долгим нажатием на первую вкладку в панели вкладок.";
@@ -544,7 +516,6 @@
 "AUTO_OPEN_LINK" = "Автопроверка буфера обмена";
 "AUTO_OPEN_LINK_DESC" = "Проверяет буфер обмена на наличие ссылок YouTube при каждом открытии приложения.\nДля корректной работы зайдите в Настройки iOS → YouTube → «Вставка из других приложений» и выберите «Разрешить»";
 
-"SB_DESCRIPTION" = "Автоматически пропускает спонсорские отрезки, используя данные, отправленные сообществом.";
 "SB_ENABLE" = "Включить SponsorBlock";
 "SB_ENABLE_DESC" = "Активирует расширение SponsorBlock для пропуска спонсорских отрезков.";
 "SB_SHOW_BUTTON" = "Показывать кнопку в оверлее";
@@ -564,7 +535,6 @@
 "SB_SHOW_FULL_VIDEO_LABEL" = "Показывать метку всего видео";
 "SB_SHOW_FULL_VIDEO_LABEL_DESC" = "Показывает баннер, когда видео помечено категорией на всё видео (например, «Эксклюзивный доступ»).";
 "SB_CATEGORIES_HEADER" = "Категории отрезков";
-"SB_SEGMENT_COLOR" = "Цвет отрезка";
 
 "SB_ACTION_DISABLE" = "Отключить";
 "SB_ACTION_AUTO_SKIP" = "Автопропуск";
@@ -600,7 +570,6 @@
 "SB_MENU_ENABLE" = "Включить SponsorBlock";
 "SB_MENU_DISABLE" = "Отключить SponsorBlock";
 "SB_MENU_VOTE" = "Голосовать за отрезки";
-"SB_MENU_WHITELIST" = "Добавить канал в белый список";
 "SB_VOTE_TITLE" = "Отрезки";
 "SB_VOTES_COUNT" = "Голосов: %ld";
 "SB_VOTE_UPVOTE" = "Проголосовать «за»";
@@ -633,7 +602,6 @@
 "SB_SUBMIT_INVALID" = "Сначала задайте корректные начало и конец";
 "SB_WHITELIST_ADD" = "Добавить в белый список";
 "SB_WHITELIST_REMOVE" = "Удалить из белого списка";
-"SB_WHITELIST_DESC" = "SponsorBlock будет отключён для этого канала.";
 "SB_WHITELIST_MANAGE" = "Белый список";
 "SB_WHITELIST_EMPTY" = "Нет каналов в белом списке";
 "SB_WHITELIST_DELETE" = "Удалить";
@@ -642,26 +610,58 @@
 "SB_PUBLIC_ID" = "Публичный ID пользователя";
 "SB_TAP_TO_SHOW" = "Нажмите, чтобы показать";
 "SB_COPY_ID" = "Скопировать ID";
-"SB_EDIT_ID" = "Изменить ID";
 "SB_ID_COPIED" = "ID скопирован";
 "SB_ID_SAVED" = "ID сохранён";
 "SB_ID_INVALID" = "ID должен содержать не менее 30 символов";
 "SB_ID_SAVE" = "Сохранить";
-"SB_ID_CANCEL" = "Отмена";
 
 "HIDE_AUTO_DUBBED_DOWNLOADS" = "Скрыть аудиодорожки с автодубляжом";
 "HIDE_AUTO_DUBBED_DOWNLOADS_DESC" = "Скрывает дорожки с ИИ-дубляжом в списке аудиодорожек при скачивании.";
 "DOWNLOAD_LIBRARY_TAB" = "Скачанные";
 "DOWNLOAD_LIBRARY_TAB_DESC" = "Добавляет вкладку со списком всех скачанных видео с превью и размерами.";
 "DOWNLOAD_LIBRARY_EMPTY" = "Пока нет скачанных видео";
-"DOWNLOAD_LIBRARY_DELETE_PLAYLIST_CONFIRM" = "Delete ‘%@’? Downloaded files will stay in the library.";
+"DOWNLOAD_LIBRARY_TYPE_ALL" = "All";
+"DOWNLOAD_LIBRARY_TYPE_VIDEOS" = "Videos";
+"DOWNLOAD_LIBRARY_TYPE_SHORTS" = "Shorts";
+"DOWNLOAD_LIBRARY_TYPE_AUDIO" = "Audio";
+"DOWNLOAD_LIBRARY_TYPE_PLAYLISTS" = "Playlists";
+"DOWNLOAD_LIBRARY_TYPE_PRIVATE" = "Private";
+"DOWNLOAD_LIBRARY_PRIVATE_AUTH_REASON" = "Authenticate to view private downloads";
+"DOWNLOAD_LIBRARY_PRIVATE_AUTH_UNAVAILABLE" = "Set up Face ID, Touch ID, or a device passcode to open Private.";
+"DOWNLOAD_LIBRARY_PRIVATE_AUTH_FAILED" = "Authentication failed. Private downloads remain locked.";
+"DOWNLOAD_LIBRARY_SORT_NEWEST" = "Newest";
+"DOWNLOAD_LIBRARY_SORT_OLDEST" = "Oldest";
+"DOWNLOAD_LIBRARY_SORT_LARGEST" = "Largest";
+"DOWNLOAD_LIBRARY_SORT_SMALLEST" = "Smallest";
+"DOWNLOAD_LIBRARY_SORT_AZ" = "A-Z";
+"DOWNLOAD_LIBRARY_SORT_ZA" = "Z-A";
+"DOWNLOAD_LIBRARY_CREATE_PLAYLIST" = "Create playlist";
+"DOWNLOAD_LIBRARY_DELETE_PLAYLIST" = "Delete playlist";
+"DOWNLOAD_LIBRARY_PLAYLIST_NAME" = "Playlist name";
+"DOWNLOAD_LIBRARY_CREATE" = "Create";
+"DOWNLOAD_LIBRARY_PLAYLIST_EXISTS" = "A playlist with that name already exists";
+"DOWNLOAD_LIBRARY_MARK_PRIVATE" = "Mark as Private";
+"DOWNLOAD_LIBRARY_MARK_PUBLIC" = "Remove from Private";
+"DOWNLOAD_LIBRARY_NO_PLAYLISTS" = "No playlists yet";
+"DOWNLOAD_LIBRARY_CREATE_PLAYLIST_FIRST" = "Create a playlist before adding downloads to it.";
+"DOWNLOAD_LIBRARY_ADD_TO_PLAYLIST" = "Add to playlist";
+"DOWNLOAD_LIBRARY_ADDED_TO_PLAYLIST" = "Added to playlist";
+"DOWNLOAD_LIBRARY_PLAYLIST_ITEM_COUNT" = "%ld items";
+"DOWNLOAD_LIBRARY_PLAYLIST_LOCKED" = "Playlist locked";
+"DOWNLOAD_LIBRARY_PLAYLIST_UNLOCKED" = "Playlist unlocked";
+"DOWNLOAD_LIBRARY_LOCK_PLAYLIST" = "Lock playlist";
+"DOWNLOAD_LIBRARY_UNLOCK_PLAYLIST" = "Unlock playlist";
 
 "LIBRARY_OPEN_VIDEO" = "Открыть видео в YouTube";
 "LIBRARY_NO_VIDEO_ID" = "Не удалось найти ID этого видео";
 "LIBRARY_SHARE" = "Поделиться";
 "LIBRARY_SAVE_THUMBNAIL" = "Сохранить превью в Фото";
+"LIBRARY_SELECT" = "Select";
+"LIBRARY_SELECT_ALL" = "Select All";
+"LIBRARY_SELECT_ITEMS_FIRST" = "Select items first";
 "LIBRARY_VIEW_INFO" = "Информация";
 "LIBRARY_DELETE" = "Удалить";
+"LIBRARY_DESELECT_ALL" = "Deselect All";
 "LIBRARY_RENAME" = "Переименовать";
 "LIBRARY_RENAME_TITLE" = "Переименовать файл";
 "LIBRARY_RENAMED" = "Файл переименован";
@@ -696,7 +696,6 @@
 "AUDIO_CODEC" = "Аудиокодек";
 "VIDEO_CODEC" = "Видеокодек";
 "SUBTITLES" = "Субтитры";
-"NO_SUBTITLES" = "Без субтитров";
 "PHOTOS_CODEC_NOTE" = "Из-за ограничений кодеков, которые поддерживает Apple, можно скачать только видео H.264 и аудио AAC. Если нужно лучшее качество или более эффективные кодеки, скачайте видео в библиотеку и откройте его в плеере вроде VLC.";
 "FILES_HINT_BOTH" = "Видео %@ и аудио %@ эффективнее и качественнее, но встроенный плеер iOS не может их воспроизвести. Используйте плеер вроде VLC.";
 "FILES_HINT_VIDEO" = "Видео %@ эффективнее и качественнее, но встроенный плеер iOS не может его воспроизвести. Используйте плеер вроде VLC.";
@@ -725,16 +724,15 @@
 "STARTUP_VIDEO_PICK_DESC" = "Choose a video from Photos. It will be trimmed to 10 seconds and converted to MP4 at up to 1080p.";
 "STARTUP_VIDEO_DELETE" = "Delete saved startup video";
 "STARTUP_VIDEO_DELETE_DESC" = "Remove the converted video stored on this device.";
-"STARTUP_VIDEO_ERROR" = "Startup video";
 "STARTUP_VIDEO_INVALID" = "Choose a video file.";
 "STARTUP_VIDEO_IMPORT_FAILED" = "Could not read that video.";
 "STARTUP_VIDEO_CONVERT_FAILED" = "Could not convert that video.";
 "STARTUP_VIDEO_SAVED" = "Startup video saved";
-"STARTUP_VIDEO_SAVED_DESC" = "The video is ready to use.";
 "STARTUP_VIDEO_DELETED" = "Startup video deleted";
 "STARTUP_VIDEO_DELETE_FAILED" = "Could not delete the startup video.";
 "STARTUP_VIDEO_DELETE_CONFIRM" = "Delete startup video?";
 "STARTUP_VIDEO_DELETE_CONFIRM_DESC" = "The saved video will be removed from this device.";
+"DELETE" = "Delete";
 "DUPLICATE_DOWNLOAD_TITLE" = "Уже скачано";
 "DUPLICATE_DOWNLOAD_MESSAGE" = "Это видео уже есть в библиотеке. Удалить существующий файл и скачать заново?";
 "DUPLICATE_DOWNLOAD_REPLACE" = "Удалить и скачать заново";

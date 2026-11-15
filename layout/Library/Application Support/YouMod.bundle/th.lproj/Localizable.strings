@@ -1,7 +1,6 @@
 "INTERFACE" = "ลักษณะ";
 
 "SEARCH" = "ค้นหา";
-"SEARCH_DESC" = "ค้นหาการตั้งค่า YouMod";
 
 "URL_COPIED" = "คัดลอกลิงก์วิดีโอแล้ว";
 "COPY_URL" = "คัดลอกลิงก์วิดีโอ";
@@ -20,7 +19,6 @@
 "SOURCE_CODES" = "ซอร์สโค้ด";
 "SOURCE_CODES_DESC" = "ลองอ่านโค้ดดูสิ!";
 
-"EXTRA" = "เพิ่มเติม";
 "FIX_PLAYBACK_ISSUES" = "แก้ไขปัญหาการเล่นวิดีโอ (ทดลอง)";
 "FIX_PLAYBACK_ISSUES_DESC" = "ตัวเลือกนี้ยังอยู่ในการทดลอง อาจไม่สามารถใช้งานได้กับผู้ใช้บางราย";
 
@@ -66,13 +64,8 @@
 "UNDER_THE_PLAYER" = "ใต้เครื่องเล่น";
 "OVERLAY" = "โอเวอร์เลย์";
 "BOTH" = "ทั้งคู่";
-"POST_DOWNLOAD_ACTION" = "การกระทำหลังดาวน์โหลด";
-"POST_ACTION_SAVE_PHOTOS" = "บันทึกลงคลังรูปภาพ";
-"POST_ACTION_SHARE" = "แชร์";
-"POST_ACTION_ASK" = "ถาม";
 "ADD_SHORTS_DOWNLOAD" = "เพิ่มปุ่มดาวน์โหลดไปยัง Shorts";
 "ADD_SHORTS_DOWNLOAD_DESC" = "เพิ่มปุ่มดาวน์โหลดไปยังโอเวอร์เลย์วิดีโอ Shorts";
-"DOWNLOAD_SHORTS" = "ดาวน์โหลด Shorts";
 "COPY_VID_INFO" = "คัดลอกข้อมูลวิดีโอ";
 "COPY_TITLE" = "คัดลอกชื่อวิดีโอ";
 "COPY_DESCRIPTION" = "คัดลอกคำอธิบายวิดีโอ";
@@ -82,14 +75,7 @@
 "COPY_AUTHOR" = "คัดลอกชื่อช่อง";
 "COPIED_AUTHOR" = "คัดลอกชื่อช่องวิดีโอแล้ว";
 "SAVE_THUMBNAIL" = "บันทึกปกคลิป";
-"DOWNLOAD_CAPTIONS" = "ดาวน์โหลดคำบรรยาย";
-"DOWNLOAD_AUDIO" = "ดาวน์โหลดเสียง";
-"DOWNLOAD_VIDEO" = "ดาวน์โหลดวิดีโอ";
 "OPEN_VID_BEFORE" = "กรุณาเปิดวิดีโอก่อนใช้ตัวจัดการดาวน์โหลด";
-"NO_CAPTIONS_URL" = "ไม่พบ URL ของคำบรรยายที่ถูกต้อง";
-"NO_AUDIO_URL" = "ไม่พบ URL ของเสียง";
-"NO_STREAM_URL" = "ไม่พบ URL ของสตรีม";
-"CAPTIONS_FAILED" = "ดาวน์โหลดคำบรรยายไม่สำเร็จ";
 "NO_CAPTIONS" = "ไม่มีคำบรรยายสำหรับวิดีโอนี้";
 "NO_AUDIO_STREAM_FOUND" = "ไม่พบสตรีมเสียง";
 "NO_VID_AUDIO_STREAM_FOUND" = "ไม่พบสตรีมวิดีโอ/เสียง";
@@ -101,22 +87,15 @@
 "DOWNLOADING_THUMBNAIL" = "กำลังดาวน์โหลดปกคลิป...";
 "DOWNLOADING_AUDIO" = "กำลังดาวน์โหลดเสียง...";
 "DOWNLOADING_VIDEO" = "กำลังดาวน์โหลดวิดีโอ...";
-"DOWNLOADING_CAPTIONS" = "กำลังดาวน์โหลดคำบรรยาย...";
 "NO_THUMBNAIL_FOUND" = "ไม่พบปกคลิป";
 "DOWNLOAD_FAILED" = "ดาวน์โหลดไม่สำเร็จ";
-"AUDIO_SAVED" = "บันทึกเสียงเรียบร้อยแล้ว";
 "DOWNLOAD_COMPLETED" = "ดาวน์โหลดเสร็จสมบูรณ์";
 "CANNOT_SAVE_TO_PHOTOS" = "ไม่สามารถบันทึกลงในแอปรูปภาพได้";
-"FINA_VIDEO" = "กำลังจัดเตรียมวิดีโอ...";
-"MERGING_VID_FALLBACK" = "กำลังรวมไฟล์วิดีโอ (โหมดสำรอง)...";
 "MERGING_VID" = "กำลังรวมไฟล์วิดีโอ...";
-"CONVERTING" = "กำลังแปลงเป็น";
 "ALREADY_DOWNLOADING" = "กำลังดาวน์โหลดอยู่แล้ว";
 "DOWNLOAD_CANCELLED" = "ยกเลิกการดาวน์โหลดแล้ว";
-"TRIMMING_AUDIO" = "กำลังตัดต่อเสียง...";
 "SHOW_THUMBNAIL" = "ดูปกคลิป";
 "COPY_THUMBNAIL" = "คัดลอกปกคลิป";
-"THUMBNAIL_OPTIONS" = "ดาวน์โหลดปกคลิป";
 "COPY" = "คัดลอก";
 "COPIED_TO_CLIPBOARD" = "คัดลอกไปยังคลิปบอร์ดแล้ว";
 "COPY_COMMENT_TEXT" = "คัดลอกข้อความคอมเมนต์";
@@ -134,14 +113,7 @@
 "TRANSLATION" = "แปลภาษา";
 "LANGUAGE" = "ภาษา";
 "TRANSLATING" = "กำลังแปล...";
-"SELECT_LANG" = "เลือกภาษา";
 "TRANSLATE_FAILED" = "แปลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง";
-"SAVE_CURRENT_IMAGE" = "บันทึกรูปปัจจุบัน";
-"COPY_CURRENT_IMAGE" = "คัดลอกรูปปัจจุบัน";
-"DOWNLOAD_METHOD" = "วิธีดาวน์โหลด";
-"DOWNLOAD_METHOD_DESC" = "วิธีการดาวน์โหลดวิดีโอ แบบอุปกรณ์จะใช้งานได้กับ YouTube เวอร์ชันล่าสุด";
-"METHOD_DIRECT" = "โดยตรง";
-"METHOD_ONDEVICE" = "บนอุปกรณ์ (SABR)";
 
 "APPEARANCE" = "ลักษณะ";
 "OLED_THEME" = "ธีม OLED";
@@ -457,6 +429,7 @@
 "MINIGAME_TAB" = "เล่นเกม";
 "FASHION_TAB" = "แฟชั่นและความงาม";
 "LEARNING_TAB" = "การเรียนรู้";
+"CHARTS_TAB" = "ชาร์ต";
 "MANAGE_TABS" = "จัดการแท็บ";
 "MANAGE_TABS_DESC" = "จัดเรียงและเปิด/ปิดใช้งานแท็บ";
 "TAB_REORDER_HINT" = "ลากเพื่อจัดเรียงใหม่ เปิด/ปิดเพื่อแสดง/ซ่อน\nนอกจากนี้ การตั้งค่าแท็บยังสามารถเข้าถึงได้โดยการแตะแท็บแรกค้างไว้";
@@ -543,7 +516,6 @@
 "AUTO_OPEN_LINK" = "ตรวจจับคลิปบอร์ดอัตโนมัติ";
 "AUTO_OPEN_LINK_DESC" = "ตรวจสอบคลิปบอร์ดหาลิงก์ที่เกี่ยวข้องกับ YouTube ทุกครั้งที่เปิดแอป\nเพื่อให้ทำงานได้อย่างถูกต้อง ให้ไปที่การตั้งค่า iOS → YouTube → วางจากแอปอื่น แล้วเลือก 'อนุญาต'";
 
-"SB_DESCRIPTION" = "ข้ามช่วงสปอนเซอร์โดยอัตโนมัติด้วยข้อมูลจากชุมชน";
 "SB_ENABLE" = "เปิดใช้งาน SponsorBlock";
 "SB_ENABLE_DESC" = "เปิดส่วนขยาย SponsorBlock เพื่อข้ามส่วนที่เป็นโฆษณาหรือสปอนเซอร์";
 "SB_SHOW_BUTTON" = "แสดงปุ่มบนหน้าจอ";
@@ -563,7 +535,6 @@
 "SB_SHOW_FULL_VIDEO_LABEL" = "แสดงป้ายกำกับวิดีโอทั้งวิดีโอ";
 "SB_SHOW_FULL_VIDEO_LABEL_DESC" = "แสดงแบนเนอร์เมื่อวิดีโอถูกติดป้ายกำกับเป็นหมวดหมู่ทั้งวิดีโอ (เช่น สิทธิพิเศษ)";
 "SB_CATEGORIES_HEADER" = "หมวดหมู่ช่วงวิดีโอ";
-"SB_SEGMENT_COLOR" = "สีประจำช่วง";
 
 "SB_ACTION_DISABLE" = "ปิดการใช้งาน";
 "SB_ACTION_AUTO_SKIP" = "ข้ามอัตโนมัติ";
@@ -599,7 +570,6 @@
 "SB_MENU_ENABLE" = "เปิด SponsorBlock";
 "SB_MENU_DISABLE" = "ปิด SponsorBlock";
 "SB_MENU_VOTE" = "โหวตช่วงวิดีโอ";
-"SB_MENU_WHITELIST" = "Whitelist ช่องนี้";
 "SB_VOTE_TITLE" = "รายการช่วงวิดีโอ";
 "SB_VOTES_COUNT" = "%ld โหวต";
 "SB_VOTE_UPVOTE" = "โหวตว่าถูกต้อง";
@@ -632,7 +602,6 @@
 "SB_SUBMIT_INVALID" = "โปรดตั้งจุดเริ่มและจุดสิ้นสุดที่ถูกต้องก่อน";
 "SB_WHITELIST_ADD" = "เพิ่มใน whitelist";
 "SB_WHITELIST_REMOVE" = "นำออกจาก whitelist";
-"SB_WHITELIST_DESC" = "SponsorBlock จะถูกปิดสำหรับช่องนี้";
 "SB_WHITELIST_MANAGE" = "จัดการ Whitelist";
 "SB_WHITELIST_EMPTY" = "ยังไม่มีช่องใน whitelist";
 "SB_WHITELIST_DELETE" = "ลบ";
@@ -641,14 +610,10 @@
 "SB_PUBLIC_ID" = "ID ผู้ใช้สาธารณะ";
 "SB_TAP_TO_SHOW" = "แตะเพื่อแสดง";
 "SB_COPY_ID" = "คัดลอก ID";
-"SB_EDIT_ID" = "แก้ไข ID";
 "SB_ID_COPIED" = "คัดลอก ID แล้ว";
 "SB_ID_SAVED" = "บันทึก ID แล้ว";
 "SB_ID_INVALID" = "ID ต้องยาวอย่างน้อย 30 ตัวอักษร";
 "SB_ID_SAVE" = "บันทึก";
-"SB_ID_CANCEL" = "ยกเลิก";
-
-"AUDIO" = "เสียง";
 
 // Sleep timer
 "SLEEP_TIMER" = "ตั้งเวลาปิด";
@@ -670,14 +635,48 @@
 "DOWNLOAD_LIBRARY_TAB" = "คลังดาวน์โหลด";
 "DOWNLOAD_LIBRARY_TAB_DESC" = "เพิ่มแท็บที่แสดงรายการวิดีโอที่ดาวน์โหลดไว้ทั้งหมด";
 "DOWNLOAD_LIBRARY_EMPTY" = "ยังไม่มีรายการดาวน์โหลด";
-"DOWNLOAD_LIBRARY_DELETE_PLAYLIST_CONFIRM" = "ลบ ‘%@’ หรือไม่? ไฟล์ที่ดาวน์โหลดจะยังคงอยู่ในคลัง";
+"DOWNLOAD_LIBRARY_TYPE_ALL" = "ทั้งหมด";
+"DOWNLOAD_LIBRARY_TYPE_VIDEOS" = "วิดีโอ";
+"DOWNLOAD_LIBRARY_TYPE_SHORTS" = "Shorts";
+"DOWNLOAD_LIBRARY_TYPE_AUDIO" = "เสียง";
+"DOWNLOAD_LIBRARY_TYPE_PLAYLISTS" = "เพลย์ลิสต์";
+"DOWNLOAD_LIBRARY_TYPE_PRIVATE" = "ส่วนตัว";
+"DOWNLOAD_LIBRARY_PRIVATE_AUTH_REASON" = "ยืนยันตัวตนเพื่อดูการดาวน์โหลดส่วนตัว";
+"DOWNLOAD_LIBRARY_PRIVATE_AUTH_UNAVAILABLE" = "ตั้งค่า Face ID, Touch ID หรือรหัสผ่านอุปกรณ์เพื่อเปิดส่วนส่วนตัว";
+"DOWNLOAD_LIBRARY_PRIVATE_AUTH_FAILED" = "ยืนยันตัวตนไม่สำเร็จ การดาวน์โหลดส่วนตัวยังถูกล็อกไว้";
+"DOWNLOAD_LIBRARY_SORT_NEWEST" = "ใหม่ที่สุด";
+"DOWNLOAD_LIBRARY_SORT_OLDEST" = "เก่าที่สุด";
+"DOWNLOAD_LIBRARY_SORT_LARGEST" = "ใหญ่ที่สุด";
+"DOWNLOAD_LIBRARY_SORT_SMALLEST" = "เล็กที่สุด";
+"DOWNLOAD_LIBRARY_SORT_AZ" = "A-Z";
+"DOWNLOAD_LIBRARY_SORT_ZA" = "Z-A";
+"DOWNLOAD_LIBRARY_CREATE_PLAYLIST" = "สร้างเพลย์ลิสต์";
+"DOWNLOAD_LIBRARY_DELETE_PLAYLIST" = "ลบเพลย์ลิสต์";
+"DOWNLOAD_LIBRARY_PLAYLIST_NAME" = "ชื่อเพลย์ลิสต์";
+"DOWNLOAD_LIBRARY_CREATE" = "สร้าง";
+"DOWNLOAD_LIBRARY_PLAYLIST_EXISTS" = "มีเพลย์ลิสต์ชื่อนี้อยู่แล้ว";
+"DOWNLOAD_LIBRARY_MARK_PRIVATE" = "ทำเครื่องหมายเป็นส่วนตัว";
+"DOWNLOAD_LIBRARY_MARK_PUBLIC" = "นำออกจากส่วนตัว";
+"DOWNLOAD_LIBRARY_NO_PLAYLISTS" = "ยังไม่มีเพลย์ลิสต์";
+"DOWNLOAD_LIBRARY_CREATE_PLAYLIST_FIRST" = "สร้างเพลย์ลิสต์ก่อนเพื่อเพิ่มการดาวน์โหลดลงไป";
+"DOWNLOAD_LIBRARY_ADD_TO_PLAYLIST" = "เพิ่มไปยังเพลย์ลิสต์";
+"DOWNLOAD_LIBRARY_ADDED_TO_PLAYLIST" = "เพิ่มไปยังเพลย์ลิสต์แล้ว";
+"DOWNLOAD_LIBRARY_PLAYLIST_ITEM_COUNT" = "%ld รายการ";
+"DOWNLOAD_LIBRARY_PLAYLIST_LOCKED" = "ล็อกเพลย์ลิสต์แล้ว";
+"DOWNLOAD_LIBRARY_PLAYLIST_UNLOCKED" = "ปลดล็อกเพลย์ลิสต์แล้ว";
+"DOWNLOAD_LIBRARY_LOCK_PLAYLIST" = "ล็อกเพลย์ลิสต์";
+"DOWNLOAD_LIBRARY_UNLOCK_PLAYLIST" = "ปลดล็อกเพลย์ลิสต์";
 
 "LIBRARY_OPEN_VIDEO" = "เปิดวิดีโอบน YouTube";
 "LIBRARY_NO_VIDEO_ID" = "หา ID ของวิดีโอนี้ไม่ได้";
 "LIBRARY_SHARE" = "แชร์";
 "LIBRARY_SAVE_THUMBNAIL" = "บันทึกปกคลิปไปยังรูปภาพ";
+"LIBRARY_SELECT" = "เลือก";
+"LIBRARY_SELECT_ALL" = "เลือกทั้งหมด";
+"LIBRARY_SELECT_ITEMS_FIRST" = "กรุณาเลือกรายการก่อน";
 "LIBRARY_VIEW_INFO" = "ข้อมูลวิดีโอ";
 "LIBRARY_DELETE" = "ลบ";
+"LIBRARY_DESELECT_ALL" = "ยกเลิกทั้งหมด";
 "LIBRARY_RENAME" = "เปลี่ยนชื่อ";
 "LIBRARY_RENAME_TITLE" = "เปลี่ยนชื่อไฟล์";
 "LIBRARY_RENAMED" = "เปลี่ยนชื่อไฟล์แล้ว";
@@ -712,7 +711,6 @@
 "AUDIO_CODEC" = "โคเด็กเสียง";
 "VIDEO_CODEC" = "โคเด็กวิดีโอ";
 "SUBTITLES" = "ซับไตเติ้ล";
-"NO_SUBTITLES" = "ไม่มีซับไตเติ้ล";
 "PHOTOS_CODEC_NOTE" = "เนื่องจากโคเด็กที่ Apple รองรับ จึงดาวน์โหลดได้เพียงวิดีโอ H.264 และเสียง AAC เท่านั้น หากต้องการคุณภาพหรือโคเด็กที่มีประสิทธิภาพกว่า ต้องดาวน์โหลดวิดีโอไปยังแอปไฟล์ก่อน แล้วจึงเปิดด้วยแอปเครื่องเล่นอย่าง VLC";
 "FILES_HINT_BOTH" = "วิดีโอแบบ %@ และเสียงแบบ %@ มีประสิทธิภาพและคุณภาพสูงกว่า แต่เครื่องเล่นในตัวของ iOS เล่นไม่ได้ ให้ใช้แอปเครื่องเล่นอย่าง VLC";
 "FILES_HINT_VIDEO" = "วิดีโอแบบ %@ มีประสิทธิภาพและคุณภาพสูงกว่า แต่เครื่องเล่นในตัวของ iOS เล่นไม่ได้ ให้ใช้แอปเครื่องเล่นอย่าง VLC";
@@ -728,16 +726,15 @@
 "STARTUP_VIDEO_PICK_DESC" = "เลือกวิดีโอจากแอปรูปภาพ วิดีโอจะถูกตัดให้เหลือ 10 วินาทีและแปลงเป็น MP4 ที่ความละเอียดสูงสุด 1080p";
 "STARTUP_VIDEO_DELETE" = "ลบวิดีโอเริ่มต้นที่บันทึกไว้";
 "STARTUP_VIDEO_DELETE_DESC" = "ลบวิดีโอที่แปลงแล้วซึ่งจัดเก็บไว้ในอุปกรณ์นี้";
-"STARTUP_VIDEO_ERROR" = "วิดีโอเริ่มต้น";
 "STARTUP_VIDEO_INVALID" = "เลือกไฟล์วิดีโอ";
 "STARTUP_VIDEO_IMPORT_FAILED" = "ไม่สามารถอ่านวิดีโอนี้ได้";
 "STARTUP_VIDEO_CONVERT_FAILED" = "ไม่สามารถแปลงวิดีโอนี้ได้";
 "STARTUP_VIDEO_SAVED" = "บันทึกวิดีโอเริ่มต้นแล้ว";
-"STARTUP_VIDEO_SAVED_DESC" = "วิดีโอพร้อมใช้งานแล้ว";
 "STARTUP_VIDEO_DELETED" = "ลบวิดีโอเริ่มต้นแล้ว";
 "STARTUP_VIDEO_DELETE_FAILED" = "ไม่สามารถลบวิดีโอเริ่มต้นได้";
 "STARTUP_VIDEO_DELETE_CONFIRM" = "ต้องการลบวิดีโอเริ่มต้นหรือไม่?";
 "STARTUP_VIDEO_DELETE_CONFIRM_DESC" = "วิดีโอที่บันทึกไว้จะถูกลบออกจากอุปกรณ์นี้";
+"DELETE" = "ลบ";
 "DUPLICATE_DOWNLOAD_TITLE" = "Already downloaded";
 "DUPLICATE_DOWNLOAD_MESSAGE" = "This video is already in your library. Delete the existing file and download it again?";
 "DUPLICATE_DOWNLOAD_REPLACE" = "Delete and download again";

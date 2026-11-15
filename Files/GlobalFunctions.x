@@ -1,5 +1,37 @@
 #import "Headers.h"
 
+// YouMod's accent color (#2885FF) — shared by switches, sliders, buttons and the
+// selected iPad settings section.
+UIColor *YouModAccentColor() {
+    return [UIColor colorWithRed:40.0 / 255.0 green:133.0 / 255.0 blue:255.0 / 255.0 alpha:1.0];
+}
+
+@implementation YMIconProvider
+
+// Just check whether the selector exists (older YouTube versions don't have it);
+// no Delhi support means the classic icon set.
++ (BOOL)delhiIcons {
+    return [%c(YTUIResources) respondsToSelector:@selector(delhiIconsEnabled)] && [%c(YTUIResources) delhiIconsEnabled];
+}
+
++ (UIImage *)tabIcon:(NSString *)name selected:(BOOL)selected {
+    static YTAssetLoader *loader = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        loader = [[%c(YTAssetLoader) alloc] initWithBundle:YouModBundle()];
+    });
+    if (!loader || name.length == 0) return nil;
+    NSString *folder = [self delhiIcons] ? @"new" : @"old";
+    NSString *base = selected ? [NSString stringWithFormat:@"%@_selected", name] : name;
+    return [loader imageNamed:[NSString stringWithFormat:@"icons/%@/%@", folder, base]];
+}
+
++ (UIImage *)settingsIcon:(NSString *)name {
+    return [self tabIcon:name selected:NO];
+}
+
+@end
+
 // YouMod's bundle (For localizations)
 NSBundle *YouModBundle() {
     static NSBundle *bundle = nil;
@@ -86,17 +118,30 @@ NSArray *getAllSystemLanguageValues() {
     return [sortedCodes copy];
 }
 
-// Get TopViewController
-UIViewController *YouModTopViewController(UIViewController *root) {
-    if (!root) {
-        UIWindow *keyWindow = nil;
-        for (UIWindow *window in UIApplication.sharedApplication.windows) {
+// Key window across the app's connected window scenes. UIApplication.windows is
+// deprecated since iOS 15; the scene APIs are iOS 13+, and the deployment floor
+// is 15.0, so no availability checks are needed. Deliberately no
+// activation-state filter: this matches the old UIApplication.windows behavior
+// in every scene state (a key window in an inactive scene beats no window).
+UIWindow *YouModKeyWindow(void) {
+    UIWindow *keyWindow = nil;
+    for (UIScene *scene in UIApplication.sharedApplication.connectedScenes) {
+        if (![scene isKindOfClass:UIWindowScene.class]) continue;
+        for (UIWindow *window in ((UIWindowScene *)scene).windows) {
             if (window.isKeyWindow) {
                 keyWindow = window;
                 break;
             }
         }
-        root = keyWindow.rootViewController;
+        if (keyWindow) break;
+    }
+    return keyWindow;
+}
+
+// Get TopViewController
+UIViewController *YouModTopViewController(UIViewController *root) {
+    if (!root) {
+        root = YouModKeyWindow().rootViewController;
     }
     while (root.presentedViewController) root = root.presentedViewController;
     if ([root isKindOfClass:UINavigationController.class])

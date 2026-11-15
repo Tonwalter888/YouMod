@@ -1,0 +1,2 @@
+@interface YTSearchBarView : UIView
+@end

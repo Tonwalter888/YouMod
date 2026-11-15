@@ -3,6 +3,7 @@
 #import "YTPlayerBarController.h"
 #import "YTResponder.h"
 #import "YTVideoPlayerOverlayDelegate.h"
+#import "YTCaptionTrackSwitchController.h"
 
 @interface YTMainAppVideoPlayerOverlayViewController : UIViewController <YTResponder, YTAdjustableAccessibilityProtocol>
 @property (nonatomic, strong, readwrite) YTPlayerBarController *playerBarController;
@@ -16,4 +17,11 @@
 - (BOOL)isFullscreen;
 - (CGFloat)totalTime;
 - (CGFloat)currentPlaybackRate;
+@end
+
+// Player Gestures - @bhackel (YTLitePlus)
+@interface YTMainAppVideoPlayerOverlayViewController (YouMod)
+- (YTCaptionTrackSwitchController *)captionTrackController;
+- (NSString *)videoID;
+- (CGFloat)mediaTime;
 @end

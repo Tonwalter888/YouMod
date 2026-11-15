@@ -377,8 +377,8 @@ static void sbSendViewedSegment(SBSegment *segment) {
 %property (nonatomic, assign) BOOL sbMutedBySegment;
 - (void)playbackController:(id)playbackController didActivateVideo:(id)video withPlaybackData:(id)playbackData {
     %orig;
-    if (!IS_ENABLED(SBEnabled) || self.isPlayingAd) return;
-    if ([self.parentViewController isKindOfClass:%c(YTShortsPlayerViewController)]) return;
+    if (!IS_ENABLED(SBEnabled) || self.isPlayingAd || [self.parentViewController isKindOfClass:%c(YTShortsPlayerViewController)]
+        || [self.parentViewController isKindOfClass:%c(YTReelContainerViewController)]) return;
 
     self.sbSkippedSegments = [NSMutableSet set];
     self.sbAcceptedMutes = [NSMutableSet set];

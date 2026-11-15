@@ -1,0 +1,2 @@
+@interface YTInlineScrubGestureView : UIView
+@end

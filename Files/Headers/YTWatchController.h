@@ -7,3 +7,7 @@
 - (void)showSmallScreen;
 - (void)reloadStartPlayback:(BOOL)startPlayback;
 @end
+
+@interface YTWatchController (YouMod)
+- (void)reload;
+@end

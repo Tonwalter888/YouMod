@@ -1,7 +1,6 @@
 "INTERFACE" = "Interface";
 
 "SEARCH" = "Search";
-"SEARCH_DESC" = "Search YouMod settings.";
 
 "URL_COPIED" = "Copied video link";
 "COPY_URL" = "Copy video link";
@@ -20,7 +19,6 @@
 "SOURCE_CODES" = "Source codes";
 "SOURCE_CODES_DESC" = "Take a look at the codes!";
 
-"EXTRA" = "Extra";
 "FIX_PLAYBACK_ISSUES" = "Fix playback issues (Experimental)";
 "FIX_PLAYBACK_ISSUES_DESC" = "This option is still experimental and may not work for some users.";
 
@@ -66,10 +64,6 @@
 "UNDER_THE_PLAYER" = "Under the player";
 "OVERLAY" = "Overlay";
 "BOTH" = "Both";
-"POST_DOWNLOAD_ACTION" = "Post-download action";
-"POST_ACTION_SAVE_PHOTOS" = "Save to Photos";
-"POST_ACTION_SHARE" = "Share";
-"POST_ACTION_ASK" = "Ask";
 "ADD_SHORTS_DOWNLOAD" = "Adds a download button to Shorts";
 "ADD_SHORTS_DOWNLOAD_DESC" = "Adds a download button to Shorts video overlay.";
 "HIDE_AUTO_DUBBED_DOWNLOADS" = "Hide auto-dubbed audio tracks";
@@ -97,21 +91,28 @@
 "DOWNLOAD_LIBRARY_PLAYLIST_NAME" = "Playlist name";
 "DOWNLOAD_LIBRARY_CREATE" = "Create";
 "DOWNLOAD_LIBRARY_PLAYLIST_EXISTS" = "A playlist with that name already exists";
-"DOWNLOAD_LIBRARY_DELETE_PLAYLIST_CONFIRM" = "Delete ‘%@’? Downloaded files will stay in the library.";
 "DOWNLOAD_LIBRARY_MARK_PRIVATE" = "Mark as Private";
 "DOWNLOAD_LIBRARY_MARK_PUBLIC" = "Remove from Private";
 "DOWNLOAD_LIBRARY_NO_PLAYLISTS" = "No playlists yet";
 "DOWNLOAD_LIBRARY_CREATE_PLAYLIST_FIRST" = "Create a playlist before adding downloads to it.";
 "DOWNLOAD_LIBRARY_ADD_TO_PLAYLIST" = "Add to playlist";
-"DOWNLOAD_LIBRARY_REMOVE_FROM_PLAYLIST" = "Remove from %@";
+"DOWNLOAD_LIBRARY_ADDED_TO_PLAYLIST" = "Added to playlist";
 "DOWNLOAD_LIBRARY_PLAYLIST_ITEM_COUNT" = "%ld items";
+"DOWNLOAD_LIBRARY_PLAYLIST_LOCKED" = "Playlist locked";
+"DOWNLOAD_LIBRARY_PLAYLIST_UNLOCKED" = "Playlist unlocked";
+"DOWNLOAD_LIBRARY_LOCK_PLAYLIST" = "Lock playlist";
+"DOWNLOAD_LIBRARY_UNLOCK_PLAYLIST" = "Unlock playlist";
 
 "LIBRARY_OPEN_VIDEO" = "Open Video on YouTube";
 "LIBRARY_NO_VIDEO_ID" = "Couldn't find this video's ID";
 "LIBRARY_SHARE" = "Share";
 "LIBRARY_SAVE_THUMBNAIL" = "Save Thumbnail to Photos";
+"LIBRARY_SELECT" = "Select";
+"LIBRARY_SELECT_ALL" = "Select All";
+"LIBRARY_SELECT_ITEMS_FIRST" = "Select items first";
 "LIBRARY_VIEW_INFO" = "View Info";
 "LIBRARY_DELETE" = "Delete";
+"LIBRARY_DESELECT_ALL" = "Deselect All";
 "LIBRARY_RENAME" = "Rename";
 "LIBRARY_RENAME_TITLE" = "Rename File";
 "LIBRARY_RENAMED" = "File renamed";
@@ -127,7 +128,6 @@
 "LIBRARY_INFO_VIDEO_BITRATE" = "Video Bitrate";
 "LIBRARY_INFO_AUDIO_CODEC" = "Audio Codec";
 "LIBRARY_INFO_AUDIO_BITRATE" = "Audio Bitrate";
-"DOWNLOAD_SHORTS" = "Download Shorts";
 "COPY_VID_INFO" = "Copy video informations";
 "COPY_TITLE" = "Copy title";
 "COPY_DESCRIPTION" = "Copy description";
@@ -137,14 +137,7 @@
 "COPY_AUTHOR" = "Copy author";
 "COPIED_AUTHOR" = "Copied video author";
 "SAVE_THUMBNAIL" = "Save thumbnail";
-"DOWNLOAD_CAPTIONS" = "Download captions";
-"DOWNLOAD_AUDIO" = "Download audio";
-"DOWNLOAD_VIDEO" = "Download video";
 "OPEN_VID_BEFORE" = "Open a video before using the download manager";
-"NO_CAPTIONS_URL" = "No valid caption URLs found";
-"NO_AUDIO_URL" = "No audio URL found";
-"NO_STREAM_URL" = "No stream URL found";
-"CAPTIONS_FAILED" = "Failed to download captions";
 "NO_CAPTIONS" = "No captions available for this video";
 "NO_AUDIO_STREAM_FOUND" = "No audio streams found";
 "NO_VID_AUDIO_STREAM_FOUND" = "No video/audio streams found";
@@ -156,22 +149,15 @@
 "DOWNLOADING_THUMBNAIL" = "Downloading thumbnail...";
 "DOWNLOADING_AUDIO" = "Downloading audio...";
 "DOWNLOADING_VIDEO" = "Downloading video...";
-"DOWNLOADING_CAPTIONS" = "Downloading captions...";
 "NO_THUMBNAIL_FOUND" = "No thumbnail found";
 "DOWNLOAD_FAILED" = "Download failed";
-"AUDIO_SAVED" = "Audio saved";
 "DOWNLOAD_COMPLETED" = "Download completed";
 "CANNOT_SAVE_TO_PHOTOS" = "Cannot save to Photos";
-"FINA_VIDEO" = "Finalizing video...";
-"MERGING_VID_FALLBACK" = "Merging video with fallback...";
 "MERGING_VID" = "Merging video...";
-"CONVERTING" = "Converting to";
 "ALREADY_DOWNLOADING" = "Already downloading";
 "DOWNLOAD_CANCELLED" = "Download cancelled";
-"TRIMMING_AUDIO" = "Trimming audio...";
 "SHOW_THUMBNAIL" = "Show thumbnail";
 "COPY_THUMBNAIL" = "Copy thumbnail";
-"THUMBNAIL_OPTIONS" = "Download thumbnail";
 "COPY" = "Copy";
 "COPIED_TO_CLIPBOARD" = "Copied to clipboard";
 "COPY_COMMENT_TEXT" = "Copy comment text";
@@ -189,15 +175,7 @@
 "TRANSLATION" = "Translation";
 "LANGUAGE" = "Language";
 "TRANSLATING" = "Translating...";
-"SELECT_LANG" = "Select language";
 "TRANSLATE_FAILED" = "Failed to translate, please try again.";
-"SAVE_CURRENT_IMAGE" = "Save current image";
-"COPY_CURRENT_IMAGE" = "Copy current image";
-"DOWNLOAD_METHOD" = "Download method";
-"DOWNLOAD_METHOD_DESC" = "How videos are downloaded. On-device works on the latest YouTube versions.";
-"METHOD_DIRECT" = "Direct";
-"METHOD_ONDEVICE" = "On-device (SABR)";
-"AUDIO" = "Audio";
 
 "APPEARANCE" = "Appearance";
 "OLED_THEME" = "OLED dark mode";
@@ -513,6 +491,7 @@
 "MINIGAME_TAB" = "Playables";
 "FASHION_TAB" = "Fashion & Beauty";
 "LEARNING_TAB" = "Learning";
+"CHARTS_TAB" = "Charts";
 "MANAGE_TABS" = "Manage tabs";
 "MANAGE_TABS_DESC" = "Reorder and toggle tabs";
 "TAB_REORDER_HINT" = "Drag to reorder. Toggle to show/hide.\nTab settings are also accessible by long-pressing the first tab in the tab bar.";
@@ -542,16 +521,15 @@
 "STARTUP_VIDEO_PICK_DESC" = "Choose a video from Photos. It will be trimmed to 10 seconds and converted to MP4 at up to 1080p.";
 "STARTUP_VIDEO_DELETE" = "Delete saved startup video";
 "STARTUP_VIDEO_DELETE_DESC" = "Remove the converted video stored on this device.";
-"STARTUP_VIDEO_ERROR" = "Startup video";
 "STARTUP_VIDEO_INVALID" = "Choose a video file.";
 "STARTUP_VIDEO_IMPORT_FAILED" = "Could not read that video.";
 "STARTUP_VIDEO_CONVERT_FAILED" = "Could not convert that video.";
 "STARTUP_VIDEO_SAVED" = "Startup video saved";
-"STARTUP_VIDEO_SAVED_DESC" = "The video is ready to use.";
 "STARTUP_VIDEO_DELETED" = "Startup video deleted";
 "STARTUP_VIDEO_DELETE_FAILED" = "Could not delete the startup video.";
 "STARTUP_VIDEO_DELETE_CONFIRM" = "Delete startup video?";
 "STARTUP_VIDEO_DELETE_CONFIRM_DESC" = "The saved video will be removed from this device.";
+"DELETE" = "Delete";
 "HIDE_LIKE_DISLIKE_VOTES" = "Hide like/dislike votes";
 "HIDE_LIKE_DISLIKE_VOTES_DESC" = "Hide messages that pop up when you like/dislike videos.";
 "FLYOUT_MENU" = "Flyout menu";
@@ -616,7 +594,6 @@
 "AUTO_OPEN_LINK" = "Auto-check clipboard";
 "AUTO_OPEN_LINK_DESC" = "Check clipboard for YouTube-related links each time the app is opened.\nFor proper functionality, go to iOS Settings → YouTube → Paste from other apps and select 'Allow'";
 
-"SB_DESCRIPTION" = "Skip sponsored segments automatically using community-submitted data.";
 "SB_ENABLE" = "Enable SponsorBlock";
 "SB_ENABLE_DESC" = "Activate the SponsorBlock extension to skip sponsored segments.";
 "SB_SHOW_BUTTON" = "Show overlay button";
@@ -636,7 +613,6 @@
 "SB_SHOW_FULL_VIDEO_LABEL" = "Show full video label";
 "SB_SHOW_FULL_VIDEO_LABEL_DESC" = "Display a banner when the video is labeled with a full-video category (e.g. Exclusive Access).";
 "SB_CATEGORIES_HEADER" = "Segment categories";
-"SB_SEGMENT_COLOR" = "Segment color";
 
 "SB_ACTION_DISABLE" = "Disable";
 "SB_ACTION_AUTO_SKIP" = "Auto-skip";
@@ -672,7 +648,6 @@
 "SB_MENU_ENABLE" = "Enable SponsorBlock";
 "SB_MENU_DISABLE" = "Disable SponsorBlock";
 "SB_MENU_VOTE" = "Vote on segments";
-"SB_MENU_WHITELIST" = "Whitelist channel";
 "SB_VOTE_TITLE" = "Segments";
 "SB_VOTES_COUNT" = "%ld votes";
 "SB_VOTE_UPVOTE" = "Upvote";
@@ -705,7 +680,6 @@
 "SB_SUBMIT_INVALID" = "Set a valid start and end first";
 "SB_WHITELIST_ADD" = "Add to whitelist";
 "SB_WHITELIST_REMOVE" = "Remove from whitelist";
-"SB_WHITELIST_DESC" = "SponsorBlock will be disabled for this channel.";
 "SB_WHITELIST_MANAGE" = "Whitelist";
 "SB_WHITELIST_EMPTY" = "No whitelisted channels";
 "SB_WHITELIST_DELETE" = "Delete";
@@ -714,12 +688,10 @@
 "SB_PUBLIC_ID" = "Public User ID";
 "SB_TAP_TO_SHOW" = "Tap to show";
 "SB_COPY_ID" = "Copy ID";
-"SB_EDIT_ID" = "Edit ID";
 "SB_ID_COPIED" = "ID copied";
 "SB_ID_SAVED" = "ID saved";
 "SB_ID_INVALID" = "ID must be at least 30 characters";
 "SB_ID_SAVE" = "Save";
-"SB_ID_CANCEL" = "Cancel";
 
 /* Download sheet */
 "DOWNLOAD_TO_PHOTOS" = "Download to Photos";
@@ -743,7 +715,6 @@
 "AUDIO_CODEC" = "Audio codec";
 "VIDEO_CODEC" = "Video codec";
 "SUBTITLES" = "Subtitles";
-"NO_SUBTITLES" = "No subtitles";
 "PHOTOS_CODEC_NOTE" = "Due to the codecs that Apple supports, only H.264 video and AAC audio can be downloaded. If you want better quality or more efficient codecs, you have to download the video to files and then open it in a player like VLC.";
 "FILES_HINT_BOTH" = "%@ video and %@ audio are more efficient and higher quality, but the built-in iOS player cannot play them. Use a player like VLC.";
 "FILES_HINT_VIDEO" = "%@ video is more efficient and higher quality, but the built-in iOS player cannot play it. Use a player like VLC.";

@@ -1,0 +1,2 @@
+@interface YTDialogContainerScrollView : UIScrollView
+@end
