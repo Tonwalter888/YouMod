@@ -1,5 +1,7 @@
 #import "Headers.h"
 
+extern UIViewController *YouModAppViewController();
+
 static NSString *const kYMLibraryPivotIdentifier = @"YouModDownloadLibrary";
 
 // Tab icons
@@ -382,8 +384,9 @@ static BOOL isTabSelected = NO;
     %orig;
     sbUpdateOverlayInsetForPivotBar();
     if (IS_ENABLED(ShortsOnly) && !isTabSelected) {
-        [self selectItemWithPivotIdentifier:@"FEshorts"];
         isTabSelected = YES;
+        [self selectItemWithPivotIdentifier:@"FEshorts"];
+        [YouModAppViewController() performSelector:@selector(hidePivotBar)];
         return;
     }
     if (!isTabSelected) {
