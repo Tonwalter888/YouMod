@@ -303,6 +303,9 @@ static float YMSeekStartValue;
 %end
 
 %ctor {
+    [[NSUserDefaults standardUserDefaults] registerDefaults:@{
+        LiquidGlass: @YES
+    }];
     %init;
     if (YMHostBundleSupportsLiquidGlass()) %init(Glass);
 }
