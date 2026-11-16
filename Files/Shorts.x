@@ -81,6 +81,10 @@ static void YouModRemoveShortsOverlayButton(_ASDisplayView *dpView) {
     else if (action == 2) [self reelContentViewRequestsPlayPauseToggle:nil];
     else %orig;
 }
+- (void)restart {
+    NSLog(@"[WaterDev] Test");
+    %orig;
+}
 %end
 
 // YT 21.4x: Shorts are hosted by YTReelContainerViewController + YTShortsContentPresenter, not YTReelPlayerViewController
