@@ -435,10 +435,10 @@ jobs:
           
           cyan -i youtube.ipa -o stage.ipa -uwef $tweaks -n "${{ inputs.display_name }}" -b ${{ inputs.bundle_id }}
 
-      # Les load commands injectées par cyan (une par dylib) peuvent dépasser le padding de
-      # l'en-tête Mach-O de YouTube (code à 0x4000) et écraser son code -> SIGILL au lancement.
-      # On mesure la marge ; si elle est négative, on remplace toutes les dylibs injectées par
-      # une seule (TweakLoader.dylib) qui les charge au démarrage, et on restaure le code écrasé.
+      # The load commands injected by cyan (one per dylib) can exceed the padding of
+      # YouTube's Mach-O header (code starts at 0x4000) and overwrite its code -> SIGILL at launch.
+      # We measure the room left; if it is negative, we replace all injected dylibs with
+      # a single one (TweakLoader.dylib) that loads them at startup, and we restore the overwritten code.
       - name: Check Mach-O header room (compact if needed)
         run: |
           set -euo pipefail
@@ -446,11 +446,11 @@ jobs:
           mkdir -p .ci
           cat > .ci/machohdr.py <<'PY'
           #!/usr/bin/env python3
-          """Outils Mach-O arm64 (thin) pour le workflow YouMod.
+          """Mach-O arm64 (thin) tools for the YouMod workflow.
 
-            margin  <exe>                              -> affiche la marge de l'en-tête, code 1 si négative
-            compact <exe_origine> <exe_cyan> <Frameworks> <loader.dylib> <liste_sortie>
-                    -> remplace les LC_LOAD_DYLIB injectés par un seul chargeur
+            margin  <exe>                              -> prints the header room, exits with code 1 if negative
+            compact <orig_exe> <cyan_exe> <Frameworks> <loader.dylib> <output_list>
+                    -> replaces the injected LC_LOAD_DYLIBs with a single loader
           """
           import os
           import struct
@@ -466,7 +466,7 @@ jobs:
           def parse(data):
               magic, _, _, _, ncmds, sizeofcmds, _, _ = struct.unpack_from('<IiiIIIII', data, 0)
               if magic != 0xFEEDFACF:
-                  sys.exit("Mach-O 64 bits thin attendu (FAT ou 32 bits non gere)")
+                  sys.exit("Thin 64-bit Mach-O expected (FAT or 32-bit is not supported)")
               cmds, off = [], HDR
               for _ in range(ncmds):
                   cmd, size = struct.unpack_from('<II', data, off)
@@ -501,8 +501,8 @@ jobs:
               sizeofcmds, cmds = parse(open(path, 'rb').read())
               first, end = first_content(cmds), HDR + sizeofcmds
               nlibs = sum(1 for c in cmds if struct.unpack_from('<I', c, 0)[0] in DYLIB_CMDS)
-              print(f"  {os.path.basename(path)}: load commands jusqu'a {end:#x}, "
-                    f"premier contenu a {first:#x}, marge {first - end} octets, {nlibs} dylibs liees")
+              print(f"  {os.path.basename(path)}: load commands up to {end:#x}, "
+                    f"first content at {first:#x}, room {first - end} bytes, {nlibs} linked dylibs")
               return first - end
 
 
@@ -515,35 +515,35 @@ jobs:
 
               pool, kept, removed = list(orig_cmds), [], []
               for c in new_cmds:
-                  if c in pool:                       # commande d'origine : on garde
+                  if c in pool:                       # original command: keep it
                       pool.remove(c)
                       kept.append(c)
                       continue
                   if struct.unpack_from('<I', c, 0)[0] in DYLIB_CMDS:
                       base = os.path.basename(dylib_name(c))
                       if base.endswith('.dylib') and os.path.isfile(os.path.join(frameworks, base)):
-                          removed.append(base)        # dylib de tweak injectee : on la retire
+                          removed.append(base)        # injected tweak dylib: drop it
                           continue
                   kept.append(c)
 
               if not removed:
-                  sys.exit("Aucune dylib injectee a compacter")
+                  sys.exit("No injected dylib to compact")
               loader_cmd = build_load('@rpath/' + loader)
-              if kept and struct.unpack_from('<I', kept[-1], 0)[0] == 0x1D:   # LC_CODE_SIGNATURE doit rester en dernier
+              if kept and struct.unpack_from('<I', kept[-1], 0)[0] == 0x1D:   # LC_CODE_SIGNATURE must stay last
                   kept.insert(len(kept) - 1, loader_cmd)
               else:
                   kept.append(loader_cmd)
               body = b''.join(kept)
               if HDR + len(body) > first:
-                  sys.exit("Meme compactee, la liste de load commands depasse l'en-tete")
+                  sys.exit("Even compacted, the load commands list exceeds the header")
 
-              if old_end > first:                     # restaure le code ecrase par le debordement
+              if old_end > first:                     # restore the code overwritten by the overflow
                   new[first:old_end] = orig[first:old_end]
               new[HDR:first] = body + bytes(first - HDR - len(body))
               struct.pack_into('<II', new, 16, len(kept), len(body))
               open(new_path, 'wb').write(new)
               open(list_out, 'w').write('\n'.join(removed) + '\n')
-              print(f"  {len(removed)} dylibs retirees des load commands, 1 chargeur ajoute")
+              print(f"  {len(removed)} dylibs removed from the load commands, 1 loader added")
 
 
           if __name__ == '__main__':
@@ -582,12 +582,12 @@ jobs:
           rm -rf staged && unzip -q stage.ipa -d staged
           APP=staged/Payload/YouTube.app
 
-          echo "Marge de l'en-tête Mach-O (avant puis après injection) :"
+          echo "Mach-O header room (before, then after injection):"
           python3 .ci/machohdr.py margin "$ORIG"
           if python3 .ci/machohdr.py margin "$APP/YouTube"; then
-            echo "Marge suffisante : aucun compactage nécessaire."
+            echo "Enough room: no compaction needed."
           else
-            echo "::warning::Les load commands débordent sur le code : compactage des dylibs injectées."
+            echo "::warning::The load commands overflow into the code: compacting the injected dylibs."
             python3 .ci/machohdr.py compact "$ORIG" "$APP/YouTube" "$APP/Frameworks" TweakLoader.dylib .ci/removed.txt
             { echo 'static const char *const kTweaks[] = {'; sed 's/.*/  "&",/' .ci/removed.txt; echo '  0 };'; } > .ci/tweaks.h
             xcrun --sdk iphoneos clang -arch arm64 -dynamiclib -O2 -miphoneos-version-min=14.0 \
