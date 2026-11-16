@@ -233,7 +233,9 @@ NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItemSection
 static BOOL isAdsReelContentModel(YTReelContentModel *model) {
     if ([model isKindOfClass:%c(YTReelNonVideoContentModel)])
         return [[[(YTReelNonVideoContentModel *)model renderer].customData description] containsString:@"YTIReelNonVideoAdsCustomData_reelNonVideoAdsCustomData"];
-    return ((YTReelModel *)model).isAdVideo || ((YTReelModel *)model).isStackedCardsPromoVideo;
+    else if ([model isKindOfClass:%c(YTReelModel)])
+        return ((YTReelModel *)model).isAdVideo || ((YTReelModel *)model).isStackedCardsPromoVideo;
+    return NO;
 }
 
 // 9 is Playables ads, 10 posts
@@ -241,7 +243,7 @@ static BOOL isAdsReelContentModel(YTReelContentModel *model) {
 - (YTReelContentModel *)makeContentModelForEntry:(id)entry {
     YTReelContentModel *model = %orig;
     if (isAdsReelContentModel(model)) return nil;
-    else if ([model respondsToSelector:@selector(videoType)] && ((YTReelModel *)model).videoType == 10 && IS_ENABLED(RemoveShortsPosts)) return nil;
+    else if (((YTReelModel *)model).videoType == 10 && IS_ENABLED(RemoveShortsPosts)) return nil;
     else if ((((YTReelModel *)model).isLiveVideo || ((YTReelModel *)model).isLivePreviewVideo) && IS_ENABLED(RemoveShortsLive)) return nil;
     return model;
 }
@@ -249,7 +251,7 @@ static BOOL isAdsReelContentModel(YTReelContentModel *model) {
 - (void)setReels:(NSMutableOrderedSet <YTReelContentModel *> *)reels {
     [reels removeObjectsAtIndexes:[reels indexesOfObjectsPassingTest:^BOOL(YTReelContentModel *obj, NSUInteger idx, BOOL *stop) {
         if (isAdsReelContentModel(obj)) return YES;
-        else if ([obj respondsToSelector:@selector(videoType)] && ((YTReelModel *)obj).videoType == 10 && IS_ENABLED(RemoveShortsPosts)) return YES;
+        else if (((YTReelModel *)obj).videoType == 10 && IS_ENABLED(RemoveShortsPosts)) return YES;
         else if ((((YTReelModel *)obj).isLiveVideo || ((YTReelModel *)obj).isLivePreviewVideo) && IS_ENABLED(RemoveShortsLive)) return YES;
         return NO;
     }]];
@@ -261,8 +263,10 @@ static BOOL isAdsReelContentModel(YTReelContentModel *model) {
 + (YTReelContentModel *)makeContentModelForEntry:(id)entry {
     YTReelContentModel *model = %orig;
     if (isAdsReelContentModel(model)) return nil;
-    else if ([model respondsToSelector:@selector(videoType)] && ((YTReelModel *)model).videoType == 10 && IS_ENABLED(RemoveShortsPosts)) return nil;
-    else if ((((YTReelModel *)model).isLiveVideo || ((YTReelModel *)model).isLivePreviewVideo) && IS_ENABLED(RemoveShortsLive)) return nil;
+    else if ([model isKindOfClass:%c(YTReelModel)]) {
+        if (((YTReelModel *)model).videoType == 10 && IS_ENABLED(RemoveShortsPosts)) return nil;
+        else if ((((YTReelModel *)model).isLiveVideo || ((YTReelModel *)model).isLivePreviewVideo) && IS_ENABLED(RemoveShortsLive)) return nil;
+    }
     return model;
 }
 %end
@@ -271,14 +275,14 @@ static BOOL isAdsReelContentModel(YTReelContentModel *model) {
 - (YTReelContentModel *)makeContentModelForEntry:(id)entry {
     YTReelContentModel *model = %orig;
     if (isAdsReelContentModel(model)) return nil;
-    else if ([model respondsToSelector:@selector(videoType)] && ((YTReelModel *)model).videoType == 10 && IS_ENABLED(RemoveShortsPosts)) return nil;
+    else if (((YTReelModel *)model).videoType == 10 && IS_ENABLED(RemoveShortsPosts)) return nil;
     else if ((((YTReelModel *)model).isLiveVideo || ((YTReelModel *)model).isLivePreviewVideo) && IS_ENABLED(RemoveShortsLive)) return nil;
     return model;
 }
 - (void)setReels:(NSMutableOrderedSet <YTReelContentModel *> *)reels {
     [reels removeObjectsAtIndexes:[reels indexesOfObjectsPassingTest:^BOOL(YTReelContentModel *obj, NSUInteger idx, BOOL *stop) {
         if (isAdsReelContentModel(obj)) return YES;
-        else if ([obj respondsToSelector:@selector(videoType)] && ((YTReelModel *)obj).videoType == 10 && IS_ENABLED(RemoveShortsPosts)) return YES;
+        else if (((YTReelModel *)obj).videoType == 10 && IS_ENABLED(RemoveShortsPosts)) return YES;
         else if ((((YTReelModel *)obj).isLiveVideo || ((YTReelModel *)obj).isLivePreviewVideo) && IS_ENABLED(RemoveShortsLive)) return YES;
         return NO;
     }]];

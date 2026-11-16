@@ -77,8 +77,9 @@ static void YouModRemoveShortsOverlayButton(_ASDisplayView *dpView) {
 }
 - (void)maybeLoopPlayback {
     NSInteger action = INTFORVAL(ShortsActionIndex);
-    if (action == 0) %orig;
-    else if (action == 1) [self reelContentViewRequestsAdvanceToNextVideo:nil];
+    if (action == 1) [self reelContentViewRequestsAdvanceToNextVideo:nil];
+    else if (action == 2) [self reelContentViewRequestsPlayPauseToggle:nil];
+    else %orig;
 }
 %end
 
@@ -86,8 +87,9 @@ static void YouModRemoveShortsOverlayButton(_ASDisplayView *dpView) {
 %hook YTReelContainerViewController
 - (void)handleLoopBehavior {
     NSInteger action = INTFORVAL(ShortsActionIndex);
-    if (action == 0) %orig;
-    else if (action == 1) [[self valueForKey:@"_delegate"] playbackSequentialItemControllerDidRequestNextReel:self isAutoAdvance:YES];
+    if (action == 1) return;
+    else if (action == 2) [[self valueForKey:@"_delegate"] playbackSequentialItemControllerDidRequestNextReel:self isAutoAdvance:YES];
+    else %orig;
 }
 - (void)setupPlayerForPiP { if (!IS_ENABLED(DisablesShortsPiP)) %orig; }
 %end
@@ -209,10 +211,7 @@ void YouModFilterShortsDisplayView(_ASDisplayView *view, NSString *iden) {
 // bro, it's becoming lowkey tiktok
 %hook YTReelWatchRootView
 - (void)setBottomActionBarView:(UIView *)view {
-    if (IS_ENABLED(RemoveShortsCommentBar)) {
-        [[self valueForKey:@"_pivotBarProvider"] performSelector:@selector(showPivotBar)];
-        return;
-    }
+    if (IS_ENABLED(RemoveShortsCommentBar)) return;
     %orig;
 }
 %end
@@ -238,13 +237,13 @@ void YouModFilterShortsDisplayView(_ASDisplayView *view, NSString *iden) {
     if (view != nil) {
         _ASDisplayView *check = view;
         while (view.subviews.count == 1) view = view.subviews[0];
-        if (view.subviews.count > 1 && view != check) YouModRemoveShortsOverlayButton(view.subviews[1]);
+        if (view.subviews.count > 1 && view != check && [view isKindOfClass:%c(_ASDisplayView)]) YouModRemoveShortsOverlayButton(view.subviews[1]);
     } else {
         view = [self valueForKey:@"_actionBarComponentView"];
         if (view == nil) return;
         _ASDisplayView *check = view;
         while (view.subviews.count == 1) view = view.subviews[0];
-        if (view != check && view.subviews.count > 1) YouModRemoveShortsOverlayButton(view);
+        if (view != check && view.subviews.count > 1 && [view isKindOfClass:%c(_ASDisplayView)]) YouModRemoveShortsOverlayButton(view);
     }
 }
 %end
@@ -257,7 +256,7 @@ void YouModFilterShortsDisplayView(_ASDisplayView *view, NSString *iden) {
     _ASDisplayView *view = [self valueForKey:@"_overlayView"];
     _ASDisplayView *check = view;
     while (view.subviews.count == 1) view = view.subviews[0];
-    if (view.subviews.count > 1 && view != check) YouModRemoveShortsOverlayButton(view.subviews[1]);
+    if (view.subviews.count > 1 && view != check && [view isKindOfClass:%c(_ASDisplayView)]) YouModRemoveShortsOverlayButton(view.subviews[1]);
 }
 %end
 
