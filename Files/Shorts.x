@@ -87,8 +87,8 @@ static void YouModRemoveShortsOverlayButton(_ASDisplayView *dpView) {
 %hook YTReelContainerViewController
 - (void)handleLoopBehavior {
     NSInteger action = INTFORVAL(ShortsActionIndex);
-    if (action == 1) return;
-    else if (action == 2) [[self valueForKey:@"_delegate"] playbackSequentialItemControllerDidRequestNextReel:self isAutoAdvance:YES];
+    if (action == 1) [[self valueForKey:@"_delegate"] playbackSequentialItemControllerDidRequestNextReel:self isAutoAdvance:YES];
+    else if (action == 2) return;
     else %orig;
 }
 - (void)setupPlayerForPiP { if (!IS_ENABLED(DisablesShortsPiP)) %orig; }
