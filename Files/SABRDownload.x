@@ -248,13 +248,71 @@ static YMSABRFormat *SABRParseFormatId(NSData *fmt) {
     return r;
 }
 
+#pragma mark - Audio language matching (xtags)
+
+// xtags identify the language variant of a format that shares its itag with other
+// languages (all dubs of a video are itag 140/251). On the wire xtags is either the
+// raw protobuf or its base64url text; the protobuf is a repeated { #1 key, #2 value }
+// list, e.g. acont=original, lang=de. Returns key->value, empty if undecodable.
+static NSDictionary<NSString *, NSString *> *SABRDecodeXtags(NSData *xtags) {
+    NSMutableDictionary *out = [NSMutableDictionary dictionary];
+    if (!xtags.length) return out;
+    NSData *proto = xtags;
+    NSString *text = [[NSString alloc] initWithData:xtags encoding:NSASCIIStringEncoding];
+    NSCharacterSet *notB64 = [[NSCharacterSet characterSetWithCharactersInString:@"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_+/="] invertedSet];
+    if (text.length && [text rangeOfCharacterFromSet:notB64].location == NSNotFound) {
+        NSString *b64 = [[text stringByReplacingOccurrencesOfString:@"-" withString:@"+"] stringByReplacingOccurrencesOfString:@"_" withString:@"/"];
+        while (b64.length % 4) b64 = [b64 stringByAppendingString:@"="];
+        NSData *decoded = [[NSData alloc] initWithBase64EncodedString:b64 options:0];
+        if (decoded.length) proto = decoded;
+    }
+    SABRIterateTopLevel(proto, ^BOOL(uint64_t f, int w, NSUInteger fs, NSUInteger fe, NSUInteger ps, NSUInteger pl) {
+        if (w != kProtoWireLengthDelimited) return YES;
+        NSData *pair = [proto subdataWithRange:NSMakeRange(ps, pl)];
+        __block NSString *k = nil, *v = nil;
+        SABRIterateTopLevel(pair, ^BOOL(uint64_t f2, int w2, NSUInteger fs2, NSUInteger fe2, NSUInteger ps2, NSUInteger pl2) {
+            if (w2 != kProtoWireLengthDelimited) return YES;
+            NSString *str = [[NSString alloc] initWithData:[pair subdataWithRange:NSMakeRange(ps2, pl2)] encoding:NSUTF8StringEncoding];
+            if (f2 == 1) k = str; else if (f2 == 2) v = str;
+            return YES;
+        });
+        if (k.length) out[k] = v ?: @"";
+        return YES;
+    });
+    return out;
+}
+
+// Score a candidate against the chosen YouTube audio track id (YTIAudioTrack.id_p,
+// e.g. "de.4": language "de", suffix ".4" = original). Higher is better; 0 = no evidence.
+static int SABRScoreXtags(NSDictionary<NSString *, NSString *> *tags, NSString *trackId) {
+    if (!trackId.length || !tags.count) return 0;
+    NSString *wantLang = [[trackId componentsSeparatedByString:@"."].firstObject lowercaseString];
+    BOOL wantOriginal = [trackId hasSuffix:@".4"];
+    NSString *lang = [tags[@"lang"] lowercaseString];
+    NSString *acont = [tags[@"acont"] lowercaseString];
+    int score = 0;
+    if (lang.length && wantLang.length) {
+        if ([lang isEqualToString:wantLang]) score += 4;
+        else if ([[lang componentsSeparatedByString:@"-"].firstObject isEqualToString:[wantLang componentsSeparatedByString:@"-"].firstObject]) score += 3;
+    }
+    if (acont.length) {
+        if (wantOriginal && [acont isEqualToString:@"original"]) score += 2;
+        else if (!wantOriginal && ![acont isEqualToString:@"original"]) score += 1;
+    }
+    return score;
+}
+
 // Resolve a download target for `itag` from the available-format list (#5.#1.#6).
-// Some itags appear twice — a plain entry and an xtags-tagged variant (distinct
-// formats, not versions). We prefer the xtags variant because that's what the app
-// itself selects (our capture played 251 with xtags), and we copy {itag,
-// lastModified, xtags} as one consistent triple so server-side matching lines up.
-static YMSABRFormat *SABRResolveFormat(NSData *body, uint64_t itag) {
+// Some itags appear several times: a plain entry and xtags-tagged variants, one per
+// audio language. With a `trackId` (the language the user chose) the variant whose
+// xtags match that language wins; without one (or without xtags evidence) the
+// previous behaviour applies: first match, upgraded to an entry that carries xtags.
+// {itag, lastModified, xtags} are copied as one consistent triple so server-side
+// matching lines up.
+static YMSABRFormat *SABRResolveFormatForTrack(NSData *body, uint64_t itag, NSString *trackId) {
     YMSABRFormat *result = [YMSABRFormat new];
+    __block int bestScore = 0;
+    __block YMSABRFormat *best = nil;
     SABRIterateTopLevel(body, ^BOOL(uint64_t f5, int w5, NSUInteger fs, NSUInteger fe, NSUInteger ps5, NSUInteger pl5) {
         if (f5 != kSABRReqUstreamerConfig || w5 != kProtoWireLengthDelimited) return YES;
         NSData *avail = [body subdataWithRange:NSMakeRange(ps5, pl5)];
@@ -265,6 +323,11 @@ static YMSABRFormat *SABRResolveFormat(NSData *body, uint64_t itag) {
                 if (f6 != kSABRAvailList || w6 != kProtoWireLengthDelimited) return YES;
                 YMSABRFormat *fmt = SABRParseFormatId([inner subdataWithRange:NSMakeRange(ps6, pl6)]);
                 if (fmt.itag == itag) {
+                    if (trackId) {
+                        NSDictionary *tags = SABRDecodeXtags(fmt.xtags);
+                        int score = SABRScoreXtags(tags, trackId);
+                        if (score > bestScore) { bestScore = score; best = fmt; }
+                    }
                     // Keep the first match, but upgrade to an entry that carries xtags.
                     if (!result.found || (result.xtags.length == 0 && fmt.xtags.length > 0)) {
                         result.itag = fmt.itag; result.lastModified = fmt.lastModified;
@@ -277,7 +340,15 @@ static YMSABRFormat *SABRResolveFormat(NSData *body, uint64_t itag) {
         });
         return NO; // only the first #5
     });
+    if (best) {
+        result.itag = best.itag; result.lastModified = best.lastModified;
+        result.xtags = best.xtags; result.found = YES;
+    }
     return result;
+}
+
+static YMSABRFormat *SABRResolveFormat(NSData *body, uint64_t itag) {
+    return SABRResolveFormatForTrack(body, itag, nil);
 }
 
 // Encode a FormatId submessage { #1 itag, #2 lastModified, #3 xtags }. xtags is
@@ -599,7 +670,7 @@ static YMSABRTrack *SABRMakeTrack(YMSABRFormat *fmt, NSString *ext) {
 // last segment, then call `completion(videoURL, audioURL, err)` on the main queue.
 // Pass videoItag == 0 for an audio-only download (videoURL is then nil).
 // NB: named SABRRunDownload, not SABRDownload — the latter is a settings-key macro.
-static void SABRRunDownload(uint64_t videoItag, uint64_t audioItag,
+static void SABRRunDownload(uint64_t videoItag, uint64_t audioItag, NSString *audioTrackId,
                             void (^progress)(float fraction, unsigned long long bytesDownloaded, BOOL isAudio),
                             void (^completion)(NSURL *videoURL, NSURL *audioURL, NSString *err)) {
     dispatch_async(SABRQueue(), ^{
@@ -609,7 +680,7 @@ static void SABRRunDownload(uint64_t videoItag, uint64_t audioItag,
         }
         BOOL wantVideo = videoItag != 0;
         YMSABRFormat *videoFmt = wantVideo ? SABRResolveFormat(gCapPlainBody, videoItag) : nil;
-        YMSABRFormat *audioFmt = SABRResolveFormat(gCapPlainBody, audioItag);
+        YMSABRFormat *audioFmt = SABRResolveFormatForTrack(gCapPlainBody, audioItag, audioTrackId);
         if ((wantVideo && !videoFmt.found) || !audioFmt.found) {
             NSString *videoState = !wantVideo ? @"n/a" : (videoFmt.found ? @"ok" : @"missing");
             dispatch_async(dispatch_get_main_queue(), ^{ completion(nil, nil, [NSString stringWithFormat:@"format not available (video %llu:%@, audio %llu:%@)", videoItag, videoState, audioItag, audioFmt.found?@"ok":@"missing"]); });
@@ -725,15 +796,25 @@ static void SABRRunDownload(uint64_t videoItag, uint64_t audioItag,
 + (void)downloadVideoItag:(int)videoItag audioItag:(int)audioItag
                  progress:(void (^)(float fraction, unsigned long long bytesDownloaded, BOOL isAudio))progress
                completion:(void (^)(NSURL *videoURL, NSURL *audioURL, NSString *err))completion {
-    SABRRunDownload((uint64_t)videoItag, (uint64_t)audioItag,
+    [self downloadVideoItag:videoItag audioItag:audioItag audioTrackId:nil progress:progress completion:completion];
+}
++ (void)downloadVideoItag:(int)videoItag audioItag:(int)audioItag audioTrackId:(NSString *)audioTrackId
+                 progress:(void (^)(float fraction, unsigned long long bytesDownloaded, BOOL isAudio))progress
+               completion:(void (^)(NSURL *videoURL, NSURL *audioURL, NSString *err))completion {
+    SABRRunDownload((uint64_t)videoItag, (uint64_t)audioItag, audioTrackId,
         ^(float f, unsigned long long bytes, BOOL isAudio) { if (progress) dispatch_async(dispatch_get_main_queue(), ^{ progress(f, bytes, isAudio); }); },
         completion); // SABRRunDownload already delivers completion on the main queue
 }
 + (void)downloadAudioItag:(int)audioItag
                  progress:(void (^)(float fraction, unsigned long long bytesDownloaded))progress
                completion:(void (^)(NSURL *audioURL, NSString *err))completion {
-    // videoItag 0 → audio-only; deliver just the audio file.
-    SABRRunDownload(0, (uint64_t)audioItag,
+    [self downloadAudioItag:audioItag audioTrackId:nil progress:progress completion:completion];
+}
++ (void)downloadAudioItag:(int)audioItag audioTrackId:(NSString *)audioTrackId
+                 progress:(void (^)(float fraction, unsigned long long bytesDownloaded))progress
+               completion:(void (^)(NSURL *audioURL, NSString *err))completion {
+    // videoItag 0 -> audio-only; deliver just the audio file.
+    SABRRunDownload(0, (uint64_t)audioItag, audioTrackId,
         ^(float f, unsigned long long bytes, BOOL isAudio) { if (progress) dispatch_async(dispatch_get_main_queue(), ^{ progress(f, bytes); }); },
         ^(NSURL *videoURL, NSURL *audioURL, NSString *err) { completion(audioURL, err); });
 }

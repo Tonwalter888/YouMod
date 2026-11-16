@@ -716,6 +716,12 @@ static NSArray <YouModMediaFormat *> *YouModFormatsForPlayer(YTPlayerViewControl
             if (leftFPS != rightFPS) return leftFPS > rightFPS ? NSOrderedAscending : NSOrderedDescending;
         }
         
+        if (!video) {
+            BOOL leftOriginal = [left.idp hasSuffix:@".4"];
+            BOOL rightOriginal = [right.idp hasSuffix:@".4"];
+            if (leftOriginal != rightOriginal) return leftOriginal ? NSOrderedAscending : NSOrderedDescending;
+        }
+
         BOOL leftMP4 = YouModFormatLooksMP4Family(left);
         BOOL rightMP4 = YouModFormatLooksMP4Family(right);
         if (leftMP4 != rightMP4) return leftMP4 ? NSOrderedAscending : NSOrderedDescending;
@@ -1252,7 +1258,7 @@ static void YouModPresentMenu(YTPlayerViewController *player, NSArray <YouModMen
 
     unsigned long long durationMs = videoFormat.durationMs ?: audioFormat.durationMs;
     __weak typeof(self) weakSelf = self;
-    [YMSABR downloadVideoItag:videoFormat.itag audioItag:audioFormat.itag
+    [YMSABR downloadVideoItag:videoFormat.itag audioItag:audioFormat.itag audioTrackId:audioFormat.idp
         progress:^(float fraction, unsigned long long bytesDownloaded, BOOL isAudio) {
             __strong typeof(weakSelf) self = weakSelf;
             if (!self || self.cancelled) return;
@@ -1285,7 +1291,7 @@ static void YouModPresentMenu(YTPlayerViewController *player, NSArray <YouModMen
 
     NSURL *finalURL = YouModUniqueFileURL(fileName, @"m4a");
     __weak typeof(self) weakSelf = self;
-    [YMSABR downloadAudioItag:audioFormat.itag
+    [YMSABR downloadAudioItag:audioFormat.itag audioTrackId:audioFormat.idp
         progress:^(float fraction, unsigned long long bytesDownloaded) {
             __strong typeof(weakSelf) self = weakSelf;
             if (!self || self.cancelled) return;
@@ -1796,8 +1802,9 @@ static void YouModShowAudioTrackSelectionSheet(YTPlayerViewController *player, U
     }
 
     // Skip the audio-track chooser for a single format, or the server path (which
-    // can't fetch a chosen track). Direct and on-device SABR both honor the choice.
-    if (audioFormats.count == 1 || INTFORVAL(DownloadMethod) == DownloadMethodServer || INTFORVAL(DownloadMethod) == DownloadMethodOnDevice) {
+    // can't fetch a chosen track). Direct and on-device SABR both honor the choice
+    // (SABR matches the chosen language via the format's xtags).
+    if (audioFormats.count == 1 || INTFORVAL(DownloadMethod) == DownloadMethodServer) {
         YouModMediaFormat *selectedFormat = audioFormats.firstObject;
         if (downloadVideo) {
             [[YouModDownloadCoordinator sharedCoordinator] startVideoDownloadWithVideoFormat:videoFormat audioFormat:selectedFormat fileName:fileName presenter:presenter videoID:player.currentVideoID];

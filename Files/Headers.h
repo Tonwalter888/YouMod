@@ -847,5 +847,12 @@ typedef NS_ENUM(NSInteger, YouModTranslationState) {
 + (void)downloadAudioItag:(int)audioItag
                  progress:(void (^)(float fraction, unsigned long long bytesDownloaded))progress
                completion:(void (^)(NSURL *audioURL, NSString *err))completion;
+// Language-aware variants: audioTrackId is YTIAudioTrack.id_p (e.g. "de.4"); nil = old behaviour.
++ (void)downloadVideoItag:(int)videoItag audioItag:(int)audioItag audioTrackId:(NSString *)audioTrackId
+                 progress:(void (^)(float fraction, unsigned long long bytesDownloaded, BOOL isAudio))progress
+               completion:(void (^)(NSURL *videoURL, NSURL *audioURL, NSString *err))completion;
++ (void)downloadAudioItag:(int)audioItag audioTrackId:(NSString *)audioTrackId
+                 progress:(void (^)(float fraction, unsigned long long bytesDownloaded))progress
+               completion:(void (^)(NSURL *audioURL, NSString *err))completion;
 + (void)cancelCurrent;
 @end
