@@ -545,10 +545,8 @@ static NSArray<YMSettingsItem *> *YMPreferencesItems(void) {
 %end
 
 %ctor {
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    [defaults registerDefaults:@{
+    [[NSUserDefaults standardUserDefaults] registerDefaults:@{
         LiquidGlass: @YES,
-        HoldToSpeedEnabled: @NO,
         AutoClearCache: @YES,
         NotifyUpdates: @YES,
         YTLogoIndex: @1,
