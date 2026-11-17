@@ -413,6 +413,26 @@ static NSData *gCapPlainBody;      // pre-Brotli body (from -HTTPBody)
 static NSDictionary *gCapHeaders;
 static NSTimeInterval gCapExpire;  // from the URL's expire= param
 static BOOL gSABRCancel;           // set to abort the active download loop (touched on SABRQueue)
+static uint64_t gSABRGeneration;   // bumped per run; an older run stops once a newer one started
+
+// A frozen copy of the captured request, taken when a download starts. The capture
+// hook keeps tracking the newest videoplayback request ("most recent wins"), so a
+// download that read the globals every round would switch to another video's
+// request as soon as the user opened a different video mid-download.
+@interface YMSABRCapture : NSObject
+@property (nonatomic, strong) NSURL *url;
+@property (nonatomic, strong) NSData *body;
+@property (nonatomic, copy) NSDictionary *headers;
+@end
+@implementation YMSABRCapture @end
+
+// Snapshot of the latest capture. Must be called on SABRQueue.
+static YMSABRCapture *SABRSnapshotCaptureLocked(void) {
+    if (!gCapURL || !gCapPlainBody.length) return nil;
+    YMSABRCapture *c = [YMSABRCapture new];
+    c.url = gCapURL; c.body = gCapPlainBody; c.headers = gCapHeaders;
+    return c;
+}
 
 static NSTimeInterval SABRExpireFromURL(NSURL *url) {
     for (NSURLQueryItem *item in [NSURLComponents componentsWithURL:url resolvingAgainstBaseURL:NO].queryItems)
@@ -487,14 +507,14 @@ static NSData *SABRBuildRequestBody(NSData *orig, YMSABRFormat *videoFmt, YMSABR
 #pragma mark - Download engine (permanent)
 
 // One network round-trip: POST `body` uncompressed to the captured signed URL,
-// return the raw UMP response. Called ON SABRQueue (it reads gCapHeaders); the
+// return the raw UMP response. Called ON SABRQueue with the run's own headers; the
 // NSURLSession completion runs on an arbitrary queue, so the caller's completion
 // block must hop back to SABRQueue before touching shared state.
-static void SABRPostOnce(NSURL *url, NSData *body, void (^completion)(NSData *data, NSHTTPURLResponse *http, NSError *err)) {
+static void SABRPostOnce(NSURL *url, NSData *body, NSDictionary *headers, void (^completion)(NSData *data, NSHTTPURLResponse *http, NSError *err)) {
     NSMutableURLRequest *req = [NSMutableURLRequest requestWithURL:url];
     req.HTTPMethod = @"POST";
     req.HTTPBody = body;
-    [gCapHeaders enumerateKeysAndObjectsUsingBlock:^(NSString *k, NSString *v, BOOL *stop) {
+    [headers enumerateKeysAndObjectsUsingBlock:^(NSString *k, NSString *v, BOOL *stop) {
         if ([k caseInsensitiveCompare:@"Content-Encoding"] == NSOrderedSame) return; // no Brotli
         if ([k caseInsensitiveCompare:@"Content-Length"] == NSOrderedSame) return;   // session sets it
         [req setValue:v forHTTPHeaderField:k];
@@ -603,13 +623,14 @@ static void SABRRunDownload(uint64_t videoItag, uint64_t audioItag,
                             void (^progress)(float fraction, unsigned long long bytesDownloaded, BOOL isAudio),
                             void (^completion)(NSURL *videoURL, NSURL *audioURL, NSString *err)) {
     dispatch_async(SABRQueue(), ^{
-        if (!gCapURL || !gCapPlainBody.length) {
+        YMSABRCapture *cap = SABRSnapshotCaptureLocked();
+        if (!cap) {
             dispatch_async(dispatch_get_main_queue(), ^{ completion(nil, nil, @"No request captured yet — play the video for a few seconds first."); });
             return;
         }
         BOOL wantVideo = videoItag != 0;
-        YMSABRFormat *videoFmt = wantVideo ? SABRResolveFormat(gCapPlainBody, videoItag) : nil;
-        YMSABRFormat *audioFmt = SABRResolveFormat(gCapPlainBody, audioItag);
+        YMSABRFormat *videoFmt = wantVideo ? SABRResolveFormat(cap.body, videoItag) : nil;
+        YMSABRFormat *audioFmt = SABRResolveFormat(cap.body, audioItag);
         if ((wantVideo && !videoFmt.found) || !audioFmt.found) {
             NSString *videoState = !wantVideo ? @"n/a" : (videoFmt.found ? @"ok" : @"missing");
             dispatch_async(dispatch_get_main_queue(), ^{ completion(nil, nil, [NSString stringWithFormat:@"format not available (video %llu:%@, audio %llu:%@)", videoItag, videoState, audioItag, audioFmt.found?@"ok":@"missing"]); });
@@ -617,6 +638,7 @@ static void SABRRunDownload(uint64_t videoItag, uint64_t audioItag,
         }
 
         gSABRCancel = NO;
+        const uint64_t myGeneration = ++gSABRGeneration;
         YMSABRTrack *videoTrack = wantVideo ? SABRMakeTrack(videoFmt, @"mp4") : nil;
         YMSABRTrack *audioTrack = SABRMakeTrack(audioFmt, @"m4a");
         // Ordered [video?, audio]; `mainTrack` (first = video when present, else audio)
@@ -629,7 +651,7 @@ static void SABRRunDownload(uint64_t videoItag, uint64_t audioItag,
         __block int requestCount = 0;
         __block int emptyRounds = 0;   // consecutive rounds with no new media (SABR may send policy-only rounds)
         __block BOOL finished = NO;
-        __block NSURL *currentURL = gCapURL;
+        __block NSURL *currentURL = cap.url;
         // Recursive loop across async network callbacks: hold the block in a heap box
         // and recurse through it (a direct capture is an ARC retain-cycle error);
         // `finish` empties the box to free the loop.
@@ -649,7 +671,9 @@ static void SABRRunDownload(uint64_t videoItag, uint64_t audioItag,
             });
         };
         void (^round)(void) = ^{
-            if (gSABRCancel) { finish(@"cancelled"); return; }
+            // gSABRCancel alone isn't enough: cancel + immediate restart resets it
+            // before this loop's next round, leaving two loops running.
+            if (gSABRCancel || gSABRGeneration != myGeneration) { finish(@"cancelled"); return; }
             if (requestCount++ >= kSABRMaxRequests) { finish(@"exceeded request cap"); return; }
 
             // Each requested format stays in its preferred field (#16/#17) for the whole
@@ -672,10 +696,10 @@ static void SABRRunDownload(uint64_t videoItag, uint64_t audioItag,
             // present, else audio). The playhead stays at/ahead of each track's buffered
             // edge and pulls the remaining segments forward.
             uint64_t driveTime = mainTrack.downloadedMs;
-            NSData *body = SABRBuildRequestBody(gCapPlainBody, videoFmt, audioFmt, driveTime, buffered, selected);
+            NSData *body = SABRBuildRequestBody(cap.body, videoFmt, audioFmt, driveTime, buffered, selected);
             if (!body) { finish(@"failed to build request body"); return; }
 
-            SABRPostOnce(currentURL, body, ^(NSData *data, NSHTTPURLResponse *http, NSError *err) {
+            SABRPostOnce(currentURL, body, cap.headers, ^(NSData *data, NSHTTPURLResponse *http, NSError *err) {
                 dispatch_async(SABRQueue(), ^{
                     if (err || !http) { finish([NSString stringWithFormat:@"network error: %@", err.localizedDescription ?: @"no response"]); return; }
                     if (http.statusCode != 200 || !data.length) { finish([NSString stringWithFormat:@"HTTP %ld (%lu bytes)", (long)http.statusCode, (unsigned long)data.length]); return; }
