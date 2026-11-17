@@ -868,6 +868,9 @@ extern void YMPresentDownloadLibrary(UIViewController *from);
 // Comments (DownloadComments.x)
 extern void YMCommentsSaveSnapshot(NSString *videoId, NSURL *snapshotURL);
 extern UIViewController *YMCreateWatchViewController(NSDictionary *info);
+// Dismiss `presented`, then open a video / channel inside this app (falls back to the web URL).
+extern void YMOpenVideoInApp(UIViewController *presented, NSString *videoId);
+extern void YMOpenChannelInApp(UIViewController *presented, NSString *channelId);
 // Download queue (Download.x): [{title, detail, active}] — active job first.
 extern NSArray<NSDictionary *> *YMDownloadQueueSnapshot(void);
 extern void YMDownloadQueueRemoveAtIndex(NSUInteger index); // index among queued (non-active) jobs

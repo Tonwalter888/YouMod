@@ -673,6 +673,58 @@ typedef NS_ENUM(NSInteger, YMCRowKind) { YMCRowComment, YMCRowMoreReplies, YMCRo
 
 @end
 
+#pragma mark - Opening YouTube pages inside the app
+
+#import <YouTubeHeader/YTICommand.h>
+#import <YouTubeHeader/YTCommandResponderEvent.h>
+#import <YouTubeHeader/YTResponder.h>
+
+// Deep links (youtube://...) are not taken by this app's delegate and would end
+// up in Safari. Instead, send YouTube's own navigation command (the same thing a
+// tap on a channel name or video does) through the app's responder chain.
+static BOOL YMSendYouTubeCommand(YTICommand *command) {
+    if (!command) return NO;
+    NSMutableArray *candidates = [NSMutableArray array];
+    UIViewController *top = [%c(YTUIUtils) topViewControllerForPresenting];
+    for (UIViewController *vc = top; vc; vc = vc.parentViewController) [candidates addObject:vc];
+    for (UIScene *scene in UIApplication.sharedApplication.connectedScenes) {
+        if (![scene isKindOfClass:UIWindowScene.class]) continue;
+        for (UIWindow *w in ((UIWindowScene *)scene).windows) if (w.isKeyWindow && w.rootViewController) [candidates addObject:w.rootViewController];
+    }
+    for (UIViewController *vc in candidates) {
+        if (![vc respondsToSelector:@selector(parentResponder)]) continue; // YTResponder
+        YTCommandResponderEvent *event = [%c(YTCommandResponderEvent) eventWithCommand:command fromView:vc.view entry:nil sendClick:NO firstResponder:vc];
+        if (!event) continue;
+        [event send];
+        return YES;
+    }
+    return NO;
+}
+
+static void YMOpenInApp(UIViewController *presented, YTICommand *(^makeCommand)(void), NSString *webURL) {
+    void (^open)(void) = ^{
+        YTICommand *command = nil;
+        @try { command = makeCommand(); } @catch (id ex) {}
+        if (YMSendYouTubeCommand(command)) return;
+        NSURL *web = [NSURL URLWithString:webURL];
+        if (web) [UIApplication.sharedApplication openURL:web options:@{} completionHandler:nil];
+    };
+    if (presented) [presented dismissViewControllerAnimated:YES completion:open];
+    else open();
+}
+
+void YMOpenVideoInApp(UIViewController *presented, NSString *videoId) {
+    if (!videoId.length) return;
+    YMOpenInApp(presented, ^YTICommand *{ return [%c(YTICommand) watchNavigationEndpointWithVideoID:videoId]; },
+                [@"https://www.youtube.com/watch?v=" stringByAppendingString:videoId]);
+}
+
+void YMOpenChannelInApp(UIViewController *presented, NSString *channelId) {
+    if (!channelId.length) return;
+    YMOpenInApp(presented, ^YTICommand *{ return [%c(YTICommand) browseNavigationEndpointWithChannelID:channelId]; },
+                [@"https://www.youtube.com/channel/" stringByAppendingString:channelId]);
+}
+
 #pragma mark - Watch page
 
 @interface YMWatchViewController : UIViewController <UITableViewDataSource, UITableViewDelegate>
@@ -766,14 +818,23 @@ typedef NS_ENUM(NSInteger, YMCRowKind) { YMCRowComment, YMCRowMoreReplies, YMCRo
 }
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView { return 3; }
-- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section { return section == 2 ? 2 : 1; }
+- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
+    if (section == 0) return [self.info[@"channelId"] length] ? 2 : 1;
+    return section == 2 ? 2 : 1;
+}
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:nil];
     cell.textLabel.numberOfLines = 0;
     cell.detailTextLabel.numberOfLines = 0;
     cell.detailTextLabel.textColor = UIColor.secondaryLabelColor;
-    if (indexPath.section == 0) {
+    if (indexPath.section == 0 && indexPath.row == 1) {
+        cell.textLabel.text = [self.info[@"author"] length] ? self.info[@"author"] : YMC(@"Kanal", @"Channel");
+        cell.textLabel.font = [UIFont preferredFontForTextStyle:UIFontTextStyleSubheadline];
+        cell.detailTextLabel.text = YMC(@"Kanal öffnen", @"Open channel");
+        cell.imageView.image = [UIImage systemImageNamed:@"person.crop.circle"];
+        cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+    } else if (indexPath.section == 0) {
         cell.textLabel.text = self.info[@"title"];
         cell.textLabel.font = [UIFont preferredFontForTextStyle:UIFontTextStyleHeadline];
         cell.detailTextLabel.text = self.info[@"detail"];
@@ -817,7 +878,10 @@ typedef NS_ENUM(NSInteger, YMCRowKind) { YMCRowComment, YMCRowMoreReplies, YMCRo
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
-    if (indexPath.section == 1) {
+    if (indexPath.section == 0 && indexPath.row == 1) {
+        [self.playerVC.player pause];
+        YMOpenChannelInApp(self.navigationController, self.info[@"channelId"]);
+    } else if (indexPath.section == 1) {
         YMCommentsViewController *c = [YMCommentsViewController new];
         c.videoId = self.info[@"videoId"];
         c.snapshotURL = self.info[@"commentsURL"];
@@ -839,14 +903,7 @@ typedef NS_ENUM(NSInteger, YMCRowKind) { YMCRowComment, YMCRowMoreReplies, YMCRo
         NSString *vid = self.info[@"videoId"];
         if (!vid.length) return;
         [self.playerVC.player pause];
-        NSURL *url = [NSURL URLWithString:[@"youtube://watch?v=" stringByAppendingString:vid]];
-        UIApplication *app = UIApplication.sharedApplication;
-        [self.navigationController dismissViewControllerAnimated:YES completion:^{
-            id<UIApplicationDelegate> delegate = app.delegate;
-            BOOL handled = NO;
-            if ([delegate respondsToSelector:@selector(application:openURL:options:)]) handled = [delegate application:app openURL:url options:@{}];
-            if (!handled) [app openURL:[NSURL URLWithString:[@"https://www.youtube.com/watch?v=" stringByAppendingString:vid]] options:@{} completionHandler:nil];
-        }];
+        YMOpenVideoInApp(self.navigationController, vid);
     } else if (indexPath.section == 2 && indexPath.row == 1) {
         UIActivityViewController *avc = [[UIActivityViewController alloc] initWithActivityItems:@[self.info[@"fileURL"]] applicationActivities:nil];
         UITableViewCell *cell = [tableView cellForRowAtIndexPath:indexPath];

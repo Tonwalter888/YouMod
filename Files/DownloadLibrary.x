@@ -141,6 +141,7 @@ static void YMLibraryFetchThumbnail(NSURL *fileURL, NSString *videoId) {
 @property (nonatomic, copy) NSString *title;
 @property (nonatomic, copy) NSString *author;
 @property (nonatomic, copy) NSString *videoId;
+@property (nonatomic, copy) NSString *channelId;
 @property (nonatomic, copy) NSString *quality;
 @property (nonatomic, copy) NSString *audioTrack;
 @property (nonatomic, assign) BOOL isAudio;
@@ -163,6 +164,7 @@ static NSArray<YMLibraryItem *> *YMLibraryLoadItems(void) {
         item.title = [meta[@"title"] length] ? meta[@"title"] : url.lastPathComponent.stringByDeletingPathExtension;
         item.author = meta[@"author"];
         item.videoId = meta[@"videoId"];
+        item.channelId = meta[@"channelId"];
         item.quality = meta[@"quality"];
         item.audioTrack = meta[@"audioTrack"];
         item.isAudio = meta[@"kind"] ? [meta[@"kind"] isEqualToString:@"audio"] : YMLibraryIsAudioFile(url);
@@ -456,6 +458,8 @@ static NSString *YMLibraryFormatSize(unsigned long long bytes) {
     info[@"thumbPath"] = YMLibraryThumbURL(item.fileURL).path;
     info[@"commentsURL"] = YMLibraryCommentsURL(item.fileURL);
     if (item.videoId.length) info[@"videoId"] = item.videoId;
+    if (item.channelId.length) info[@"channelId"] = item.channelId;
+    if (item.author.length) info[@"author"] = item.author;
     [self.navigationController pushViewController:YMCreateWatchViewController(info) animated:YES];
 }
 
@@ -515,17 +519,7 @@ static NSString *YMLibraryFormatSize(unsigned long long bytes) {
 }
 
 - (void)ym_openInYouTube:(YMLibraryItem *)item {
-    if (!item.videoId.length) return;
-    NSURL *url = [NSURL URLWithString:[@"youtube://watch?v=" stringByAppendingString:item.videoId]];
-    UIApplication *app = UIApplication.sharedApplication;
-    [self dismissViewControllerAnimated:YES completion:^{
-        id<UIApplicationDelegate> delegate = app.delegate;
-        BOOL handled = NO;
-        if ([delegate respondsToSelector:@selector(application:openURL:options:)])
-            handled = [delegate application:app openURL:url options:@{}];
-        if (!handled)
-            [app openURL:[NSURL URLWithString:[@"https://www.youtube.com/watch?v=" stringByAppendingString:item.videoId]] options:@{} completionHandler:nil];
-    }];
+    YMOpenVideoInApp(self.navigationController ?: self, item.videoId);
 }
 
 - (void)ym_confirmDelete:(YMLibraryItem *)item completion:(void (^)(BOOL deleted))completion {
@@ -582,6 +576,8 @@ static NSString *YMLibraryFormatSize(unsigned long long bytes) {
         [actions addObject:[UIAction actionWithTitle:YMDL(@"Abspielen", @"Play") image:[UIImage systemImageNamed:@"play.fill"] identifier:nil handler:^(UIAction *a) { [self ym_openWatch:item]; }]];
         if (item.videoId.length)
             [actions addObject:[UIAction actionWithTitle:YMDL(@"In YouTube öffnen", @"Open in YouTube") image:[UIImage systemImageNamed:@"play.rectangle"] identifier:nil handler:^(UIAction *a) { [self ym_openInYouTube:item]; }]];
+        if (item.channelId.length)
+            [actions addObject:[UIAction actionWithTitle:YMDL(@"Zum Kanal", @"Go to channel") image:[UIImage systemImageNamed:@"person.crop.circle"] identifier:nil handler:^(UIAction *a) { YMOpenChannelInApp(self.navigationController ?: self, item.channelId); }]];
         [actions addObject:[UIAction actionWithTitle:YMDL(@"Teilen", @"Share") image:[UIImage systemImageNamed:@"square.and.arrow.up"] identifier:nil handler:^(UIAction *a) { [self ym_share:item sourceView:[tableView cellForRowAtIndexPath:indexPath]]; }]];
         if (!item.isAudio)
             [actions addObject:[UIAction actionWithTitle:YMDL(@"In Fotos sichern", @"Save to Photos") image:[UIImage systemImageNamed:@"photo.on.rectangle"] identifier:nil handler:^(UIAction *a) { [self ym_saveToPhotos:item]; }]];
