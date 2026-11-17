@@ -107,6 +107,7 @@
 #define PostDownloadActionSaveToPhotos 0
 #define PostDownloadActionShare 1
 #define PostDownloadActionAsk 2
+#define PostDownloadActionKeepInApp 3 // only keep the file in the app (Downloads page)
 #define AddDownloadToShorts @"YouModAddDownloadToShorts"
 #define AudioPreferIndex @"YouModAudioPreferIndex"
 #define DownloadComment @"YouModDownloadComment"
@@ -848,11 +849,25 @@ typedef NS_ENUM(NSInteger, YouModTranslationState) {
                  progress:(void (^)(float fraction, unsigned long long bytesDownloaded))progress
                completion:(void (^)(NSURL *audioURL, NSString *err))completion;
 // Language-aware variants: audioTrackId is YTIAudioTrack.id_p (e.g. "de.4"); nil = old behaviour.
-+ (void)downloadVideoItag:(int)videoItag audioItag:(int)audioItag audioTrackId:(NSString *)audioTrackId
++ (void)downloadVideoItag:(int)videoItag audioItag:(int)audioItag audioTrackId:(NSString *)audioTrackId capture:(id)capture
                  progress:(void (^)(float fraction, unsigned long long bytesDownloaded, BOOL isAudio))progress
                completion:(void (^)(NSURL *videoURL, NSURL *audioURL, NSString *err))completion;
-+ (void)downloadAudioItag:(int)audioItag audioTrackId:(NSString *)audioTrackId
++ (void)downloadAudioItag:(int)audioItag audioTrackId:(NSString *)audioTrackId capture:(id)capture
                  progress:(void (^)(float fraction, unsigned long long bytesDownloaded))progress
                completion:(void (^)(NSURL *audioURL, NSString *err))completion;
+// Frozen copy of the current capture (nil if none) for a later/queued download.
++ (id)snapshotCapture;
 + (void)cancelCurrent;
 @end
+
+// Download library (DownloadLibrary.x)
+extern void YMLibrarySetPendingMetadata(NSDictionary *meta);
+extern NSDictionary *YMLibraryTakePendingMetadata(void);
+extern void YMLibraryRecordCompletedFile(NSURL *fileURL, BOOL isVideo, NSDictionary *meta);
+extern void YMPresentDownloadLibrary(UIViewController *from);
+// Comments (DownloadComments.x)
+extern void YMCommentsSaveSnapshot(NSString *videoId, NSURL *snapshotURL);
+extern UIViewController *YMCreateWatchViewController(NSDictionary *info);
+// Download queue (Download.x): [{title, detail, active}] — active job first.
+extern NSArray<NSDictionary *> *YMDownloadQueueSnapshot(void);
+extern void YMDownloadQueueRemoveAtIndex(NSUInteger index); // index among queued (non-active) jobs
