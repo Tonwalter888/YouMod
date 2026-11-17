@@ -849,8 +849,7 @@ static void YouModHandlePostDownloadFile(NSURL *fileURL, BOOL isVideo, UIViewCon
     NSInteger action = YouModGetPostDownloadAction();
 
     if (action == PostDownloadActionKeepInApp) {
-        BOOL de = [NSLocale.preferredLanguages.firstObject hasPrefix:@"de"];
-        YouModSendSuccess(de ? @"Download fertig – zu finden unter „Meine Downloads“" : @"Download finished – see “My downloads”");
+        YouModSendSuccess(LOC(@"YM_DOWNLOAD_FINISHED_SEE_MY_DOWNLOADS"));
         return;
     }
 
@@ -1103,8 +1102,7 @@ static UIViewController *YouModKeyRootViewController(void) {
     job.capture = capture;
     if (!self.queue) self.queue = [NSMutableArray array];
     [self.queue addObject:job];
-    BOOL de = [NSLocale.preferredLanguages.firstObject hasPrefix:@"de"];
-    YouModSendToast([NSString stringWithFormat:de ? @"Zur Warteschlange hinzugefügt (Platz %lu)" : @"Added to queue (position %lu)", (unsigned long)self.queue.count]);
+    YouModSendToast([NSString stringWithFormat:LOC(@"YM_ADDED_TO_QUEUE_POSITION"), (unsigned long)self.queue.count]);
 }
 
 - (void)ym_scheduleNextQueuedDownload {
@@ -2043,7 +2041,7 @@ static void YouModShowDownloadManager(YTPlayerViewController *player, UIViewCont
         return;
     }
     NSMutableArray *items = [NSMutableArray array];
-    [items addObject:[YouModMenuItem itemWithTitle:([NSLocale.preferredLanguages.firstObject hasPrefix:@"de"] ? @"Meine Downloads" : @"My downloads") subtitle:nil icon:YouModYTIconImage(658, NO, nil) handler:^{
+    [items addObject:[YouModMenuItem itemWithTitle:LOC(@"YM_MY_DOWNLOADS") subtitle:nil icon:YouModYTIconImage(658, NO, nil) handler:^{
         YMPresentDownloadLibrary(presenter);
     }]];
     YTSingleVideoController *sgvidcon = player.activeVideo;
@@ -2466,10 +2464,9 @@ static UIImage *YouModExtractPostImage(UIView *cellView) {
 #pragma mark - Download queue API (used by DownloadLibrary.x)
 
 static NSString *YouModQueueDetail(NSDictionary *meta, BOOL isVideo) {
-    BOOL de = [NSLocale.preferredLanguages.firstObject hasPrefix:@"de"];
     NSMutableArray *parts = [NSMutableArray array];
     if ([meta[@"author"] length]) [parts addObject:meta[@"author"]];
-    if (!isVideo) [parts addObject:de ? @"Nur Audio" : @"Audio only"];
+    if (!isVideo) [parts addObject:LOC(@"YM_AUDIO_ONLY")];
     else if ([meta[@"quality"] length]) [parts addObject:meta[@"quality"]];
     if ([meta[@"audioTrack"] length]) [parts addObject:meta[@"audioTrack"]];
     return [parts componentsJoinedByString:@" · "];

@@ -15,10 +15,6 @@
 
 #pragma mark - Strings (German / English)
 
-static NSString *YMDL(NSString *de, NSString *en) {
-    NSString *lang = NSLocale.preferredLanguages.firstObject ?: @"en";
-    return [lang hasPrefix:@"de"] ? de : en;
-}
 
 #pragma mark - Storage
 
@@ -274,7 +270,7 @@ static NSString *YMLibraryFormatSize(unsigned long long bytes) {
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    self.title = YMDL(@"Downloads", @"Downloads");
+    self.title = LOC(@"YM_DOWNLOADS");
     self.thumbCache = [NSCache new];
     self.tableView.rowHeight = UITableViewAutomaticDimension;
     self.tableView.estimatedRowHeight = 106;
@@ -314,9 +310,8 @@ static NSString *YMLibraryFormatSize(unsigned long long bytes) {
     self.navigationItem.prompt = nil;
     UILabel *footer = [UILabel new];
     footer.text = self.items.count
-        ? [NSString stringWithFormat:@"%lu %@ · %@", (unsigned long)self.items.count, YMDL(@"Dateien", @"files"), YMLibraryFormatSize(total)]
-        : YMDL(@"Noch keine Downloads. Lade ein Video über das Download-Menü herunter, dann erscheint es hier.",
-               @"No downloads yet. Download a video from the download menu and it will show up here.");
+        ? [NSString stringWithFormat:@"%lu %@ · %@", (unsigned long)self.items.count, LOC(@"YM_FILES"), YMLibraryFormatSize(total)]
+        : LOC(@"YM_NO_DOWNLOADS_YET_DOWNLOAD_A_VIDEO_FROM_T");
     footer.numberOfLines = 0;
     footer.textAlignment = NSTextAlignmentCenter;
     footer.font = [UIFont preferredFontForTextStyle:UIFontTextStyleFootnote];
@@ -355,7 +350,7 @@ static NSString *YMLibraryFormatSize(unsigned long long bytes) {
 
 - (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section {
     if (!self.queueItems.count) return nil;
-    return section == 0 ? YMDL(@"Warteschlange", @"Queue") : YMDL(@"Heruntergeladen", @"Downloaded");
+    return section == 0 ? LOC(@"YM_QUEUE") : LOC(@"YM_DOWNLOADED");
 }
 
 - (UITableViewCell *)ym_queueCellForRow:(NSInteger)row {
@@ -363,10 +358,10 @@ static NSString *YMLibraryFormatSize(unsigned long long bytes) {
     if (!cell) cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:@"queue"];
     NSDictionary *q = self.queueItems[row];
     BOOL active = [q[@"active"] boolValue];
-    cell.textLabel.text = [q[@"title"] length] ? q[@"title"] : YMDL(@"Unbenanntes Video", @"Untitled video");
+    cell.textLabel.text = [q[@"title"] length] ? q[@"title"] : LOC(@"YM_UNTITLED_VIDEO");
     cell.textLabel.numberOfLines = 2;
     NSString *detail = q[@"detail"];
-    NSString *state = active ? YMDL(@"Wird heruntergeladen …", @"Downloading …") : [NSString stringWithFormat:YMDL(@"Wartet · Platz %ld", @"Waiting · position %ld"), (long)(active ? 0 : row + 1 - ([self.queueItems.firstObject[@"active"] boolValue] ? 1 : 0))];
+    NSString *state = active ? LOC(@"YM_DOWNLOADING") : [NSString stringWithFormat:LOC(@"YM_WAITING_POSITION"), (long)(active ? 0 : row + 1 - ([self.queueItems.firstObject[@"active"] boolValue] ? 1 : 0))];
     cell.detailTextLabel.text = detail.length ? [NSString stringWithFormat:@"%@\n%@", state, detail] : state;
     cell.detailTextLabel.numberOfLines = 2;
     cell.detailTextLabel.textColor = UIColor.secondaryLabelColor;
@@ -393,7 +388,7 @@ static NSString *YMLibraryFormatSize(unsigned long long bytes) {
     NSMutableArray *line1 = [NSMutableArray array];
     if (item.author.length) [line1 addObject:item.author];
     NSMutableArray *line2 = [NSMutableArray array];
-    if (item.isAudio) [line2 addObject:YMDL(@"Nur Audio", @"Audio only")];
+    if (item.isAudio) [line2 addObject:LOC(@"YM_AUDIO_ONLY")];
     else if (item.quality.length) [line2 addObject:item.quality];
     if (item.audioTrack.length) [line2 addObject:item.audioTrack];
     [line2 addObject:YMLibraryFormatSize(item.size)];
@@ -443,7 +438,7 @@ static NSString *YMLibraryFormatSize(unsigned long long bytes) {
 - (void)ym_openWatch:(YMLibraryItem *)item {
     NSMutableArray *parts = [NSMutableArray array];
     if (item.author.length) [parts addObject:item.author];
-    if (item.isAudio) [parts addObject:YMDL(@"Nur Audio", @"Audio only")];
+    if (item.isAudio) [parts addObject:LOC(@"YM_AUDIO_ONLY")];
     else if (item.quality.length) [parts addObject:item.quality];
     if (item.audioTrack.length) [parts addObject:item.audioTrack];
     NSString *dur = YMLibraryFormatDuration(item.duration);
@@ -505,14 +500,14 @@ static NSString *YMLibraryFormatSize(unsigned long long bytes) {
 - (void)ym_saveToPhotos:(YMLibraryItem *)item {
     [PHPhotoLibrary requestAuthorizationForAccessLevel:PHAccessLevelAddOnly handler:^(PHAuthorizationStatus status) {
         if (status != PHAuthorizationStatusAuthorized && status != PHAuthorizationStatusLimited) {
-            dispatch_async(dispatch_get_main_queue(), ^{ [self ym_toast:YMDL(@"Kein Zugriff auf Fotos", @"No access to Photos")]; });
+            dispatch_async(dispatch_get_main_queue(), ^{ [self ym_toast:LOC(@"YM_NO_ACCESS_TO_PHOTOS")]; });
             return;
         }
         [[PHPhotoLibrary sharedPhotoLibrary] performChanges:^{
             [PHAssetCreationRequest creationRequestForAssetFromVideoAtFileURL:item.fileURL];
         } completionHandler:^(BOOL success, NSError *error) {
             dispatch_async(dispatch_get_main_queue(), ^{
-                [self ym_toast:success ? YMDL(@"In Fotos gesichert", @"Saved to Photos") : (error.localizedDescription ?: YMDL(@"Sichern fehlgeschlagen", @"Saving failed"))];
+                [self ym_toast:success ? LOC(@"YM_SAVED_TO_PHOTOS") : (error.localizedDescription ?: LOC(@"YM_SAVING_FAILED"))];
             });
         }];
     }];
@@ -523,11 +518,11 @@ static NSString *YMLibraryFormatSize(unsigned long long bytes) {
 }
 
 - (void)ym_confirmDelete:(YMLibraryItem *)item completion:(void (^)(BOOL deleted))completion {
-    UIAlertController *a = [UIAlertController alertControllerWithTitle:YMDL(@"Download löschen?", @"Delete download?")
-                                                               message:[NSString stringWithFormat:@"„%@“ %@", item.title, YMDL(@"wird von diesem iPhone gelöscht. Eine Kopie in Fotos bleibt erhalten.", @"will be removed from this iPhone. A copy in Photos is kept.")]
+    UIAlertController *a = [UIAlertController alertControllerWithTitle:LOC(@"YM_DELETE_DOWNLOAD")
+                                                               message:[NSString stringWithFormat:@"„%@“ %@", item.title, LOC(@"YM_WILL_BE_REMOVED_FROM_THIS_IPHONE_A_COPY")]
                                                         preferredStyle:UIAlertControllerStyleAlert];
-    [a addAction:[UIAlertAction actionWithTitle:YMDL(@"Abbrechen", @"Cancel") style:UIAlertActionStyleCancel handler:^(UIAlertAction *x) { if (completion) completion(NO); }]];
-    [a addAction:[UIAlertAction actionWithTitle:YMDL(@"Löschen", @"Delete") style:UIAlertActionStyleDestructive handler:^(UIAlertAction *x) {
+    [a addAction:[UIAlertAction actionWithTitle:LOC(@"YM_CANCEL") style:UIAlertActionStyleCancel handler:^(UIAlertAction *x) { if (completion) completion(NO); }]];
+    [a addAction:[UIAlertAction actionWithTitle:LOC(@"YM_DELETE") style:UIAlertActionStyleDestructive handler:^(UIAlertAction *x) {
         NSFileManager *fm = NSFileManager.defaultManager;
         [fm removeItemAtURL:item.fileURL error:nil];
         [fm removeItemAtURL:YMLibraryMetaURL(item.fileURL) error:nil];
@@ -545,7 +540,7 @@ static NSString *YMLibraryFormatSize(unsigned long long bytes) {
         NSDictionary *q = self.queueItems[indexPath.row];
         if ([q[@"active"] boolValue]) return [UISwipeActionsConfiguration configurationWithActions:@[]];
         NSUInteger queuedIndex = indexPath.row - ([self.queueItems.firstObject[@"active"] boolValue] ? 1 : 0);
-        UIContextualAction *remove = [UIContextualAction contextualActionWithStyle:UIContextualActionStyleDestructive title:YMDL(@"Entfernen", @"Remove") handler:^(UIContextualAction *a, UIView *v, void (^done)(BOOL)) {
+        UIContextualAction *remove = [UIContextualAction contextualActionWithStyle:UIContextualActionStyleDestructive title:LOC(@"YM_REMOVE") handler:^(UIContextualAction *a, UIView *v, void (^done)(BOOL)) {
             YMDownloadQueueRemoveAtIndex(queuedIndex);
             done(YES);
             [self ym_reload];
@@ -553,11 +548,11 @@ static NSString *YMLibraryFormatSize(unsigned long long bytes) {
         return [UISwipeActionsConfiguration configurationWithActions:@[remove]];
     }
     YMLibraryItem *item = self.items[indexPath.row];
-    UIContextualAction *del = [UIContextualAction contextualActionWithStyle:UIContextualActionStyleDestructive title:YMDL(@"Löschen", @"Delete") handler:^(UIContextualAction *a, UIView *v, void (^done)(BOOL)) {
+    UIContextualAction *del = [UIContextualAction contextualActionWithStyle:UIContextualActionStyleDestructive title:LOC(@"YM_DELETE") handler:^(UIContextualAction *a, UIView *v, void (^done)(BOOL)) {
         [self ym_confirmDelete:item completion:done];
     }];
     del.image = [UIImage systemImageNamed:@"trash"];
-    UIContextualAction *share = [UIContextualAction contextualActionWithStyle:UIContextualActionStyleNormal title:YMDL(@"Teilen", @"Share") handler:^(UIContextualAction *a, UIView *v, void (^done)(BOOL)) {
+    UIContextualAction *share = [UIContextualAction contextualActionWithStyle:UIContextualActionStyleNormal title:LOC(@"YM_SHARE") handler:^(UIContextualAction *a, UIView *v, void (^done)(BOOL)) {
         [self ym_share:item sourceView:[tableView cellForRowAtIndexPath:indexPath]];
         done(YES);
     }];
@@ -573,15 +568,15 @@ static NSString *YMLibraryFormatSize(unsigned long long bytes) {
     YMLibraryItem *item = self.items[indexPath.row];
     return [UIContextMenuConfiguration configurationWithIdentifier:nil previewProvider:nil actionProvider:^UIMenu *(NSArray<UIMenuElement *> *suggested) {
         NSMutableArray *actions = [NSMutableArray array];
-        [actions addObject:[UIAction actionWithTitle:YMDL(@"Abspielen", @"Play") image:[UIImage systemImageNamed:@"play.fill"] identifier:nil handler:^(UIAction *a) { [self ym_openWatch:item]; }]];
+        [actions addObject:[UIAction actionWithTitle:LOC(@"YM_PLAY") image:[UIImage systemImageNamed:@"play.fill"] identifier:nil handler:^(UIAction *a) { [self ym_openWatch:item]; }]];
         if (item.videoId.length)
-            [actions addObject:[UIAction actionWithTitle:YMDL(@"In YouTube öffnen", @"Open in YouTube") image:[UIImage systemImageNamed:@"play.rectangle"] identifier:nil handler:^(UIAction *a) { [self ym_openInYouTube:item]; }]];
+            [actions addObject:[UIAction actionWithTitle:LOC(@"YM_OPEN_IN_YOUTUBE") image:[UIImage systemImageNamed:@"play.rectangle"] identifier:nil handler:^(UIAction *a) { [self ym_openInYouTube:item]; }]];
         if (item.channelId.length)
-            [actions addObject:[UIAction actionWithTitle:YMDL(@"Zum Kanal", @"Go to channel") image:[UIImage systemImageNamed:@"person.crop.circle"] identifier:nil handler:^(UIAction *a) { YMOpenChannelInApp(self.navigationController ?: self, item.channelId); }]];
-        [actions addObject:[UIAction actionWithTitle:YMDL(@"Teilen", @"Share") image:[UIImage systemImageNamed:@"square.and.arrow.up"] identifier:nil handler:^(UIAction *a) { [self ym_share:item sourceView:[tableView cellForRowAtIndexPath:indexPath]]; }]];
+            [actions addObject:[UIAction actionWithTitle:LOC(@"YM_GO_TO_CHANNEL") image:[UIImage systemImageNamed:@"person.crop.circle"] identifier:nil handler:^(UIAction *a) { YMOpenChannelInApp(self.navigationController ?: self, item.channelId); }]];
+        [actions addObject:[UIAction actionWithTitle:LOC(@"YM_SHARE") image:[UIImage systemImageNamed:@"square.and.arrow.up"] identifier:nil handler:^(UIAction *a) { [self ym_share:item sourceView:[tableView cellForRowAtIndexPath:indexPath]]; }]];
         if (!item.isAudio)
-            [actions addObject:[UIAction actionWithTitle:YMDL(@"In Fotos sichern", @"Save to Photos") image:[UIImage systemImageNamed:@"photo.on.rectangle"] identifier:nil handler:^(UIAction *a) { [self ym_saveToPhotos:item]; }]];
-        UIAction *del = [UIAction actionWithTitle:YMDL(@"Löschen", @"Delete") image:[UIImage systemImageNamed:@"trash"] identifier:nil handler:^(UIAction *a) { [self ym_confirmDelete:item completion:nil]; }];
+            [actions addObject:[UIAction actionWithTitle:LOC(@"YM_SAVE_TO_PHOTOS") image:[UIImage systemImageNamed:@"photo.on.rectangle"] identifier:nil handler:^(UIAction *a) { [self ym_saveToPhotos:item]; }]];
+        UIAction *del = [UIAction actionWithTitle:LOC(@"YM_DELETE") image:[UIImage systemImageNamed:@"trash"] identifier:nil handler:^(UIAction *a) { [self ym_confirmDelete:item completion:nil]; }];
         del.attributes = UIMenuElementAttributesDestructive;
         [actions addObject:del];
         return [UIMenu menuWithTitle:@"" children:actions];
@@ -683,7 +678,7 @@ static BOOL YMViewChainVisible(UIView *from, UIView *upTo) {
         UIImageSymbolConfiguration *cfg = [UIImageSymbolConfiguration configurationWithPointSize:20 weight:UIImageSymbolWeightRegular];
         [button setImage:[UIImage systemImageNamed:@"arrow.down.circle" withConfiguration:cfg] forState:UIControlStateNormal];
         button.tintColor = UIColor.labelColor;
-        button.accessibilityLabel = YMDL(@"Downloads", @"Downloads");
+        button.accessibilityLabel = LOC(@"YM_DOWNLOADS");
         [button addTarget:self action:@selector(ym_openLibrary:) forControlEvents:UIControlEventTouchUpInside];
         objc_setAssociatedObject(self, kYMLibraryButtonKey, button, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     }

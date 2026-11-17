@@ -12,10 +12,6 @@
 #import "Headers.h"
 #import <AVKit/AVKit.h>
 
-static NSString *YMC(NSString *de, NSString *en) {
-    NSString *lang = NSLocale.preferredLanguages.firstObject ?: @"en";
-    return [lang hasPrefix:@"de"] ? de : en;
-}
 
 #pragma mark - InnerTube
 
@@ -388,7 +384,7 @@ static void YMCLoadAvatar(NSString *urlString, void (^completion)(UIImage *img))
 
     NSMutableArray *foot = [NSMutableArray array];
     [foot addObject:[NSString stringWithFormat:@"👍 %@", c.likes.length ? c.likes : @"0"]];
-    if (c.hearted) [foot addObject:YMC(@"❤️ vom Kanal", @"❤️ by creator")];
+    if (c.hearted) [foot addObject:LOC(@"YM_BY_CREATOR")];
     self.footerLabel.text = [foot componentsJoinedByString:@"   "];
 
     [self.repliesButton setTitle:repliesTitle forState:UIControlStateNormal];
@@ -429,10 +425,10 @@ typedef NS_ENUM(NSInteger, YMCRowKind) { YMCRowComment, YMCRowMoreReplies, YMCRo
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.view.backgroundColor = UIColor.systemBackgroundColor;
-    self.title = YMC(@"Kommentare", @"Comments");
+    self.title = LOC(@"YM_COMMENTS");
     self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemClose target:self action:@selector(ym_close)];
 
-    self.sortControl = [[UISegmentedControl alloc] initWithItems:@[YMC(@"Beliebteste", @"Top"), YMC(@"Neueste", @"Newest")]];
+    self.sortControl = [[UISegmentedControl alloc] initWithItems:@[LOC(@"YM_TOP"), LOC(@"YM_NEWEST")]];
     self.sortControl.selectedSegmentIndex = 0;
     self.sortControl.enabled = NO;
     [self.sortControl addTarget:self action:@selector(ym_sortChanged) forControlEvents:UIControlEventValueChanged];
@@ -479,7 +475,7 @@ typedef NS_ENUM(NSInteger, YMCRowKind) { YMCRowComment, YMCRowMoreReplies, YMCRo
 }
 
 - (void)ym_loadFirst {
-    if (!self.videoId.length) { [self ym_showSnapshotWithReason:YMC(@"Zu diesem Download ist keine Video-ID gespeichert (älterer Download).", @"No video ID stored for this download (older download).")]; return; }
+    if (!self.videoId.length) { [self ym_showSnapshotWithReason:LOC(@"YM_NO_VIDEO_ID_STORED_FOR_THIS_DOWNLOAD_OLD")]; return; }
     self.loading = YES;
     self.message = nil;
     [self ym_rebuild];
@@ -489,12 +485,12 @@ typedef NS_ENUM(NSInteger, YMCRowKind) { YMCRowComment, YMCRowMoreReplies, YMCRo
         __strong typeof(weakSelf) self = weakSelf;
         if (!self || gen != self.generation) return;
         self.loading = NO;
-        if (err || !page) { [self ym_showSnapshotWithReason:YMC(@"Offline – gespeicherte Kommentare.", @"Offline – saved comments.")]; return; }
+        if (err || !page) { [self ym_showSnapshotWithReason:LOC(@"YM_OFFLINE_SAVED_COMMENTS")]; return; }
         self.offline = NO;
         self.sortOptions = page.sortOptions;
         self.sortControl.enabled = page.sortOptions.count >= 2;
         [self ym_applyPage:page replace:YES];
-        if (!page.comments.count) self.message = YMC(@"Keine Kommentare (oder Kommentare sind deaktiviert).", @"No comments (or comments are turned off).");
+        if (!page.comments.count) self.message = LOC(@"YM_NO_COMMENTS_OR_COMMENTS_ARE_TURNED_OFF");
         [self ym_setStatus:page.countText.length ? page.countText : nil];
         if (self.onCount) self.onCount(page.countText, self.threads.firstObject);
         [self ym_rebuild];
@@ -514,11 +510,11 @@ typedef NS_ENUM(NSInteger, YMCRowKind) { YMCRowComment, YMCRowMoreReplies, YMCRo
     self.nextToken = nil;
     if (snap) {
         NSString *date = [NSDateFormatter localizedStringFromDate:[NSDate dateWithTimeIntervalSince1970:[snap[@"fetchedAt"] doubleValue]] dateStyle:NSDateFormatterMediumStyle timeStyle:NSDateFormatterShortStyle];
-        [self ym_setStatus:[NSString stringWithFormat:@"%@%@%@ %@ %@", snap[@"count"] ?: @"", [snap[@"count"] length] ? @"\n" : @"", reason, YMC(@"Stand:", @"As of"), date]];
-        self.message = self.threads.count ? nil : YMC(@"Keine gespeicherten Kommentare.", @"No saved comments.");
+        [self ym_setStatus:[NSString stringWithFormat:@"%@%@%@ %@ %@", snap[@"count"] ?: @"", [snap[@"count"] length] ? @"\n" : @"", reason, LOC(@"YM_AS_OF"), date]];
+        self.message = self.threads.count ? nil : LOC(@"YM_NO_SAVED_COMMENTS");
     } else {
         [self ym_setStatus:reason];
-        self.message = YMC(@"Für diesen Download sind keine Kommentare gespeichert. Mit Internetverbindung werden sie geladen und für später gesichert.", @"No comments saved for this download. With a connection they are loaded and saved for later.");
+        self.message = LOC(@"YM_NO_COMMENTS_SAVED_FOR_THIS_DOWNLOAD_WITH");
     }
     if (self.onCount) self.onCount(snap[@"count"], self.threads.firstObject);
     [self ym_rebuild];
@@ -544,7 +540,7 @@ typedef NS_ENUM(NSInteger, YMCRowKind) { YMCRowComment, YMCRowMoreReplies, YMCRo
         __strong typeof(weakSelf) self = weakSelf;
         if (!self || gen != self.generation) return;
         self.loading = NO;
-        if (err || !page) { self.message = YMC(@"Laden fehlgeschlagen.", @"Loading failed."); [self ym_rebuild]; return; }
+        if (err || !page) { self.message = LOC(@"YM_LOADING_FAILED"); [self ym_rebuild]; return; }
         [self ym_applyPage:page replace:YES];
         [self ym_rebuild];
         [self.tableView setContentOffset:CGPointZero animated:NO];
@@ -622,8 +618,8 @@ typedef NS_ENUM(NSInteger, YMCRowKind) { YMCRowComment, YMCRowMoreReplies, YMCRo
         YMComment *c = row.comment;
         NSString *repliesTitle = nil;
         if (!c.isReply && c.replyCount > 0 && !self.offline && c.repliesToken) {
-            repliesTitle = c.repliesExpanded ? YMC(@"▲ Antworten ausblenden", @"▲ Hide replies")
-                                             : [NSString stringWithFormat:@"▼ %ld %@", (long)c.replyCount, c.replyCount == 1 ? YMC(@"Antwort", @"reply") : YMC(@"Antworten", @"replies")];
+            repliesTitle = c.repliesExpanded ? LOC(@"YM_HIDE_REPLIES")
+                                             : [NSString stringWithFormat:@"▼ %ld %@", (long)c.replyCount, c.replyCount == 1 ? LOC(@"YM_REPLY") : LOC(@"YM_REPLIES")];
         } else if (!c.isReply && c.replyCount > 0) {
             repliesTitle = nil;
         }
@@ -640,13 +636,13 @@ typedef NS_ENUM(NSInteger, YMCRowKind) { YMCRowComment, YMCRowMoreReplies, YMCRo
     cell.indentationWidth = 10;
     cell.selectionStyle = UITableViewCellSelectionStyleNone;
     if (row.kind == YMCRowLoading) {
-        cell.textLabel.text = YMC(@"Wird geladen …", @"Loading …");
+        cell.textLabel.text = LOC(@"YM_LOADING");
         cell.textLabel.textColor = UIColor.secondaryLabelColor;
         UIActivityIndicatorView *sp = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleMedium];
         [sp startAnimating];
         cell.accessoryView = sp;
     } else if (row.kind == YMCRowMoreReplies) {
-        cell.textLabel.text = YMC(@"↳ Mehr Antworten ansehen", @"↳ Show more replies");
+        cell.textLabel.text = LOC(@"YM_SHOW_MORE_REPLIES");
         cell.textLabel.textColor = UIColor.systemBlueColor;
         cell.selectionStyle = UITableViewCellSelectionStyleDefault;
     } else {
@@ -829,9 +825,9 @@ void YMOpenChannelInApp(UIViewController *presented, NSString *channelId) {
     cell.detailTextLabel.numberOfLines = 0;
     cell.detailTextLabel.textColor = UIColor.secondaryLabelColor;
     if (indexPath.section == 0 && indexPath.row == 1) {
-        cell.textLabel.text = [self.info[@"author"] length] ? self.info[@"author"] : YMC(@"Kanal", @"Channel");
+        cell.textLabel.text = [self.info[@"author"] length] ? self.info[@"author"] : LOC(@"YM_CHANNEL");
         cell.textLabel.font = [UIFont preferredFontForTextStyle:UIFontTextStyleSubheadline];
-        cell.detailTextLabel.text = YMC(@"Kanal öffnen", @"Open channel");
+        cell.detailTextLabel.text = LOC(@"YM_OPEN_CHANNEL");
         cell.imageView.image = [UIImage systemImageNamed:@"person.crop.circle"];
         cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
     } else if (indexPath.section == 0) {
@@ -840,10 +836,10 @@ void YMOpenChannelInApp(UIViewController *presented, NSString *channelId) {
         cell.detailTextLabel.text = self.info[@"detail"];
         cell.selectionStyle = UITableViewCellSelectionStyleNone;
     } else if (indexPath.section == 1) {
-        NSString *count = self.commentCount.length ? self.commentCount : YMC(@"Kommentare", @"Comments");
-        NSMutableAttributedString *t = [[NSMutableAttributedString alloc] initWithString:YMC(@"Kommentare", @"Comments") attributes:@{NSFontAttributeName: [UIFont preferredFontForTextStyle:UIFontTextStyleHeadline]}];
-        if (self.commentCount.length && ![count isEqualToString:YMC(@"Kommentare", @"Comments")])
-            [t appendAttributedString:[[NSAttributedString alloc] initWithString:[@"  " stringByAppendingString:[[count stringByReplacingOccurrencesOfString:YMC(@"Kommentare", @"Comments") withString:@""] stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceCharacterSet]] attributes:@{NSFontAttributeName: [UIFont preferredFontForTextStyle:UIFontTextStyleSubheadline], NSForegroundColorAttributeName: UIColor.secondaryLabelColor}]];
+        NSString *count = self.commentCount.length ? self.commentCount : LOC(@"YM_COMMENTS");
+        NSMutableAttributedString *t = [[NSMutableAttributedString alloc] initWithString:LOC(@"YM_COMMENTS") attributes:@{NSFontAttributeName: [UIFont preferredFontForTextStyle:UIFontTextStyleHeadline]}];
+        if (self.commentCount.length && ![count isEqualToString:LOC(@"YM_COMMENTS")])
+            [t appendAttributedString:[[NSAttributedString alloc] initWithString:[@"  " stringByAppendingString:[[count stringByReplacingOccurrencesOfString:LOC(@"YM_COMMENTS") withString:@""] stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceCharacterSet]] attributes:@{NSFontAttributeName: [UIFont preferredFontForTextStyle:UIFontTextStyleSubheadline], NSForegroundColorAttributeName: UIColor.secondaryLabelColor}]];
         cell.textLabel.attributedText = t;
         if (self.firstComment) {
             cell.detailTextLabel.text = [NSString stringWithFormat:@"%@: %@", self.firstComment.author ?: @"", self.firstComment.text ?: @""];
@@ -860,16 +856,16 @@ void YMOpenChannelInApp(UIViewController *presented, NSString *channelId) {
                 [weakCell setNeedsLayout];
             });
         } else {
-            cell.detailTextLabel.text = [self.info[@"videoId"] length] ? YMC(@"Antippen, um Kommentare zu laden", @"Tap to load comments") : YMC(@"Für ältere Downloads nicht verfügbar", @"Not available for older downloads");
+            cell.detailTextLabel.text = [self.info[@"videoId"] length] ? LOC(@"YM_TAP_TO_LOAD_COMMENTS") : LOC(@"YM_NOT_AVAILABLE_FOR_OLDER_DOWNLOADS");
         }
         cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
     } else {
         if (indexPath.row == 0) {
-            cell.textLabel.text = YMC(@"In YouTube öffnen", @"Open in YouTube");
+            cell.textLabel.text = LOC(@"YM_OPEN_IN_YOUTUBE");
             cell.imageView.image = [UIImage systemImageNamed:@"play.rectangle"];
             cell.textLabel.textColor = [self.info[@"videoId"] length] ? UIColor.labelColor : UIColor.tertiaryLabelColor;
         } else {
-            cell.textLabel.text = YMC(@"Teilen", @"Share");
+            cell.textLabel.text = LOC(@"YM_SHARE");
             cell.imageView.image = [UIImage systemImageNamed:@"square.and.arrow.up"];
         }
     }
