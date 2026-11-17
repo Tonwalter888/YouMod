@@ -292,7 +292,7 @@ void YouModFilterShortsDisplayView(_ASDisplayView *view, NSString *iden) {
 
 %hook YTReelContentView
 %property (nonatomic, retain) UILongPressGestureRecognizer *YouModExitShortsOnlyGesture;
-- (void)didMoveToWindow {
+- (void)setUpGestureRecognizers {
     %orig;
     self.playbackOverlay.alpha = !isFullscreenEnabled;
     if (IS_ENABLED(ShortsOnly) && isShortsOnlyOn && !self.YouModExitShortsOnlyGesture) {
@@ -317,9 +317,9 @@ void YouModFilterShortsDisplayView(_ASDisplayView *view, NSString *iden) {
 
 %hook YTReelContainerView
 %property (nonatomic, retain) UILongPressGestureRecognizer *YouModExitShortsOnlyGesture;
-- (void)didMoveToWindow {
+- (void)setOverlayView:(UIView *)overlayView {
     %orig;
-    self.overlayView.alpha = !isFullscreenEnabled;
+    if (overlayView) overlayView.alpha = !isFullscreenEnabled;
     if (IS_ENABLED(ShortsOnly) && isShortsOnlyOn && !self.YouModExitShortsOnlyGesture) {
         self.YouModExitShortsOnlyGesture = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(YouModTurnOffShortsOnly:)];
         self.YouModExitShortsOnlyGesture.numberOfTouchesRequired = 2;
