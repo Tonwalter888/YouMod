@@ -1,7 +1,21 @@
 #import "Headers.h"
 
+typedef MPRemoteCommandHandlerStatus (^YouModRemoteCommandHandler)(MPRemoteCommandEvent *event);
+
 static int gNetworkType = 0;
 extern BOOL sStartupVideoPlaying;
+
+// Shorts are hosted by a different view controller depending on the YouTube version
+// (YTShortsPlayerViewController, or YTReelContainerViewController / YTShortsContentPresenter on 21.4x),
+// so look through the whole parent chain instead of only the direct parent.
+static BOOL YouModIsShortsHost(UIViewController *vc) {
+    for (int depth = 0; vc && depth < 6; depth++, vc = vc.parentViewController) {
+        if ([vc isKindOfClass:%c(YTShortsPlayerViewController)]
+            || [vc isKindOfClass:%c(YTReelContainerViewController)]
+            || [vc isKindOfClass:%c(YTShortsContentPresenter)]) return YES;
+    }
+    return NO;
+}
 
 @implementation YouModNetworkMonitor
 + (void)startMonitoring {
@@ -41,8 +55,6 @@ extern BOOL sStartupVideoPlaying;
 static id gYouModRewindTarget = nil;
 static id gYouModForwardTarget = nil;
 static NSMutableArray *gYouModRemoteCommandTargetProxies = nil;
-
-typedef MPRemoteCommandHandlerStatus (^YouModRemoteCommandHandler)(MPRemoteCommandEvent *event);
 
 @implementation YouModRemoteSkipCommands
 
@@ -1421,7 +1433,7 @@ void YouModApplyPrevNextReplacement(YTMainAppControlsOverlayView *overlay) {
         if (savedNormal >= 0.25) [self setPlaybackRate:savedNormal];
         [[NSUserDefaults standardUserDefaults] setBool:NO forKey:GlobalSpeedLocked];
     }
-    NSInteger speedIndex = [self.parentViewController isKindOfClass:%c(YTShortsPlayerViewController)] ? INTFORVAL(ShortsAutoSpeedIndex) : INTFORVAL(AutoSpeedIndex);
+    NSInteger speedIndex = YouModIsShortsHost(self.parentViewController) ? INTFORVAL(ShortsAutoSpeedIndex) : INTFORVAL(AutoSpeedIndex);
     if (speedIndex == 0) return;
     NSArray *speedLabels = @[@0.01, @0.25, @0.5, @0.75, @1.0, @1.25, @1.5, @1.75, @2.0, @3.0, @4.0, @5.0];
     [self setPlaybackRate:[speedLabels[speedIndex] floatValue]];
