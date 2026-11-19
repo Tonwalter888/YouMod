@@ -38,7 +38,7 @@ static NSString *ymPivotIDForTabID(NSString *tabID) {
     if ([tabID isEqualToString:@"home"]) return [%c(YTIBrowseRequest) browseIDForWhatToWatch];
     else if ([tabID isEqualToString:@"shorts"]) return @"FEshorts";
     else if ([tabID isEqualToString:@"create"]) return @"FEuploads";
-    else if ([tabID isEqualToString:@"subscriptions"]) return [%c(YTIBrowseRequest) browseIDForSubscriptionsTab];
+    else if ([tabID isEqualToString:@"subscriptions"]) return [%c(YTIBrowseRequest) browseIDForSubscriptionsTab] ?: @"FEsubscriptions";
     else if ([tabID isEqualToString:@"library"]) return [%c(YTIBrowseRequest) browseIDForLibraryTab];
     else if ([tabID isEqualToString:@"history"]) return [%c(YTIBrowseRequest) browseIDForHistory];
     else if ([tabID isEqualToString:@"gaming"]) return [%c(YTIBrowseRequest) browseIDForGamingDestination];
@@ -62,7 +62,8 @@ static NSString *ymPivotIDForTabID(NSString *tabID) {
 }
 
 static NSInteger ymIconTypeForTabID(NSString *tabID) {
-    if ([tabID isEqualToString:@"history"]) return 1;
+    if ([tabID isEqualToString:@"subscriptions"]) return 66;
+    else if ([tabID isEqualToString:@"history"]) return 1;
     else if ([tabID isEqualToString:@"gaming"]) return 2;
     else if ([tabID isEqualToString:@"sports"]) return 3;
     else if ([tabID isEqualToString:@"notifications"]) return 4;
@@ -84,7 +85,8 @@ static NSInteger ymIconTypeForTabID(NSString *tabID) {
 }
 
 static NSString *ymTitleForTabID(NSString *tabID) {
-    if ([tabID isEqualToString:@"history"]) return LOC(@"HISTORY_TAB");
+    if ([tabID isEqualToString:@"subscriptions"]) return LOC(@"SUBSCRIPTIONS_TAB");
+    else if ([tabID isEqualToString:@"history"]) return LOC(@"HISTORY_TAB");
     else if ([tabID isEqualToString:@"gaming"]) return LOC(@"GAMING_TAB");
     else if ([tabID isEqualToString:@"sports"]) return LOC(@"SPORTS_TAB");
     else if ([tabID isEqualToString:@"notifications"]) return LOC(@"NOTI_TAB");
@@ -106,6 +108,7 @@ static NSString *ymTitleForTabID(NSString *tabID) {
 }
 
 static BOOL isNewYTTabbarLayout = NO;
+static BOOL isGestureRegistered = NO; // long-press menu (Manage Tabs...) attached to a tab view
 
 static YTIPivotBarSupportedRenderers *YouModNewTab(NSString *pivotID, NSString *title, int it) {
     YTIPivotBarSupportedRenderers *tab = [%c(YTIPivotBarSupportedRenderers) new];
@@ -127,19 +130,36 @@ static YTIPivotBarSupportedRenderers *YouModNewTab(NSString *pivotID, NSString *
     return tab;
 }
 
-%hook YTPivotBarView
-- (void)setRenderer:(YTIPivotBarRenderer *)renderer {
+// YouTube gives us ONE renderer per bar and we rewrite its itemsArray in place, so a default tab
+// that is switched off in Manage Tabs is gone from it for good. Keep YouTube's own items, keyed by
+// pivot identifier, so a tab can be switched back on (or the bar refreshed) without a relaunch.
+static NSMutableDictionary<NSString *, YTIPivotBarSupportedRenderers *> *ymNativePivotItems(void) {
+    static NSMutableDictionary<NSString *, YTIPivotBarSupportedRenderers *> *cache;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{ cache = [NSMutableDictionary dictionary]; });
+    return cache;
+}
+
+static NSString *ymPivotIDOfItem(YTIPivotBarSupportedRenderers *item) {
+    NSString *pID = [[item pivotBarItemRenderer] pivotIdentifier];
+    if (pID.length > 0) return pID;
+    pID = [[item pivotBarIconOnlyItemRenderer] pivotIdentifier];
+    return pID.length > 0 ? pID : nil;
+}
+
+// Shared by YTPivotBarView and YTFloatingPivotBarView (their hooks used to be two identical copies).
+static void YMApplyTabLayout(YTIPivotBarRenderer *renderer) {
     isNewYTTabbarLayout = renderer.backgroundStyle == 2;
+    // The bar is being rebuilt, so its item views are new: allow the long-press menu to attach again.
+    isGestureRegistered = NO;
     NSMutableArray <YTIPivotBarSupportedRenderers *> *items = [renderer itemsArray];
     NSArray *savedOrder = [[NSUserDefaults standardUserDefaults] arrayForKey:TabOrder];
     if (savedOrder.count > 0) {
-        // Build lookup: pivotIdentifier -> renderer item
-        NSMutableDictionary<NSString *, YTIPivotBarSupportedRenderers *> *lookup = [NSMutableDictionary dictionary];
+        // Remember every item YouTube (or we) put in the bar, then look tabs up in that cache
+        NSMutableDictionary<NSString *, YTIPivotBarSupportedRenderers *> *lookup = ymNativePivotItems();
         for (YTIPivotBarSupportedRenderers *item in items) {
-            NSString *pID = [[item pivotBarItemRenderer] pivotIdentifier];
-            NSString *pID2 = [[item pivotBarIconOnlyItemRenderer] pivotIdentifier];
-            if (pID && pID.length > 0) lookup[pID] = item;
-            else if (pID2 && pID2.length > 0) lookup[pID2] = item;
+            NSString *pID = ymPivotIDOfItem(item);
+            if (pID) lookup[pID] = item;
         }
 
         // Build ordered array from saved data
@@ -163,86 +183,42 @@ static YTIPivotBarSupportedRenderers *YouModNewTab(NSString *pivotID, NSString *
                 NSString *title = isDownloadTab ? LOC(@"DOWNLOAD_LIBRARY_TAB") : ymTitleForTabID(tabID);
                 if (iconType > 0 && title) {
                     YTIPivotBarSupportedRenderers *newTab = YouModNewTab(pivotID, title, iconType);
-                    if (newTab) [ordered addObject:newTab];
+                    if (newTab) {
+                        lookup[pivotID] = newTab;
+                        [ordered addObject:newTab];
+                    }
                 }
             }
         }
-        // Replace items with ordered set
-        [items removeAllObjects];
-        [items addObjectsFromArray:ordered];
+        // Never leave the bar empty (e.g. only tabs YouTube did not send for this account are enabled):
+        // in that case keep YouTube's own items.
+        if (ordered.count > 0) {
+            [items removeAllObjects];
+            [items addObjectsFromArray:ordered];
+        }
     }
     if (IS_ENABLED(DownloadLibraryTab)) {
         BOOL alreadyPresent = NO;
         for (YTIPivotBarSupportedRenderers *item in items) {
-            NSString *pID = [[item pivotBarItemRenderer] pivotIdentifier];
-            NSString *pID2 = [[item pivotBarIconOnlyItemRenderer] pivotIdentifier];
-            if ([pID isEqualToString:kYMLibraryPivotIdentifier] || [pID2 isEqualToString:kYMLibraryPivotIdentifier]) { alreadyPresent = YES; break; }
+            if ([ymPivotIDOfItem(item) isEqualToString:kYMLibraryPivotIdentifier]) { alreadyPresent = YES; break; }
         }
         if (!alreadyPresent) {
             YTIPivotBarSupportedRenderers *libraryTab = YouModNewTab(kYMLibraryPivotIdentifier, LOC(@"DOWNLOAD_LIBRARY_TAB"), 18);
             if (libraryTab) [items addObject:libraryTab];
         }
     }
+}
+
+%hook YTPivotBarView
+- (void)setRenderer:(YTIPivotBarRenderer *)renderer {
+    YMApplyTabLayout(renderer);
     %orig(renderer);
 }
 %end
 
 %hook YTFloatingPivotBarView
 - (void)setRenderer:(YTIPivotBarRenderer *)renderer {
-    isNewYTTabbarLayout = renderer.backgroundStyle == 2;
-    NSMutableArray <YTIPivotBarSupportedRenderers *> *items = [renderer itemsArray];
-    NSArray *savedOrder = [[NSUserDefaults standardUserDefaults] arrayForKey:TabOrder];
-    if (savedOrder.count > 0) {
-        // Build lookup: pivotIdentifier -> renderer item
-        NSMutableDictionary<NSString *, YTIPivotBarSupportedRenderers *> *lookup = [NSMutableDictionary dictionary];
-        for (YTIPivotBarSupportedRenderers *item in items) {
-            NSString *pID = [[item pivotBarItemRenderer] pivotIdentifier];
-            NSString *pID2 = [[item pivotBarIconOnlyItemRenderer] pivotIdentifier];
-            if (pID && pID.length > 0) lookup[pID] = item;
-            else if (pID2 && pID2.length > 0) lookup[pID2] = item;
-        }
-
-        // Build ordered array from saved data
-        NSMutableArray *ordered = [NSMutableArray array];
-        for (NSDictionary *entry in savedOrder) {
-            NSString *tabID = entry[@"id"];
-            // The download tab's on/off state always comes from the Downloading settings (DownloadLibraryTab).
-            BOOL isDownloadTab = [tabID isEqualToString:@"download"];
-            BOOL enabled = isDownloadTab ? IS_ENABLED(DownloadLibraryTab) : [entry[@"enabled"] boolValue];
-            if (!enabled) continue;
-
-            NSString *pivotID = isDownloadTab ? kYMLibraryPivotIdentifier : ymPivotIDForTabID(tabID);
-            if (!pivotID) continue;
-
-            YTIPivotBarSupportedRenderers *existing = lookup[pivotID];
-            if (existing) {
-                [ordered addObject:existing];
-            } else {
-                // Custom tab not in YouTube's default items — create it
-                NSInteger iconType = isDownloadTab ? 18 : ymIconTypeForTabID(tabID);
-                NSString *title = isDownloadTab ? LOC(@"DOWNLOAD_LIBRARY_TAB") : ymTitleForTabID(tabID);
-                if (iconType > 0 && title) {
-                    YTIPivotBarSupportedRenderers *newTab = YouModNewTab(pivotID, title, iconType);
-                    if (newTab) [ordered addObject:newTab];
-                }
-            }
-        }
-        // Replace items with ordered set
-        [items removeAllObjects];
-        [items addObjectsFromArray:ordered];
-    }
-    if (IS_ENABLED(DownloadLibraryTab)) {
-        BOOL alreadyPresent = NO;
-        for (YTIPivotBarSupportedRenderers *item in items) {
-            NSString *pID = [[item pivotBarItemRenderer] pivotIdentifier];
-            NSString *pID2 = [[item pivotBarIconOnlyItemRenderer] pivotIdentifier];
-            if ([pID isEqualToString:kYMLibraryPivotIdentifier] || [pID2 isEqualToString:kYMLibraryPivotIdentifier]) { alreadyPresent = YES; break; }
-        }
-        if (!alreadyPresent) {
-            YTIPivotBarSupportedRenderers *libraryTab = YouModNewTab(kYMLibraryPivotIdentifier, LOC(@"DOWNLOAD_LIBRARY_TAB"), 18);
-            if (libraryTab) [items addObject:libraryTab];
-        }
-    }
+    YMApplyTabLayout(renderer);
     %orig(renderer);
 }
 %end
@@ -272,8 +248,18 @@ static void YMOpenLinkFromClipboard(UIViewController *presentingVC, BOOL isRunti
     }
 }
 
-static BOOL isGestureRegistered = NO;
 // Hide Tab Labels + long-press on the first tab to open Manage Tabs
+static char kYMTabMenuInteractionKey;
+// Attach the long-press menu to one tab view, once. The flag is reset in YMApplyTabLayout() when the bar
+// is rebuilt (e.g. after Manage Tabs), and the associated object stops the same view from getting two menus.
+static void YMAttachTabMenu(UIView *view) {
+    if (isGestureRegistered || objc_getAssociatedObject(view, &kYMTabMenuInteractionKey)) return;
+    UIContextMenuInteraction *interaction = [[UIContextMenuInteraction alloc] initWithDelegate:(id<UIContextMenuInteractionDelegate>)view];
+    [view addInteraction:interaction];
+    objc_setAssociatedObject(view, &kYMTabMenuInteractionKey, interaction, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    isGestureRegistered = YES;
+}
+
 %hook YTPivotBarItemView
 - (void)setRenderer:(YTIPivotBarItemRenderer *)renderer {
     if (IS_ENABLED(HideTabLabels)) {
@@ -281,19 +267,11 @@ static BOOL isGestureRegistered = NO;
         [self.navigationButton setSizeWithPaddingAndInsets:NO];
     }
     %orig;
-    if (!isGestureRegistered) {
-        UIContextMenuInteraction *interaction = [[UIContextMenuInteraction alloc] initWithDelegate:(id<UIContextMenuInteractionDelegate>)self];
-        [self addInteraction:interaction];
-        isGestureRegistered = YES;
-    }
+    YMAttachTabMenu(self);
 }
 - (void)setIconOnlyItemRenderer:(YTIPivotBarIconOnlyItemRenderer *)renderer {
     %orig;
-    if (!isGestureRegistered) {
-        UIContextMenuInteraction *interaction = [[UIContextMenuInteraction alloc] initWithDelegate:(id<UIContextMenuInteractionDelegate>)self];
-        [self addInteraction:interaction];
-        isGestureRegistered = YES;
-    }
+    YMAttachTabMenu(self);
 }
 %new
 - (UIContextMenuConfiguration *)contextMenuInteraction:(UIContextMenuInteraction *)interaction configurationForMenuAtLocation:(CGPoint)location {
