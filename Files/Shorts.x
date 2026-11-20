@@ -118,17 +118,18 @@ static void YouModRemoveShortsOverlayButton(_ASDisplayView *dpView) {
 }
 %end
 
+%hook YTReelAccessoryView
+- (void)setAccessoryViewElementRenderer:(YTIElementRenderer *)renderer hdrUIBoostRatio:(float)ratio {
+    if (IS_ENABLED(HideShortsSubbar) && renderer && [renderer.description containsString:@"shorts_paused_state.eml"]) return;
+    %orig;
+}
+%end
+
 void YouModRemoveShortsPausedButtons(_ASDisplayView *self, NSString *iden) {
     if (!IS_ENABLED(HideShortsSubbar) && !IS_ENABLED(RemoveShortsPausedSubButton) && !IS_ENABLED(RemoveShortsPausedLiveButton) && !IS_ENABLED(RemoveShortsPausedLensButton) && !IS_ENABLED(RemoveShortsPausedTrendsButton)) return;
     if (![iden containsString:@"id.ui.shorts_paused_state."] && ![iden hasSuffix:@"_button"]) return;
     ASScrollView *view = (ASScrollView *)self.superview;
     if (![view isKindOfClass:%c(ASScrollView)]) return;
-    // YT 21.4x: the paused-state carousel is no longer a YTPausedStateCarouselView but an ELM scroll view
-    // holding these buttons, so hide that scroll view for "Hide Shorts subbar".
-    if (IS_ENABLED(HideShortsSubbar) && [iden containsString:@"id.ui.shorts_paused_state."]) {
-        view.hidden = YES;
-        return;
-    }
     NSDictionary *buttonsList = @{
         @"id.ui.shorts_paused_state.subscriptions_button": @(IS_ENABLED(RemoveShortsPausedSubButton)),
         @"id.ui.shorts_paused_state.live_button": @(IS_ENABLED(RemoveShortsPausedLiveButton)),
