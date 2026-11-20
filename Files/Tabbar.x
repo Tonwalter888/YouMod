@@ -38,7 +38,7 @@ static NSString *ymPivotIDForTabID(NSString *tabID) {
     if ([tabID isEqualToString:@"home"]) return [%c(YTIBrowseRequest) browseIDForWhatToWatch];
     else if ([tabID isEqualToString:@"shorts"]) return @"FEshorts";
     else if ([tabID isEqualToString:@"create"]) return @"FEuploads";
-    else if ([tabID isEqualToString:@"subscriptions"]) return [%c(YTIBrowseRequest) browseIDForSubscriptionsTab] ?: @"FEsubscriptions";
+    else if ([tabID isEqualToString:@"subscriptions"]) return [%c(YTIBrowseRequest) browseIDForSubscriptionsTab];
     else if ([tabID isEqualToString:@"library"]) return [%c(YTIBrowseRequest) browseIDForLibraryTab];
     else if ([tabID isEqualToString:@"history"]) return [%c(YTIBrowseRequest) browseIDForHistory];
     else if ([tabID isEqualToString:@"gaming"]) return [%c(YTIBrowseRequest) browseIDForGamingDestination];
@@ -62,7 +62,7 @@ static NSString *ymPivotIDForTabID(NSString *tabID) {
 }
 
 static NSInteger ymIconTypeForTabID(NSString *tabID) {
-    if ([tabID isEqualToString:@"subscriptions"]) return 66;
+    if ([tabID isEqualToString:@"subscriptions"]) return 1155;
     else if ([tabID isEqualToString:@"history"]) return 1;
     else if ([tabID isEqualToString:@"gaming"]) return 2;
     else if ([tabID isEqualToString:@"sports"]) return 3;
@@ -108,7 +108,7 @@ static NSString *ymTitleForTabID(NSString *tabID) {
 }
 
 static BOOL isNewYTTabbarLayout = NO;
-static BOOL isGestureRegistered = NO; // long-press menu (Manage Tabs...) attached to a tab view
+static BOOL isGestureRegistered = NO;
 
 static YTIPivotBarSupportedRenderers *YouModNewTab(NSString *pivotID, NSString *title, int it) {
     YTIPivotBarSupportedRenderers *tab = [%c(YTIPivotBarSupportedRenderers) new];
@@ -133,7 +133,7 @@ static YTIPivotBarSupportedRenderers *YouModNewTab(NSString *pivotID, NSString *
 // YouTube gives us ONE renderer per bar and we rewrite its itemsArray in place, so a default tab
 // that is switched off in Manage Tabs is gone from it for good. Keep YouTube's own items, keyed by
 // pivot identifier, so a tab can be switched back on (or the bar refreshed) without a relaunch.
-static NSMutableDictionary<NSString *, YTIPivotBarSupportedRenderers *> *ymNativePivotItems(void) {
+static NSMutableDictionary<NSString *, YTIPivotBarSupportedRenderers *> *ymNativePivotItems() {
     static NSMutableDictionary<NSString *, YTIPivotBarSupportedRenderers *> *cache;
     static dispatch_once_t once;
     dispatch_once(&once, ^{ cache = [NSMutableDictionary dictionary]; });
@@ -141,13 +141,12 @@ static NSMutableDictionary<NSString *, YTIPivotBarSupportedRenderers *> *ymNativ
 }
 
 static NSString *ymPivotIDOfItem(YTIPivotBarSupportedRenderers *item) {
-    NSString *pID = [[item pivotBarItemRenderer] pivotIdentifier];
+    NSString *pID = item pivotBarItemRenderer.pivotIdentifier;
     if (pID.length > 0) return pID;
-    pID = [[item pivotBarIconOnlyItemRenderer] pivotIdentifier];
+    pID = item.pivotBarIconOnlyItemRenderer.pivotIdentifier;
     return pID.length > 0 ? pID : nil;
 }
 
-// Shared by YTPivotBarView and YTFloatingPivotBarView (their hooks used to be two identical copies).
 static void YMApplyTabLayout(YTIPivotBarRenderer *renderer) {
     isNewYTTabbarLayout = renderer.backgroundStyle == 2;
     // The bar is being rebuilt, so its item views are new: allow the long-press menu to attach again.
@@ -250,8 +249,6 @@ static void YMOpenLinkFromClipboard(UIViewController *presentingVC, BOOL isRunti
 
 // Hide Tab Labels + long-press on the first tab to open Manage Tabs
 static char kYMTabMenuInteractionKey;
-// Attach the long-press menu to one tab view, once. The flag is reset in YMApplyTabLayout() when the bar
-// is rebuilt (e.g. after Manage Tabs), and the associated object stops the same view from getting two menus.
 static void YMAttachTabMenu(UIView *view) {
     if (isGestureRegistered || objc_getAssociatedObject(view, &kYMTabMenuInteractionKey)) return;
     UIContextMenuInteraction *interaction = [[UIContextMenuInteraction alloc] initWithDelegate:(id<UIContextMenuInteractionDelegate>)view];
