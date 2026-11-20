@@ -1,7 +1,7 @@
 #import "Headers.h"
 
 UIViewController *YouModAppViewController() {
-    return [[[UIApplication sharedApplication] delegate] window].rootViewController;
+    return UIApplication.sharedApplication.delegate.window.rootViewController;
 }
 
 // Enables shorts quality - works best with YTClassicVideoQuality
@@ -126,7 +126,7 @@ static void YouModRemoveShortsOverlayButton(_ASDisplayView *dpView) {
 %end
 
 void YouModRemoveShortsPausedButtons(_ASDisplayView *self, NSString *iden) {
-    if (!IS_ENABLED(HideShortsSubbar) && !IS_ENABLED(RemoveShortsPausedSubButton) && !IS_ENABLED(RemoveShortsPausedLiveButton) && !IS_ENABLED(RemoveShortsPausedLensButton) && !IS_ENABLED(RemoveShortsPausedTrendsButton)) return;
+    if (!IS_ENABLED(RemoveShortsPausedSubButton) && !IS_ENABLED(RemoveShortsPausedLiveButton) && !IS_ENABLED(RemoveShortsPausedLensButton) && !IS_ENABLED(RemoveShortsPausedTrendsButton)) return;
     if (![iden containsString:@"id.ui.shorts_paused_state."] && ![iden hasSuffix:@"_button"]) return;
     ASScrollView *view = (ASScrollView *)self.superview;
     if (![view isKindOfClass:%c(ASScrollView)]) return;
