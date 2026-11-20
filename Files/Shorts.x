@@ -1,7 +1,7 @@
 #import "Headers.h"
 
 UIViewController *YouModAppViewController() {
-    return [[[UIApplication sharedApplication] delegate] window].rootViewController;
+    return UIApplication.sharedApplication.delegate.window.rootViewController;
 }
 
 // Enables shorts quality - works best with YTClassicVideoQuality
@@ -115,6 +115,13 @@ static void YouModRemoveShortsOverlayButton(_ASDisplayView *dpView) {
 - (void)didMoveToWindow {
     %orig;
     if (IS_ENABLED(HideShortsSubbar)) self.hidden = YES;
+}
+%end
+
+%hook YTReelAccessoryView
+- (void)setAccessoryViewElementRenderer:(YTIElementRenderer *)renderer hdrUIBoostRatio:(float)ratio {
+    if (IS_ENABLED(HideShortsSubbar) && renderer && [renderer.description containsString:@"shorts_paused_state.eml"]) return;
+    %orig;
 }
 %end
 
