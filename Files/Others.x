@@ -184,7 +184,7 @@
 + (NSWritingDirection)_defaultWritingDirection { return IS_ENABLED(DisablesRTL) ? NSWritingDirectionLeftToRight : %orig; }
 %end
 
-%hook UIDevice
+%hook UITraitCollection
 - (UIUserInterfaceIdiom)userInterfaceIdiom {
     if (INTFORVAL(DeviceUIIndex) == 1) return UIUserInterfaceIdiomPad;
     else if (INTFORVAL(DeviceUIIndex) == 2) return UIUserInterfaceIdiomPhone;
