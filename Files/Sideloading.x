@@ -13,9 +13,7 @@ static NSString *accessGroupID() {
     OSStatus status = SecItemCopyMatching((__bridge CFDictionaryRef)query, (CFTypeRef *)&result);
     if (status == errSecItemNotFound) {
         status = SecItemAdd((__bridge CFDictionaryRef)query, (CFTypeRef *)&result);
-        if (status != errSecSuccess) {
-            return nil;
-        }
+        if (status != errSecSuccess) return nil;
     }
     NSString *accessGroup = [(__bridge NSDictionary *)result objectForKey:(__bridge NSString *)kSecAttrAccessGroup];
     return accessGroup;
@@ -41,10 +39,6 @@ static NSString *accessGroupID() {
 
 %hook GVROverlayView
 + (NSString *)appName { return YT_NAME; }
-%end
-
-%hook OGLPhenotypeFlagServiceImpl
-- (NSString *)bundleId { return YT_BUNDLE_ID; }
 %end
 
 %hook APMAEU
@@ -74,30 +68,25 @@ static NSString *accessGroupID() {
 
 %hook NSBundle
 + (NSBundle *)bundleWithIdentifier:(NSString *)identifier {
-    if ([identifier isEqualToString:YT_BUNDLE_ID])
-        return NSBundle.mainBundle;
-    return %orig(identifier);
+    if ([identifier isEqualToString:YT_BUNDLE_ID]) return NSBundle.mainBundle;
+    return %orig;
 }
-- (NSString *)bundleIdentifier {
-    return [self isEqual:NSBundle.mainBundle] ? YT_BUNDLE_ID : %orig;
-}
+- (NSString *)bundleIdentifier { return [self isEqual:NSBundle.mainBundle] ? YT_BUNDLE_ID : %orig; }
 - (NSDictionary *)infoDictionary {
     NSDictionary *dict = %orig;
-    if (![self isEqual:NSBundle.mainBundle])
-        return %orig;
+    if (![self isEqual:NSBundle.mainBundle]) return dict;
     NSMutableDictionary *info = [dict mutableCopy];
     if (info[@"CFBundleIdentifier"]) info[@"CFBundleIdentifier"] = YT_BUNDLE_ID;
     if (info[@"CFBundleDisplayName"]) info[@"CFBundleDisplayName"] = YT_NAME;
     if (info[@"CFBundleName"]) info[@"CFBundleName"] = YT_NAME;
+    if (info[@"UIDesignRequiresCompatibility"] && IS_ENABLED(LiquidGlass)) info[@"UIDesignRequiresCompatibility"] = @NO;
     return info;
 }
 - (id)objectForInfoDictionaryKey:(NSString *)key {
-    if (![self isEqual:NSBundle.mainBundle])
-        return %orig;
-    if ([key isEqualToString:@"CFBundleIdentifier"])
-        return YT_BUNDLE_ID;
-    if ([key isEqualToString:@"CFBundleDisplayName"] || [key isEqualToString:@"CFBundleName"])
-        return YT_NAME;
+    if (![self isEqual:NSBundle.mainBundle]) return %orig;
+    else if ([key isEqualToString:@"CFBundleIdentifier"]) return YT_BUNDLE_ID;
+    else if ([key isEqualToString:@"CFBundleDisplayName"] || [key isEqualToString:@"CFBundleName"]) return YT_NAME;
+    else if ([key isEqualToString:@"UIDesignRequiresCompatibility"] && IS_ENABLED(LiquidGlass)) return @NO;
     return %orig;
 }
 %end
@@ -113,49 +102,25 @@ static NSString *accessGroupID() {
 %end
 
 %hook GULKeychainStorage
-- (void)getObjectForKey:(id)key objectClass:(Class)objectClass accessGroup:(id)accessGroup completionHandler:(id)handler {
-    accessGroup = accessGroupID();
-    %orig(key, objectClass, accessGroup, handler);
-}
-- (void)setObject:(id)object forKey:(id)key accessGroup:(id)accessGroup completionHandler:(id)handler {
-    accessGroup = accessGroupID();
-    %orig(object, key, accessGroup, handler);
-}
-- (void)removeObjectForKey:(id)key accessGroup:(id)accessGroup completionHandler:(id)handler {
-    accessGroup = accessGroupID();
-    %orig(key, accessGroup, handler);
-}
-- (void)getObjectFromKeychainForKey:(id)key objectClass:(Class)objectClass accessGroup:(id)accessGroup completionHandler:(id)handler {
-    accessGroup = accessGroupID();
-    %orig(key, objectClass, accessGroup, handler);
-}
-- (id)keychainQueryWithKey:(id)key accessGroup:(id)accessGroup {
-    accessGroup = accessGroupID();
-    return %orig(key, accessGroup);
-}
+- (void)getObjectForKey:(id)key objectClass:(Class)objectClass accessGroup:(id)accessGroup completionHandler:(id)handler { %orig(key, objectClass, accessGroupID(), handler); }
+- (void)setObject:(id)object forKey:(id)key accessGroup:(id)accessGroup completionHandler:(id)handler { %orig(object, key, accessGroupID(), handler); }
+- (void)removeObjectForKey:(id)key accessGroup:(id)accessGroup completionHandler:(id)handler { %orig(key, accessGroupID(), handler); }
+- (void)getObjectFromKeychainForKey:(id)key objectClass:(Class)objectClass accessGroup:(id)accessGroup completionHandler:(id)handler { %orig(key, objectClass, accessGroupID(), handler); }
+- (id)keychainQueryWithKey:(id)key accessGroup:(id)accessGroup { return %orig(key, accessGroupID()); }
 %end
 
 %hook GNPEncryptionConfiguration
-- (id)initWithKeychainAccessGroup:(id)arg {
-    arg = accessGroupID();
-    return %orig(arg);
-}
+- (id)initWithKeychainAccessGroup:(id)arg { return %orig(accessGroupID()); }
 - (id)keychainAccessGroup { return accessGroupID(); }
 %end
 
 %hook FIRInstallationsStore
-- (id)initWithSecureStorage:(id)arg1 accessGroup:(id)arg2 {
-    arg2 = accessGroupID();
-    return %orig(arg1, arg2);
-}
+- (id)initWithSecureStorage:(id)arg1 accessGroup:(id)arg2 { return %orig(arg1, accessGroupID()); }
 - (id)accessGroup { return accessGroupID(); }
 %end
 
 %hook CHMConfiguration
-- (void)setKeychainAccessGroup:(id)arg {
-    arg = accessGroupID();
-    %orig(arg);
-}
+- (void)setKeychainAccessGroup:(id)arg { %orig(accessGroupID()); }
 - (id)keychainAccessGroup { return accessGroupID(); }
 %end
 

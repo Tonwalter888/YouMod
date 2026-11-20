@@ -1,0 +1,2 @@
+@interface YTSearchViewController : UIViewController
+@end

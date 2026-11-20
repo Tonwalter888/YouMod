@@ -1,0 +1,2 @@
+@interface YTReelPlayerBarIntegrationController : NSObject
+@end

@@ -1,0 +1,2 @@
+@interface YTNavigationBarTitleView : UIView
+@end

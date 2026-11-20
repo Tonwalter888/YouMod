@@ -24,7 +24,7 @@
     picker.modalPresentationStyle = UIModalPresentationFormSheet;
 
     // Ensure it looks right on iPad
-    if (isPad()) {
+    if ([YMHelpers isPad]) {
         picker.popoverPresentationController.sourceView = vc.view;
         picker.popoverPresentationController.sourceRect = CGRectMake(vc.view.bounds.size.width/2, vc.view.bounds.size.height/2, 0, 0);
         picker.popoverPresentationController.permittedArrowDirections = 0;
@@ -37,7 +37,7 @@
     NSURL *selectedFileURL = urls.firstObject;
     if (!selectedFileURL) return;
     NSDictionary *importedData = [NSDictionary dictionaryWithContentsOfURL:selectedFileURL];
-    // Vaild plist check
+    // Valid plist check
     if (!importedData || ![importedData isKindOfClass:[NSDictionary class]]) {
         YTAlertView *alertView = [%c(YTAlertView) infoDialog];
         alertView.title = LOC(@"ERROR");
@@ -109,7 +109,7 @@
     UIDocumentPickerViewController *picker = [[UIDocumentPickerViewController alloc] initForExportingURLs:@[fileURL] asCopy:YES];
     picker.modalPresentationStyle = UIModalPresentationFormSheet;
     
-    if (isPad()) {
+    if ([YMHelpers isPad]) {
         picker.popoverPresentationController.sourceView = vc.view;
     }
     [vc presentViewController:picker animated:YES completion:nil];
@@ -125,6 +125,7 @@
             }
         }
         [defaults setBool:YES forKey:AutoClearCache];
+        [defaults setBool:YES forKey:LiquidGlass];
         [defaults setBool:YES forKey:HideCastButtonNav];
         [defaults setBool:YES forKey:HideCastButtonPlayer];
         [defaults setBool:YES forKey:BackgroundPlayback];
@@ -134,7 +135,6 @@
         [defaults setInteger:2 forKey:RightSideGesture];
         [defaults setInteger:1 forKey:GestureHUDSize];
         [defaults setInteger:1 forKey:YTLogoIndex];
-        [defaults setInteger:2 forKey:DownloadMethod];
         [defaults synchronize];
         [[UIApplication sharedApplication] performSelector:@selector(suspend)];
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.3 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{

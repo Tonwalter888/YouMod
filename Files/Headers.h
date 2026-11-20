@@ -1,91 +1,239 @@
-// Perferences and headers
-// For Tweak.x
-#import <YouTubeHeader/_ASDisplayView.h>
-#import <YouTubeHeader/YTIIcon.h>
-#import <YouTubeHeader/YTRightNavigationButtons.h>
-#import <YouTubeHeader/YTIElementRenderer.h>
-#import <YouTubeHeader/YTPlayerBarController.h>
-#import <YouTubeHeader/YTPlayerViewController.h>
-#import <YouTubeHeader/YTWatchController.h>
-#import <YouTubeHeader/YTIMenuConditionalServiceItemRenderer.h>
-#import <YouTubeHeader/YTIPivotBarRenderer.h>
-#import <YouTubeHeader/YTPivotBarItemView.h>
-#import <YouTubeHeader/YTActionSheetAction.h>
-#import <YouTubeHeader/YTIMenuItemSupportedRenderers.h>
-#import <YouTubeHeader/YTMainAppControlsOverlayView.h>
-#import <YouTubeHeader/YTMainAppVideoPlayerOverlayView.h>
-#import <YouTubeHeader/YTMainAppVideoPlayerOverlayViewController.h>
-#import <YouTubeHeader/YTVideoQualitySwitchOriginalController.h>
-#import <YouTubeHeader/YTVideoQualitySwitchRedesignedController.h>
-#import <YouTubeHeader/YTInnerTubeCollectionViewController.h>
-#import <YouTubeHeader/YTIShowFullscreenInterstitialCommand.h>
-#import <YouTubeHeader/YTISectionListRenderer.h>
-#import <YouTubeHeader/YTIShelfRenderer.h>
-#import <YouTubeHeader/YTIWatchNextResponse.h>
-#import <YouTubeHeader/YTPlayerOverlay.h>
-#import <YouTubeHeader/YTPlayerOverlayProvider.h>
-#import <YouTubeHeader/YTReelModel.h>
-#import <YouTubeHeader/YTAlertView.h>
-#import <YouTubeHeader/YTVarispeedSwitchController.h>
-#import <YouTubeHeader/YTVarispeedSwitchControllerOption.h>
-#import <YouTubeHeader/YTInlinePlayerBarContainerView.h>
-#import <YouTubeHeader/YTSingleVideoTime.h>
-#import <YouTubeHeader/YTSingleVideoController.h>
-#import <YouTubeHeader/YTPlayerView.h>
-#import <YouTubeHeader/YTShortsPlayerViewController.h>
-#import <YouTubeHeader/YTReelPlayerViewController.h>
-#import <YouTubeHeader/YTLabel.h>
-#import <YouTubeHeader/MLFormat.h>
-#import <YouTubeHeader/MLQuickMenuVideoQualitySettingFormatConstraint.h>
-#import <YouTubeHeader/YTCommonColorPalette.h>
-#import <YouTubeHeader/YTIPivotBarSupportedRenderers.h>
-#import <YouTubeHeader/YTIBrowseRequest.h>
-#import <YouTubeHeader/YTAssetLoader.h>
+// YouMod — umbrella preferences and headers
+// Interfaces live in per-class headers under Headers/. This file keeps
+// the imports, the YouMod preference keys, the shared externs, and the
+// Foundation/UIKitCore interfaces.
+
+#import "Headers/_ASDisplayView.h"
+#import "Headers/YTIIcon.h"
+#import "Headers/YTRightNavigationButtons.h"
+#import "Headers/YTIElementRenderer.h"
+#import "Headers/YTPlayerBarController.h"
+#import "Headers/YTPlayerViewController.h"
+#import "Headers/YTWatchController.h"
+#import "Headers/YTIMenuConditionalServiceItemRenderer.h"
+#import "Headers/YTIPivotBarRenderer.h"
+#import "Headers/YTIPivotBarItemRenderer.h"
+#import "Headers/YTPivotBarItemView.h"
+#import "Headers/YTActionSheetAction.h"
+#import "Headers/YTIMenuItemSupportedRenderers.h"
+#import "Headers/YTMainAppControlsOverlayView.h"
+#import "Headers/YTMainAppVideoPlayerOverlayView.h"
+#import "Headers/YTMainAppVideoPlayerOverlayViewController.h"
+#import "Headers/YTVideoQualitySwitchOriginalController.h"
+#import "Headers/YTVideoQualitySwitchRedesignedController.h"
+#import "Headers/YTInnerTubeCollectionViewController.h"
+#import "Headers/YTIShowFullscreenInterstitialCommand.h"
+#import "Headers/YTISectionListRenderer.h"
+#import "Headers/YTIShelfRenderer.h"
+#import "Headers/YTIWatchNextResponse.h"
+#import "Headers/YTPlayerOverlay.h"
+#import "Headers/YTPlayerOverlayProvider.h"
+#import "Headers/YTReelModel.h"
+#import "Headers/YTAlertView.h"
+#import "Headers/YTVarispeedSwitchController.h"
+#import "Headers/YTVarispeedSwitchControllerOption.h"
+#import "Headers/YTInlinePlayerBarContainerView.h"
+#import "Headers/YTFrostedGlassView.h"
+#import "Headers/YTSingleVideoTime.h"
+#import "Headers/YTSingleVideoController.h"
+#import "Headers/YTPlayerView.h"
+#import "Headers/YTShortsPlayerViewController.h"
+#import "Headers/YTReelPlayerViewController.h"
+#import "Headers/YTLabel.h"
+#import "Headers/MLFormat.h"
+#import "Headers/MLQuickMenuVideoQualitySettingFormatConstraint.h"
+#import "Headers/YTCommonColorPalette.h"
+#import "Headers/YTIPivotBarSupportedRenderers.h"
+#import "Headers/YTIBrowseRequest.h"
+#import "Headers/YTAssetLoader.h"
 #import <MediaPlayer/MediaPlayer.h>
-#import <YouTubeHeader/ASCollectionView.h>
-#import <YouTubeHeader/YTColor.h>
-#import <YouTubeHeader/YTTypeStyle.h>
-#import <YouTubeHeader/YTModularPlayerBarController.h>
+#import "Headers/ASCollectionView.h"
+#import "Headers/YTColor.h"
+#import "Headers/YTTypeStyle.h"
+#import "Headers/YTModularPlayerBarController.h"
 #import <dlfcn.h>
-#import <SystemConfiguration/SystemConfiguration.h>
-#import <netinet/in.h>
-#import <YouTubeHeader/YTAppViewControllerImpl.h>
-#import <YouTubeHeader/YTAppViewController.h>
-#import <YouTubeHeader/YTDefaultSheetController.h>
-#import <YouTubeHeader/YTIFormatStream.h>
-#import <YouTubeHeader/YTIPlayerResponse.h>
-#import <YouTubeHeader/YTPlayerResponse.h>
-#import <YouTubeHeader/YTIVideoDetails.h>
-#import <YouTubeHeader/YTIStreamingData.h>
-#import <YouTubeHeader/YTIFormattedString.h>
-#import <YouTubeHeader/GOOHUDManagerInternal.h>
-#import <YouTubeHeader/MLInnerTubeCaptionTrack.h>
-#import <YouTubeHeader/MLCaption.h>
-#import <YouTubeHeader/MLFormat3Captions.h>
-#import <YouTubeHeader/YTFormat3CaptionViewController.h>
-#import <YouTubeHeader/YTWatchNextResultsViewController.h>
-#import <YouTubeHeader/YTIThumbnailDetails.h>
-#import <YouTubeHeader/YTIThumbnailDetails_Thumbnail.h>
-#import <YouTubeHeader/_ASCollectionViewCell.h>
-#import <YouTubeHeader/YTReelElementAsyncComponentView.h>
+#import <Network/Network.h>
+#import "Headers/YTAppViewControllerImpl.h"
+#import "Headers/YTAppViewController.h"
+#import "Headers/YTDefaultSheetController.h"
+#import "Headers/YTIFormatStream.h"
+#import "Headers/YTIPlayerResponse.h"
+#import "Headers/YTPlayerResponse.h"
+#import "Headers/YTIVideoDetails.h"
+#import "Headers/YTIStreamingData.h"
+#import "Headers/YTIFormattedString.h"
+#import "Headers/YTICommand.h"
+#import "Headers/YTCommandResponderEvent.h"
+#import "Headers/GOOHUDManagerInternal.h"
+#import "Headers/MLInnerTubeCaptionTrack.h"
+#import "Headers/MLCaption.h"
+#import "Headers/MLFormat3Captions.h"
+#import "Headers/YTFormat3CaptionViewController.h"
+#import "Headers/YTWatchNextResultsViewController.h"
+#import "Headers/YTIThumbnailDetails.h"
+#import "Headers/YTIThumbnailDetails_Thumbnail.h"
+#import "Headers/_ASCollectionViewCell.h"
+#import "Headers/YTReelElementAsyncComponentView.h"
+#import "Headers/YTIPlayerBarDecorationModel.h"
+#import "Headers/YTPlayerBarProgressDecorationView.h"
+#import "Headers/YTPlayerBarRectangleDecorationView.h"
+#import "Headers/ELMNodeController.h"
+#import "Headers/ELMImageNode.h"
+#import <objc/runtime.h>
+#import "Headers/GPBMessage.h"
+#import "Headers/YTReelNonVideoContentModel.h"
+#import "Headers/GOODialogView.h"
+#import "Headers/GOOShrinkWrapView.h"
+#import "Headers/YTShortsContentPresenterView.h"
+#import "Headers/YTReelContainerView.h"
+#import "Headers/YTReelWatchRootView.h"
 
 // For Settings.x and SponsorBlockSettings.x
 #import <roothide.h>
-#import <YouTubeHeader/YTSettingsGroupData.h>
-#import <YouTubeHeader/YTSettingsSectionItem.h>
-#import <YouTubeHeader/YTSettingsSectionItemManager.h>
-#import <YouTubeHeader/YTSettingsViewController.h>
-#import <YouTubeHeader/YTSettingsSectionController.h>
-#import <YouTubeHeader/YTSearchableSettingsViewController.h>
-#import <YouTubeHeader/YTUIUtils.h>
+#import "Headers/YTSettingsGroupData.h"
+#import "Headers/YTSettingsSectionItem.h"
+#import "Headers/YTSettingsSectionItemManager.h"
+#import "Headers/YTSettingsViewController.h"
+#import "Headers/YTSettingsSectionController.h"
+#import "Headers/YTUIUtils.h"
+#import "Headers/YTResponderEvent.h"
 
-#define DownloadFix @"YouModDownloadFix"
-#define DownloadServerIndex @"YouModDownloadServerIndex"
+// YouMod interfaces
+#import "Headers/YTNavigationController.h"
+#import "Headers/YTPresentModalResponderEvent.h"
+#import "Headers/YTInlineSignInChannelCell.h"
+#import "Headers/MDCInkView.h"
+#import "Headers/YTPageHeaderViewController.h"
+#import "Headers/YTELMViewController.h"
+#import "Headers/YTInlineScrubGestureView.h"
+#import "Headers/YTPivotBarView.h"
+#import "Headers/YTContextualWrapView.h"
+#import "Headers/YTIPlayerCueRangeSet.h"
+#import "Headers/YTITopbarLogoRenderer.h"
+#import "Headers/YTVideoFreeZoomOverlayController.h"
+#import "Headers/YTVideoFreeZoomOverlayView.h"
+#import "Headers/YTFullscreenActionsView.h"
+#import "Headers/YTSearchBarView.h"
+#import "Headers/GSKRedMicButton.h"
+#import "Headers/YTReelContainerViewController.h"
+#import "Headers/YTReelPlayerBarIntegrationController.h"
+#import "Headers/YTHeaderView.h"
+#import "Headers/YTNavigationBarTitleView.h"
+#import "Headers/YTSearchViewController.h"
+#import "Headers/YTPlayabilityResolutionUserActionUIController.h"
+#import "Headers/YTPlayabilityResolutionUserActionUIControllerImpl.h"
+#import "Headers/YTPivotBarViewController.h"
+#import "Headers/GOODialogContentView.h"
+#import "Headers/YTReelWatchPlaybackOverlayView.h"
+#import "Headers/YTLanguages.h"
+#import "Headers/YTReelFreeZoomOverlayView.h"
+#import "Headers/YTFullscreenEngagementOverlayView.h"
+#import "Headers/YTAnnotationsViewController.h"
+#import "Headers/YTRelatedVideosView.h"
+#import "Headers/YTAutoplayAutonavController.h"
+#import "Headers/YTInlineMutedPlaybackPlayerOverlayViewController.h"
+#import "Headers/YTInlineMutedPlaybackScrubbingSlider.h"
+#import "Headers/YTInlineMutedPlaybackScrubberView.h"
+#import "Headers/YTInlineMutedPlaybackPlayerOverlayView.h"
+#import "Headers/YTWatchFloatingMiniplayerProgressBarView.h"
+#import "Headers/YTWatchFloatingMiniplayerWithPersistentControlsView.h"
+#import "Headers/YTWatchFloatingMiniplayerViewController.h"
+#import "Headers/SSOConfiguration.h"
+#import "Headers/YTEngagementPanelHeaderView.h"
+#import "Headers/YTEngagementPanelView.h"
+#import "Headers/YTEngagementPanelContainerView.h"
+#import "Headers/YTRelatedVideosViewController.h"
+#import "Headers/YTTransportControlsButtonView.h"
+#import "Headers/YTIChipCloudChipRenderer.h"
+#import "Headers/YTChipCloudChipView.h"
+#import "Headers/YTPlaybackButton.h"
+#import "Headers/YTPausedStateCarouselView.h"
+#import "Headers/YTAppDelegate.h"
+#import "Headers/YouModPrefsManager.h"
+#import "Headers/YTCaptionTrackSwitchController.h"
+#import "Headers/ASScrollView.h"
+#import "Headers/YTDialogContainerScrollView.h"
+#import "Headers/YTContextualSheetView.h"
+#import "Headers/YTSlimStatusBarConfiguration.h"
+#import "Headers/YTSlimStatusBarView.h"
+#import "Headers/YTSlimStatusBarControllerImpl.h"
+#import "Headers/YTIPlayerCaptionsTrackListRenderer.h"
+#import "Headers/YTICaptionsSupportedRenderers.h"
+#import "Headers/YTIVideoWithContextRenderer.h"
+#import "Headers/YTDataUtils.h"
+#import "Headers/YCHAsyncLiveChatCollectionViewController.h"
+#import "Headers/YTStartupAnimationViewController.h"
+#import "Headers/YTWatchFloatingMiniplayerBadgeView.h"
+#import "Headers/YTReelTopBarView.h"
+#import "Headers/SBSegment.h"
+#import "Headers/YTIPlayerBarItemData.h"
+#import "Headers/SBRequest.h"
+#import "Headers/YTIEngagementPanelTitleHeaderRenderer.h"
+#import "Headers/YTIEngagementPanelSectionListHeaderSupportedRenderers.h"
+#import "Headers/YTIEngagementPanelSectionListRenderer.h"
+#import "Headers/YTIEngagementPanelSupportedRenderers.h"
+#import "Headers/YTEngagementPanelIdentifier.h"
+#import "Headers/YTEngagementPanelViewControllerImpl.h"
+#import "Headers/YTMainAppEngagementPanelViewController.h"
+#import "Headers/YTReelWatchRootViewController.h"
+#import "Headers/SBPassthroughView.h"
+#import "Headers/SBPassthroughWindow.h"
+#import "Headers/YMSBCardItem.h"
+#import "Headers/YMSBCardViewController.h"
+#import "Headers/YMSBHelpers.h"
+#import "Headers/YMSBMarkerHelpers.h"
+#import "Headers/YMIconProvider.h"
+#import "Headers/YMHelpers.h"
+#import "Headers/YMFFmpegHelpers.h"
+#import "Headers/YMFormatsHelpers.h"
+#import "Headers/YMOverlayButtonSpec.h"
+#import "Headers/YMOverlayHelpers.h"
+#import "Headers/YMSettingsItem.h"
+#import "Headers/YMVisibilityCondition.h"
+#import "Headers/YMSearchRow.h"
+#import "Headers/YMSubSettingsViewController.h"
+#import "Headers/YMSplitSettingsViewController.h"
+#import "Headers/YMDeArrow.h"
+#import "Headers/YMFormat.h"
+#import "Headers/YMCaptionTrack.h"
+#import "Headers/YMDownloadSheet.h"
+#import "Headers/YMDownloadSheetInternal.h"
+#import "Headers/YMDownloadHelpers.h"
+#import "Headers/YMDownloadSheetHelpers.h"
+#import "Headers/YMProgressMeter.h"
+#import "Headers/YouModPillView.h"
+#import "Headers/YMDownloadProgressView.h"
+#import "Headers/YouModThumbnailViewController.h"
+#import "Headers/YouModTranslationViewController.h"
+#import "Headers/YouModLanguagePickerViewController.h"
+#import "Headers/YMSABR.h"
+#import "Headers/YMSABRFormat.h"
+#import "Headers/YMSABRMediaHeader.h"
+#import "Headers/YMSABRTrack.h"
+#import "Headers/YMSABRHelpers.h"
+#import "Headers/SBToggleRow.h"
+#import "Headers/SBColorCircleView.h"
+#import "Headers/SBSettingsViewController.h"
+#import "Headers/SBSearchColorDelegate.h"
+#import "Headers/YTSettingsSectionItemManager+SponsorBlock.h"
+#import "Headers/YMSBCardNavigationController.h"
+#import "Headers/YMSBCardViewController+Private.h"
+#import "Headers/YMSBSettingsHelpers.h"
+#import "Headers/YMSBMenuHelpers.h"
+#import "Headers/YTTouchFeedbackView.h"
+#import "Headers/YTHeaderLogoController.h"
+#import "Headers/YTHeaderLogoControllerImpl.h"
+#import "Headers/YTICommentsResponse.h"
+#import "Headers/YTIInsertItemSectionContentOperation.h"
+#import "Headers/YTISectionListMutationOperations.h"
+#import <AVFoundation/AVFoundation.h>
+#import <AVKit/AVKit.h>
+#import <CoreMedia/CoreMedia.h>
+#import <LocalAuthentication/LocalAuthentication.h>
+#import <math.h>
+#import <Photos/Photos.h>
+
 #define SABRDownload @"YouModSABRDownload"
-#define DownloadMethod @"YouModDownloadMethod" // index into the "Download method" picker
-#define DownloadMethodDirect 0   // YouTube's built-in stream URLs
-#define DownloadMethodServer 1   // external server (triggerSilentDownload…)
-#define DownloadMethodOnDevice 2 // on-device SABR engine
 
 #define IS_ENABLED(k) [[NSUserDefaults standardUserDefaults] boolForKey:k]
 #define INTFORVAL(v) [[NSUserDefaults standardUserDefaults] integerForKey:v]
@@ -101,18 +249,26 @@
 #define OverlayButtonOrder @"YouModOverlayButtonOrder"
 #define GlobalSpeedLocked @"YouModGlobalSpeedLocked"
 #define GlobalSavedNormalRate @"YouModGlobalSavedNormalRate"
+// Sleep timer
+#define SleepTimerEndDate @"YouModSleepTimerEndDate"
+#define SleepTimerMode @"YouModSleepTimerMode"
+// 0 = off, 1 = tab bar menu, 2 = overlay button, 3 = both
+#define SleepTimerEntry @"YouModSleepTimerEntry"
 // Downloading
 #define DownloadManager @"YouModDownloadManager"
-#define PostDownloadAction @"YouModPostDownloadAction"
-#define PostDownloadActionSaveToPhotos 0
-#define PostDownloadActionShare 1
-#define PostDownloadActionAsk 2
+#define DownloadButtonPosition @"YouModDownloadButtonPosition"
+#define DownloadButtonPositionUnderPlayer 0
+#define DownloadButtonPositionOverlay 1
 #define AddDownloadToShorts @"YouModAddDownloadToShorts"
-#define AudioPreferIndex @"YouModAudioPreferIndex"
+#define HideAutoDubbedDownloads @"YouModHideAutoDubbedDownloads"
+#define DownloadLibraryTab @"YouModDownloadLibraryTab"
 #define DownloadComment @"YouModDownloadComment"
 #define DownloadPost @"YouModDownloadPost"
 // Cache
 #define AutoClearCache @"YouModAutoClearCache"
+#define NotifyUpdates @"YouModNotifyUpdates"
+#define UpdateHasChecked @"YouModUpdateHasChecked"
+#define UpdateSkippedVersion @"YouModUpdateSkippedVersion"
 // Appearance
 #define OLEDTheme @"YouModEnablesOLEDTheme"
 #define OLEDKeyboard @"YouModEnablesOLEDKeyboard"
@@ -123,7 +279,10 @@
 #define HideSearch @"YouModHideSearchButton"
 #define HideVoiceSearch @"YouModHideVoiceSearchButton"
 #define HideCastButtonNav @"YouModHideCastButtonNavigationBar"
+#define HideMessages @"YouModHideMessagesButton"
+#define HideShareButtonNav @"YouModHideShareButtonNavigationBar"
 // Feed
+#define RemoveAds @"YouModRemoveAds"
 #define HideSubbar @"YouModHideSubbar"
 #define HideHoriShelf @"YouModHideHoriShelf"
 #define HideGenMusicShelf @"YouModHideGenMusicShelf"
@@ -134,8 +293,7 @@
 #define HideSearchHis @"YouModHideSearchHistoryAndSuggestions"
 #define HideSurveys @"YouModHideSurveys"
 #define HideRelatedVideos @"YouModHideRelatedVideos"
-#define RemoveChannelCommunityButton @"YouModRemoveChannelCommunityButton"
-#define RemoveChannelSponsorAll @"YouModRemoveChannelSponsorAll"
+#define DeArrowEnabled @"YouModDeArrowEnabled"
 // Player
 #define WifiQualityIndex @"YouModWifiQualityIndex"
 #define CellQualityIndex @"YouModCellQualityIndex"
@@ -143,11 +301,14 @@
 #define AudioTrack @"YouModAudioTrackSegment"
 #define AudioTrackLangIndex @"YouModAudioTrackLangIndex"
 #define NoDubbedAudioTrack @"YouModNoDubbedAudioTrack"
+#define NoTranslatedTitles @"YouModNoTranslatedTitles"
 #define CaptionTrack @"YouModCaptionTrack"
 #define CaptionTrackLangIndex @"YouModCaptionTrackLangIndex"
 #define DisablesCaptionTrack @"YouModDisablesCaptionTrack"
 #define AutoSpeedIndex @"YouModAutoSpeedIndex"
-#define HoldToSpeedIndex @"YouModHoldToSpeedIndex"
+#define ShortsAutoSpeedIndex @"YouModShortsAutoSpeedIndex"
+#define HoldToSpeedEnabled @"YouModHoldToSpeedEnabled"
+#define HoldToSpeedRate @"YouModHoldToSpeedRate"
 #define HideAutoPlayToggle @"YouModHideAutoPlayToggle"
 #define HideCaptionsButton @"YouModHideCaptionsButton"
 #define HideCastButtonPlayer @"YouModHideCastButtonPlayer"
@@ -162,6 +323,7 @@
 #define HideEndScreenCards @"YouModHideEndScreenCards"
 #define HideSuggestedVideo @"YouModHideSuggestedVideoOnFinish"
 #define HidePaidPromoOverlay @"YouModHidePaidPromoOverlay"
+#define HideSponsorButton @"YouModHideSponsorButton"
 #define HideWaterMark @"YouModHideWaterMark"
 #define DisablesEngagementPanel @"YouModDisablesEngagementPanel"
 #define DontSnapToChapter @"YouModDontSnapToChapter"
@@ -221,15 +383,23 @@
 #define ShortsActionIndex @"YouModMakeAShortsAction"
 #define ShortsOnly @"YouModShortsOnly"
 #define RemoveShortsLikeButton @"YouModRemoveShortsLikeButton"
+#define RemoveShortsCommentBar @"YouModRemoveShortsCommentBar"
+#define RemoveShortsRelatedButtons @"YouModRemoveShortsRelatedButtons"
 #define RemoveShortsCommentButton @"YouModRemoveShortsCommentButton"
+#define RemoveShortsSaveButton @"YouModRemoveShortsSaveButton"
 #define RemoveShortsShareButton @"YouModRemoveShortsShareButton"
 #define RemoveShortsRemixButton @"YouModRemoveShortsRemixButton"
 #define RemoveShortsSoundMetadataButton @"YouModRemoveShortsSoundMetadataButton"
+#define RemoveShortsSubButton @"YouModRemoveShortsSubButton"
 #define RemoveShortsPausedSubButton @"YouModRemoveShortsPausedSubButton"
 #define RemoveShortsPausedLiveButton @"YouModRemoveShortsPausedLiveButton"
 #define RemoveShortsPausedLensButton @"YouModRemoveShortsPausedLensButton"
 #define RemoveShortsPausedTrendsButton @"YouModRemoveShortsPausedTrendsButton"
 #define RemoveShortsDisclosure @"YouModRemoveShortsDisclosure"
+#define RemoveShortsAskButton @"YouModRemoveShortsAskButton"
+#define RemoveShortsVideoTitle @"YouModRemoveShortsVideoTitle"
+#define RemoveShortsChannelName @"YouModRemoveShortsChannelName"
+#define RemoveShortsChannelProfile @"YouModRemoveShortsChannelProfile"
 // Tab bar
 #define DefaultTab @"YouModDefaultStartupTab"
 #define TabOrder @"YouModTabOrder"
@@ -237,23 +407,25 @@
 #define HideTabLabels @"YouModHideTabLabels"
 #define UseFrostedTabBar @"YouModUseFrostedTabBar"
 // Miscellaneous
+#define LiquidGlass @"YouModEnablesLiquidGlass"
 #define BackgroundPlayback @"YouModEnablesBackgroundPlayback"
 #define DisablesShortsPiP @"YouModTrytoDisablesShortsPiP"
 #define DisableHints @"YouModDisableHints"
-#define BlockUpgradeDialogs @"YouModBlockUpgradeDialogs"
 #define HideAreYouThereDialog @"YouModHideAreYouThereDialog"
 #define FixesSlowMiniPlayer @"YouModFixesSlowMiniPlayer"
 #define DisablesNewMiniPlayer @"YouModDisablesNewMiniPlayer"
 #define DisablesSnackBar @"YouModDisablesSnackBar"
-#define HideStartupAni @"YouModHideStartupAnimations"
+#define StartupAnimation @"YouModStartupAnimation"
 #define HideLikeDislikeVotes @"YouModHideLikeDislikeVotes"
 #define HideCommuGuide @"YouModHideCommuGuide"
 #define HideEngagementSubbar @"YouModHideEngagementSubbar"
+#define HideInfoButtonPanel @"YouModHideInfoButtonPanel"
+#define HideCommunityButtonPanel @"YouModHideCommunityButtonPanel"
+#define HideSortFilerPanel @"YouModHideSortFilterPanel"
 #define DisablesRTL @"YouModDisablesRTL"
 #define DeviceUIIndex @"YouModDeviceUIIndex"
 #define FloatingKeyboard @"YouModFloatingKeyboard"
 #define AutoOpenLink @"YouModAutoOpenLink"
-// #define CustomStartup @"YouModUseCustomVideoStartup"
 // Flyout menu
 #define RemovePlayInNextQueueOption @"YouModRemovePlayInNextQueueOption"
 #define RemoveDownloadOption @"YouModRemoveDownloadOption"
@@ -276,10 +448,13 @@
 #define RemoveNotifyOption @"YouModRemoveNotifyOption"
 #define RemoveClearScreenOption @"YouModRemoveClearScreenOption"
 #define RemoveAddToLastQueueOption @"YouModRemoveAddToLastQueueOption"
+#define YouModVersion @"DEV"
+#define YouModCommit @"dev"
 // SponsorBlock
 #define SBEnabled @"YouModSBEnabled"
 #define SBShowButton @"YouModSBShowButton"
 #define SBShowNotifications @"YouModSBShowNotifications"
+#define SBShowFullVideoLabel @"YouModSBShowFullVideoLabel"
 #define SBAudioNotification @"YouModSBAudioNotification"
 #define SBSegmentsInPlayer @"YouModSBSegmentsInPlayer"
 #define SBSegmentsInFeed @"YouModSBSegmentsInFeed"
@@ -289,6 +464,9 @@
 #define SBSkipAlertDuration @"YouModSBSkipAlertDuration"
 #define SBUnskipAlertDuration @"YouModSBUnskipAlertDuration"
 #define SBButtonKey @"YouModSBButtonKey"
+#define SBPrivateUserIDKey @"YouModSBPrivateUserID"
+#define SBPublicUserIDKey @"YouModSBPublicUserID"
+#define SBWhitelistKey @"YouModSBWhitelist"
 
 #define SB_ACTION_KEY(cat) [NSString stringWithFormat:@"YouModSBAction_%@", cat]
 #define SB_COLOR_KEY(cat) [NSString stringWithFormat:@"YouModSBColor_%@", cat]
@@ -298,23 +476,6 @@
 #define YT_BUNDLE_ID @"com.google.ios.youtube"
 #define YT_NAME @"YouTube"
 
-@interface MDCInkView : UIView
-@end
-
-@interface YTPageHeaderViewController : UIViewController
-@end
-
-@interface YTIPageHeaderRenderer : GPBMessage
-@end
-
-@interface YTDefaultSheetController (YouMod)
-+ (instancetype)sheetControllerWithParentResponder:(id)parentResponder;
-- (void)addAction:(YTActionSheetAction *)action;
-- (void)presentFromView:(UIView *)view animated:(BOOL)animated completion:(void (^)(void))completion;
-- (void)presentFromViewController:(UIViewController *)vc animated:(BOOL)animated completion:(void (^)(void))completion;
-- (void)addHeaderWithTitle:(NSString *)arg1 subtitle:(NSString *)arg2;
-@end
-
 // Gesture Section Enum
 typedef NS_ENUM(NSUInteger, GestureSection) {
     GestureSectionTop,
@@ -322,213 +483,237 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
     GestureSectionInvalid
 };
 
-@interface YTWatchController (YouMod)
+// Download library (YMLibrary.x)
+@interface YMLibraryRow : NSObject
+@property (nonatomic, copy) NSString *path;
+@property (nonatomic, copy) NSString *title;
+@property (nonatomic, assign) unsigned long long bytes;
+@property (nonatomic, copy) NSString *sizeText;
+@property (nonatomic, strong) UIImage *thumbnail;
+@property (nonatomic, assign) BOOL isAudio;
+@property (nonatomic, assign) BOOL isShorts;
+@property (nonatomic, assign) BOOL isPrivate;
+@property (nonatomic, copy) NSArray<NSString *> *playlistIDs;
+@property (nonatomic, strong) NSDate *modifiedDate;
+@property (nonatomic, assign) BOOL isPlaylist;
+@property (nonatomic, copy) NSString *playlistID;
+@property (nonatomic, assign) BOOL isLocked; // playlist rows only: hidden behind the Private tab
+- (BOOL)isInAnyPlaylist:(NSArray<NSDictionary *> *)playlists;
+@end
+
+@interface YMLibraryHelpers : NSObject
++ (NSSet<NSString *> *)mediaExtensions;
++ (NSHashTable<AVPlayer *> *)liveAVPlayers;
++ (BOOL)isAudioOnlyExtension:(NSString *)extension;
++ (NSArray<NSString *> *)types;
++ (NSString *)metadataKeyForURL:(NSURL *)url;
++ (NSDictionary *)metadataForURL:(NSURL *)url;
++ (void)setMetadataForURL:(NSURL *)url entry:(NSDictionary *)entry;
++ (NSArray<NSDictionary *> *)playlists;
++ (void)savePlaylists:(NSArray<NSDictionary *> *)playlists;
++ (BOOL)playlistLocked:(NSDictionary *)playlist;
++ (NSArray<NSDictionary *> *)playlistsMatchingLockState:(BOOL)locked;
++ (NSString *)localizedText:(NSString *)key fallback:(NSString *)fallback;
++ (NSString *)displayTitleForFileName:(NSString *)baseName;
++ (NSString *)videoIDForFileName:(NSString *)baseName;
++ (NSString *)formattedFileSize:(unsigned long long)bytes;
++ (NSArray<NSURL *> *)fileURLsNewestFirst;
++ (NSURL *)siblingThumbnailURL:(NSURL *)fileURL;
++ (NSURL *)thumbCacheDirectory;
++ (NSURL *)generatedThumbCacheURL:(NSURL *)fileURL;
++ (UIImage *)thumbnailForVideoFile:(NSURL *)fileURL;
++ (void)deleteThumbnailsForFile:(NSURL *)fileURL;
++ (NSString *)fourCCString:(FourCharCode)code;
++ (NSString *)mediaInfoStringForFile:(NSURL *)fileURL bytes:(unsigned long long)bytes;
+@end
+
+@interface YMLibraryStyle : NSObject
++ (UIColor *)youTubeBackgroundColor;
+@end
+
+@interface YMLibraryVideoCell : UICollectionViewCell
+@property (nonatomic, strong) UIImageView *thumbnailImageView;
+@property (nonatomic, strong) UILabel *titleLabel;
+@property (nonatomic, strong) UILabel *sizeLabel;
+@property (nonatomic, strong) YTQTMButton *menuButton;
+// Playlist rows swap the ellipsis for a lock toggle in the same slot/layout.
+@property (nonatomic, strong) YTQTMButton *lockButton;
+@property (nonatomic, strong) UIView *selectionBox;
+@property (nonatomic, strong) UIImageView *selectionCheckView;
+// Called with the button itself so the sheet can anchor its iPad popover.
+@property (nonatomic, copy) void (^menuTappedHandler)(UIView *sourceView);
+@property (nonatomic, copy) void (^lockTappedHandler)(UIView *sourceView);
+@end
+
+@interface YMLibraryGridLayout : UICollectionViewFlowLayout
+@end
+
+@interface YMLibraryPlayerPiPDelegate : NSObject <AVPlayerViewControllerDelegate>
++ (instancetype)sharedDelegate;
+@end
+
+@interface YMLibraryRefreshControl : UIView
+@property (nonatomic, copy) void (^onRefresh)(void);
+@property (nonatomic, readonly, getter=isRefreshing) BOOL refreshing;
+- (void)draggingBeganInScrollView:(UIScrollView *)scrollView;
+- (void)scrollViewDidScroll:(UIScrollView *)scrollView;
+- (void)draggingEndedInScrollView:(UIScrollView *)scrollView;
+- (void)beginRefreshing;
+- (void)endRefreshing;
+@end
+
+@interface YMLibraryRefreshControl ()
+@property (nonatomic, strong) UIImageView *iconView;
+@property (nonatomic, assign, getter=isRefreshing) BOOL refreshing; // readwrite privately
+@property (nonatomic, assign) BOOL pullArmed; // the pull crossed the trigger distance during the current drag
+@end
+
+@interface YMLibraryViewController : UIViewController <UICollectionViewDataSource, UICollectionViewDelegate, UISearchBarDelegate>
+@property (nonatomic, strong) UICollectionView *collectionView;
+@property (nonatomic, strong) UISearchBar *searchBar;
+@property (nonatomic, strong) YTQTMButton *sortButton;
+@property (nonatomic, strong) YTQTMButton *settingsButton;
+@property (nonatomic, strong) YTQTMButton *selectButton;
+@property (nonatomic, strong) YTQTMButton *moreMenuButton;
+@property (nonatomic, strong) YTQTMButton *selectionExitButton;
+@property (nonatomic, strong) UIStackView *headerButtonStack;
+@property (nonatomic, strong) UIImageView *emptyIconView;
+@property (nonatomic, strong) UIView *typeGlassView;
+@property (nonatomic, strong) UIScrollView *typeScrollView;
+@property (nonatomic, strong) UIStackView *typeStackView;
+@property (nonatomic, strong) NSLayoutConstraint *typeGlassTrailingConstraint;
+@property (nonatomic, strong) NSLayoutConstraint *typeScrollTrailingConstraint;
+@property (nonatomic, strong) NSLayoutConstraint *typeGlassLeadingConstraint;
+@property (nonatomic, strong) NSLayoutConstraint *typeScrollLeadingConstraint;
+@property (nonatomic, strong) YTQTMButton *playlistBackButton;
+@property (nonatomic, strong) UIView *playlistActionsView;
+@property (nonatomic, strong) YTQTMButton *addPlaylistButton;
+@property (nonatomic, strong) YTQTMButton *deletePlaylistButton;
+@property (nonatomic, strong) UILabel *emptyLabel;
+@property (nonatomic, strong) YMLibraryRefreshControl *refreshControl;
+@property (nonatomic, strong) NSMutableArray<YMLibraryRow *> *allRows; // unfiltered backing store
+@property (nonatomic, strong) NSMutableArray<YMLibraryRow *> *rows;    // currently displayed (search-filtered)
+@property (nonatomic, weak) id hostParentResponder;
+@property (nonatomic, copy) NSString *selectedType;
+@property (nonatomic, copy) NSString *selectedSort;
+@property (nonatomic, copy) NSString *selectedPlaylistID;
+@property (nonatomic, assign) BOOL privateUnlocked;
+@property (nonatomic, assign) BOOL isAuthenticatingPrivate;
+@property (nonatomic, assign) BOOL privateAuthWasBackgrounded;
+@property (nonatomic, assign) BOOL isSelectionMode;
+@property (nonatomic, strong) NSMutableSet<NSIndexPath *> *selectedIndexPaths;
+@property (nonatomic, assign) BOOL isEnteringPlaylist;
+@property (nonatomic, assign) BOOL isExitingPlaylist;
+- (NSString *)displayTitleForSort:(NSString *)sort isSelected:(BOOL)selected;
+- (void)updateSortMenu;
+- (void)updateSortButtonAccessibilityLabel;
+- (void)rebuildLibraryControls;
+- (void)refreshTypeSelection;
+- (void)updateHeaderVisibility;
+- (void)applyFiltersAndSort;
+- (void)reloadWithCompletion:(void (^)(void))completion;
 - (void)reload;
+- (void)updateSearchBarTheme;
+- (void)scrollToSelectedTypeAnimated:(BOOL)animated;
 @end
 
-@interface YTPlayerOverlayProvider (YouMod)
-- (void)removePlayerOverlayWithIdentifier:(NSString *)identifier;
+@interface YMGlassBackdropView : UIView
 @end
 
-@interface YTELMViewController : UIViewController
+@interface YouModRemoteCommandTargetProxy : NSObject
+@property (nonatomic, weak) MPRemoteCommand *command;
+@property (nonatomic, weak) id target;
+@property (nonatomic, assign) SEL action;
+- (MPRemoteCommandHandlerStatus)youModHandleRemoteCommandEvent:(MPRemoteCommandEvent *)event;
 @end
 
-@interface YTInlineScrubGestureView : UIView
+@interface YouModOverlayRefreshHandler : NSObject
+@property (nonatomic, weak) YTMainAppControlsOverlayView *overlay;
+- (void)refreshSoon;
++ (instancetype)handlerForOverlay:(YTMainAppControlsOverlayView *)overlay;
 @end
 
-@interface YTPivotBarView : UIView
+@interface YouModSeekTapHandler : NSObject
+@property (nonatomic, assign) BOOL rewind;
+@property (nonatomic, weak) YTMainAppControlsOverlayView *overlay;
+- (void)handleTap:(UITapGestureRecognizer *)gr;
++ (instancetype)rewindHandlerForOverlay:(YTMainAppControlsOverlayView *)overlay;
++ (instancetype)forwardHandlerForOverlay:(YTMainAppControlsOverlayView *)overlay;
 @end
 
-@interface YTPivotBarItemView (YouMod) <UIContextMenuInteractionDelegate>
+@interface YouModSeekRefreshTapHandler : NSObject
+@property (nonatomic, weak) YTMainAppControlsOverlayView *overlay;
+- (void)handleTap:(UITapGestureRecognizer *)gr;
++ (instancetype)handlerForOverlay:(YTMainAppControlsOverlayView *)overlay;
 @end
 
-@interface YTContextualWrapView : UIView
+// Player.x helper classes — grouped logic instead of file-static functions.
+@interface YouModNetworkMonitor : NSObject
++ (void)startMonitoring;
++ (int)networkType;
 @end
 
-@interface YTShortsAdsPlayerViewController : YTReelPlayerViewController
+@interface YouModRemoteSkipCommands : NSObject
++ (void)configure;
++ (CGFloat)rewindSeconds;
++ (CGFloat)forwardSeconds;
++ (BOOL)seekByInterval:(CGFloat)delta;
++ (BOOL)isPreviousTrackCommand:(MPRemoteCommand *)command;
++ (BOOL)isNextTrackCommand:(MPRemoteCommand *)command;
++ (BOOL)isPreviousNextCommand:(MPRemoteCommand *)command;
++ (BOOL)isSkipBackwardCommand:(MPRemoteCommand *)command;
++ (BOOL)isSkipForwardCommand:(MPRemoteCommand *)command;
++ (MPRemoteCommandHandlerStatus)statusForSeek:(BOOL)handled;
++ (BOOL)handlePreviousNextRemoteCommand:(MPRemoteCommandEvent *)event;
 @end
 
-@interface YTIBrowseRequest (YouMod)
-+ (NSString *)browseIDForGamingDestination;
-+ (NSString *)browseIDForSportsDestination;
-+ (NSString *)browseIDForNotificationsInbox;
-+ (NSString *)browseIDForHistory;
+@interface YouModPrevNextReplacement : NSObject
++ (BOOL)shouldForceReplacement;
++ (UIView *)overlayIvarView:(id)object name:(const char *)name;
++ (void)setOverlayIvarHidden:(id)object name:(const char *)name hidden:(BOOL)hidden;
++ (YTMainAppControlsOverlayView *)overlayForSubview:(UIView *)view;
++ (BOOL)isPrevNextSubview:(UIView *)view overlay:(YTMainAppControlsOverlayView *)overlay;
++ (BOOL)isSeekSubview:(UIView *)view overlay:(YTMainAppControlsOverlayView *)overlay;
++ (void)enforceVisibility:(YTMainAppControlsOverlayView *)overlay;
++ (void)remapPrevNextToSeek:(YTMainAppControlsOverlayView *)overlay;
++ (void)attachSeekRemap:(UIView *)view handler:(YouModSeekTapHandler *)handler;
++ (void)attachSeekRefresh:(UIView *)view overlay:(YTMainAppControlsOverlayView *)overlay;
++ (void)applyToOverlay:(YTMainAppControlsOverlayView *)overlay;
 @end
 
-@interface YTITopbarLogoRenderer : NSObject
-@property(readonly, nonatomic) YTIIcon *iconImage;
+@interface YouModPlayerGestures : NSObject
++ (void)requireAncestorPansToFail:(UIView *)playerView gesture:(UIGestureRecognizer *)gesture;
++ (NSArray<UIGestureRecognizer *> *)gesturesAroundPlayer:(UIView *)playerView;
++ (void)suspendGesturesForHold:(YTPlayerViewController *)player hold:(UIGestureRecognizer *)hold;
++ (void)restoreGesturesSuspendedByHold:(YTPlayerViewController *)player;
++ (YTMainAppVideoPlayerOverlayView *)mainVideoOverlayForPlayer:(YTPlayerViewController *)player;
++ (BOOL)isRelatedVideosPanelEnabled:(YTPlayerViewController *)player;
++ (CGFloat)remainingOverlayWidth:(YTPlayerViewController *)player fullWidth:(CGFloat)fullWidth;
++ (UISlider *)volumeSlider;
 @end
 
-@interface YTRightNavigationButtons (YouMod)
-@property (nonatomic, strong) YTQTMButton *notificationButton;
-@property (nonatomic, strong) YTQTMButton *searchButton;
+@interface YouModPlaybackSpeed : NSObject
++ (void)applyExtraSpeedOptions:(id)controller;
++ (CGFloat)configuredHoldToSpeedRate;
 @end
 
-@interface YTVideoFreeZoomOverlayController : NSObject
-- (NSUInteger)state;
+@interface NSObject (YouModReelDelegate)
+- (void)playbackSequentialItemControllerDidRequestNextReel:(id)controller isAutoAdvance:(BOOL)auto_;
 @end
 
-@interface YTVideoFreeZoomOverlayView : UIView
+@interface NSObject (YouModPivotBarDelegate)
+- (void)didTapPivotBarItem:(id)renderer withViewControllers:(NSArray *)viewControllers animated:(BOOL)animated;
 @end
 
-@interface YTMainAppVideoPlayerOverlayView (YouMod)
-@property (nonatomic, weak, readwrite) YTMainAppVideoPlayerOverlayViewController *delegate;
-@property (nonatomic, strong) YTQTMButton *playbackRouteButton;
-- (YTVideoFreeZoomOverlayView *)videoFreeZoomOverlayView;
-@end
-
-@interface YTQTMButton (YouMod)
-- (void)enableNewTouchFeedback;
-@end
-
-@interface YTHeaderView : UIView
-- (void)setStickyNavHeaderEnabled:(BOOL)arg;
-@end
-
-@interface YTNavigationBarTitleView : UIView
-@end
-
-@interface YTSearchViewController : UIViewController
-@end
-
-@interface YTPlayabilityResolutionUserActionUIController : NSObject
-- (void)confirmAlertDidPressConfirm;
-@end
-
-@interface YTPlayabilityResolutionUserActionUIControllerImpl : NSObject
-- (void)confirmAlertDidPressConfirm;
-@end
-
-@interface YTPivotBarViewController : UIViewController
-- (void)selectItemWithPivotIdentifier:(id)pivotIndentifier;
-- (void)YouModReloadTabBar:(id)arg;
-@end
-
-@interface YTReelWatchPlaybackOverlayView : UIView <UIGestureRecognizerDelegate>
-@property (nonatomic, retain) UIPinchGestureRecognizer *YouModFullscreenGesture;
-@end
-
-@interface YTReelContentView (YouMod) <UIGestureRecognizerDelegate>
-@property (nonatomic, retain) UILongPressGestureRecognizer *YouModExitShortsOnlyGesture;
-- (YTReelWatchPlaybackOverlayView *)playbackOverlay;
-@end
-
-@interface YTLanguages : NSObject
-+ (instancetype)languageList;
-@end
-
-@interface YTICaptionTrackEntry : GPBMessage
-- (NSString *)baseURL;
-- (NSString *)vssId;
-- (NSString *)languageCode;
-- (YTIFormattedString *)name;
-@end
-
-@interface YTPlayerViewController (YouMod) <UIGestureRecognizerDelegate>
-@property (nonatomic, retain) UIPanGestureRecognizer *YouModPanGesture;
-@property (nonatomic, retain) UITapGestureRecognizer *YouModTapGesture;
-@property (nonatomic, retain) UILabel *YouModGestureHUD;
-@property (nonatomic, weak, readwrite) UIViewController *parentViewController;
-@property (nonatomic, assign, readonly) BOOL isInlinePlaybackActive;
-@property (nonatomic, assign, readonly) BOOL isPlayingAd;
-@property (nonatomic, strong) UIView *YouModSpeedToastView;
-@property (nonatomic, strong) UILabel *YouModSpeedToastLabel;
-@property (nonatomic, retain) UILongPressGestureRecognizer *YouModHoldGesture;
-- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer;
-- (void)YouModAutoFullscreen;
-- (void)YouModSetAutoSpeed;
-- (void)setPlaybackRate:(float)rate;
-- (void)setActiveCaptionTrack:(MLInnerTubeCaptionTrack *)arg1 source:(NSInteger)arg2;
-- (void)setActiveCaptionTrack:(MLInnerTubeCaptionTrack *)arg;
-- (void)play;
-- (void)pause;
-- (void)YouModAutoMute;
-- (void)YouModAutoAudioTrack;
-- (void)YouModAutoCaptions;
-- (void)YouModLoopButton;
-- (void)YouModCaptionsHelper:(MLInnerTubeCaptionTrack *)arg;
-- (void)YouModShareButton:(UIView *)sourceView;
-- (NSInteger)playerState;
-- (YTPlayerResponse *)contentPlayerResponse;
-- (YTPlayerResponse *)playerResponse;
-- (id)audioTrackController;
-- (void)YouModHideSpeedToast;
-- (void)YouModShowSpeedToast:(CGFloat)speed isLocked:(BOOL)isLocked;
-- (void)YouModAutoDRCAudio;
-- (void)setAudioTrack:(YTIAudioTrack *)arg1 source:(NSInteger)arg2;
-- (void)setAudioDRCEnabled:(BOOL)arg;
-@end
-
-@interface YTPlayerBarController (YouMod)
-- (void)didScrub:(UIPanGestureRecognizer *)gesture;
-@end
-
-@interface YTFullscreenEngagementOverlayView : UIView
-@end
-
-@interface YTFullscreenActionsView : UIView
-@end
-
-@interface YTAnnotationsViewController : UIViewController
-@end
-
-@interface YTRelatedVideosView : UIView
-@end
-
-@interface YTAutoplayAutonavController : NSObject
-- (void)setLoopMode:(NSInteger)loopMode;
-@end
-
-@interface YTInlineMutedPlaybackPlayerOverlayViewController : UIViewController
-@end
-
-@interface YTInlineMutedPlaybackPlayerOverlayView : UIView
-@end
-
-@interface YTWatchFloatingMiniplayerViewController : UIViewController
-@end
-
-@interface YTWatchFloatingMiniplayerWithPersistentControlsView : UIView
-@end
-
-@interface YTWatchFloatingMiniplayerProgressBarView : UIView
-@end
-
-@interface SSOConfiguration : NSObject
-@end
-
-@interface ASDisplayNode (YouMod)
-- (void)removeYogaChild:(id)arg;
-@end
-
-@interface YTIMySubsFilterHeaderRenderer : GPBMessage
-@end
-
-@interface YTMySubsFilterHeaderViewController : UIViewController
-@end
-
-@interface YTEngagementPanelView : UIView
-@end
-
-@interface YTEngagementPanelContainerView : UIView
-- (NSInteger)engagementPanelState;
-@end
-
-@interface YTRelatedVideosViewController : UIViewController
-- (BOOL)isExpanded;
-@end
-
-@interface YTMainAppControlsOverlayView (YouMod)
-- (YTMainAppVideoPlayerOverlayViewController *)eventsDelegate;
-@end
-
-@interface YTVideoQualitySwitchOriginalController (YouMod)
-@property (retain, nonatomic) YTVideoQualitySwitchRedesignedController *redesignedController;
+@interface NSArray (YouMod)
+- (void)removeObject:(id)object;
 @end
 
 @interface UIView (YouMod)
 @property (nonatomic, assign, readonly) BOOL _mapkit_isDarkModeEnabled;
 - (UIViewController *)_viewControllerForAncestor;
+- (void)tuui_applyFlexibleSmallGlassBackground;
+- (void)tuui_applyFlexibleClearGlassWithShadowBackground;
 @end
 
 @interface UIKeyboard : UIView // Regular keyboard
@@ -545,307 +730,185 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 @property (nonatomic, copy, readwrite) NSArray *backgroundEffects;
 @end
 
-@interface YTAppDelegate : UIResponder
-- (void)YouModAutoClearCache;
-@end
-
-@interface YTInlinePlayerBarContainerView (YouMod)
-@property (nonatomic, strong) NSString *endTimeString;
-@end
-
-// Custom perferences logics
-@interface YouModPrefsManager : NSObject <UIDocumentPickerDelegate>
-+ (instancetype)sharedManager;
-- (void)exportYouModSettingsFromVC:(UIViewController *)vc;
-- (void)importYouModSettingsFromVC:(UIViewController *)vc;
-- (void)restoreYouModDefaults;
-@end
-
-@interface YTIAudioTrack (YouMod)
-@property (nonatomic, assign, readwrite) BOOL isAutoDubbed;
-- (BOOL)hasId_p;
-@end
-
-@interface MLInnerTubeCaptionTrack (YouMod)
-- (NSString *)languageCode;
-- (NSString *)VSSID;
-@end
-
-@interface YTCaptionTrackSwitchController : NSObject
-@end
-
-@interface ASScrollView : UIScrollView
-- (id)scrollNode;
-@end
-
-// Player Gestures - @bhackel (YTLitePlus)
-@interface YTMainAppVideoPlayerOverlayViewController (YouMod)
-@property (nonatomic, assign) YTPlayerViewController *parentViewController;
-- (YTCaptionTrackSwitchController *)captionTrackController;
-- (NSString *)videoID;
-- (CGFloat)mediaTime;
-@end
-
-@interface YTSingleVideo (YouMod)
-- (BOOL)isLivePlayback;
-@end
-
-@interface YTSingleVideoController (YouMod)
-- (CGFloat)totalMediaTime;
-- (void)setVideoFormatConstraint:(id)arg;
-- (void)YouModAutoQuality;
-- (NSArray *)availableCaptionTracks;
-- (MLInnerTubeCaptionTrack *)activeCaptionTrack;
-@end
-
-@interface YTReelPlayerViewController (YouMod)
-- (void)reelContentViewRequestsAdvanceToNextVideo:(id)arg;
-- (void)reelContentViewRequestsPlayPauseToggle:(id)arg;
-- (id)audioTrackController;
-- (void)YouModAutoAudioTrack:(YTPlayerViewController *)pv;
-@end
-
-@interface YTIPlayerCaptionsTrackListRenderer : GPBMessage
-- (NSMutableArray *)captionTracksArray;
-@end
-
-@interface YTICaptionsSupportedRenderers : GPBMessage
-- (YTIPlayerCaptionsTrackListRenderer *)playerCaptionsTracklistRenderer;
-@end
-
-@interface YTIPlayerResponse (YouMod)
-- (YTIStreamingData *)streamingData;
-- (YTICaptionsSupportedRenderers *)captions;
-@end
-
-@interface YTIFormatStream (YouMod)
-- (NSString *)mimeType;
-- (NSInteger)contentLength;
-- (NSUInteger)approxDurationMs;
-- (int)height;
-- (int)fps;
-- (YTIAudioTrack *)audioTrack;
-- (int)itag;
-@end
-
-@interface YTIFormattedString (YouMod)
-- (NSString *)dropdownOptionTitle;
-@end
-
-@interface YTIVideoDetails (YouMod)
-- (NSString *)title;
-- (NSString *)author;
-- (NSString *)shortDescription;
-- (YTIThumbnailDetails *)thumbnail;
-@end
-
-@interface YTDataUtils : NSObject
-+ (instancetype)generateClientSideNonce;
-@end
-
-@interface YCHAsyncLiveChatCollectionViewController : UIViewController
-@end
-
-@interface YTStartupAnimationViewController : UIViewController
-@end
-
-@interface YTWatchFloatingMiniplayerBadgeView : UIView
-@end
-
-@interface YTInlineMutedPlaybackScrubberViewController : UIViewController
-@end
-
-@interface YTReelTopBarView : UIView
-@end
-
-// SponsorBlock action modes
-typedef NS_ENUM(NSInteger, SBSegmentAction) {
-    SBSegmentActionDisable = 0,
-    SBSegmentActionAutoSkip = 1,
-    SBSegmentActionAsk = 2,
-    SBSegmentActionDisplay = 3,
-    SBSegmentActionSkipTo = 4
-};
-
-@interface SBSegment : NSObject
-@property (nonatomic, strong) NSString *UUID;
-@property (nonatomic, strong) NSString *category;
-@property (nonatomic, assign) float startTime;
-@property (nonatomic, assign) float endTime;
-@property (nonatomic, strong) NSString *actionType;
-+ (instancetype)segmentWithUUID:(NSString *)UUID category:(NSString *)category start:(float)start end:(float)end action:(NSString *)actionType;
-- (SBSegmentAction)configuredAction;
-- (UIColor *)segmentColor;
-@end
-
-@interface SBRequest : NSObject
-+ (void)fetchSegmentsForVideoID:(NSString *)videoID completion:(void (^)(NSArray<SBSegment *> *segments))completion;
-@end
-
-@interface SBSkipNotificationView : UIView
-@property (nonatomic, strong) UILabel *messageLabel;
-@property (nonatomic, strong) UIButton *actionButton;
-@property (nonatomic, strong) UIView *progressOverlay;
-@property (nonatomic, copy) void (^onAction)(void);
-@property (nonatomic, assign) NSTimeInterval totalDuration;
-@property (nonatomic, assign) NSTimeInterval remainingDuration;
-@property (nonatomic, assign) BOOL isPaused;
-@property (nonatomic, assign) BOOL isHighlightPill;
-@property (nonatomic, strong) NSDate *backgroundDate;
-+ (instancetype)showInView:(UIView *)parentView message:(NSString *)message buttonTitle:(NSString *)buttonTitle action:(void (^)(void))action duration:(NSTimeInterval)duration;
-+ (instancetype)showDownloadCompleteDialogInView:(UIView *)parentView message:(NSString *)message saveHandler:(void (^)(void))saveHandler shareHandler:(void (^)(void))shareHandler duration:(NSTimeInterval)duration;
-+ (instancetype)showSuccessInView:(UIView *)parentView message:(NSString *)message duration:(NSTimeInterval)duration;
-+ (instancetype)showErrorInView:(UIView *)parentView message:(NSString *)message duration:(NSTimeInterval)duration;
-- (void)dismiss;
-- (void)pauseProgress;
-- (void)resumeProgress;
+@interface UIKBInputBackdropView : UIView
 @end
 
 extern UIView *sbGetNotificationParent(void);
+extern void sbDismissAllNotifications(void);
 extern void sbUpdateOverlayInsetForPivotBar(void);
-extern void YMPresentTabOrderModally(id parentResponder);
+extern void YMPresentTabOrder(id presenter);
+extern void YouModShowPill(NSString *message, BOOL success);
+extern void YouModCheckForUpdateManually(void);
 
-// The ordered set of SponsorBlock categories YouMod supports. Both the core
-// (segment fetching / skipping) and the settings UI read from this single list,
-// so a category can never be fetchable without a control, or configurable
-// without being fetched.
+// SponsorBlock menu / voting / whitelist (SponsorBlockMenu.x)
+extern BOOL sbActiveForVideo(YTPlayerViewController *player);
+extern void sbInvalidateSegmentCache(NSString *videoID);
+extern NSString *sbLocalUserID(void);
+extern NSString *sbPublicUserID(void);
+extern void sbSetPrivateUserID(NSString *userID);
+extern void sbSetPublicUserIDManual(NSString *userID);
+extern void YMSBPresentWhitelistManager(void);
+extern YTPlayerViewController *YouModCurrentPlayerViewController;
+
+// SponsorBlock categories YouMod supports — one list shared by the core
+// (fetch/skip) and the settings UI, so both always agree on the categories.
 extern NSArray<NSString *> *sbAllCategories(void);
+extern UIColor *SBColorFromHex(NSString *hexString);
 
-// Tag stamped on every seek-bar segment marker view, used to find and remove
-// them across the player-bar layout hooks that don't hold a direct reference.
-static const NSInteger SBSegmentMarkerTag = 9900;
-
-// Supported range and default for the skip/unskip banner duration (seconds).
-// The settings sliders expose this range and the core clamps stored values to
-// it, so both read from one source and can never drift out of agreement.
+// Skip/unskip banner duration range and default (seconds) — shared by the
+// settings sliders and the core's clamp so they can't drift apart.
 static const CGFloat SBAlertDurationMin = 2.0;
 static const CGFloat SBAlertDurationMax = 20.0;
 static const CGFloat SBAlertDurationDefault = 4.0;
 
-#pragma mark - Custom Overlay Button Registry
-
-// A registered button shown in the player's controls overlay (top-right, under
-// YouTube's settings gear). Features register a spec from their own %ctor; the
-// single YTMainAppControlsOverlayView hook in OverlayButtons.x lays them all out.
-@interface YMOverlayButtonSpec : NSObject
-@property (nonatomic, copy) NSString *identifier;       // unique, e.g. @"sponsorblock.toggle"
-@property (nonatomic, copy) NSString *symbolName;       // SF Symbol name (icon button)
-@property (nonatomic, copy) NSString *title;            // text label; set this instead of symbolName for a text button
-@property (nonatomic, copy) NSString *displayName;      // localized display name for settings
-@property (nonatomic, copy) NSString *settingsSymbolName; // custom symbol name for settings table view
-@property (nonatomic, strong) UIColor *tintColor;       // default tint (used if tintProvider is nil)
-@property (nonatomic, assign) NSInteger sortOrder;      // ascending; lower = closer to gear (rightmost)
-@property (nonatomic, copy) void (^onTap)(YTPlayerViewController *player, YTQTMButton *button);
-@property (nonatomic, copy) BOOL (^isVisible)(YTPlayerViewController *player);     // nil = always visible
-@property (nonatomic, copy) UIColor *(^tintProvider)(YTPlayerViewController *player); // nil = use tintColor
-@property (nonatomic, assign) NSInteger viewTag;        // assigned by the registry; do not set
-@end
+// Shared search-bar corner radius — larger than a button pill, smaller than
+// height/2.0, matching the system UISearchTextField rounding.
+static CGFloat const YMCornerRadiusSearchBar = 10.0;
 
 extern void YMRegisterOverlayButton(YMOverlayButtonSpec *spec);
 extern NSArray<YMOverlayButtonSpec *> *YMRegisteredOverlayButtons(void);
 extern NSArray<YMOverlayButtonSpec *> *YMOrderedOverlayButtons(void);
 extern BOOL YMIsOverlayButtonEnabled(NSString *identifier);
-extern void YMPushOverlayButtonOrder(id settingsVC, id parentResponder);
+extern BOOL YMIsOverlayButtonBottom(NSString *identifier);
+extern void YMPushOverlayButtonOrder(id host);
 
-#pragma mark - Settings Search
+// Page pushes and item factories (defined in YouModSettings.x)
+extern YMSettingsItem *YMToggle(NSString *title, NSString *subtitle, NSString *key);
+extern YMSettingsItem *YMSlider(NSString *title, NSString *subtitle, NSString *key, float min, float max, float step, float defaultValue);
+extern YMSettingsItem *YMPicker(NSString *title, NSString *subtitle, NSString *key, NSArray<NSString *> *options, NSInteger defaultValue);
+extern YMSettingsItem *YMAction(NSString *title, NSString *subtitle, void (^action)(UIViewController *vc));
+extern YMSettingsItem *YMNavAction(NSString *title, NSString *subtitle, void (^action)(UIViewController *vc));
+extern YMSettingsItem *YMHeader(NSString *title);
+extern YMSettingsItem *YMSegment(NSString *title, NSString *key, NSArray<NSNumber *> *icons, NSInteger defaultValue);
+extern YMSettingsItem *YMTextSegment(NSString *title, NSString *key, NSArray<NSString *> *labels, NSInteger defaultValue);
+extern YMSettingsItem *YMImageSegment(NSString *title, NSString *key, NSArray<UIImage *> *images, NSInteger defaultValue);
+extern YMSettingsItem *YMDeveloper(NSString *name, NSString *role, NSString *profileURL, NSString *avatarBaseURL);
+extern void YMPushTabOrder(id host);
+extern void YMRegisterSettingsGroup(NSString *title, NSArray<YMSettingsItem *> *items);
+extern void YMPresentSponsorBlockSettings(id presenter);
 
-// One row in the global settings-search results. A row renders its own cell and
-// (optionally) handles its own tap, so a single results table can host cells from
-// different settings pages (the generic YouMod pages and SponsorBlock) without the
-// search controller knowing how any of them are built. searchText is what the query
-// is matched against (title + description). makeCell builds the live, editable
-// control; onSelect handles taps that need to present UI (e.g. the colour picker),
-// receiving the presenting VC and a reload block to refresh the results.
-@interface YMSearchRow : NSObject
-@property (nonatomic, copy) NSString *searchText;
-@property (nonatomic, copy) UITableViewCell *(^makeCell)(UITableView *tableView);
-@property (nonatomic, assign) CGFloat cellHeight; // 0 = UITableViewAutomaticDimension
-@property (nonatomic, copy) void (^onSelect)(UIViewController *presenter, void (^reload)(void));
-@end
+// Navigation helpers (defined in YouModSettings.x)
+// UINavigationBarAppearance for the settings pages: solid background and a
+// heavy ("thick") header title font.
+extern UINavigationBarAppearance *YMNavBarAppearance(UIColor *bgColor, UIColor *titleColor);
+// Runs theme (dark/light) color updates as a smooth cross-fade on the given
+// view's window instead of snapping.
+extern void YMAnimateThemeChange(UIView *view, void (^changes)(void));
+// Presents root as the YouMod settings: a full-screen UINavigationController
+// sliding up from the bottom (no YouTube settings chrome). The root page gets a
+// close button; pages pushed inside get the standard back button.
+extern void YMPresentSettingsPage(UIViewController *root, id presenter);
+// Pushes child within the current settings modal navigation stack; presents a
+// new settings modal when host is outside one (entry points). Resolved from the
+// live host at call time — never a captured view controller — so row taps can't
+// dead-end on a stale/detached stack.
+extern void YMPushOntoHost(UIViewController *child, id host);
+// Opens a row's/group's page: routes to the host's groupHandler (iPad split
+// view), otherwise pushes. kind is a YMSubmenuKind.
+extern void YMOpenGroupFromHost(id host, NSString *title, NSArray<YMSettingsItem *> *items, NSInteger kind);
+// Page factories (build without presenting).
+extern UIViewController *YMNewSubSettings(NSString *title, NSArray<YMSettingsItem *> *items);
+extern UIViewController *YMNewSponsorBlockSettings(void); // SponsorBlockSettings.x
+extern UIViewController *YMNewSplitSettings(NSArray<YMSettingsItem *> *sidebarItems); // YMSplitSettings.x
 
-// SponsorBlock's searchable rows (toggles, sliders, per-category action pickers and
-// colour circles), rendered by SponsorBlock's own cell builders so its settings are
-// editable inline in the global search. host adopts the rendering VC as a child so
-// the cells inherit the correct trait collection (light/dark). Defined in
-// SponsorBlockSettings.x; consumed by the search VC in YouModSettings.x.
+// SponsorBlock's searchable rows, rendered by its own cell builders so its
+// settings are editable inline in search. host adopts the rendering VC as a child
+// for correct light/dark traits. Defined in SponsorBlockSettings.x.
 extern NSArray<YMSearchRow *> *sbSearchRows(UIViewController *host);
 
-extern NSBundle *YouModBundle();
-extern UIImage *YouModYTIconImage(NSInteger iconType, BOOL useCustomColor, UIColor *customColor);
-extern NSArray *getAllSystemLanguageTitles();
-extern NSArray *getAllSystemLanguageValues();
-extern UIViewController *YouModTopViewController(UIViewController *root);
-extern BOOL isDarkMode(UIView *view);
-extern BOOL isPad();
+extern void YouModPauseAllPlayers(void);
+extern void YouModApplyPrevNextReplacement(YTMainAppControlsOverlayView *overlay);
+extern void YouModConfigureRemoteSkipCommands();
 
-#define LOC(x) [YouModBundle() localizedStringForKey:x value:nil table:nil]
+extern NSArray<YMCaptionTrack *> *YMCaptionTracksFromPlayer(YTPlayerViewController *player);
 
-@interface YMDownloadProgressView : UIView
-@property (nonatomic, strong) UILabel *titleLabel;
-@property (nonatomic, strong) UILabel *subtitleLabel;
-@property (nonatomic, strong) UIProgressView *progressBar;
-@property (nonatomic, strong) UIButton *cancelButton;
-@property (nonatomic, copy) void (^onCancel)(void);
-+ (instancetype)showInView:(UIView *)parentView message:(NSString *)message cancelAction:(void (^)(void))cancelAction;
-- (void)updateProgress:(float)progress title:(NSString *)title subtitle:(NSString *)subtitle;
-- (void)dismiss;
-@end
+extern NSArray<YMFormat *> *YMFormatsFromPlayer(YTPlayerViewController *player);
+extern NSArray<YMFormat *> *YMFormatsFromResponse(YTPlayerResponse *response);
+extern NSArray<NSString *> *YMVideoCodecsInFormats(NSArray<YMFormat *> *formats);
+extern NSArray<YMFormat *> *YMVideoFormatsForCodec(NSArray<YMFormat *> *formats, NSString *codec);
+extern NSArray<YMFormat *> *YMAudioTracksInFormats(NSArray<YMFormat *> *formats);
+extern NSArray<NSString *> *YMAudioCodecsInFormats(NSArray<YMFormat *> *formats);
+extern NSArray<YMFormat *> *YMAudioTracksForCodec(NSArray<YMFormat *> *formats, NSString *codec);
 
-@interface YTPlayerViewController (SponsorBlock)
-@property (nonatomic, strong) NSString *sbLastVideoID;
-@property (nonatomic, strong) NSArray<SBSegment *> *sbSegments;
-@property (nonatomic, strong) NSMutableSet<NSString *> *sbSkippedSegments;
-@property (nonatomic, strong) SBSkipNotificationView *sbNotificationView;
-- (void)sbCheckSegmentsAtCurrentTime;
-- (void)sbPerformSkip:(SBSegment *)segment;
-- (void)sbShowAskNotification:(SBSegment *)segment;
-- (void)sbShowHighlightBannerIfNeeded:(NSArray<SBSegment *> *)segments;
-- (void)sbSkipToHighlight;
-- (void)sbRefreshMarkers:(NSArray<SBSegment *> *)segments;
-@end
+extern NSUInteger YMAttachURLs(NSArray<YMFormat *> *formats, NSArray *innerTubeFormats);
 
-@interface YouModThumbnailViewController : UIViewController <UIScrollViewDelegate, UIGestureRecognizerDelegate>
-@property (nonatomic, strong) UIImage *thumbnailImage;
-@property (nonatomic, strong) UIScrollView *scrollView;
-@property (nonatomic, strong) UIImageView *imageView;
-@end
+extern NSString *YMCodecDisplayName(NSString *codec);
+extern NSString *YMCodecQualifier(NSString *codec);
+extern NSString *YMCodecFriendlyName(NSString *codec);
+extern BOOL YMCodecIsApplePlayable(NSString *codec, BOOL isVideo);
+extern BOOL YMFormatsArePhotosCompatible(YMFormat *video, YMFormat *audio);
+extern NSString *YMContainerExtensionFor(YMFormat *video, YMFormat *audio);
+extern NSArray<YMFormat *> *YMPhotosCompatibleFormats(NSArray<YMFormat *> *formats);
 
-typedef NS_ENUM(NSInteger, YouModTranslationState) {
-    YouModTranslationStateLoading = 0,
-    YouModTranslationStateSuccess = 1,
-    YouModTranslationStateFailed = 2
-};
+extern BOOL YMFFmpegIsAvailable(void);
+extern NSString *YMFFmpegUnavailableReason(void);
+extern void YMFFmpegMux(NSURL *videoURL, NSURL *audioURL, NSArray<YMCaptionTrack *> *subtitles,
+                        NSURL *outputURL, void (^completion)(BOOL success, NSString *failure));
+extern void YMFFmpegMuxTracks(NSURL *videoURL, NSArray<NSURL *> *audioURLs,
+                              NSArray<YMCaptionTrack *> *subtitles, NSURL *outputURL,
+                              void (^completion)(BOOL success, NSString *failure));
+extern BOOL YMFFmpegConvertStartupVideo(NSURL *inputURL, NSURL *outputURL, NSString **failureOut);
+extern BOOL YMStartupVideoFileExists(void);
+extern AVPlayer *YMStartupVideoActivePlayer(void);
+extern void YMStartupVideoPresentPicker(UIViewController *presenter);
+extern void YMStartupVideoDelete(UIViewController *presenter);
+extern void YMStartupVideoDismiss(YTStartupAnimationViewController *controller, BOOL animated);
 
-@interface YouModTranslationViewController : UIViewController
-@property (nonatomic, copy) NSString *originalText;
-@property (nonatomic, strong) UILabel *langValueLabel;
-@property (nonatomic, strong) UIButton *reloadButton;
-@property (nonatomic, strong) UITextView *resultTextView;
-@property (nonatomic, copy) NSString *selectedLangCode;
-@property (nonatomic, copy) NSString *selectedLangName;
-@property (nonatomic, strong) NSArray<NSString *> *languageTitles;
-@property (nonatomic, strong) NSArray<NSString *> *languageCodes;
-@property (nonatomic, assign) YouModTranslationState translationState;
-- (void)performTranslation;
-@end
+extern void YMDownloadStart(YMFormat *video, NSArray<YMFormat *> *audioTracks, NSArray<YMCaptionTrack *> *captions,
+                            NSString *fileName, YMDownloadDestination destination, NSURL *thumbnailURL, BOOL isShorts, UIViewController *presenter);
 
-@interface YouModLanguagePickerViewController : UIViewController <UITableViewDelegate, UITableViewDataSource, UIGestureRecognizerDelegate>
-@property (nonatomic, copy) NSString *selectedLangCode;
-@property (nonatomic, copy) NSArray<NSString *> *titles;
-@property (nonatomic, copy) NSArray<NSString *> *codes;
-@property (nonatomic, copy) void (^onSelectLanguage)(NSString *code, NSString *title);
-@property (nonatomic, strong) UITableView *tableView;
-@property (nonatomic, strong) UIView *containerView;
-@end
+extern NSString *YouModTitleForPlayer(YTPlayerViewController *player);
+extern NSString *YouModAuthorForPlayer(YTPlayerViewController *player);
+extern NSString *YouModVideoIDForPlayer(YTPlayerViewController *player);
+extern NSURL *YouModThumbnailURL(YTPlayerViewController *player);
 
-// On-device SABR downloader (SABRDownload.x). Produces two elementary files (video
-// mp4 + audio m4a) for the existing muxer; progress/completion on the main queue.
-@interface YMSABR : NSObject
-+ (void)downloadVideoItag:(int)videoItag audioItag:(int)audioItag
-                 progress:(void (^)(float fraction, unsigned long long bytesDownloaded, BOOL isAudio))progress
-               completion:(void (^)(NSURL *videoURL, NSURL *audioURL, NSString *err))completion;
-+ (void)downloadAudioItag:(int)audioItag
-                 progress:(void (^)(float fraction, unsigned long long bytesDownloaded))progress
-               completion:(void (^)(NSURL *audioURL, NSString *err))completion;
-+ (void)cancelCurrent;
-@end
+extern void YouModSendToast(NSString *message);
+extern void YouModSendSuccess(NSString *message);
+extern void YouModSendError(NSString *message);
+
+// Sleep timer (SleepTimer.x)
+extern void YMSleepTimerStartWithMinutes(NSInteger minutes);
+extern void YMSleepTimerStartEndOfVideo(void);
+extern void YMSleepTimerCancel(void);
+extern BOOL YMSleepTimerIsActive(void);
+extern NSString *YMSleepTimerRemainingText(void);
+extern void YMSleepTimerPresentPicker(UIView *sourceView);
+extern void YMSleepTimerUpdateSlimBars(void);
+
+extern NSString *YouModSanitizedFileName(NSString *name);
+extern NSURL *YouModDownloadsDirectoryURL(void);
+extern NSURL *YouModUniqueFileURL(NSString *fileName, NSString *extension);
+extern NSURL *YouModTemporaryFileURL(NSString *extension);
+
+extern void YouModRequestPhotoAccess(void (^completion)(BOOL granted));
+extern void YouModSaveVideoToPhotos(NSURL *fileURL, UIViewController *presenter, void (^completion)(BOOL success, NSError *error));
+extern void YouModShareItem(id item, UIViewController *presenter, UIView *sourceView);
+extern void YouModShareFile(NSURL *fileURL, UIViewController *presenter, UIView *sourceView);
+extern BOOL YouModFileIsPhotosCompatible(NSURL *fileURL);
+extern void YouModHandlePostDownloadFile(NSURL *fileURL, BOOL isVideo, YMDownloadDestination destination, UIViewController *presenter);
+extern void YouModHandlePostDownloadImage(UIImage *image, UIViewController *presenter);
+
+extern UIViewController *YouModDownloadLibraryViewController(id hostParentResponder);
+
+extern NSString *YouModGlobalAuthHeader;
+
+#define LOC(x) [[YMHelpers bundle] localizedStringForKey:x value:nil table:nil]
+
+// _ASDisplayView/YTELMViewController centralized helpers
+extern void YouModApplyOLEDToDisplayView(_ASDisplayView *view, NSString *iden);
+extern void YouModFilterAdsDisplayView(_ASDisplayView *view, NSString *iden);
+extern void YouModConfigureDownloadButton(_ASDisplayView *view, NSString *iden);
+extern void YouModSetupDownloadGestures(_ASDisplayView *view, NSString *iden);
+extern void YouModHandleCommentLongPressAction(_ASDisplayView *view);
+extern void YouModHandlePostLongPressAction(_ASDisplayView *view);
+extern void YouModHandleDownloadButtonAction(_ASDisplayView *view);
+extern void YouModFilterVideoButtons(_ASDisplayView *view, NSString *iden);
+extern void YouModFilterShortsDisplayView(_ASDisplayView *view, NSString *iden);
+extern void YouModRemoveShortsPausedButtons(_ASDisplayView *view, NSString *iden);
+extern void YouModApplyOLEDCollectionView(ASCollectionView *view, NSString *iden);
+extern void YouModRemoveDrawerAds(YTELMViewController *self);
+extern void YouModRemoveFullscreenActionsButtons(YTELMViewController *controller);
+// LiquidGlass.x — whether the host app was built against an SDK with Liquid Glass (26+).
+extern BOOL YMHostBundleSupportsLiquidGlass(void);
+extern void YouModApplyLiquidGlassToView(UIView *view, BOOL arg);
+extern void YouModApplyFrostedPanelBackgroundToView(UIView *view);

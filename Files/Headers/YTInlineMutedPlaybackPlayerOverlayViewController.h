@@ -1,0 +1,2 @@
+@interface YTInlineMutedPlaybackPlayerOverlayViewController : UIViewController
+@end

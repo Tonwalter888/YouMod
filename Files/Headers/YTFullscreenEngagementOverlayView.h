@@ -1,0 +1,2 @@
+@interface YTFullscreenEngagementOverlayView : UIView
+@end

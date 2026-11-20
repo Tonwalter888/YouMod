@@ -1,0 +1,2 @@
+@interface YTRelatedVideosView : UIView
+@end

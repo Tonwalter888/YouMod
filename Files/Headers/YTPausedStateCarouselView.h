@@ -1,0 +1,2 @@
+@interface YTPausedStateCarouselView : UIView
+@end

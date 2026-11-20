@@ -1,0 +1,2 @@
+@interface YTCaptionTrackSwitchController : NSObject
+@end

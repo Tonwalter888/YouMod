@@ -1,0 +1,2 @@
+@interface YTPageHeaderViewController : UIViewController
+@end

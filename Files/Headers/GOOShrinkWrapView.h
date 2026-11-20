@@ -1,0 +1,2 @@
+@interface GOOShrinkWrapView : UIView
+@end

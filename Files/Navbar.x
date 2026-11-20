@@ -3,73 +3,39 @@
 // YouTube Premium logo
 %hook YTHeaderLogoController
 - (void)setTopbarLogoRenderer:(YTITopbarLogoRenderer *)renderer {
-    if (INTFORVAL(YTLogoIndex) == 0) {
-        %orig;
-        return;
-    }
-    // Modify the type of the icon before setting the renderer
-    YTIIcon *icon = renderer.iconImage;
-    if (icon) {
-        if (INTFORVAL(YTLogoIndex) == 1) {
-            icon.iconType = 537;
-        } else if (INTFORVAL(YTLogoIndex) == 2) {
-            icon.iconType = 158;
+    if (INTFORVAL(YTLogoIndex) == 1 || INTFORVAL(YTLogoIndex) == 2) {
+        // Modify the type of the icon before setting the renderer
+        YTIIcon *icon = renderer.iconImage;
+        if (icon) {
+            if (INTFORVAL(YTLogoIndex) == 1) {
+                icon.iconType = 537;
+                self.premiumLogo = YES;
+            } else if (INTFORVAL(YTLogoIndex) == 2) {
+                icon.iconType = 158;
+                self.premiumLogo = NO;
+            }
         }
     }
     %orig(renderer);
-}
-// For when spoofing before 18.34.5
-- (void)setPremiumLogo:(BOOL)arg { 
-    if (INTFORVAL(YTLogoIndex) == 1) {
-        arg = YES;
-    } else if (INTFORVAL(YTLogoIndex) == 2) {
-        arg = NO;
-    }
-    %orig(arg);
-}
-- (BOOL)isPremiumLogo { 
-    if (INTFORVAL(YTLogoIndex) == 1) {
-        return YES;
-    } else if (INTFORVAL(YTLogoIndex) == 2) {
-        return NO;
-    }
-    return %orig;
 }
 %end
 
 %hook YTHeaderLogoControllerImpl
 - (void)setTopbarLogoRenderer:(YTITopbarLogoRenderer *)renderer {
-    if (INTFORVAL(YTLogoIndex) == 0) {
-        %orig;
-        return;
-    }
-    // Modify the type of the icon before setting the renderer
-    YTIIcon *icon = renderer.iconImage;
-    if (icon) {
-        if (INTFORVAL(YTLogoIndex) == 1) {
-            icon.iconType = 537;
-        } else if (INTFORVAL(YTLogoIndex) == 2) {
-            icon.iconType = 158;
+    if (INTFORVAL(YTLogoIndex) == 1 || INTFORVAL(YTLogoIndex) == 2) {
+        // Modify the type of the icon before setting the renderer
+        YTIIcon *icon = renderer.iconImage;
+        if (icon) {
+            if (INTFORVAL(YTLogoIndex) == 1) {
+                icon.iconType = 537;
+                self.premiumLogo = YES;
+            } else if (INTFORVAL(YTLogoIndex) == 2) {
+                icon.iconType = 158;
+                self.premiumLogo = NO;
+            }
         }
     }
     %orig(renderer);
-}
-// For when spoofing before 18.34.5
-- (void)setPremiumLogo:(BOOL)arg { 
-    if (INTFORVAL(YTLogoIndex) == 1) {
-        arg = YES;
-    } else if (INTFORVAL(YTLogoIndex) == 2) {
-        arg = NO;
-    }
-    %orig(arg);
-}
-- (BOOL)isPremiumLogo { 
-    if (INTFORVAL(YTLogoIndex) == 1) {
-        return YES;
-    } else if (INTFORVAL(YTLogoIndex) == 2) {
-        return NO;
-    }
-    return %orig;
 }
 %end
 
@@ -77,47 +43,31 @@
 %hook YTRightNavigationButtons
 - (void)layoutSubviews {
     %orig;
-    if (IS_ENABLED(HideNoti)) self.notificationButton.hidden = YES;
-    if (IS_ENABLED(HideSearch)) self.searchButton.hidden = YES;
-    for (UIView *subview in self.subviews) {
-        if (IS_ENABLED(HideVoiceSearch) && [subview.accessibilityLabel isEqualToString:NSLocalizedString(@"search.voice.access", nil)]) subview.hidden = YES;
-        if (IS_ENABLED(HideCastButtonNav) && [subview.accessibilityIdentifier isEqualToString:@"id.mdx.playbackroute.button"]) subview.hidden = YES;
-    }
-}
-%end
-
-%hook YTHeaderLogoController
-- (id)init {
-    return INTFORVAL(YTLogoIndex) == 3 ? nil : %orig;
-}
-%end
-
-%hook YTHeaderLogoControllerImpl
-- (id)init {
-    return INTFORVAL(YTLogoIndex) == 3 ? nil : %orig;
-}
-%end
-
-%hook YTNavigationBarTitleView
-- (void)didMoveToWindow {
-    %orig;
-    if (INTFORVAL(YTLogoIndex) == 3) {
-        for (UIView *sub in self.subviews) {
-            if ([sub.accessibilityIdentifier isEqualToString:@"id.yoodle.logo"] || [sub.accessibilityIdentifier isEqualToString:@"id.youtube.logo"]) {
-                [sub removeFromSuperview];
-                break;
-            }
+    if (IS_ENABLED(HideNoti) && self.notificationButton != nil) self.notificationButton.hidden = YES;
+    if (IS_ENABLED(HideSearch) && self.searchButton != nil) self.searchButton.hidden = YES;
+    if (IS_ENABLED(HideMessages) && [self respondsToSelector:@selector(connectionsInboxButton)] && self.connectionsInboxButton != nil) self.connectionsInboxButton.hidden = YES;
+    if (IS_ENABLED(HideCastButtonNav) && self.MDXButton != nil) self.MDXButton.hidden = YES;
+    for (YTQTMButton *button in self.visibleButtons) {
+        if (IS_ENABLED(HideVoiceSearch) && [button.accessibilityLabel isEqualToString:NSLocalizedString(@"search.voice.access", nil)]) button.hidden = YES;
+        else if (IS_ENABLED(HideShareButtonNav)) {
+            YTIButtonRenderer *renderer = [button valueForKey:@"_buttonRenderer"];
+            if (renderer == nil) continue;
+            else if (renderer.icon.iconType == YT_SETTINGS_SHARE_CAIRO) button.hidden = YES;
         }
     }
 }
 %end
 
+%hook YTNavigationBarTitleView
+- (void)setCustomView:(UIView *)view {
+    if (INTFORVAL(YTLogoIndex) == 3 && view && [view.accessibilityIdentifier isEqualToString:@"id.youtube.logo"]) return;
+    %orig;
+}
+%end
+
 %hook YTHeaderView
-- (BOOL)stickyNavHeaderEnabled { 
-    if (IS_ENABLED(StickyNavBar)) {
-        [self setStickyNavHeaderEnabled:YES];
-        return YES;
-    }
-    return %orig;
+- (void)setAdjacentSubheaderView:(UIView *)view { 
+    if (IS_ENABLED(StickyNavBar) && view) self.stickyNavHeaderEnabled = YES;
+    %orig;
 }
 %end

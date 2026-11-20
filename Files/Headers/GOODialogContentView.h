@@ -1,0 +1,2 @@
+@interface GOODialogContentView : UIView
+@end

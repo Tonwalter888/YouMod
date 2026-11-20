@@ -1,0 +1,2 @@
+@interface YTAnnotationsViewController : UIViewController
+@end
