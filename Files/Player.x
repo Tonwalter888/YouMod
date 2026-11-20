@@ -1421,8 +1421,8 @@ void YouModApplyPrevNextReplacement(YTMainAppControlsOverlayView *overlay) {
         if (savedNormal >= 0.25) [self setPlaybackRate:savedNormal];
         [[NSUserDefaults standardUserDefaults] setBool:NO forKey:GlobalSpeedLocked];
     }
-    NSInteger speedIndex = [vc isKindOfClass:%c(YTShortsPlayerViewController)] 
-                            || [vc isKindOfClass:%c(YTReelContainerViewController)] ? INTFORVAL(ShortsAutoSpeedIndex) : INTFORVAL(AutoSpeedIndex);
+    NSInteger speedIndex = [self.parentViewController isKindOfClass:%c(YTShortsPlayerViewController)] 
+                            || [self.parentViewController isKindOfClass:%c(YTReelContainerViewController)] ? INTFORVAL(ShortsAutoSpeedIndex) : INTFORVAL(AutoSpeedIndex);
     if (speedIndex == 0) return;
     NSArray *speedLabels = @[@0.01, @0.25, @0.5, @0.75, @1.0, @1.25, @1.5, @1.75, @2.0, @3.0, @4.0, @5.0];
     [self setPlaybackRate:[speedLabels[speedIndex] floatValue]];
