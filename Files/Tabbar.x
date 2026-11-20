@@ -141,7 +141,7 @@ static NSMutableDictionary<NSString *, YTIPivotBarSupportedRenderers *> *ymNativ
 }
 
 static NSString *ymPivotIDOfItem(YTIPivotBarSupportedRenderers *item) {
-    NSString *pID = item pivotBarItemRenderer.pivotIdentifier;
+    NSString *pID = item.pivotBarItemRenderer.pivotIdentifier;
     if (pID.length > 0) return pID;
     pID = item.pivotBarIconOnlyItemRenderer.pivotIdentifier;
     return pID.length > 0 ? pID : nil;
