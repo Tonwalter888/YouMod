@@ -109,7 +109,7 @@ concurrency:
 jobs:
   build:
     name: Build IPA with tweaks
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     permissions:
       contents: write
 
@@ -121,7 +121,9 @@ jobs:
           
       - name: Install MEGA downloader
         if: ${{ startsWith(inputs.ipa_url, 'https://mega.nz/') }}
-        run: brew install megatools
+        run: |
+          eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+          brew install megatools
 
       - name: Download IPA from Mega share link
         if: ${{ startsWith(inputs.ipa_url, 'https://mega.nz/') }}
@@ -152,16 +154,17 @@ jobs:
           echo "YT_VERSION=$(grep -A 1 '<key>CFBundleVersion</key>' ytextracted/Payload/YouTube.app/Info.plist | grep '<string>' | awk -F'[><]' '{print $3}')" >> $GITHUB_ENV
 
       - name: Install Dependencies
-        run: brew install make ldid
+        run: |
+          eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+          brew install make ldid
+          echo "$(brew --prefix make)/libexec/gnubin" >> $GITHUB_PATH
+          echo "THEOS=${{ github.workspace }}/theos" >> $GITHUB_ENV
 
       - name: Install Go
         if: ${{ inputs.gonerino }}
-        run: brew install go
-
-      - name: Set PATH Environment Variables
         run: |
-          echo "$(brew --prefix make)/libexec/gnubin" >> $GITHUB_PATH
-          echo "THEOS=${{ github.workspace }}/theos" >> $GITHUB_ENV
+          eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+          brew install go
 
       # Original from YTweaks
       - name: Get tweaks commit
@@ -177,19 +180,15 @@ jobs:
         uses: actions/cache@v6
         with:
           path: theos
-          key: 26.5-SDK-${{ env.THEOS_COMMIT }}
+          key: 16.5-SDK-${{ env.THEOS_COMMIT }}
 
       - name: Setup Theos
         if: ${{ steps.cache-theos.outputs.cache-hit != 'true' }}
-        run: |
-            git clone --quiet --depth=1 --recurse-submodules https://github.com/roothide/theos.git
-            git clone --quiet --depth=1 -n --filter=tree:0 https://github.com/Tonwalter888/iOS-SDKs.git
-            cd iOS-SDKs
-            git sparse-checkout set --no-cone iPhoneOS26.5.sdk
-            git checkout --quiet
-            mv *.sdk "$THEOS/sdks"
-            cd ${{ github.workspace }}/theos/vendor/logos
-            git checkout a623700
+        uses: Randomblock1/theos-action@v1
+        with:
+          theos-src: 'https://github.com/roothide/theos'
+          theos-sdks: 'https://github.com/Tonwalter888/iOS-16.5-SDK'
+          theos-sdks-branch: 'main'
             
       - name: Clone headers
         run: |
@@ -215,7 +214,7 @@ jobs:
           fi
 
       - name: Fix Theos od broken pipe issue
-        run: sed -i '' 's/od -c "$i" | head/od -c "$i" 2>\/dev\/null | head/g' $THEOS/bin/convert_xml_plist.sh || true
+        run: sed -i 's/od -c "$i" | head/od -c "$i" 2>\/dev\/null | head/g' "$THEOS/bin/convert_xml_plist.sh"
 
       - name: Install cyan and tbd
         run: |

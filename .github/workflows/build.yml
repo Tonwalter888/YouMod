@@ -20,7 +20,7 @@ concurrency:
 jobs:
   build:
     name: Build YouMod
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     permissions:
       contents: write
 
@@ -33,10 +33,9 @@ jobs:
           path: YouMod
 
       - name: Install dependencies
-        run: brew install make ldid
-
-      - name: Set PATH environment variables
         run: |
+          eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+          brew install make ldid
           echo "$(brew --prefix make)/libexec/gnubin" >> $GITHUB_PATH
           echo "THEOS=${{ github.workspace }}/theos" >> $GITHUB_ENV
 
@@ -54,19 +53,15 @@ jobs:
         uses: actions/cache@v6
         with:
           path: theos
-          key: YouMod-26.5-SDK-${{ env.THEOS_COMMIT }}
+          key: YouMod-16.5-SDK-${{ env.THEOS_COMMIT }}
 
       - name: Setup Theos
         if: ${{ steps.cache-theos.outputs.cache-hit != 'true' }}
-        run: |
-            git clone --quiet --depth=1 --recurse-submodules https://github.com/roothide/theos.git
-            git clone --quiet --depth=1 -n --filter=tree:0 https://github.com/Tonwalter888/iOS-SDKs.git
-            cd iOS-SDKs
-            git sparse-checkout set --no-cone iPhoneOS26.5.sdk
-            git checkout --quiet
-            mv *.sdk "$THEOS/sdks"
-            cd ${{ github.workspace }}/theos/vendor/logos
-            git checkout a623700
+        uses: Randomblock1/theos-action@v1
+        with:
+          theos-src: 'https://github.com/roothide/theos'
+          theos-sdks: 'https://github.com/Tonwalter888/iOS-16.5-SDK'
+          theos-sdks-branch: 'main'
             
       - name: Clone headers
         run: |
@@ -87,7 +82,7 @@ jobs:
           fi
 
       - name: Fix Theos od broken pipe issue
-        run: sed -i '' 's/od -c "$i" | head/od -c "$i" 2>\/dev\/null | head/g' $THEOS/bin/convert_xml_plist.sh || true
+        run: sed -i 's/od -c "$i" | head/od -c "$i" 2>\/dev\/null | head/g' "$THEOS/bin/convert_xml_plist.sh"
 
       - name: Build YouMod
         run: |
