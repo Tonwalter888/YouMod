@@ -30,6 +30,12 @@ on:
         required: true
         type: string
 
+      icon_url:
+        description: "Custom App Icon URL (Optional, PNG/JPG link)"
+        default: ""
+        required: false
+        type: string
+
       youpip:
         description: "Integrate YouPiP"
         default: true
@@ -111,7 +117,7 @@ jobs:
       - name: Hide Sensitive Inputs
         uses: levibostian/action-hide-sensitive-inputs@v1
         with:
-          exclude_inputs: bundle_id,display_name,youpip,ytuhd,ryd,abconfig,ytweaks,youslider,gonerino,demc,volboost,repo,branch,youquality
+          exclude_inputs: bundle_id,display_name,icon_url,youpip,ytuhd,ryd,abconfig,ytweaks,youslider,gonerino,demc,volboost,repo,branch,youquality
           
       - name: Install MEGA downloader
         if: ${{ startsWith(inputs.ipa_url, 'https://mega.nz/') }}
@@ -212,7 +218,9 @@ jobs:
         run: sed -i '' 's/od -c "$i" | head/od -c "$i" 2>\/dev\/null | head/g' $THEOS/bin/convert_xml_plist.sh || true
 
       - name: Install cyan and tbd
-        run: pipx install https://github.com/asdfzxcvbn/pyzule-rw/archive/main.zip
+        run: |
+          pipx install https://github.com/asdfzxcvbn/pyzule-rw/archive/main.zip
+          pipx inject cyan Pillow
 
       - name: Checkout YouMod
         uses: actions/checkout@v7
@@ -391,15 +399,24 @@ jobs:
           make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
           mv packages/*.deb ${{ github.workspace }}/youquality.deb
           
+      - name: Download Custom App Icon
+        if: ${{ inputs.icon_url != '' }}
+        run: |
+          curl -sL "${{ inputs.icon_url }}" -o custom_icon.png
+          if [ -s custom_icon.png ]; then
+            echo "Custom icon downloaded successfully."
+          else
+            echo "Failed to download custom icon or empty file."
+            exit 1
+          fi
+
       - name: Inject Tweaks Into IPA
         run: |
-          tweaks="OpenYouTubeSafariExtension.appex"
-
-          for f in *.deb; do
-            tweaks="$tweaks $f"
-          done
-          
-          cyan -i youtube.ipa -o YouMod_${{ env.YT_VERSION }}_v${{ env.YOUMOD_VERSION }}.ipa -uwef $tweaks -n "${{ inputs.display_name }}" -b ${{ inputs.bundle_id }}
+          icon_arg=""
+          if [ -f custom_icon.png ]; then
+            icon_arg="-k custom_icon.png"
+          fi
+          cyan -i youtube.ipa -o YouMod_${{ env.YT_VERSION }}_v${{ env.YOUMOD_VERSION }}.ipa -uwef *.deb -n "${{ inputs.display_name }}" -b ${{ inputs.bundle_id }} $icon_arg
 
       - name: Create a Draft Release
         uses: softprops/action-gh-release@v3
