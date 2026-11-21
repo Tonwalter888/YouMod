@@ -407,23 +407,16 @@ jobs:
             echo "Custom icon downloaded successfully."
           else
             echo "Failed to download custom icon or empty file."
-            rm -f custom_icon.png
+            exit 1
           fi
 
       - name: Inject Tweaks Into IPA
         run: |
-          tweaks="OpenYouTubeSafariExtension.appex"
-
-          for f in *.deb; do
-            tweaks="$tweaks $f"
-          done
-
           icon_arg=""
           if [ -f custom_icon.png ]; then
             icon_arg="-k custom_icon.png"
           fi
-          
-          cyan -i youtube.ipa -o YouMod_${{ env.YT_VERSION }}_v${{ env.YOUMOD_VERSION }}.ipa -uwef $tweaks -n "${{ inputs.display_name }}" -b ${{ inputs.bundle_id }} $icon_arg
+          cyan -i youtube.ipa -o YouMod_${{ env.YT_VERSION }}_v${{ env.YOUMOD_VERSION }}.ipa -uwef *.deb -n "${{ inputs.display_name }}" -b ${{ inputs.bundle_id }} $icon_arg
 
       - name: Create a Draft Release
         uses: softprops/action-gh-release@v3
