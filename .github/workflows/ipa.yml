@@ -353,6 +353,9 @@ jobs:
         if: ${{ inputs.demc }}
         run: |
           cd DontEatMyContent
+          # Tweak.h has a tentative global (CGFloat constant;) in a header
+          # shared by two compile units; clang on Linux defaults to -fno-common.
+          sed -i 's/-fobjc-arc/-fobjc-arc -fcommon/' Makefile
           make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
           mv packages/*.deb ${{ github.workspace }}/demc.deb
 
