@@ -157,6 +157,7 @@ jobs:
         run: |
           eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
           brew install make ldid
+          echo "/home/linuxbrew/.linuxbrew/bin" >> $GITHUB_PATH
           echo "$(brew --prefix make)/libexec/gnubin" >> $GITHUB_PATH
           echo "THEOS=${{ github.workspace }}/theos" >> $GITHUB_ENV
 
@@ -352,6 +353,9 @@ jobs:
         if: ${{ inputs.demc }}
         run: |
           cd DontEatMyContent
+          # Tweak.h has a tentative global (CGFloat constant;) in a header
+          # shared by two compile units; clang on Linux defaults to -fno-common.
+          sed -i 's/-fobjc-arc/-fobjc-arc -fcommon/' Makefile
           make clean package DEBUG=0 FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
           mv packages/*.deb ${{ github.workspace }}/demc.deb
 
