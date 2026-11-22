@@ -53,7 +53,6 @@
 @property (nonatomic, retain) UILongPressGestureRecognizer *YouModHoldGesture;
 @property (nonatomic, strong) NSArray *YouModGesturesSuspendedByHold;
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer;
-- (void)YouModAutoFullscreen;
 - (void)YouModSetAutoSpeed;
 - (void)setPlaybackRate:(float)rate;
 - (void)setActiveCaptionTrack:(MLInnerTubeCaptionTrack *)arg1 source:(NSInteger)arg2;
@@ -61,8 +60,7 @@
 - (void)didPressReplay;
 - (void)play;
 - (void)pause;
-- (void)YouModAutoAudioTrack;
-- (void)YouModAutoCaptions;
+- (void)YouModAutoCaptions; // wrapper for legacy callers; real hook on YTSingleVideoController
 - (void)YouModLoopButton;
 - (void)YouModShareButton:(UIView *)sourceView;
 - (NSInteger)playerState;
@@ -73,6 +71,7 @@
 - (void)YouModShowSpeedToast:(CGFloat)speed isLocked:(BOOL)isLocked;
 - (void)YouModAutoDRCAudio;
 - (void)setAudioTrack:(YTIAudioTrack *)arg1 source:(NSInteger)arg2;
+- (void)setMuted:(BOOL)muted;
 - (void)setAudioDRCEnabled:(BOOL)arg;
 @end
 

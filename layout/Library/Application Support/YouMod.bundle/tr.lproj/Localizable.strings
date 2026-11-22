@@ -19,8 +19,8 @@
 "SOURCE_CODES" = "Kaynak kodları";
 "SOURCE_CODES_DESC" = "Kodlara göz atın!";
 
-"FIX_PLAYBACK_ISSUES" = "Fix playback issues (Experimental)";
-"FIX_PLAYBACK_ISSUES_DESC" = "This option is still experimental and may not work for some users.";
+"FIX_PLAYBACK_ISSUES" = "Fix playback issues";
+"FIX_PLAYBACK_ISSUES_DESC" = "Forces the player to use the HLS stream. Not recommended to enable if you don't have any playback issues.";
 
 "PERFER_HEADER" = "YouMod tercihleri";
 "PERFER" = "Tercihler";
@@ -180,6 +180,7 @@
 "AUDIO_TRACK" = "Tercih edilen ses parçası";
 "ORIGINAL" = "Orijinal";
 "SELECT_MANUALLY" = "Manuel seç";
+"ADD_LANGUAGE" = "Add language";
 "AUDIO_TRACK_SELECT" = "Seçilen ses parçası";
 "AUDIO_TRACK_SELECT_DESC" = "Mevcutsa, oynatma için kullanılacak tercih edilen ses parçası dilini belirtir.";
 "NO_AUTO_DUBBED" = "Orijinal ses parçasını kullan";
@@ -240,7 +241,7 @@
 "PAUSE_ON_OVERLAY" = "Katman açıldığında duraklat";
 "PAUSE_ON_OVERLAY_DESC" = "Katman görünürse oynatmayı duraklatır.";
 "DISABLES_SNAP_TO_CHAPTER" = "Bölümlere yapışmayı devre dışı bırak";
-"DISABLES_SNAP_TO_CHAPTER_DESC" = "İlerleme çubuğunun video bölümlerine takılmasını/yapışmasını engeller.";
+"DISABLES_SNAP_TO_CHAPTER_DESC" = "Lets you seek freely instead of snapping to chapter starts and ends.";
 "DISABLES_ENGAGE_PANEL" = "Tam ekranda etkileşim panelini devre dışı bırak";
 "DISABLES_ENGAGE_PANEL_DESC" = "Tam ekranda etkileşim panelinin gösterilmesini engeller.";
 "GESTURES" = "Hareket kontrollerini etkinleştir";

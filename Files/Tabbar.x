@@ -147,12 +147,19 @@ static NSString *ymPivotIDOfItem(YTIPivotBarSupportedRenderers *item) {
     return pID.length > 0 ? pID : nil;
 }
 
+// The tab layout to apply: the user's saved order, or the Manage Tabs default set on a
+// clean install. YouTube no longer ships the Subscriptions tab on iPhone, so without the
+// fallback the fresh-install bar would never get it (only a save in Manage Tabs wrote
+// TabOrder and made it appear).
+static NSArray *ymEffectiveTabOrder(void) {
+    NSArray *savedOrder = [[NSUserDefaults standardUserDefaults] arrayForKey:TabOrder];
+    return savedOrder.count > 0 ? savedOrder : YMDefaultTabOrder();
+}
+
 static void YMApplyTabLayout(YTIPivotBarRenderer *renderer) {
     isNewYTTabbarLayout = renderer.backgroundStyle == 2;
-    // The bar is being rebuilt, so its item views are new: allow the long-press menu to attach again.
-    isGestureRegistered = NO;
     NSMutableArray <YTIPivotBarSupportedRenderers *> *items = [renderer itemsArray];
-    NSArray *savedOrder = [[NSUserDefaults standardUserDefaults] arrayForKey:TabOrder];
+    NSArray *savedOrder = ymEffectiveTabOrder();
     if (savedOrder.count > 0) {
         // Remember every item YouTube (or we) put in the bar, then look tabs up in that cache
         NSMutableDictionary<NSString *, YTIPivotBarSupportedRenderers *> *lookup = ymNativePivotItems();
@@ -248,13 +255,13 @@ static void YMOpenLinkFromClipboard(UIViewController *presentingVC, BOOL isRunti
 }
 
 // Hide Tab Labels + long-press on the first tab to open Manage Tabs
-static char kYMTabMenuInteractionKey;
-static void YMAttachTabMenu(UIView *view) {
+static const void *kYMTabMenuInteractionKey = &kYMTabMenuInteractionKey;
+static void YMAttachTabMenu(YTPivotBarItemView *view) {
     if (isGestureRegistered || objc_getAssociatedObject(view, &kYMTabMenuInteractionKey)) return;
+    isGestureRegistered = YES;
     UIContextMenuInteraction *interaction = [[UIContextMenuInteraction alloc] initWithDelegate:(id<UIContextMenuInteractionDelegate>)view];
     [view addInteraction:interaction];
     objc_setAssociatedObject(view, &kYMTabMenuInteractionKey, interaction, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-    isGestureRegistered = YES;
 }
 
 %hook YTPivotBarItemView
@@ -368,7 +375,7 @@ static BOOL isTabSelected = NO;
         // Build pivot identifiers from enabled tabs (skip Create — matches Settings.x segment logic).
         // The Download tab follows the Downloading settings and defaults to the end of the bar.
         NSMutableArray *pivotIdentifiers = [NSMutableArray array];
-        NSArray *savedOrder = [[NSUserDefaults standardUserDefaults] arrayForKey:TabOrder];
+        NSArray *savedOrder = ymEffectiveTabOrder();
         if (savedOrder.count > 0) {
             BOOL downloadInOrder = NO;
             for (NSDictionary *entry in savedOrder) {

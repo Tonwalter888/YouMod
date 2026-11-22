@@ -6,6 +6,24 @@
 - (void)setFeedHeaderScrollMode:(int)mode { %orig(IS_ENABLED(HideSubbar) ? 0 : mode); }
 %end
 
+/*
+%hook YTTabTitlesView
+- (void)didMoveToSuperview {
+    %orig;
+    GPBMessage *renderer = [self._viewControllerForAncestor.parentViewController valueForKey:@"_renderer"];
+    if (IS_ENABLED(HideSubbar) && renderer && [renderer.description containsString:@"FEwhat_to_watch"]) [self removeFromSuperview];
+}
+%end
+
+%hook YTTabsView
+- (YTTabTitlesView *)tabTitlesView {
+    GPBMessage *renderer = [self._viewControllerForAncestor valueForKey:@"_renderer"];
+    if (IS_ENABLED(HideSubbar) && renderer && [renderer.description containsString:@"FEwhat_to_watch"]) return nil;
+    return %orig;
+}
+%end
+*/
+
 // Hide voice search button
 %hook YTSearchViewController
 - (void)viewDidLoad {

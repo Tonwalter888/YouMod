@@ -19,8 +19,8 @@
 "SOURCE_CODES" = "Codici sorgente";
 "SOURCE_CODES_DESC" = "Dai un'occhiata ai codici!";
 
-"FIX_PLAYBACK_ISSUES" = "Fix playback issues (Experimental)";
-"FIX_PLAYBACK_ISSUES_DESC" = "This option is still experimental and may not work for some users.";
+"FIX_PLAYBACK_ISSUES" = "Fix playback issues";
+"FIX_PLAYBACK_ISSUES_DESC" = "Forces the player to use the HLS stream. Not recommended to enable if you don't have any playback issues.";
 
 "PERFER_HEADER" = "Preferenze di YouMod";
 "PERFER" = "Preferenze";
@@ -180,6 +180,7 @@
 "AUDIO_TRACK" = "Traccia audio preferita";
 "ORIGINAL" = "Originale";
 "SELECT_MANUALLY" = "Seleziona manualmente";
+"ADD_LANGUAGE" = "Add language";
 "AUDIO_TRACK_SELECT" = "Traccia audio selezionata";
 "AUDIO_TRACK_SELECT_DESC" = "Specifica la lingua preferita della traccia audio da usare per la riproduzione, se disponibile.";
 "NO_AUTO_DUBBED" = "Usa traccia audio originale";
@@ -240,7 +241,7 @@
 "PAUSE_ON_OVERLAY" = "Pausa alla comparsa dell'overlay";
 "PAUSE_ON_OVERLAY_DESC" = "Mette in pausa la riproduzione quando compare l'overlay.";
 "DISABLES_SNAP_TO_CHAPTER" = "Disattiva aggancio ai capitoli";
-"DISABLES_SNAP_TO_CHAPTER_DESC" = "Impedisce alla barra di avanzamento di agganciarsi ai capitoli.";
+"DISABLES_SNAP_TO_CHAPTER_DESC" = "Lets you seek freely instead of snapping to chapter starts and ends.";
 "DISABLES_ENGAGE_PANEL" = "Disattiva pannello di interazione a schermo intero";
 "DISABLES_ENGAGE_PANEL_DESC" = "Impedisce la visualizzazione del pannello di interazione a schermo intero.";
 "GESTURES" = "Attiva controlli tramite gesti";

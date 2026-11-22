@@ -1,0 +1,2 @@
+@interface YTTabsView : UIView
+@end

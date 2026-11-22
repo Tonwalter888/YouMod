@@ -184,27 +184,24 @@
 + (NSWritingDirection)_defaultWritingDirection { return IS_ENABLED(DisablesRTL) ? NSWritingDirectionLeftToRight : %orig; }
 %end
 
-/*
-%hook UITraitCollection
+%hook UIDevice
 - (UIUserInterfaceIdiom)userInterfaceIdiom {
     if (INTFORVAL(DeviceUIIndex) == 1) return UIUserInterfaceIdiomPad;
     else if (INTFORVAL(DeviceUIIndex) == 2) return UIUserInterfaceIdiomPhone;
     return %orig;
 }
 %end
-*/
 
-%hook YTCommonUtils
-+ (BOOL)isIPad {
-    if (INTFORVAL(DeviceUIIndex) == 1) return YES;
-    else if (INTFORVAL(DeviceUIIndex) == 2) return NO;
+// Filp this to fix the keyboard layout on iPad
+%hook UITraitCollection
+- (UIUserInterfaceIdiom)userInterfaceIdiom {
+    if (INTFORVAL(DeviceUIIndex) == 2 && [YMHelpers isPadHardware]) return UIUserInterfaceIdiomPad;
     return %orig;
 }
 %end
 
-// [YMHelpers isPad]
 %hook UIKeyboardImpl
-+ (BOOL)isFloating { return IS_ENABLED(FloatingKeyboard) && INTFORVAL(DeviceUIIndex) == 1 ? YES : %orig; }
++ (BOOL)isFloating { return IS_ENABLED(FloatingKeyboard) && [YMHelpers isPad] ? YES : %orig; }
 %end
 
 %hook YTEngagementPanelHeaderView

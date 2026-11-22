@@ -19,8 +19,8 @@
 "SOURCE_CODES" = "源代码";
 "SOURCE_CODES_DESC" = "来看看代码吧！";
 
-"FIX_PLAYBACK_ISSUES" = "Fix playback issues (Experimental)";
-"FIX_PLAYBACK_ISSUES_DESC" = "This option is still experimental and may not work for some users.";
+"FIX_PLAYBACK_ISSUES" = "Fix playback issues";
+"FIX_PLAYBACK_ISSUES_DESC" = "Forces the player to use the HLS stream. Not recommended to enable if you don't have any playback issues.";
 
 "PERFER_HEADER" = "YouMod 偏好设置";
 "PERFER" = "偏好设置";
@@ -180,6 +180,7 @@
 "AUDIO_TRACK" = "首选音轨";
 "ORIGINAL" = "原声";
 "SELECT_MANUALLY" = "手动选择";
+"ADD_LANGUAGE" = "Add language";
 "AUDIO_TRACK_SELECT" = "已选音轨";
 "AUDIO_TRACK_SELECT_DESC" = "指定播放时使用的首选音轨语言（如可用）。";
 "NO_AUTO_DUBBED" = "使用原声音轨";
@@ -240,7 +241,7 @@
 "PAUSE_ON_OVERLAY" = "显示播放界面时暂停";
 "PAUSE_ON_OVERLAY_DESC" = "播放界面出现时暂停播放。";
 "DISABLES_SNAP_TO_CHAPTER" = "禁用吸附到章节";
-"DISABLES_SNAP_TO_CHAPTER_DESC" = "防止进度条吸附到章节标记。";
+"DISABLES_SNAP_TO_CHAPTER_DESC" = "Lets you seek freely instead of snapping to chapter starts and ends.";
 "DISABLES_ENGAGE_PANEL" = "全屏时禁用互动面板";
 "DISABLES_ENGAGE_PANEL_DESC" = "在全屏模式下防止显示互动面板。";
 "GESTURES" = "启用手势控制";

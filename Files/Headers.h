@@ -10,6 +10,10 @@
 #import "Headers/YTPlayerBarController.h"
 #import "Headers/YTPlayerViewController.h"
 #import "Headers/YTWatchController.h"
+#import "Headers/YTWatchLayerViewController.h"
+#import "Headers/YTInlineMutedPlaybackStateControllers.h"
+#import "Headers/YTInlineMutedPlaybackWatchController.h"
+#import "Headers/YTAudioTrackSwitchControllerImpl.h"
 #import "Headers/YTIMenuConditionalServiceItemRenderer.h"
 #import "Headers/YTIPivotBarRenderer.h"
 #import "Headers/YTIPivotBarItemRenderer.h"
@@ -226,6 +230,8 @@
 #import "Headers/YTICommentsResponse.h"
 #import "Headers/YTIInsertItemSectionContentOperation.h"
 #import "Headers/YTISectionListMutationOperations.h"
+#import "Headers/YTTabTitlesView.h"
+#import "Headers/YTTabsView.h"
 #import <AVFoundation/AVFoundation.h>
 #import <AVKit/AVKit.h>
 #import <CoreMedia/CoreMedia.h>
@@ -299,11 +305,15 @@
 #define CellQualityIndex @"YouModCellQualityIndex"
 #define LowPowerQualityIndex @"YouModLowPowerQualityIndex"
 #define AudioTrack @"YouModAudioTrackSegment"
-#define AudioTrackLangIndex @"YouModAudioTrackLangIndex"
+// Ordered language codes for the "Selected audio track"/"Selected captions"
+// pickers (YMLanguageSelector.x). Legacy single-index keys are migrated to
+// these on launch; the migration reads "YouModAudioTrackLangIndex" /
+// "YouModCaptionTrackLangIndex" literals directly.
+#define AudioTrackLangs @"YouModAudioTrackLangs"
 #define NoDubbedAudioTrack @"YouModNoDubbedAudioTrack"
 #define NoTranslatedTitles @"YouModNoTranslatedTitles"
 #define CaptionTrack @"YouModCaptionTrack"
-#define CaptionTrackLangIndex @"YouModCaptionTrackLangIndex"
+#define CaptionTrackLangs @"YouModCaptionTrackLangs"
 #define DisablesCaptionTrack @"YouModDisablesCaptionTrack"
 #define AutoSpeedIndex @"YouModAutoSpeedIndex"
 #define ShortsAutoSpeedIndex @"YouModShortsAutoSpeedIndex"
@@ -737,6 +747,9 @@ extern UIView *sbGetNotificationParent(void);
 extern void sbDismissAllNotifications(void);
 extern void sbUpdateOverlayInsetForPivotBar(void);
 extern void YMPresentTabOrder(id presenter);
+// Default tab layout (id/enabled dicts) used when nothing is saved in Manage Tabs yet.
+// Implemented in YouModSettings.x next to the Manage Tabs screen; consumed by Tabbar.x.
+extern NSArray *YMDefaultTabOrder(void);
 extern void YouModShowPill(NSString *message, BOOL success);
 extern void YouModCheckForUpdateManually(void);
 
@@ -810,6 +823,9 @@ extern void YMOpenGroupFromHost(id host, NSString *title, NSArray<YMSettingsItem
 extern UIViewController *YMNewSubSettings(NSString *title, NSArray<YMSettingsItem *> *items);
 extern UIViewController *YMNewSponsorBlockSettings(void); // SponsorBlockSettings.x
 extern UIViewController *YMNewSplitSettings(NSArray<YMSettingsItem *> *sidebarItems); // YMSplitSettings.x
+
+// Language selection (YMLanguageSelector.x)
+#import "Headers/YMLanguageSelector.h"
 
 // SponsorBlock's searchable rows, rendered by its own cell builders so its
 // settings are editable inline in search. host adopts the rendering VC as a child

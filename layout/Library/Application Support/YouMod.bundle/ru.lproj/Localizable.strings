@@ -19,8 +19,8 @@
 "SOURCE_CODES" = "Исходный код";
 "SOURCE_CODES_DESC" = "Взгляните на код!";
 
-"FIX_PLAYBACK_ISSUES" = "Исправить проблемы воспроизведения (бета)";
-"FIX_PLAYBACK_ISSUES_DESC" = "Эта функция пока в бета-версии и может работать не у всех.";
+"FIX_PLAYBACK_ISSUES" = "Fix playback issues";
+"FIX_PLAYBACK_ISSUES_DESC" = "Forces the player to use the HLS stream. Not recommended to enable if you don't have any playback issues.";
 
 "PERFER_HEADER" = "Настройки YouMod";
 "PERFER" = "Настройки";
@@ -180,6 +180,7 @@
 "AUDIO_TRACK" = "Предпочитаемая аудиодорожка";
 "ORIGINAL" = "Оригинальная";
 "SELECT_MANUALLY" = "Выбрать вручную";
+"ADD_LANGUAGE" = "Add language";
 "AUDIO_TRACK_SELECT" = "Выбранная аудиодорожка";
 "AUDIO_TRACK_SELECT_DESC" = "Задаёт предпочитаемый язык аудиодорожки для воспроизведения, если он доступен.";
 "NO_AUTO_DUBBED" = "Использовать исходную дорожку";
@@ -240,7 +241,7 @@
 "PAUSE_ON_OVERLAY" = "Пауза при появлении интерфейса";
 "PAUSE_ON_OVERLAY_DESC" = "Ставит воспроизведение на паузу при появлении интерфейса.";
 "DISABLES_SNAP_TO_CHAPTER" = "Отключить привязку к эпизодам";
-"DISABLES_SNAP_TO_CHAPTER_DESC" = "Не позволяет полосе прогресса прилипать к эпизодам.";
+"DISABLES_SNAP_TO_CHAPTER_DESC" = "Lets you seek freely instead of snapping to chapter starts and ends.";
 "DISABLES_ENGAGE_PANEL" = "Отключить панель взаимодействия в полноэкранном режиме";
 "DISABLES_ENGAGE_PANEL_DESC" = "Не позволяет панели взаимодействия появляться в полноэкранном режиме.";
 "GESTURES" = "Включить управление жестами";

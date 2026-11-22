@@ -712,13 +712,35 @@ void YouModApplyPrevNextReplacement(YTMainAppControlsOverlayView *overlay) {
 }
 %end
 
-// Automatically mute video if user wants to
-%hook YTInlineMutedPlaybackStateController // 19.x-20.x
-- (void)setInlinePlaybackUnmutedAtStart:(BOOL)arg { %orig(IS_ENABLED(AutoFeedMute) || sStartupVideoPlaying ? NO : arg); }
-%end
+static BOOL sYMUserUnmutedInlineVideo = NO;
 
 %hook YTInlineMutedPlaybackStateControllerImpl // 21.x+
-- (void)setInlinePlaybackUnmutedAtStart:(BOOL)arg { %orig(IS_ENABLED(AutoFeedMute) || sStartupVideoPlaying ? NO : arg); }
+- (BOOL)inlinePlaybackUnmutedAtStart {
+    if (IS_ENABLED(AutoFeedMute) || sStartupVideoPlaying) return sYMUserUnmutedInlineVideo;
+    return %orig;
+}
+- (void)didTurnOnAudioForVideoId:(id)videoID  { sYMUserUnmutedInlineVideo = YES; %orig; }
+- (void)didTurnOffAudioForVideoId:(id)videoID { sYMUserUnmutedInlineVideo = NO;  %orig; }
+%end
+
+// 20.x and earlier: pre-split class with the same API (verified against 20.21.6).
+%hook YTInlineMutedPlaybackStateController
+- (BOOL)inlinePlaybackUnmutedAtStart {
+    if (IS_ENABLED(AutoFeedMute) || sStartupVideoPlaying) return sYMUserUnmutedInlineVideo;
+    return %orig;
+}
+- (void)didTurnOnAudioForVideoId:(id)videoID  { sYMUserUnmutedInlineVideo = YES; %orig; }
+- (void)didTurnOffAudioForVideoId:(id)videoID { sYMUserUnmutedInlineVideo = NO;  %orig; }
+%end
+
+// Force-mute once per new video load: closes the pooled-player-reuse hole that
+// made auto feed mute unreliable ("not muting sometimes").
+%hook YTInlineMutedPlaybackWatchController
+- (void)loadVideo {
+    sYMUserUnmutedInlineVideo = NO;
+    %orig;
+    if (IS_ENABLED(AutoFeedMute) || sStartupVideoPlaying) [self.playerViewController setMuted:YES];
+}
 %end
 
 // Exit Fullscreen on Finish
@@ -733,17 +755,106 @@ void YouModApplyPrevNextReplacement(YTMainAppControlsOverlayView *overlay) {
         YTInlinePlayerBarContainerView *playerBar = self.playerBar;
         if (playerBar) playerBar.shouldDisplayTimeRemaining = YES;
     }
-    if (!singleVideoController) return;
-    YTPlayerView *playerview = [singleVideoController valueForKey:@"_playerView"];
-    YTPlayerViewController *playerviewController = [playerview valueForKey:@"_playerViewDelegate"];
     YouModConfigureRemoteSkipCommands();
-    if (INTFORVAL(AutoDRCAudioIndex) != 0) [playerviewController YouModAutoDRCAudio];
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        if (INTFORVAL(AudioTrack) != 0 || IS_ENABLED(NoDubbedAudioTrack)) [playerviewController YouModAutoAudioTrack];
-        if (IS_ENABLED(AutoFullScreen)) [playerviewController YouModAutoFullscreen];
-        if (INTFORVAL(CaptionTrack) != 0) [playerviewController YouModAutoCaptions];
-    });
-    if (INTFORVAL(AutoSpeedIndex) != 0) [playerviewController YouModSetAutoSpeed];
+}
+%end
+
+static void YouModApplyAutoAudioTrack(id switchController) {
+    NSArray <YTIAudioTrack *> *availableTracks = [switchController valueForKey:@"_availableAudioTracks"];
+    if (!availableTracks || availableTracks.count == 0) return;
+    BOOL ignoreDubbed = IS_ENABLED(NoDubbedAudioTrack);
+    // Original track (".4" id suffix); also the fallback when auto-dubbed tracks are ignored.
+    NSUInteger originalIndex = [availableTracks indexOfObjectPassingTest:^BOOL(YTIAudioTrack *track, NSUInteger idx, BOOL *stop) {
+        return [track.id_p hasSuffix:@".4"];
+    }];
+    YTIAudioTrack *originalTrack = originalIndex == NSNotFound ? nil : availableTracks[originalIndex];
+    YTIAudioTrack *matchedTrack = nil;
+
+    if (INTFORVAL(AudioTrack) == 1) {
+        matchedTrack = originalTrack;
+    } else if (INTFORVAL(AudioTrack) == 2) {
+        // First preferred language with an acceptable track wins.
+        for (NSString *lang in [YMLanguageStore codesForKey:AudioTrackLangs]) {
+            NSUInteger index = [availableTracks indexOfObjectPassingTest:^BOOL(YTIAudioTrack *track, NSUInteger idx, BOOL *stop) {
+                return [track.id_p hasPrefix:lang] && !(ignoreDubbed && [track isAutoDubbed]);
+            }];
+            if (index != NSNotFound) {
+                matchedTrack = availableTracks[index];
+                break;
+            }
+        }
+        if (!matchedTrack && ignoreDubbed) matchedTrack = originalTrack;
+    } else if (ignoreDubbed) {
+        NSUInteger index = [availableTracks indexOfObjectPassingTest:^BOOL(YTIAudioTrack *track, NSUInteger idx, BOOL *stop) {
+            return track.audioIsDefault;
+        }];
+        if (index != NSNotFound && [availableTracks[index] isAutoDubbed]) matchedTrack = originalTrack;
+    }
+
+    if (matchedTrack) [switchController switchToAudioTrack:matchedTrack source:0];
+}
+
+// A flag keeps later format updates from overriding a manual pick;
+// setActiveVideo: resets it per video. 21.x+.
+%hook YTAudioTrackSwitchControllerImpl
+%property (nonatomic, assign) BOOL ymAutoTrackApplied;
+- (void)setActiveVideo:(id)video {
+    self.ymAutoTrackApplied = NO;
+    %orig;
+}
+- (void)singleVideo:(id)video selectableAudioFormatsDidChange:(id)formats {
+    %orig;
+    if (self.ymAutoTrackApplied) return;
+    if (INTFORVAL(AudioTrack) == 0 && !IS_ENABLED(NoDubbedAudioTrack)) return;
+    self.ymAutoTrackApplied = YES;
+    YouModApplyAutoAudioTrack(self);
+}
+%end
+
+// 20.x and earlier (no-op on 21.x+, where the class doesn't exist).
+%hook YTAudioTrackSwitchController
+%property (nonatomic, assign) BOOL ymAutoTrackApplied;
+- (void)setActiveVideo:(id)video {
+    self.ymAutoTrackApplied = NO;
+    %orig;
+}
+- (void)singleVideo:(id)video selectableAudioFormatsDidChange:(id)formats {
+    %orig;
+    if (self.ymAutoTrackApplied) return;
+    if (INTFORVAL(AudioTrack) == 0 && !IS_ENABLED(NoDubbedAudioTrack)) return;
+    self.ymAutoTrackApplied = YES;
+    YouModApplyAutoAudioTrack(self);
+}
+%end
+
+// Auto fullscreen is one-shot per video: armed when the watch page loads a new
+// video, consumed on the first expansion retry or as soon as the player
+// actually goes fullscreen (YTWatchViewController setFullscreen: below).
+// didExpandWatchFlowWithGestureType: fires for every completed expansion —
+// including small drag gestures — so it must not re-enter fullscreen.
+static BOOL sYMAutoFullScreenPending = NO;
+
+// The watch page's player loaded with playback data: the video opened.
+%hook YTWatchController
+- (void)watchPlaybackController:(id)controller didLoadPlayerWithPlaybackData:(id)data {
+    %orig;
+    sYMAutoFullScreenPending = IS_ENABLED(AutoFullScreen);
+    if (sYMAutoFullScreenPending) [self showFullScreen];
+}
+%end
+
+// The watch flow finished expanding: canPresentFullScreen is now true
+// (watchView stopped animating, the floating miniplayer finished expanding).
+// presentFullScreenAnimated: silently drops requests made before this point,
+// which is why auto fullscreen retries here when the request above was dropped
+// during the open animation — but only once per video.
+%hook YTWatchLayerViewController
+- (void)didExpandWatchFlowWithGestureType:(int)gestureType {
+    %orig;
+    if (sYMAutoFullScreenPending) {
+        sYMAutoFullScreenPending = NO;
+        [(YTWatchController *)self.currentWatchController showFullScreen];
+    }
 }
 %end
 
@@ -782,6 +893,11 @@ void YouModApplyPrevNextReplacement(YTMainAppControlsOverlayView *overlay) {
 // Portrait Fullscreen
 %hook YTWatchViewController
 - (NSUInteger)allowedFullScreenOrientations { return IS_ENABLED(PortFull) ? UIInterfaceOrientationMaskAllButUpsideDown : %orig; }
+// Consume the one-shot auto fullscreen as soon as fullscreen actually happens.
+- (void)setFullscreen:(BOOL)fullscreen {
+    %orig;
+    if (fullscreen) sYMAutoFullScreenPending = NO;
+}
 %end
 
 %group ForceMiniPlayer
@@ -953,6 +1069,47 @@ void YouModApplyPrevNextReplacement(YTMainAppControlsOverlayView *overlay) {
 
     MLQuickMenuVideoQualitySettingFormatConstraint *fc = [%c(MLQuickMenuVideoQualitySettingFormatConstraint) alloc];
     [self setVideoFormatConstraint:[fc initWithVideoQualitySetting:3 formatSelectionReason:2 qualityLabel:qualityLabel]];
+}
+%property (nonatomic, strong) id ymAutoCaptionAppliedItem;
+- (void)playerItem:(id)item availableCaptionTracksDidChange:(id)change {
+    %orig;
+    if (INTFORVAL(CaptionTrack) != 0) [self YouModAutoCaptions];
+}
+%new
+- (void)YouModAutoCaptions {
+    // Auto-apply once per video (keyed by the player item): repeated track
+    // updates — or a manual "captions off" — must not be overridden.
+    if (self.playerItem && self.ymAutoCaptionAppliedItem == self.playerItem) return;
+    NSArray *allTracks = self.availableCaptionTracks;
+    if (!allTracks || allTracks.count == 0) return;
+    self.ymAutoCaptionAppliedItem = self.playerItem;
+    MLInnerTubeCaptionTrack *currentTrack = self.activeCaptionTrack;
+
+    if (INTFORVAL(CaptionTrack) == 1) {
+        if (currentTrack != nil) [self setActiveCaptionTrack:nil source:0];
+        return;
+    }
+    BOOL skipAutoGenerated = IS_ENABLED(DisablesCaptionTrack);
+    MLInnerTubeCaptionTrack *matchedTrack = nil;
+    // First preferred language with an acceptable track wins.
+    for (NSString *lang in [YMLanguageStore codesForKey:CaptionTrackLangs]) {
+        NSUInteger index = [allTracks indexOfObjectPassingTest:^BOOL(MLInnerTubeCaptionTrack *track, NSUInteger idx, BOOL *stop) {
+            if (![track.languageCode isEqualToString:lang]) return NO;
+            if (!skipAutoGenerated) return YES;
+            NSString *vssid = track.VSSID;
+            return !([vssid hasPrefix:@"a."] || [vssid hasPrefix:@"ta."] || [vssid hasPrefix:@"t."]);
+        }];
+        if (index != NSNotFound) {
+            matchedTrack = allTracks[index];
+            break;
+        }
+    }
+
+    if (!matchedTrack && skipAutoGenerated) {
+        [self setActiveCaptionTrack:nil source:0];
+        return;
+    }
+    if (matchedTrack && matchedTrack != currentTrack) [self setActiveCaptionTrack:matchedTrack source:0];
 }
 %end
 
@@ -1401,11 +1558,6 @@ void YouModApplyPrevNextReplacement(YTMainAppControlsOverlayView *overlay) {
     }
 }
 %new
-- (void)YouModAutoFullscreen {
-    YTWatchController *watchController = [self valueForKey:@"_UIDelegate"];
-    [watchController showFullScreen];
-}
-%new
 - (void)YouModSetAutoSpeed {
     if (self.YouModHoldGesture 
         && (self.YouModHoldGesture.state == UIGestureRecognizerStateBegan || self.YouModHoldGesture.state == UIGestureRecognizerStateChanged)) {
@@ -1433,89 +1585,10 @@ void YouModApplyPrevNextReplacement(YTMainAppControlsOverlayView *overlay) {
     %orig(muted);
 }
 %new
-- (void)YouModAutoAudioTrack {
-    NSInteger selectedIndex = INTFORVAL(AudioTrackLangIndex);
-    NSArray *langCodes = [YMHelpers allSystemLanguageValues];
-    NSString *userTargetLang = langCodes[selectedIndex];
-    id switchcon = self.audioTrackController;
-    NSArray *availableTracks = [switchcon valueForKey:@"_availableAudioTracks"];
-    if (!availableTracks || availableTracks.count == 0) return;
-    YTIAudioTrack *matchedTrack = nil;
-
-    if (INTFORVAL(AudioTrack) == 1) {
-        for (YTIAudioTrack *track in availableTracks) {
-            if ([track.id_p hasSuffix:@".4"]) {
-                matchedTrack = track;
-                break;
-            }
-        }
-    } else if (INTFORVAL(AudioTrack) == 2) {
-        for (YTIAudioTrack *track in availableTracks) {
-            if ([track.id_p hasPrefix:userTargetLang]) {
-                matchedTrack = track;
-                break;
-            }
-        }
-
-        // Check if it's dubbed
-        if (matchedTrack && [matchedTrack isAutoDubbed] && IS_ENABLED(NoDubbedAudioTrack)) matchedTrack = nil;
-
-        if (!matchedTrack && IS_ENABLED(NoDubbedAudioTrack)) {
-            for (YTIAudioTrack *track in availableTracks) {
-                if ([track.id_p hasSuffix:@".4"]) {
-                    matchedTrack = track;
-                    break;
-                }
-            }
-        }
-    } else if (IS_ENABLED(NoDubbedAudioTrack)) {
-        YTIAudioTrack *defaultTrack = nil;
-        for (YTIAudioTrack *track in availableTracks) if (track.audioIsDefault) { defaultTrack = track; break; }
-        if (defaultTrack && [defaultTrack isAutoDubbed]) {
-            for (YTIAudioTrack *track in availableTracks) {
-                if ([track.id_p hasSuffix:@".4"]) {
-                    matchedTrack = track;
-                    break;
-                }
-            }
-        }
-    }
-
-    if (matchedTrack) [self setAudioTrack:matchedTrack source:0];
-}
-%new
 - (void)YouModAutoCaptions {
-    YTSingleVideoController *sgvid = self.activeVideo;
-    NSArray *allTracks = sgvid.availableCaptionTracks;
-    if (!allTracks || allTracks.count == 0) return;
-    NSInteger selectedIndex = INTFORVAL(CaptionTrackLangIndex);
-    NSArray *langCodes = [YMHelpers allSystemLanguageValues];
-    NSString *userTargetLang = langCodes[selectedIndex];
-    MLInnerTubeCaptionTrack *currentTrack = sgvid.activeCaptionTrack;
-    MLInnerTubeCaptionTrack *matchedTrack;
-
-    if (INTFORVAL(CaptionTrack) == 1) {
-        if (currentTrack != nil) [self setActiveCaptionTrack:nil source:0];
-        return;
-    }
-
-    for (MLInnerTubeCaptionTrack *track in allTracks) {
-        if ([track.languageCode isEqualToString:userTargetLang]) {
-            matchedTrack = track;
-            break;
-        }
-    }
-
-    if (matchedTrack && ([matchedTrack.VSSID hasPrefix:@"a."] || [matchedTrack.VSSID hasPrefix:@"ta."] || [matchedTrack.VSSID hasPrefix:@"t."]) && IS_ENABLED(DisablesCaptionTrack)) {
-        matchedTrack = nil;
-        [self setActiveCaptionTrack:nil source:0];
-        return;
-    } else if (!matchedTrack && IS_ENABLED(DisablesCaptionTrack)) {
-        [self setActiveCaptionTrack:nil source:0];
-        return;
-    }
-
-    if (matchedTrack && matchedTrack != currentTrack) [self setActiveCaptionTrack:matchedTrack source:0];
+    // Kept for legacy callers (Shorts.x); the exact hook lives on
+    // YTSingleVideoController playerItem:availableCaptionTracksDidChange:.
+    if (INTFORVAL(CaptionTrack) != 0) [self.activeVideo YouModAutoCaptions];
 }
 %new
 - (void)YouModHideSpeedToast {
@@ -1729,6 +1802,11 @@ void YouModApplyPrevNextReplacement(YTMainAppControlsOverlayView *overlay) {
     BOOL value = NO;
     if (INTFORVAL(AutoDRCAudioIndex) == 1) value = YES;
     [self setAudioDRCEnabled:value];
+}
+- (void)playbackController:(id)controller didActivateVideo:(id)video withPlaybackData:(id)data {
+    %orig;
+    if (INTFORVAL(AutoDRCAudioIndex) != 0) [self YouModAutoDRCAudio];
+    if (INTFORVAL(AutoSpeedIndex) != 0) [self YouModSetAutoSpeed];
 }
 %end
 

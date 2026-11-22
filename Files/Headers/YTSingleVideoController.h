@@ -21,11 +21,14 @@
 @end
 
 @interface YTSingleVideoController (YouMod)
+@property (nonatomic, strong) id ymAutoCaptionAppliedItem;
 - (CGFloat)totalMediaTime;
 - (void)setVideoFormatConstraint:(MLQuickMenuVideoQualitySettingFormatConstraint *)arg;
 - (void)YouModAutoQuality;
 - (NSArray *)availableCaptionTracks;
 - (MLInnerTubeCaptionTrack *)activeCaptionTrack;
+- (void)setActiveCaptionTrack:(MLInnerTubeCaptionTrack *)track source:(NSInteger)source;
+- (void)YouModAutoCaptions;
 - (float)volume;
 - (void)setVolume:(float)volume;
 @end

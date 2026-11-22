@@ -1648,6 +1648,22 @@ static const NSInteger kYMTabCount = 24;
 static const NSInteger kYMTabMaxEnabled = 6;
 static const NSInteger kYMTabMinEnabled = 1;
 
+// The tab layout a clean install gets: Home, Shorts, Create, Subscriptions, Library on,
+// everything else off (the download tab follows the Downloading settings). Shared with
+// Tabbar.x so the bar applies this set before the user ever saves in Manage Tabs —
+// YouTube no longer ships the Subscriptions tab on iPhone, so it must be added from here.
+NSArray *YMDefaultTabOrder(void) {
+    BOOL downloadTabEnabled = [[NSUserDefaults standardUserDefaults] boolForKey:DownloadLibraryTab];
+    NSMutableArray *order = [NSMutableArray arrayWithCapacity:kYMTabCount];
+    for (NSInteger i = 0; i < kYMTabCount; i++) {
+        NSString *tabID = kYMTabIDs[i];
+        BOOL defaultEnabled = i < 5;
+        if ([tabID isEqualToString:@"download"]) defaultEnabled = downloadTabEnabled;
+        [order addObject:@{@"id": tabID, @"enabled": @(defaultEnabled)}];
+    }
+    return order;
+}
+
 @interface YMTabOrderViewController : UIViewController <UITableViewDelegate, UITableViewDataSource>
 - (UITableView *)tableView;
 - (void)setTableView:(UITableView *)tv;
@@ -1831,11 +1847,8 @@ static const void *kYMTabSavedScrollEdgeAppearanceKey = &kYMTabSavedScrollEdgeAp
         }
     } else {
         // Default: Home, Shorts, Create, Subscriptions, Library enabled
-        for (NSInteger i = 0; i < kYMTabCount; i++) {
-            NSString *tabID = kYMTabIDs[i];
-            BOOL defaultEnabled = i < 5;
-            if ([tabID isEqualToString:@"download"]) defaultEnabled = downloadTabEnabled;
-            [data addObject:[@{@"id": tabID, @"enabled": @(defaultEnabled)} mutableCopy]];
+        for (NSDictionary *entry in YMDefaultTabOrder()) {
+            [data addObject:[entry mutableCopy]];
         }
     }
 

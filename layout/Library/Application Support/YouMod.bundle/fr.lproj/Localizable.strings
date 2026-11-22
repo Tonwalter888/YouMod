@@ -19,8 +19,8 @@
 "SOURCE_CODES" = "Codes sources";
 "SOURCE_CODES_DESC" = "Jetez un oeil au code !";
 
-"FIX_PLAYBACK_ISSUES" = "Fix playback issues (Experimental)";
-"FIX_PLAYBACK_ISSUES_DESC" = "This option is still experimental and may not work for some users.";
+"FIX_PLAYBACK_ISSUES" = "Fix playback issues";
+"FIX_PLAYBACK_ISSUES_DESC" = "Forces the player to use the HLS stream. Not recommended to enable if you don't have any playback issues.";
 
 "PERFER_HEADER" = "Préférences de YouMod";
 "PERFER" = "Préférences";
@@ -180,6 +180,7 @@
 "AUDIO_TRACK" = "Piste audio préférée";
 "ORIGINAL" = "Originale";
 "SELECT_MANUALLY" = "Sélectionner manuellement";
+"ADD_LANGUAGE" = "Add language";
 "AUDIO_TRACK_SELECT" = "Piste audio sélectionnée";
 "AUDIO_TRACK_SELECT_DESC" = "Spécifie la langue de la piste audio préférée à utiliser pour la lecture, si disponible.";
 "NO_AUTO_DUBBED" = "Utiliser la piste audio d'origine";
@@ -240,7 +241,7 @@
 "PAUSE_ON_OVERLAY" = "Mettre en pause avec l'interface";
 "PAUSE_ON_OVERLAY_DESC" = "Met la lecture en pause lorsque les commandes de superposition apparaissent.";
 "DISABLES_SNAP_TO_CHAPTER" = "Désactiver l'aimantation aux chapitres";
-"DISABLES_SNAP_TO_CHAPTER_DESC" = "Empêche la barre de défilement de s'aimanter automatiquement aux chapitres.";
+"DISABLES_SNAP_TO_CHAPTER_DESC" = "Lets you seek freely instead of snapping to chapter starts and ends.";
 "DISABLES_ENGAGE_PANEL" = "Désactiver le panneau d'engagement en plein écran";
 "DISABLES_ENGAGE_PANEL_DESC" = "Empêche l'affichage du panneau d'engagement (commentaires, etc.) en plein écran.";
 "GESTURES" = "Activer le contrôle par gestes";
