@@ -294,6 +294,7 @@
 #define HidePlayables @"YouModHidePlayables"
 #define HideShortsShelf @"YouModHideShortsShelf"
 #define KeepShortsSubscript @"YouModKeepShortsSubscript"
+#define HideShortsHistory @"YouModHideShortsHistory"
 #define HideSearchHis @"YouModHideSearchHistoryAndSuggestions"
 #define HideSurveys @"YouModHideSurveys"
 #define HideRelatedVideos @"YouModHideRelatedVideos"

@@ -279,6 +279,7 @@ static NSArray<YMSettingsItem *> *YMPreferencesItems(void) {
             YMToggle(YMLOC(@"HIDE_PLAYABLES"), YMLOC(@"HIDE_PLAYABLES_DESC"), HidePlayables),
             YMToggle(YMLOC(@"HIDE_SHORTS_SHELF"), YMLOC(@"HIDE_SHORTS_SHELF_DESC"), HideShortsShelf),
             YMToggle(YMLOC(@"KEEP_SHORTS_SUBSCRIPT"), YMLOC(@"KEEP_SHORTS_SUBSCRIPT_DESC"), KeepShortsSubscript),
+            YMToggle(YMLOC(@"HIDE_SHORTS_HISTORY"), YMLOC(@"HIDE_SHORTS_HISTORY_DESC"), HideShortsHistory),
             YMToggle(YMLOC(@"HIDE_SEARCH_HISTORY"), YMLOC(@"HIDE_SEARCH_HISTORY_DESC"), HideSearchHis),
             YMToggle(YMLOC(@"HIDE_SPONSOR_BUTTON"), YMLOC(@"HIDE_SPONSOR_BUTTON_DESC"), HideSponsorButton),
             YMToggle(YMLOC(@"DEARROW_THUMBNAILS"), YMLOC(@"DEARROW_THUMBNAILS_DESC"), DeArrowEnabled),
