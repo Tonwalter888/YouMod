@@ -556,6 +556,12 @@ BOOL sbActiveForVideo(YTPlayerViewController *player) {
         [_tableView.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor],
     ]];
 
+    // Hold a row ~0.4s to run its longPressHandler (e.g. snap a segment time to 0:00 / video end).
+    UILongPressGestureRecognizer *rowHold = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(sbHandleRowHold:)];
+    rowHold.minimumPressDuration = 0.4;
+    rowHold.delegate = self;
+    [_tableView addGestureRecognizer:rowHold];
+
     if (self.searchBar) {
         self.searchBar.delegate = self;
         // Clear the bar's own background so only the rounded inner field shows.
@@ -720,7 +726,11 @@ BOOL sbActiveForVideo(YTPlayerViewController *player) {
         cell.selectionStyle = UITableViewCellSelectionStyleNone;
         if (self.sbUsesSubmitColors) {
             cell.backgroundColor = [UIColor systemGray6Color];
-            cell.contentView.backgroundColor = [UIColor systemGray6Color];
+            // Clear fill so the pressed-state selectedBackgroundView shows across the whole cell.
+            cell.contentView.backgroundColor = [UIColor clearColor];
+            UIView *pressedFill = [[UIView alloc] init];
+            pressedFill.backgroundColor = [UIColor systemGray5Color];
+            cell.selectedBackgroundView = pressedFill;
         }
         UILabel *label = [[UILabel alloc] init];
         label.text = self.message;
@@ -744,7 +754,11 @@ BOOL sbActiveForVideo(YTPlayerViewController *player) {
         cell.selectionStyle = UITableViewCellSelectionStyleNone;
         if (self.sbUsesSubmitColors) {
             cell.backgroundColor = [UIColor systemGray6Color];
-            cell.contentView.backgroundColor = [UIColor systemGray6Color];
+            // Clear fill so the pressed-state selectedBackgroundView shows across the whole cell.
+            cell.contentView.backgroundColor = [UIColor clearColor];
+            UIView *pressedFill = [[UIView alloc] init];
+            pressedFill.backgroundColor = [UIColor systemGray5Color];
+            cell.selectedBackgroundView = pressedFill;
         }
         UITextField *field = self.textField;
         field.translatesAutoresizingMaskIntoConstraints = NO;
@@ -766,7 +780,11 @@ BOOL sbActiveForVideo(YTPlayerViewController *player) {
     }
     if (self.sbUsesSubmitColors) {
         cell.backgroundColor = [UIColor systemGray6Color];
-        cell.contentView.backgroundColor = [UIColor systemGray6Color];
+        // Clear fill so the pressed-state selectedBackgroundView shows across the whole cell.
+        cell.contentView.backgroundColor = [UIColor clearColor];
+        UIView *pressedFill = [[UIView alloc] init];
+        pressedFill.backgroundColor = [UIColor systemGray5Color];
+        cell.selectedBackgroundView = pressedFill;
     }
     // Re-applied on every pass so reused cells always carry the current dynamic text colors.
     cell.textLabel.font = [UIFont systemFontOfSize:15 weight:UIFontWeightMedium];
@@ -791,6 +809,22 @@ BOOL sbActiveForVideo(YTPlayerViewController *player) {
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
     YMSBCardItem *item = [self itemForRow:indexPath.row];
     if (item && item.handler) item.handler(self);
+}
+
+// Only rows with a longPressHandler take the hold; controls (nudge buttons, fields) keep their own taps.
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldReceiveTouch:(UITouch *)touch {
+    if ([touch.view isKindOfClass:[UIControl class]]) return NO;
+    NSIndexPath *indexPath = [self.tableView indexPathForRowAtPoint:[touch locationInView:self.tableView]];
+    return indexPath && [self itemForRow:indexPath.row].longPressHandler != nil;
+}
+
+- (void)sbHandleRowHold:(UILongPressGestureRecognizer *)gesture {
+    if (gesture.state != UIGestureRecognizerStateBegan) return;
+    NSIndexPath *indexPath = [self.tableView indexPathForRowAtPoint:[gesture locationInView:self.tableView]];
+    YMSBCardItem *item = indexPath ? [self itemForRow:indexPath.row] : nil;
+    if (!item.longPressHandler) return;
+    [[[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleLight] impactOccurred];
+    item.longPressHandler(self);
 }
 
 // Editing mode: every whitelist row gets a red minus revealing the red Delete button, as in swipe-left.
@@ -1166,6 +1200,11 @@ BOOL sbActiveForVideo(YTPlayerViewController *player) {
             draft[@"start"] = @([strongSelf currentVideoMediaTime]);
             refresh();
         }]];
+        // Hold: snap the start to 0:00 without touching playback.
+        items.lastObject.longPressHandler = ^(__unused YMSBCardViewController *c) {
+            draft[@"start"] = @(0);
+            refresh();
+        };
         if (start >= 0) items.lastObject.accessoryView = [YMSBMenuHelpers nudgeControls:^(float delta) { nudge(@"start", delta); }];
     }
     if (!isFull && !isPoi) {
@@ -1179,6 +1218,15 @@ BOOL sbActiveForVideo(YTPlayerViewController *player) {
             draft[@"end"] = @([strongSelf currentVideoMediaTime]);
             refresh();
         }]];
+        // Hold: snap the end to the video's last frame without touching playback.
+        items.lastObject.longPressHandler = ^(__unused YMSBCardViewController *c) {
+            __strong typeof(weakSelf) strongSelf = weakSelf;
+            if (!strongSelf) return;
+            float duration = (float)[strongSelf currentVideoTotalMediaTime];
+            if (duration <= 0) return;
+            draft[@"end"] = @(duration);
+            refresh();
+        };
         if (end >= 0) items.lastObject.accessoryView = [YMSBMenuHelpers nudgeControls:^(float delta) { nudge(@"end", delta); }];
     }
     if (!isFull && start >= 0) {

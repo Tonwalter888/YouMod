@@ -2,6 +2,10 @@
 
 // Ordered preferred-language lists (audio/caption pickers) saved as codes.
 
+// Card width for the language sheets on iPad: compact like an iOS action sheet
+// instead of spanning most of the screen. iPhone keeps the full screen width.
+static const CGFloat YMLanguageCardPadWidth = 340;
+
 @implementation YMLanguageStore
 
 // Moves the old single-language picker index into the code list once.
@@ -189,7 +193,7 @@
 }
 
 - (NSTimeInterval)transitionDuration:(id<UIViewControllerContextTransitioning>)transitionContext {
-    return 0.15;
+    return 0.2;
 }
 
 // Slide up from below the screen on present, back down on dismiss.
@@ -325,7 +329,7 @@
 - (void)presentFrom:(UIViewController *)presenter {
     // Bottom card sliding up from below the screen edge.
     BOOL isPad = [YMHelpers isPad];
-    CGFloat width = isPad ? 420 : [UIScreen mainScreen].bounds.size.width;
+    CGFloat width = isPad ? YMLanguageCardPadWidth : [UIScreen mainScreen].bounds.size.width;
     self.preferredContentSize = CGSizeMake(width, isPad ? 560 : 480);
     self.modalPresentationStyle = UIModalPresentationCustom;
     self.transitioningDelegate = [YMBottomCardTransitioning shared];
@@ -359,10 +363,14 @@
     cell.textLabel.text = self.names[indexPath.row];
     cell.textLabel.textColor = [UIColor labelColor];
     cell.textLabel.font = [UIFont systemFontOfSize:16];
-    // Drag affordance: long-press anywhere on the row to reorder.
-    UIImageView *grip = [[UIImageView alloc] initWithImage:[UIImage systemImageNamed:@"line.3.horizontal"]];
-    grip.tintColor = [UIColor tertiaryLabelColor];
-    cell.accessoryView = grip;
+    // Drag affordance: long-press anywhere on the row to reorder. With a single
+    // language there is nothing to reorder, so the row shows no grip (and the
+    // long-press below refuses to pick it up).
+    if (self.codes.count > 1) {
+        UIImageView *grip = [[UIImageView alloc] initWithImage:[UIImage systemImageNamed:@"line.3.horizontal"]];
+        grip.tintColor = [UIColor tertiaryLabelColor];
+        cell.accessoryView = grip;
+    }
     return cell;
 }
 
@@ -378,6 +386,12 @@
     [YMLanguageStore saveCodes:self.codes forKey:self.defaultsKey];
     // System row-delete animation instead of a full reload.
     [self.tableView deleteRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationAutomatic];
+    // The survivor isn't rebuilt by a row delete, so drop its reorder grip by
+    // hand when the list falls to a single language.
+    if (self.codes.count == 1) {
+        UITableViewCell *last = [self.tableView cellForRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:0]];
+        last.accessoryView = nil;
+    }
     if (self.onChange) self.onChange();
 }
 
@@ -414,6 +428,9 @@
     CGPoint location = [gesture locationInView:self.tableView];
     switch (gesture.state) {
         case UIGestureRecognizerStateBegan: {
+            // A single language can't be reordered (and can't be edited either) —
+            // with nothing to swap it against, the row has to stay put.
+            if (self.codes.count <= 1) return;
             NSIndexPath *indexPath = [self.tableView indexPathForRowAtPoint:location];
             if (!indexPath) return;
             UITableViewCell *cell = [self.tableView cellForRowAtIndexPath:indexPath];
@@ -618,7 +635,7 @@
 - (void)presentFrom:(UIViewController *)presenter {
     // Bottom card sliding up from below the screen edge.
     BOOL isPad = [YMHelpers isPad];
-    CGFloat width = isPad ? 420 : [UIScreen mainScreen].bounds.size.width;
+    CGFloat width = isPad ? YMLanguageCardPadWidth : [UIScreen mainScreen].bounds.size.width;
     self.preferredContentSize = CGSizeMake(width, isPad ? 560 : 480);
     self.modalPresentationStyle = UIModalPresentationCustom;
     self.transitioningDelegate = [YMBottomCardTransitioning shared];

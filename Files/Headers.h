@@ -11,9 +11,9 @@
 #import "Headers/YTPlayerViewController.h"
 #import "Headers/YTWatchController.h"
 #import "Headers/YTWatchLayerViewController.h"
-#import "Headers/YTInlineMutedPlaybackStateControllers.h"
+#import "Headers/YTInlineMutedPlaybackStateController+Impl.h"
 #import "Headers/YTInlineMutedPlaybackWatchController.h"
-#import "Headers/YTAudioTrackSwitchControllerImpl.h"
+#import "Headers/YTAudioTrackSwitchController+Impl.h"
 #import "Headers/YTIMenuConditionalServiceItemRenderer.h"
 #import "Headers/YTIPivotBarRenderer.h"
 #import "Headers/YTIPivotBarItemRenderer.h"
@@ -57,8 +57,7 @@
 #import "Headers/YTModularPlayerBarController.h"
 #import <dlfcn.h>
 #import <Network/Network.h>
-#import "Headers/YTAppViewControllerImpl.h"
-#import "Headers/YTAppViewController.h"
+#import "Headers/YTAppViewController+Impl.h"
 #import "Headers/YTDefaultSheetController.h"
 #import "Headers/YTIFormatStream.h"
 #import "Headers/YTIPlayerResponse.h"
@@ -91,6 +90,7 @@
 #import "Headers/YTShortsContentPresenterView.h"
 #import "Headers/YTReelContainerView.h"
 #import "Headers/YTReelWatchRootView.h"
+#import "Headers/YTHeaderViewController.h"
 
 // For Settings.x and SponsorBlockSettings.x
 #import <roothide.h>
@@ -124,8 +124,7 @@
 #import "Headers/YTHeaderView.h"
 #import "Headers/YTNavigationBarTitleView.h"
 #import "Headers/YTSearchViewController.h"
-#import "Headers/YTPlayabilityResolutionUserActionUIController.h"
-#import "Headers/YTPlayabilityResolutionUserActionUIControllerImpl.h"
+#import "Headers/YTPlayabilityResolutionUserActionUIController+Impl.h"
 #import "Headers/YTPivotBarViewController.h"
 #import "Headers/GOODialogContentView.h"
 #import "Headers/YTReelWatchPlaybackOverlayView.h"
@@ -225,8 +224,7 @@
 #import "Headers/YMSBSettingsHelpers.h"
 #import "Headers/YMSBMenuHelpers.h"
 #import "Headers/YTTouchFeedbackView.h"
-#import "Headers/YTHeaderLogoController.h"
-#import "Headers/YTHeaderLogoControllerImpl.h"
+#import "Headers/YTHeaderLogoController+Impl.h"
 #import "Headers/YTICommentsResponse.h"
 #import "Headers/YTIInsertItemSectionContentOperation.h"
 #import "Headers/YTISectionListMutationOperations.h"
@@ -370,6 +368,7 @@
 #define HideCommentsPreview @"YouModHideCommentsPreview"
 #define LockSpeed @"YouModLockSpeed"
 #define SeekOnOverlay @"YouModSeekOnOverlay"
+#define SeekOnFeed @"YouModSeekOnFeed"
 #define AutoDRCAudioIndex @"YouModAutoDRCAudioIndex"
 #define RemoveVideoLikeButton @"YouModRemoveVideoLikeButton"
 #define RemoveVideoDislikeButton @"YouModRemoveVideoDislikeButton"
@@ -401,6 +400,7 @@
 #define RemoveShortsRemixButton @"YouModRemoveShortsRemixButton"
 #define RemoveShortsSoundMetadataButton @"YouModRemoveShortsSoundMetadataButton"
 #define RemoveShortsSubButton @"YouModRemoveShortsSubButton"
+#define RemoveShortsCenterLensButton @"YouModRemoveShortsCenterLensButton"
 #define RemoveShortsPausedSubButton @"YouModRemoveShortsPausedSubButton"
 #define RemoveShortsPausedLiveButton @"YouModRemoveShortsPausedLiveButton"
 #define RemoveShortsPausedLensButton @"YouModRemoveShortsPausedLensButton"
@@ -928,3 +928,40 @@ extern void YouModRemoveFullscreenActionsButtons(YTELMViewController *controller
 extern BOOL YMHostBundleSupportsLiquidGlass(void);
 extern void YouModApplyLiquidGlassToView(UIView *view, BOOL arg);
 extern void YouModApplyFrostedPanelBackgroundToView(UIView *view);
+
+// YMPivotTabBar.x — native UITabBar overlay (iOS 26 Liquid Glass) on the pivot bar.
+#import <UIKit/UITabBar.h>
+
+@interface YTFloatingPivotBarView : UIView
+@end
+
+// YTAppView (dump YTAppView.h) — app root layout holding the pivot bar.
+@interface YTAppView : UIView
+- (CGRect)browseViewFrame;
+- (BOOL)shouldBrowseViewExtendToBottomEdge;
+- (void)setShouldBrowseViewExtendToBottomEdge:(BOOL)edge;
+@end
+
+@protocol YMPivotBarViewProto <NSObject>
+@property (nonatomic, strong, readonly) YTIPivotBarRenderer *renderer;
+@property (nonatomic, strong, readonly) NSArray *itemViews;
+@end
+
+@interface YTPivotBarItemView (YMPivotGlass)
+- (NSString *)pivotIdentifier;
+- (UIImageView *)navigationButtonImageView;
+@end
+
+@interface YMPivotGlassTabBar : NSObject <UITabBarDelegate, UIContextMenuInteractionDelegate>
++ (BOOL)isActive;
++ (void)attachToBarView:(UIView *)barView;
++ (void)refreshIcons;
++ (void)selectPivotIdentifier:(NSString *)pivotID;
++ (void)setBadgeCount:(id)count forPivotIdentifier:(NSString *)pivotID;
++ (void)setPivotBarViewController:(YTPivotBarViewController *)vc;
+@end
+
+// Tabbar.x — pivot identifier of a bar item (standard or icon-only renderer).
+extern NSString *YMPivotIDOfItem(YTIPivotBarSupportedRenderers *item);
+// Tabbar.x — presents the Download library like a real tap; YES when the item is that tab.
+extern BOOL YMShowLibraryForItem(YTPivotBarViewController *pivotBar, id item);

@@ -10,5 +10,6 @@
 @property (nonatomic, copy) NSString *identifier; // e.g. channelID on whitelist rows
 @property (nonatomic, strong) UIView *accessoryView; // optional trailing controls
 @property (nonatomic, copy) void (^handler)(YMSBCardViewController *card);
+@property (nonatomic, copy) void (^longPressHandler)(YMSBCardViewController *card); // row held ~0.4s
 + (instancetype)itemWithImage:(UIImage *)image title:(NSString *)title subtitle:(NSString *)subtitle tintColor:(UIColor *)tint handler:(void (^)(YMSBCardViewController *card))handler;
 @end

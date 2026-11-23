@@ -712,35 +712,13 @@ void YouModApplyPrevNextReplacement(YTMainAppControlsOverlayView *overlay) {
 }
 %end
 
-static BOOL sYMUserUnmutedInlineVideo = NO;
+// Automatically mute video if user wants to
+%hook YTInlineMutedPlaybackStateController // 19.x-20.x
+- (void)setInlinePlaybackUnmutedAtStart:(BOOL)arg { %orig(IS_ENABLED(AutoFeedMute) || sStartupVideoPlaying ? NO : arg); }
+%end
 
 %hook YTInlineMutedPlaybackStateControllerImpl // 21.x+
-- (BOOL)inlinePlaybackUnmutedAtStart {
-    if (IS_ENABLED(AutoFeedMute) || sStartupVideoPlaying) return sYMUserUnmutedInlineVideo;
-    return %orig;
-}
-- (void)didTurnOnAudioForVideoId:(id)videoID  { sYMUserUnmutedInlineVideo = YES; %orig; }
-- (void)didTurnOffAudioForVideoId:(id)videoID { sYMUserUnmutedInlineVideo = NO;  %orig; }
-%end
-
-// 20.x and earlier: pre-split class with the same API (verified against 20.21.6).
-%hook YTInlineMutedPlaybackStateController
-- (BOOL)inlinePlaybackUnmutedAtStart {
-    if (IS_ENABLED(AutoFeedMute) || sStartupVideoPlaying) return sYMUserUnmutedInlineVideo;
-    return %orig;
-}
-- (void)didTurnOnAudioForVideoId:(id)videoID  { sYMUserUnmutedInlineVideo = YES; %orig; }
-- (void)didTurnOffAudioForVideoId:(id)videoID { sYMUserUnmutedInlineVideo = NO;  %orig; }
-%end
-
-// Force-mute once per new video load: closes the pooled-player-reuse hole that
-// made auto feed mute unreliable ("not muting sometimes").
-%hook YTInlineMutedPlaybackWatchController
-- (void)loadVideo {
-    sYMUserUnmutedInlineVideo = NO;
-    %orig;
-    if (IS_ENABLED(AutoFeedMute) || sStartupVideoPlaying) [self.playerViewController setMuted:YES];
-}
+- (void)setInlinePlaybackUnmutedAtStart:(BOOL)arg { %orig(IS_ENABLED(AutoFeedMute) || sStartupVideoPlaying ? NO : arg); }
 %end
 
 // Exit Fullscreen on Finish
@@ -833,12 +811,26 @@ static void YouModApplyAutoAudioTrack(id switchController) {
 // didExpandWatchFlowWithGestureType: fires for every completed expansion —
 // including small drag gestures — so it must not re-enter fullscreen.
 static BOOL sYMAutoFullScreenPending = NO;
+// Armed when the Shorts player closes: the watch flow re-expanding right after
+// that is a return from Shorts, not a new video — don't auto fullscreen.
+static BOOL sYMSuppressAutoFullScreen = NO;
+
+// "Did this video come from Shorts?" — the watch transition keeps the
+// navigation command that opened the video; reel commands mean Shorts.
+static BOOL YMWatchTransitionIsFromShorts(YTWatchController *watchController) {
+    YTICommand *navigationEndpoint = watchController.watchTransition.playerTransition.navigationEndpoint;
+    return navigationEndpoint.hasReelWatchEndpoint
+        || [navigationEndpoint isReelPivotEndpoint]
+        || [navigationEndpoint isReelInspirationEndpoint];
+}
 
 // The watch page's player loaded with playback data: the video opened.
 %hook YTWatchController
 - (void)watchPlaybackController:(id)controller didLoadPlayerWithPlaybackData:(id)data {
     %orig;
-    sYMAutoFullScreenPending = IS_ENABLED(AutoFullScreen);
+    sYMAutoFullScreenPending = IS_ENABLED(AutoFullScreen)
+        && !sYMSuppressAutoFullScreen
+        && !YMWatchTransitionIsFromShorts(self);
     if (sYMAutoFullScreenPending) [self showFullScreen];
 }
 %end
@@ -851,11 +843,31 @@ static BOOL sYMAutoFullScreenPending = NO;
 %hook YTWatchLayerViewController
 - (void)didExpandWatchFlowWithGestureType:(int)gestureType {
     %orig;
-    if (sYMAutoFullScreenPending) {
+    if (sYMSuppressAutoFullScreen) {
+        // The watch flow came back from Shorts.
+        sYMSuppressAutoFullScreen = NO;
         sYMAutoFullScreenPending = NO;
-        [(YTWatchController *)self.currentWatchController showFullScreen];
+        return;
     }
+    if (!sYMAutoFullScreenPending) return;
+    sYMAutoFullScreenPending = NO;
+    if (YMWatchTransitionIsFromShorts((YTWatchController *)self.currentWatchController)) return;
+    [(YTWatchController *)self.currentWatchController showFullScreen];
 }
+%end
+
+// Shorts excursion tracking (21.x+ and the 20.x twin class): closing Shorts
+// suppresses the one auto fullscreen its hand-off would otherwise trigger;
+// a real video tap ("inception") clears it so normal video opens still
+// fullscreen.
+%hook YTInlineMutedPlaybackStateControllerImpl
+- (void)notifyDidDismissShortsPlayer { sYMSuppressAutoFullScreen = YES; %orig; }
+- (void)notifyWillInceptForVideoId:(id)videoID { sYMSuppressAutoFullScreen = NO; %orig; }
+%end
+
+%hook YTInlineMutedPlaybackStateController
+- (void)notifyDidDismissShortsPlayer { sYMSuppressAutoFullScreen = YES; %orig; }
+- (void)notifyWillInceptForVideoId:(id)videoID { sYMSuppressAutoFullScreen = NO; %orig; }
 %end
 
 // Disable Fullscreen Actions

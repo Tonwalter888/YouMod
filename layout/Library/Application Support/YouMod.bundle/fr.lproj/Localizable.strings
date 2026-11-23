@@ -391,6 +391,8 @@
 "REMOVE_SHORTS_CHANNEL_PROFILE_DESC" = "Removes the channel profile from the Shorts overlay.";
 "REMOVE_SHORTS_SUB_BUTTON" = "Remove subscribe button";
 "REMOVE_SHORTS_SUB_BUTTON_DESC" = "Removes the subscribe button from the Shorts overlay.";
+"REMOVE_SHORTS_CENTER_LENS_BUTTON" = "Remove Lens button (Center)";
+"REMOVE_SHORTS_CENTER_LENS_BUTTON_DESC" = "Removes the lens button from the center of the Shorts overlay.";
 "REMOVE_SHORTS_PAUSED_SUB_BUTTON" = "Supprimer le bouton Abonnements";
 "REMOVE_SHORTS_PAUSED_SUB_BUTTON_DESC" = "Supprime le bouton des abonnements dans l'en-tête de pause Shorts.";
 "REMOVE_SHORTS_PAUSED_LIVE_BUTTON" = "Supprimer le bouton En direct";
@@ -600,7 +602,7 @@
 "SB_MUTE_NOW" = "Mute";
 "SB_MENU_SUBMIT" = "Submit segment";
 "SB_SUBMIT_TITLE" = "New segment";
-"SB_SUBMIT_MESSAGE" = "Play the video to the moment you want to mark, then tap Set start / Set end. Only submit accurate segments.";
+"SB_SUBMIT_MESSAGE" = "Play the video to the moment you want to mark, then tap Set start/Set end, or hold Set start/Set end to snap to 0:00/the end of the video. Only submit accurate segments.";
 "SB_SUBMIT_CATEGORY" = "Category";
 "SB_SUBMIT_SET_START" = "Set start to current time";
 "SB_SUBMIT_SET_END" = "Set end to current time";

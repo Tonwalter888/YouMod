@@ -6,6 +6,8 @@
 - (void)setInlinePlaybackUnmutedAtStart:(BOOL)start;
 - (void)didTurnOnAudioForVideoId:(NSString *)videoID;
 - (void)didTurnOffAudioForVideoId:(NSString *)videoID;
+- (void)notifyDidDismissShortsPlayer;
+- (void)notifyWillInceptForVideoId:(NSString *)videoID;
 @end
 
 @interface YTInlineMutedPlaybackStateController : NSObject
@@ -13,4 +15,6 @@
 - (void)setInlinePlaybackUnmutedAtStart:(BOOL)start;
 - (void)didTurnOnAudioForVideoId:(NSString *)videoID;
 - (void)didTurnOffAudioForVideoId:(NSString *)videoID;
+- (void)notifyDidDismissShortsPlayer;
+- (void)notifyWillInceptForVideoId:(NSString *)videoID;
 @end

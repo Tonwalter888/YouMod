@@ -1,0 +1,2 @@
+@interface YTHeaderViewController : UIViewController
+@end

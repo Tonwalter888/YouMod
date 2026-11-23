@@ -412,6 +412,14 @@ static NSString *YMFormattedSliderValue(NSString *key, float value) {
     return [formatter stringFromTimeInterval:value] ?: @"";
 }
 
+// Closest step to a settings slider's value — the "option" a free drag lands on
+// once the gesture ends. A step <= 0 falls back to whole steps, as before.
+static float YMSnappedSliderValue(UISlider *slider, float step) {
+    if (step <= 0) step = 1;
+    float snapped = slider.minimumValue + roundf((slider.value - slider.minimumValue) / step) * step;
+    return fmaxf(slider.minimumValue, fminf(snapped, slider.maximumValue));
+}
+
 // YouTube Sans Bold at 22pt — the settings header title font ("YouTubeSans-Bold"),
 // used for the thick title next to the close (✕) button and every page title.
 static UIFont *YMSettingsTitleFont(void) {
@@ -1019,6 +1027,8 @@ static const void *kYMCachedDisplayedItemsKey = &kYMCachedDisplayedItemsKey;
     objc_setAssociatedObject(slider, kYMSliderStepAssoc, @(item.sliderStep), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     objc_setAssociatedObject(slider, kYMSliderLabelAssoc, valueLabel, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     [slider addTarget:self action:@selector(sliderChanged:) forControlEvents:UIControlEventValueChanged];
+    // The gesture end (release or cancel) is what snaps the thumb to a step.
+    [slider addTarget:self action:@selector(sliderTouchEnded:) forControlEvents:UIControlEventTouchUpInside | UIControlEventTouchUpOutside | UIControlEventTouchCancel];
     [cell.contentView addSubview:slider];
 
     [NSLayoutConstraint activateConstraints:@[
@@ -1036,17 +1046,10 @@ static const void *kYMCachedDisplayedItemsKey = &kYMCachedDisplayedItemsKey;
     return cell;
 }
 
-- (void)sliderChanged:(UISlider *)sender {
-    NSString *key = objc_getAssociatedObject(sender, kYMSliderKeyAssoc);
-    if (!key) return;
-    float step = [objc_getAssociatedObject(sender, kYMSliderStepAssoc) floatValue];
-    if (step <= 0) step = 1;
-    float snapped = sender.minimumValue + roundf((sender.value - sender.minimumValue) / step) * step;
-    snapped = fmaxf(sender.minimumValue, fminf(snapped, sender.maximumValue));
-    [sender setValue:snapped animated:YES];
-    [[NSUserDefaults standardUserDefaults] setFloat:snapped forKey:key];
+// Cross-dissolve the value label to a new reading (no-op when it's unchanged).
+- (void)ymUpdateSliderValueLabel:(UISlider *)sender key:(NSString *)key value:(float)value {
     UILabel *valueLabel = objc_getAssociatedObject(sender, kYMSliderLabelAssoc);
-    NSString *formattedValue = YMFormattedSliderValue(key, snapped);
+    NSString *formattedValue = YMFormattedSliderValue(key, value);
     if (valueLabel && ![valueLabel.text isEqualToString:formattedValue]) {
         [UIView transitionWithView:valueLabel
                           duration:0.12
@@ -1054,6 +1057,35 @@ static const void *kYMCachedDisplayedItemsKey = &kYMCachedDisplayedItemsKey;
                         animations:^{ valueLabel.text = formattedValue; }
                         completion:nil];
     }
+}
+
+// While the finger is down the thumb tracks it freely — no step jumping — and the
+// label previews the raw value. The stepped value is stored right away so changes
+// made without a touch gesture (VoiceOver, external keyboard) still stick; only
+// the thumb waits for -sliderTouchEnded: to glide onto its step.
+- (void)sliderChanged:(UISlider *)sender {
+    NSString *key = objc_getAssociatedObject(sender, kYMSliderKeyAssoc);
+    if (!key) return;
+    float step = [objc_getAssociatedObject(sender, kYMSliderStepAssoc) floatValue];
+    [[NSUserDefaults standardUserDefaults] setFloat:YMSnappedSliderValue(sender, step) forKey:key];
+    [self ymUpdateSliderValueLabel:sender key:key value:sender.value];
+    if ([key isEqualToString:RewindSeconds] || [key isEqualToString:ForwardSeconds]) {
+        YouModConfigureRemoteSkipCommands();
+    }
+}
+
+// Gesture finished (released or cancelled) → animate the thumb onto the closest
+// step and commit that step as the shown and saved value.
+- (void)sliderTouchEnded:(UISlider *)sender {
+    NSString *key = objc_getAssociatedObject(sender, kYMSliderKeyAssoc);
+    if (!key) return;
+    float step = [objc_getAssociatedObject(sender, kYMSliderStepAssoc) floatValue];
+    float snapped = YMSnappedSliderValue(sender, step);
+    // setValue:animated: is the documented way to glide the thumb; it sends no
+    // action events, so the label and stored value are updated explicitly below.
+    [sender setValue:snapped animated:(fabsf(sender.value - snapped) > 0.0001f)];
+    [[NSUserDefaults standardUserDefaults] setFloat:snapped forKey:key];
+    [self ymUpdateSliderValueLabel:sender key:key value:snapped];
     if ([key isEqualToString:RewindSeconds] || [key isEqualToString:ForwardSeconds]) {
         YouModConfigureRemoteSkipCommands();
     }

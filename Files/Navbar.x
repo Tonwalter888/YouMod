@@ -65,9 +65,9 @@
 }
 %end
 
-%hook YTHeaderView
-- (void)setAdjacentSubheaderView:(UIView *)view { 
-    if (IS_ENABLED(StickyNavBar) && view) self.stickyNavHeaderEnabled = YES;
-    %orig;
+%hook YTHeaderViewController
+- (void)viewWillAppear:(BOOL)animated {
+    %orig; 
+    if (IS_ENABLED(StickyNavBar)) ((YTHeaderView *)self.view).stickyNavHeaderEnabled = YES;
 }
 %end

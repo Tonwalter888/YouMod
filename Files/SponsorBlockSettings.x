@@ -121,6 +121,28 @@ static const void *kSBColorIndexPathKey = &kSBColorIndexPathKey;
 static const void *kSBPageFilterKey = &kSBPageFilterKey;
 static const void *kSBAllFlatRowsKey = &kSBAllFlatRowsKey;
 
+// Closest whole second to a slider's value — the "option" a free drag lands on
+// once the gesture ends. The thumb moves freely while the finger is down and
+// only snaps in -sliderTouchEnded: (see below).
+static float SBSnappedSliderValue(UISlider *slider) {
+    return fminf(slider.maximumValue, fmaxf(slider.minimumValue, roundf(slider.value)));
+}
+
+// "12s" style reading for the slider value labels.
+static NSString *SBFormattedSliderDuration(float value) {
+    NSDateComponentsFormatter *formatter = [[NSDateComponentsFormatter alloc] init];
+    formatter.allowedUnits = NSCalendarUnitSecond;
+    formatter.unitsStyle = NSDateComponentsFormatterUnitsStyleAbbreviated;
+    return [formatter stringFromTimeInterval:value] ?: @"";
+}
+
+// Stored key for a section-1 slider row.
+static NSString *SBSliderKeyForRow(NSInteger row) {
+    if (row == 0) return SBSkipAlertDuration;
+    if (row == 1) return SBUnskipAlertDuration;
+    return SBMinDuration;
+}
+
 @implementation SBSettingsViewController
 
 - (UITableView *)tableView { return objc_getAssociatedObject(self, kSBTableViewKey); }
@@ -444,13 +466,11 @@ static const void *kSBAllFlatRowsKey = &kSBAllFlatRowsKey;
     slider.translatesAutoresizingMaskIntoConstraints = NO;
     slider.tag = row;
     [slider addTarget:self action:@selector(sliderChanged:) forControlEvents:UIControlEventValueChanged];
+    // The gesture end (release or cancel) is what snaps the thumb to a whole second.
+    [slider addTarget:self action:@selector(sliderTouchEnded:) forControlEvents:UIControlEventTouchUpInside | UIControlEventTouchUpOutside | UIControlEventTouchCancel];
 
     UILabel *valueLabel = [[UILabel alloc] init];
-    NSDateComponentsFormatter *formatter = [[NSDateComponentsFormatter alloc] init];
-    formatter.allowedUnits = NSCalendarUnitSecond;
-    formatter.unitsStyle = NSDateComponentsFormatterUnitsStyleAbbreviated;
-
-    valueLabel.text = [formatter stringFromTimeInterval:currentVal];
+    valueLabel.text = SBFormattedSliderDuration(currentVal);
     valueLabel.textColor = [self sbSecondaryTextColor];
     valueLabel.font = [UIFont systemFontOfSize:13];
     valueLabel.textAlignment = NSTextAlignmentRight;
@@ -478,23 +498,39 @@ static const void *kSBAllFlatRowsKey = &kSBAllFlatRowsKey;
     return cell;
 }
 
+// While the finger is down the thumb tracks it freely — no whole-second jumping —
+// and the label previews the raw value. The rounded value is stored right away so
+// changes made without a touch gesture (VoiceOver, external keyboard) still stick;
+// only the thumb waits for -sliderTouchEnded: to glide onto its step.
 - (void)sliderChanged:(UISlider *)sender {
-    NSString *key;
-    if (sender.tag == 0) key = SBSkipAlertDuration;
-    else if (sender.tag == 1) key = SBUnskipAlertDuration;
-    else key = SBMinDuration;
-
-    int rounded = (int)roundf(sender.value);
-    [sender setValue:rounded animated:YES];
-    [[NSUserDefaults standardUserDefaults] setFloat:(float)rounded forKey:key];
+    NSString *key = SBSliderKeyForRow(sender.tag);
+    [[NSUserDefaults standardUserDefaults] setFloat:SBSnappedSliderValue(sender) forKey:key];
     [[NSUserDefaults standardUserDefaults] synchronize];
-    
+
     UILabel *valueLabel = (UILabel *)[sender.superview viewWithTag:SBSliderValueLabelTagBase + sender.tag];
-    NSDateComponentsFormatter *formatter = [[NSDateComponentsFormatter alloc] init];
-    formatter.allowedUnits = NSCalendarUnitSecond;
-    formatter.unitsStyle = NSDateComponentsFormatterUnitsStyleAbbreviated;
-    
-    NSString *formattedValue = [formatter stringFromTimeInterval:rounded] ?: @"";
+    NSString *formattedValue = SBFormattedSliderDuration(sender.value);
+    if (valueLabel && ![valueLabel.text isEqualToString:formattedValue]) {
+        [UIView transitionWithView:valueLabel
+                          duration:0.12
+                           options:UIViewAnimationOptionTransitionCrossDissolve | UIViewAnimationOptionBeginFromCurrentState
+                        animations:^{ valueLabel.text = formattedValue; }
+                        completion:nil];
+    }
+}
+
+// Gesture finished (released or cancelled) → animate the thumb onto the closest
+// whole second and commit that value as the shown and saved one.
+- (void)sliderTouchEnded:(UISlider *)sender {
+    NSString *key = SBSliderKeyForRow(sender.tag);
+    float snapped = SBSnappedSliderValue(sender);
+    // setValue:animated: is the documented way to glide the thumb; it sends no
+    // action events, so the label and stored value are updated explicitly below.
+    [sender setValue:snapped animated:(fabsf(sender.value - snapped) > 0.0001f)];
+    [[NSUserDefaults standardUserDefaults] setFloat:snapped forKey:key];
+    [[NSUserDefaults standardUserDefaults] synchronize];
+
+    UILabel *valueLabel = (UILabel *)[sender.superview viewWithTag:SBSliderValueLabelTagBase + sender.tag];
+    NSString *formattedValue = SBFormattedSliderDuration(snapped);
     if (valueLabel && ![valueLabel.text isEqualToString:formattedValue]) {
         [UIView transitionWithView:valueLabel
                           duration:0.12

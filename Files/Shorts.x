@@ -247,6 +247,7 @@ void YouModFilterShortsDisplayView(_ASDisplayView *view, NSString *iden) {
         if (view != check && view.subviews.count > 1 && [view isKindOfClass:%c(_ASDisplayView)]) YouModRemoveShortsOverlayButton(view);
     }
 }
+- (void)setLensButtonElementRenderer:(YTIElementRenderer *)renderer { if (!IS_ENABLED(RemoveShortsCenterLensButton)) %orig; }
 %end
 
 // new hook for newer YT
@@ -259,6 +260,7 @@ void YouModFilterShortsDisplayView(_ASDisplayView *view, NSString *iden) {
     while (view.subviews.count == 1) view = view.subviews[0];
     if (view.subviews.count > 1 && view != check && [view isKindOfClass:%c(_ASDisplayView)]) YouModRemoveShortsOverlayButton(view.subviews[1]);
 }
+- (void)setLensButtonElementRenderer:(YTIElementRenderer *)renderer { if (!IS_ENABLED(RemoveShortsCenterLensButton)) %orig; }
 %end
 
 %hook YTPlayerView

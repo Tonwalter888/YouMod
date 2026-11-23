@@ -391,6 +391,8 @@
 "REMOVE_SHORTS_CHANNEL_PROFILE_DESC" = "ลบโปรไฟล์ช่องออกจากโอเวอร์เลย์ Shorts";
 "REMOVE_SHORTS_SUB_BUTTON" = "ลบปุ่มติดตาม";
 "REMOVE_SHORTS_SUB_BUTTON_DESC" = "ลบปุ่มติดตามออกจากโอเวอร์เลย์ Shorts";
+"REMOVE_SHORTS_CENTER_LENS_BUTTON" = "ลบปุ่ม Lens (กลางจอ)";
+"REMOVE_SHORTS_CENTER_LENS_BUTTON_DESC" = "ลบปุ่ม Lens ออกจากตรงกลางโอเวอร์เลย์ Shorts";
 "REMOVE_SHORTS_PAUSED_SUB_BUTTON" = "ลบปุ่มการติดตาม";
 "REMOVE_SHORTS_PAUSED_SUB_BUTTON_DESC" = "ลบปุ่มการติดตามในแถบด้านบนเมื่อหยุดวิดีโอ Shorts ชั่วคราว";
 "REMOVE_SHORTS_PAUSED_LIVE_BUTTON" = "ลบปุ่มไลฟ์สด";
@@ -546,7 +548,7 @@
 "SB_SHOW_DURATION" = "แสดงเวลาวิดีโอแบบไม่รวมช่วงสปอนเซอร์";
 "SB_SHOW_DURATION_DESC" = "แสดงเวลาความยาวทั้งหมดของวิดีโอโดยหักช่วงที่ข้ามได้ออก";
 "SB_SHOW_FULL_VIDEO_LABEL" = "แสดงป้ายกำกับวิดีโอทั้งวิดีโอ";
-"SB_SHOW_FULL_VIDEO_LABEL_DESC" = "แสดงแบนเนอร์เมื่อวิดีโอถูกติดป้ายกำกับเป็นหมวดหมู่ทั้งวิดีโอ (เช่น สิทธิพิเศษ)";
+"SB_SHOW_FULL_VIDEO_LABEL_DESC" = "แสดงแบนเนอร์เมื่อวิดีโอถูกติดป้ายกำกับเป็นหมวดหมู่ทั้งวิดีโอ (เช่น การเข้าถึงพิเศษ)";
 "SB_CATEGORIES_HEADER" = "หมวดหมู่ช่วงวิดีโอ";
 
 "SB_ACTION_DISABLE" = "ปิดการใช้งาน";
@@ -594,13 +596,13 @@
 "SB_VOTE_SUCCESS" = "ส่งโหวตแล้ว";
 "SB_VOTE_FAILED" = "โหวตไม่สำเร็จ";
 "SB_VOTE_NO_SEGMENTS" = "ไม่มีพบช่วงวิดีโอ";
-"SB_CAT_exclusive_access" = "สิทธิพิเศษ";
+"SB_CAT_exclusive_access" = "การเข้าถึงพิเศษ";
 "SB_FULL_VIDEO_LABEL" = "วิดีโอนี้ถูกติดป้ายกำกับว่า: %@";
 "SB_DETECTED_MUTE" = "ตรวจพบช่วง %@\nคุณต้องการปิดเสียงช่วงนี้หรือไม่?";
 "SB_MUTE_NOW" = "ปิดเสียง";
 "SB_MENU_SUBMIT" = "ส่งช่วงวิดีโอ";
 "SB_SUBMIT_TITLE" = "ช่วงวิดีโอใหม่";
-"SB_SUBMIT_MESSAGE" = "เล่นวิดีโอไปยังจุดที่ต้องการทำเครื่องหมาย แล้วแตะ ตั้งจุดเริ่ม / ตั้งจุดสิ้นสุด โปรดส่งเฉพาะช่วงที่ถูกต้องแม่นยำเท่านั้น";
+"SB_SUBMIT_MESSAGE" = "เล่นวิดีโอไปยังจุดที่ต้องการทำเครื่องหมาย แล้วแตะตั้งจุดเริ่ม/ตั้งจุดสิ้นสุด หรือกดค้างตั้งจุดเริ่ม/ตั้งจุดสิ้นสุด เพื่อตั้งเป็น 0:00/ท้ายวิดีโอ โปรดส่งเฉพาะช่วงที่ถูกต้องแม่นยำเท่านั้น";
 "SB_SUBMIT_CATEGORY" = "หมวดหมู่";
 "SB_SUBMIT_SET_START" = "ตั้งจุดเริ่มเป็นเวลาปัจจุบัน";
 "SB_SUBMIT_SET_END" = "ตั้งจุดสิ้นสุดเป็นเวลาปัจจุบัน";
@@ -748,9 +750,9 @@
 "STARTUP_VIDEO_DELETE_CONFIRM" = "ต้องการลบวิดีโอเริ่มต้นหรือไม่?";
 "STARTUP_VIDEO_DELETE_CONFIRM_DESC" = "วิดีโอที่บันทึกไว้จะถูกลบออกจากอุปกรณ์นี้";
 "DELETE" = "ลบ";
-"DUPLICATE_DOWNLOAD_TITLE" = "Already downloaded";
-"DUPLICATE_DOWNLOAD_MESSAGE" = "This video is already in your library. Delete the existing file and download it again?";
-"DUPLICATE_DOWNLOAD_REPLACE" = "Delete and download again";
+"DUPLICATE_DOWNLOAD_TITLE" = "ดาวน์โหลดแล้ว";
+"DUPLICATE_DOWNLOAD_MESSAGE" = "วิดีโอนี้มีอยู่ในคลังของคุณแล้ว ต้องการลบไฟล์เดิมและดาวน์โหลดใหม่หรือไม่?";
+"DUPLICATE_DOWNLOAD_REPLACE" = "ลบและดาวน์โหลดใหม่";
 
 "DEV_ROLE_AUTHOR" = "ผู้สร้าง/เจ้าของ";
 "DEV_ROLE_COLLABORATOR" = "ผู้ร่วมพัฒนา";

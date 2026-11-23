@@ -391,6 +391,8 @@
 "REMOVE_SHORTS_CHANNEL_PROFILE_DESC" = "Removes the channel profile from the Shorts overlay.";
 "REMOVE_SHORTS_SUB_BUTTON" = "Убрать кнопку «Подписаться»";
 "REMOVE_SHORTS_SUB_BUTTON_DESC" = "Убирает кнопку «Подписаться» из оверлея Shorts.";
+"REMOVE_SHORTS_CENTER_LENS_BUTTON" = "Remove Lens button (Center)";
+"REMOVE_SHORTS_CENTER_LENS_BUTTON_DESC" = "Removes the lens button from the center of the Shorts overlay.";
 "REMOVE_SHORTS_PAUSED_SUB_BUTTON" = "Удалить кнопку «Подписки»";
 "REMOVE_SHORTS_PAUSED_SUB_BUTTON_DESC" = "Удаляет кнопку подписок в заголовке при паузе Shorts.";
 "REMOVE_SHORTS_PAUSED_LIVE_BUTTON" = "Удалить кнопку «В эфире»";
@@ -600,7 +602,7 @@
 "SB_MUTE_NOW" = "Отключить звук";
 "SB_MENU_SUBMIT" = "Отправить сегмент";
 "SB_SUBMIT_TITLE" = "Новый сегмент";
-"SB_SUBMIT_MESSAGE" = "Перемотайте видео к нужному моменту и нажмите «Начало» / «Конец». Отправляйте только точные сегменты.";
+"SB_SUBMIT_MESSAGE" = "Play the video to the moment you want to mark, then tap Set start/Set end, or hold Set start/Set end to snap to 0:00/the end of the video. Only submit accurate segments.";
 "SB_SUBMIT_CATEGORY" = "Категория";
 "SB_SUBMIT_SET_START" = "Начало: текущее время";
 "SB_SUBMIT_SET_END" = "Конец: текущее время";

@@ -1,6 +1,6 @@
 #import "YMSBCardItem.h"
 
-@interface YMSBCardViewController : UIViewController <UITableViewDelegate, UITableViewDataSource>
+@interface YMSBCardViewController : UIViewController <UITableViewDelegate, UITableViewDataSource, UIGestureRecognizerDelegate>
 @property (nonatomic, copy) NSString *cardTitle;
 @property (nonatomic, copy) NSString *message;        // informational label row on top
 @property (nonatomic, copy) NSString *emptyText;      // centered text shown while items is empty

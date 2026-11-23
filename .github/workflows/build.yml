@@ -38,7 +38,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" 
+          eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
           brew install make ldid gnu-sed autoconf automake libtool pkg-config dpkg
           echo "$(brew --prefix make)/libexec/gnubin" >> $GITHUB_PATH
           echo "THEOS=${{ github.workspace }}/theos" >> $GITHUB_ENV

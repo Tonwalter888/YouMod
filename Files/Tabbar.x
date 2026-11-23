@@ -112,7 +112,7 @@ static BOOL isGestureRegistered = NO;
 
 static YTIPivotBarSupportedRenderers *YouModNewTab(NSString *pivotID, NSString *title, int it) {
     YTIPivotBarSupportedRenderers *tab = [%c(YTIPivotBarSupportedRenderers) new];
-    if (isNewYTTabbarLayout && [tab.pivotBarIconOnlyItemRenderer respondsToSelector:@selector(setBackgroundStyle:)]) {
+    if (isNewYTTabbarLayout && ![YMHelpers isPad] && [tab.pivotBarIconOnlyItemRenderer respondsToSelector:@selector(setBackgroundStyle:)]) {
         tab.pivotBarIconOnlyItemRenderer.pivotIdentifier = pivotID;
         tab.pivotBarIconOnlyItemRenderer.navigationEndpoint.browseEndpoint.browseId = pivotID;
         tab.pivotBarIconOnlyItemRenderer.icon.iconType = it;
@@ -140,7 +140,7 @@ static NSMutableDictionary<NSString *, YTIPivotBarSupportedRenderers *> *ymNativ
     return cache;
 }
 
-static NSString *ymPivotIDOfItem(YTIPivotBarSupportedRenderers *item) {
+NSString *YMPivotIDOfItem(YTIPivotBarSupportedRenderers *item) {
     NSString *pID = item.pivotBarItemRenderer.pivotIdentifier;
     if (pID.length > 0) return pID;
     pID = item.pivotBarIconOnlyItemRenderer.pivotIdentifier;
@@ -164,7 +164,7 @@ static void YMApplyTabLayout(YTIPivotBarRenderer *renderer) {
         // Remember every item YouTube (or we) put in the bar, then look tabs up in that cache
         NSMutableDictionary<NSString *, YTIPivotBarSupportedRenderers *> *lookup = ymNativePivotItems();
         for (YTIPivotBarSupportedRenderers *item in items) {
-            NSString *pID = ymPivotIDOfItem(item);
+            NSString *pID = YMPivotIDOfItem(item);
             if (pID) lookup[pID] = item;
         }
 
@@ -186,7 +186,7 @@ static void YMApplyTabLayout(YTIPivotBarRenderer *renderer) {
             } else {
                 // Custom tab not in YouTube's default items — create it
                 NSInteger iconType = isDownloadTab ? 18 : ymIconTypeForTabID(tabID);
-                NSString *title = isDownloadTab ? LOC(@"DOWNLOAD_LIBRARY_TAB") : ymTitleForTabID(tabID);
+                NSString *title = isDownloadTab ? @"YMDownloads" : ymTitleForTabID(tabID);
                 if (iconType > 0 && title) {
                     YTIPivotBarSupportedRenderers *newTab = YouModNewTab(pivotID, title, iconType);
                     if (newTab) {
@@ -206,10 +206,10 @@ static void YMApplyTabLayout(YTIPivotBarRenderer *renderer) {
     if (IS_ENABLED(DownloadLibraryTab)) {
         BOOL alreadyPresent = NO;
         for (YTIPivotBarSupportedRenderers *item in items) {
-            if ([ymPivotIDOfItem(item) isEqualToString:kYMLibraryPivotIdentifier]) { alreadyPresent = YES; break; }
+            if ([YMPivotIDOfItem(item) isEqualToString:kYMLibraryPivotIdentifier]) { alreadyPresent = YES; break; }
         }
         if (!alreadyPresent) {
-            YTIPivotBarSupportedRenderers *libraryTab = YouModNewTab(kYMLibraryPivotIdentifier, LOC(@"DOWNLOAD_LIBRARY_TAB"), 18);
+            YTIPivotBarSupportedRenderers *libraryTab = YouModNewTab(kYMLibraryPivotIdentifier, @"YMDownloads", 18);
             if (libraryTab) [items addObject:libraryTab];
         }
     }
@@ -219,6 +219,7 @@ static void YMApplyTabLayout(YTIPivotBarRenderer *renderer) {
 - (void)setRenderer:(YTIPivotBarRenderer *)renderer {
     YMApplyTabLayout(renderer);
     %orig(renderer);
+    [YMPivotGlassTabBar attachToBarView:self];
 }
 %end
 
@@ -322,7 +323,7 @@ static void YMAttachTabMenu(YTPivotBarItemView *view) {
 %end
 
 // Startup Tab
-static BOOL ymShowLibraryForItem(YTPivotBarViewController *pivotBar, id item) {
+BOOL YMShowLibraryForItem(YTPivotBarViewController *pivotBar, id item) {
     if (![[item pivotIdentifier] isEqualToString:kYMLibraryPivotIdentifier]) return NO;
     [pivotBar cacheCurrentViewControllers];
     [pivotBar updateViewsWithSelectedPivotIdentifier:kYMLibraryPivotIdentifier];
@@ -334,18 +335,18 @@ static BOOL ymShowLibraryForItem(YTPivotBarViewController *pivotBar, id item) {
 static BOOL isTabSelected = NO;
 %hook YTPivotBarViewController
 - (void)selectItemWithPivotBarItem:(id)item {
-    if (ymShowLibraryForItem(self, item)) return;
+    if (YMShowLibraryForItem(self, item)) return;
     %orig(item);
 }
 - (void)selectItemWithPivotRenderer:(id)item {
-    if (ymShowLibraryForItem(self, item)) return;
+    if (YMShowLibraryForItem(self, item)) return;
     %orig(item);
 }
 - (void)didTapItemWithIconOnlyItemRenderer:(id)renderer {
     if ([[renderer pivotIdentifier] isEqualToString:kYMLibraryPivotIdentifier]) {
         YTIPivotBarItemRenderer *item = [%c(YTIPivotBarItemRenderer) new];
         item.pivotIdentifier = kYMLibraryPivotIdentifier;
-        if (ymShowLibraryForItem(self, item)) return;
+        if (YMShowLibraryForItem(self, item)) return;
     }
     %orig(renderer);
 }
@@ -356,7 +357,7 @@ static BOOL isTabSelected = NO;
         [self cacheCurrentViewControllers];
         [self updateViewsWithSelectedPivotIdentifier:kYMLibraryPivotIdentifier];
         UIViewController *libraryVC = YouModDownloadLibraryViewController(self);
-        YTIPivotBarSupportedRenderers *item = [%c(YTIPivotBarRenderer) pivotSupportedRenderersWithBrowseId:kYMLibraryPivotIdentifier title:LOC(@"DOWNLOAD_LIBRARY_TAB") iconType:18];
+        YTIPivotBarSupportedRenderers *item = [%c(YTIPivotBarRenderer) pivotSupportedRenderersWithBrowseId:kYMLibraryPivotIdentifier title:@"YMDownloads" iconType:18];
         [[self delegate] didTapPivotBarItem:item withViewControllers:@[libraryVC] animated:YES];
         return;
     }
@@ -364,6 +365,7 @@ static BOOL isTabSelected = NO;
 }
 - (void)viewDidAppear:(BOOL)animated {
     %orig;
+    [YMPivotGlassTabBar setPivotBarViewController:self];
     sbUpdateOverlayInsetForPivotBar();
     if (IS_ENABLED(ShortsOnly) && !isTabSelected) {
         isTabSelected = YES;

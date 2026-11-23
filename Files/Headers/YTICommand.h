@@ -9,10 +9,13 @@
 @interface YTICommand : GPBMessage
 @property (nonatomic, copy, readwrite) NSData *clickTrackingParams;
 @property (nonatomic, readwrite, strong) YTIReelWatchEndpoint *reelWatchEndpoint;
+@property (nonatomic, readonly) BOOL hasReelWatchEndpoint;
 @property (nonatomic, readwrite, strong) YTIWatchEndpoint *watchEndpoint;
 @property (nonatomic, readwrite, strong) YTIBrowseEndpoint *browseEndpoint;
 @property (nonatomic, readwrite, strong) YTIUrlEndpoint *URLEndpoint;
 @property (nonatomic, readwrite, strong) YTINavigationEndpointInteractionLoggingExtension *interactionLoggingExtension;
+- (BOOL)isReelPivotEndpoint;
+- (BOOL)isReelInspirationEndpoint;
 + (instancetype)message;
 + (instancetype)browseNavigationEndpointWithBrowseID:(NSString *)browseID;
 + (instancetype)browseNavigationEndpointWithChannelID:(NSString *)channelID;
