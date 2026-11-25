@@ -179,41 +179,84 @@ static NSString * const kYMLibraryTypePrivate = @"Private";
     return [NSString stringWithUTF8String:chars];
 }
 
+static NSString *ymCodecDisplayName(NSString *name, NSString *profile) {
+    static NSDictionary<NSString *, NSString *> *names;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        names = @{@"h264": @"H.264 (AVC)", @"hevc": @"H.265 (HEVC)", @"vp9": @"VP9", @"vp8": @"VP8", @"av1": @"AV1",
+                  @"aac": @"AAC", @"opus": @"Opus", @"vorbis": @"Vorbis", @"mp3": @"MP3", @"ac3": @"AC-3", @"eac3": @"E-AC-3",
+                  @"flac": @"FLAC", @"mov_text": @"MOV Text", @"webvtt": @"WebVTT", @"subrip": @"SubRip", @"ass": @"ASS"};
+    });
+    NSString *base = names[name] ?: name.uppercaseString;
+    return profile.length > 0 ? [NSString stringWithFormat:@"%@ (%@)", base, profile] : base;
+}
+
+static NSString *ymLanguageDisplayName(NSString *code) {
+    if (code.length == 0 || [code isEqualToString:@"und"]) return nil;
+    return [[NSLocale currentLocale] localizedStringForLanguageCode:code] ?: code;
+}
+
+// ffprobe reports some numbers as strings and some as numbers.
+static double ymNumber(id value) {
+    return value ? [[NSString stringWithFormat:@"%@", value] doubleValue] : 0;
+}
+
+static NSString *ymFrameRateString(NSString *ratio) {
+    NSArray<NSString *> *parts = [ratio componentsSeparatedByString:@"/"];
+    double num = parts.firstObject.doubleValue, den = parts.count > 1 ? parts[1].doubleValue : 1;
+    return (num > 0 && den > 0) ? [NSString stringWithFormat:@"%.2f fps", num / den] : nil;
+}
+
+static void ymAppendStreamLines(NSArray<NSDictionary *> *streams, NSMutableArray<NSString *> *lines) {
+    NSUInteger audioCount = 0, subtitleCount = 0;
+    for (NSDictionary *stream in streams) {
+        NSString *type = stream[@"codec_type"];
+        NSDictionary *tags = [stream[@"tags"] isKindOfClass:NSDictionary.class] ? stream[@"tags"] : @{};
+        NSMutableArray<NSString *> *parts = [NSMutableArray array];
+        NSString *codec = ymCodecDisplayName(stream[@"codec_name"] ?: @"?", stream[@"profile"]);
+        NSString *label = nil;
+        if ([type isEqualToString:@"video"]) {
+            if (ymNumber(stream[@"disposition"][@"attached_pic"]) > 0) continue;   // cover art
+            label = [YMLibraryHelpers localizedText:@"LIBRARY_INFO_VIDEO_TRACK" fallback:@"Video"];
+            [parts addObject:codec];
+            if (ymNumber(stream[@"width"]) > 0) [parts addObject:[NSString stringWithFormat:@"%.0fx%.0f", ymNumber(stream[@"width"]), ymNumber(stream[@"height"])]];
+            NSString *fps = ymFrameRateString(stream[@"avg_frame_rate"]);
+            if (fps) [parts addObject:fps];
+            if (stream[@"color_transfer"] && ([stream[@"color_transfer"] isEqualToString:@"smpte2084"] || [stream[@"color_transfer"] isEqualToString:@"arib-std-b67"])) [parts addObject:@"HDR"];
+        } else if ([type isEqualToString:@"audio"]) {
+            label = [NSString stringWithFormat:@"%@ %lu", [YMLibraryHelpers localizedText:@"LIBRARY_INFO_AUDIO_TRACK" fallback:@"Audio"], (unsigned long)++audioCount];
+            [parts addObject:codec];
+            if (stream[@"channel_layout"]) [parts addObject:stream[@"channel_layout"]];
+            if (ymNumber(stream[@"sample_rate"]) > 0) [parts addObject:[NSString stringWithFormat:@"%.1f kHz", ymNumber(stream[@"sample_rate"]) / 1000.0]];
+        } else if ([type isEqualToString:@"subtitle"]) {
+            label = [NSString stringWithFormat:@"%@ %lu", [YMLibraryHelpers localizedText:@"LIBRARY_INFO_SUBTITLE_TRACK" fallback:@"Subtitles"], (unsigned long)++subtitleCount];
+            [parts addObject:codec];
+        } else {
+            continue;
+        }
+        double bitrate = ymNumber(stream[@"bit_rate"]);
+        if (bitrate > 0) [parts addObject:[NSString stringWithFormat:@"%.0f kbps", bitrate / 1000.0]];
+        if (![type isEqualToString:@"video"]) {
+            NSString *language = ymLanguageDisplayName(tags[@"language"]);
+            if (language) [parts addObject:language];
+            NSString *name = tags[@"title"] ?: tags[@"handler_name"];
+            if (name.length > 0 && ![name isEqualToString:language] && ![name hasPrefix:@"SoundHandler"] && ![name hasPrefix:@"VideoHandler"]) [parts addObject:[NSString stringWithFormat:@"“%@”", name]];
+            if (ymNumber(stream[@"disposition"][@"default"]) > 0 && audioCount + subtitleCount > 1) [parts addObject:[YMLibraryHelpers localizedText:@"LIBRARY_INFO_DEFAULT" fallback:@"default"]];
+        }
+        [lines addObject:[NSString stringWithFormat:@"%@: %@", label, [parts componentsJoinedByString:@" · "]]];
+    }
+}
+
 + (NSString *)mediaInfoStringForFile:(NSURL *)fileURL bytes:(unsigned long long)bytes {
-    AVURLAsset *asset = [AVURLAsset URLAssetWithURL:fileURL options:nil];
     NSMutableArray<NSString *> *lines = [NSMutableArray array];
     [lines addObject:[NSString stringWithFormat:@"%@: %@", LOC(@"LIBRARY_INFO_SIZE"), [YMLibraryHelpers formattedFileSize:bytes]]];
-    double durationSeconds = CMTimeGetSeconds(asset.duration);
+    NSDictionary *probe = YMFFmpegProbe(fileURL);
+    double durationSeconds = ymNumber(probe[@"duration"]);
     if (durationSeconds > 0) {
         [lines addObject:[NSString stringWithFormat:@"%@: %.0fs", LOC(@"LIBRARY_INFO_DURATION"), durationSeconds]];
     }
     [lines addObject:[NSString stringWithFormat:@"%@: %@", LOC(@"LIBRARY_INFO_CONTAINER"), fileURL.pathExtension.uppercaseString]];
-
-    AVAssetTrack *videoTrack = [asset tracksWithMediaType:AVMediaTypeVideo].firstObject;
-    if (videoTrack) {
-        CGSize size = videoTrack.naturalSize;
-        [lines addObject:[NSString stringWithFormat:@"%@: %.0fx%.0f", LOC(@"LIBRARY_INFO_RESOLUTION"), fabs(size.width), fabs(size.height)]];
-        [lines addObject:[NSString stringWithFormat:@"%@: %.2f fps", LOC(@"LIBRARY_INFO_FRAMERATE"), videoTrack.nominalFrameRate]];
-        NSArray *descs = videoTrack.formatDescriptions;
-        if (descs.count > 0) {
-            FourCharCode subtype = CMFormatDescriptionGetMediaSubType((__bridge CMFormatDescriptionRef)descs.firstObject);
-            [lines addObject:[NSString stringWithFormat:@"%@: %@", LOC(@"LIBRARY_INFO_VIDEO_CODEC"), [YMLibraryHelpers fourCCString:subtype]]];
-        }
-        if (videoTrack.estimatedDataRate > 0) {
-            [lines addObject:[NSString stringWithFormat:@"%@: %.0f kbps", LOC(@"LIBRARY_INFO_VIDEO_BITRATE"), videoTrack.estimatedDataRate / 1000.0]];
-        }
-    }
-    AVAssetTrack *audioTrack = [asset tracksWithMediaType:AVMediaTypeAudio].firstObject;
-    if (audioTrack) {
-        NSArray *descs = audioTrack.formatDescriptions;
-        if (descs.count > 0) {
-            FourCharCode subtype = CMFormatDescriptionGetMediaSubType((__bridge CMFormatDescriptionRef)descs.firstObject);
-            [lines addObject:[NSString stringWithFormat:@"%@: %@", LOC(@"LIBRARY_INFO_AUDIO_CODEC"), [YMLibraryHelpers fourCCString:subtype]]];
-        }
-        if (audioTrack.estimatedDataRate > 0) {
-            [lines addObject:[NSString stringWithFormat:@"%@: %.0f kbps", LOC(@"LIBRARY_INFO_AUDIO_BITRATE"), audioTrack.estimatedDataRate / 1000.0]];
-        }
-    }
+    ymAppendStreamLines(probe[@"streams"], lines);
     return [lines componentsJoinedByString:@"\n"];
 }
 
@@ -620,7 +663,20 @@ static const CGFloat ymRefreshHiddenTravel = 72.0; // how far the bubble sits ab
         } @catch (id ex) {}
     }
 
-    _headerButtonStack = [[UIStackView alloc] initWithArrangedSubviews:@[_sortButton, _selectButton, _moreMenuButton, _selectionExitButton, _settingsButton]];
+    _queueButton = [%c(YTQTMButton) iconButton];
+    [_queueButton setImage:[YMHelpers symbolImageInCanvas:@"list.bullet" canvasSize:24 pointSize:17 weight:UIImageSymbolWeightSemibold] forState:UIControlStateNormal];
+    _queueButton.tintColor = [UIColor labelColor];
+    _queueButton.accessibilityLabel = LOC(@"DOWNLOAD_QUEUE");
+    _queueButton.translatesAutoresizingMaskIntoConstraints = NO;
+    [_queueButton addTarget:self action:@selector(openQueueTapped) forControlEvents:UIControlEventTouchUpInside];
+    if (!YMHostBundleSupportsLiquidGlass()) [_queueButton enableNewTouchFeedback];
+    else {
+        @try {
+            _queueButton.disableTouchResponse = YES;
+        } @catch (id ex) {}
+    }
+
+    _headerButtonStack = [[UIStackView alloc] initWithArrangedSubviews:@[_queueButton, _sortButton, _selectButton, _moreMenuButton, _selectionExitButton, _settingsButton]];
     _headerButtonStack.axis = UILayoutConstraintAxisHorizontal;
     _headerButtonStack.spacing = 6;
     _headerButtonStack.alignment = UIStackViewAlignmentCenter;
@@ -743,6 +799,7 @@ static const CGFloat ymRefreshHiddenTravel = 72.0; // how far the bubble sits ab
     // behind the search bar or the type selector.
     _collectionView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
     _collectionView.contentInset = UIEdgeInsetsZero;
+    _collectionView.automaticallyAdjustsScrollIndicatorInsets = NO;
     _collectionView.translatesAutoresizingMaskIntoConstraints = NO;
     [_collectionView registerClass:[YMLibraryVideoCell class] forCellWithReuseIdentifier:@"video"];
     [self.view addSubview:_collectionView];
@@ -792,6 +849,8 @@ static const CGFloat ymRefreshHiddenTravel = 72.0; // how far the bubble sits ab
         [_headerButtonStack.centerYAnchor constraintEqualToAnchor:headerContentGuide.topAnchor constant:26],
         [_headerButtonStack.heightAnchor constraintEqualToConstant:40],
 
+        [_queueButton.widthAnchor constraintEqualToConstant:40],
+        [_queueButton.heightAnchor constraintEqualToConstant:40],
         [_sortButton.widthAnchor constraintEqualToConstant:40],
         [_sortButton.heightAnchor constraintEqualToConstant:40],
         [_selectButton.widthAnchor constraintEqualToConstant:40],
@@ -1178,15 +1237,6 @@ static const CGFloat ymRefreshHiddenTravel = 72.0; // how far the bubble sits ab
     tf.layer.masksToBounds = YES;
 }
 
-- (void)viewDidLayoutSubviews {
-    [super viewDidLayoutSubviews];
-    // Keep the search field corner radius in sync with the liquid-glass helper.
-    UITextField *tf = self.searchBar.searchTextField;
-    tf.layer.cornerRadius = YMCornerRadiusSearchBar;
-    tf.layer.cornerCurve = kCACornerCurveContinuous;
-    tf.layer.masksToBounds = YES;
-}
-
 - (void)traitCollectionDidChange:(UITraitCollection *)previousTraitCollection {
     [super traitCollectionDidChange:previousTraitCollection];
     if (previousTraitCollection.userInterfaceStyle != self.traitCollection.userInterfaceStyle) {
@@ -1194,6 +1244,48 @@ static const CGFloat ymRefreshHiddenTravel = 72.0; // how far the bubble sits ab
         YouModApplyLiquidGlassToView(self.playlistActionsView, YES);
         [self updateSearchBarTheme];
     }
+}
+
+static UIView *YMFindView(UIView *root, Class cls) {
+    if ([root isKindOfClass:cls]) return root;
+    for (UIView *sub in root.subviews) {
+        UIView *hit = YMFindView(sub, cls);
+        if (hit) return hit;
+    }
+    return nil;
+}
+
+- (CGFloat)tabBarOverlap {
+    Class barClass = NSClassFromString(@"YTPivotBarView");
+    UIWindow *window = self.view.window;
+    if (!barClass || !window) return 0;
+    UIView *bar = YMFindView(window, barClass);
+    if (!bar || bar.hidden || bar.alpha < 0.01 || !bar.superview) return 0;
+    CGRect frame = [bar.superview convertRect:bar.frame toView:self.view];
+    CGFloat overlap = CGRectGetMaxY(self.view.bounds) - CGRectGetMinY(frame);
+    return MAX(0, MIN(overlap, 200));
+}
+
+- (void)viewDidLayoutSubviews {
+    [super viewDidLayoutSubviews];
+    // Keep the search field corner radius in sync with the liquid-glass helper.
+    UITextField *tf = self.searchBar.searchTextField;
+    tf.layer.cornerRadius = YMCornerRadiusSearchBar;
+    tf.layer.cornerCurve = kCACornerCurveContinuous;
+    tf.layer.masksToBounds = YES;
+
+    CGFloat overlap = [self tabBarOverlap];
+    UIEdgeInsets inset = self.collectionView.contentInset;
+    if (fabs(inset.bottom - overlap) < 0.5) return;
+    inset.bottom = overlap;
+    self.collectionView.contentInset = inset;
+    UIEdgeInsets indicator = self.collectionView.verticalScrollIndicatorInsets;
+    indicator.bottom = overlap;
+    self.collectionView.verticalScrollIndicatorInsets = indicator;
+}
+
+- (void)openQueueTapped {
+    YMDownloadQueuePresent(self);
 }
 
 - (void)openSettingsTapped {
@@ -1618,8 +1710,10 @@ static const CGFloat ymRefreshHiddenTravel = 72.0; // how far the bubble sits ab
         cell.selectionCheckView.hidden = YES;
     }
     __weak typeof(self) weakSelf = self;
+    __weak YMLibraryVideoCell *weakCell = cell;
     cell.menuTappedHandler = ^(UIView *sourceView) {
-        [weakSelf showActionSheetForRowAtIndexPath:indexPath sourceView:sourceView];
+        NSIndexPath *current = weakCell ? [weakSelf.collectionView indexPathForCell:weakCell] : nil;
+        if (current) [weakSelf showActionSheetForRowAtIndexPath:current sourceView:sourceView];
     };
     cell.lockTappedHandler = ^(UIView *sourceView) {
         [weakSelf toggleLockForPlaylistRow:row];
@@ -1725,7 +1819,7 @@ static const CGFloat ymRefreshHiddenTravel = 72.0; // how far the bubble sits ab
                                                     iconImage:[YMHelpers symbolImageInCanvas:@"trash" canvasSize:24 pointSize:22 weight:UIImageSymbolWeightMedium]
                                                         style:0
                                                       handler:^(__unused YTActionSheetAction *action) {
-        [self deleteRowAtIndexPath:indexPath];
+        [self deleteRow:row];
     }]];
 
     [sheet presentFromView:sourceView animated:YES completion:nil];
@@ -2035,13 +2129,15 @@ static const CGFloat ymRefreshHiddenTravel = 72.0; // how far the bubble sits ab
     });
 }
 
-- (void)deleteRowAtIndexPath:(NSIndexPath *)indexPath {
-    YMLibraryRow *row = self.rows[indexPath.item];
+- (void)deleteRow:(YMLibraryRow *)row {
     if (row.isPlaylist) {
         [self deletePlaylistsWithIDs:row.playlistID.length > 0 ? @[row.playlistID] : @[]];
         [self applyFiltersAndSort];
         return;
     }
+    NSUInteger index = [self.rows indexOfObjectIdenticalTo:row];
+    if (index == NSNotFound) return;
+    NSIndexPath *indexPath = [NSIndexPath indexPathForItem:(NSInteger)index inSection:0];
     NSURL *fileURL = [NSURL fileURLWithPath:row.path];
     [[NSFileManager defaultManager] removeItemAtURL:fileURL error:nil];
     [YMLibraryHelpers deleteThumbnailsForFile:fileURL];

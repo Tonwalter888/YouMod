@@ -6,7 +6,28 @@
 #define YMDownloadLog(fmt, ...) os_log([YMDownloadHelpers logHandle], "[YouMod] " fmt, ##__VA_ARGS__)
 
 static BOOL gYMDownloadBusy = NO;
+// Set by the download queue for the job it starts; both fire on the main queue.
+static void (^gYMDownloadProgressObserver)(float fraction);
+static void (^gYMDownloadFinishHandler)(BOOL success, NSString *error);
+
+void YMDownloadSetHandlers(void (^progress)(float fraction), void (^finish)(BOOL success, NSString *error)) {
+    gYMDownloadProgressObserver = [progress copy];
+    gYMDownloadFinishHandler = [finish copy];
+}
+BOOL YMDownloadIsBusy(void) { return gYMDownloadBusy; }
+static BOOL gYMDownloadQuietFailure = NO;
+void YMDownloadSetQuietFailure(BOOL quiet) { gYMDownloadQuietFailure = quiet; }
 static YMProgressMeter *gYMDownloadMeter = nil;
+NSString *YMDownloadRemainingString(void) { return gYMDownloadBusy ? gYMDownloadMeter.remaining : nil; }
+
+// One-shot: the handler is consumed so a download can only report once.
+static void YMDownloadNotifyFinished(BOOL success, NSString *error) {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        void (^h)(BOOL, NSString *) = gYMDownloadFinishHandler;
+        gYMDownloadFinishHandler = nil; gYMDownloadProgressObserver = nil;
+        if (h) h(success, error);
+    });
+}
 static YMDownloadProgressView *gYMDownloadProgressView = nil;
 
 @implementation YMProgressMeter
@@ -56,7 +77,23 @@ static YMDownloadProgressView *gYMDownloadProgressView = nil;
         [parts addObject:[NSString stringWithFormat:@"%@/s",
                           [fmt stringFromByteCount:(long long)self.smoothedBytesPerSecond]]];
     }
+    self.remaining = [self remainingStringForCompletedBytes:completedBytes];
+    if (self.remaining) [parts addObject:self.remaining];
     return [parts componentsJoinedByString:@" · "];
+}
+
+- (NSString *)remainingStringForCompletedBytes:(unsigned long long)completedBytes {
+    if (self.expectedTotal == 0 || self.smoothedBytesPerSecond <= 1024 || completedBytes >= self.expectedTotal) return nil;
+    NSTimeInterval seconds = (double)(self.expectedTotal - completedBytes) / self.smoothedBytesPerSecond;
+    static NSDateComponentsFormatter *fmt; static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        fmt = [NSDateComponentsFormatter new];
+        fmt.unitsStyle = NSDateComponentsFormatterUnitsStyleAbbreviated;
+        fmt.allowedUnits = NSCalendarUnitHour | NSCalendarUnitMinute | NSCalendarUnitSecond;
+        fmt.maximumUnitCount = 2;
+        fmt.includesTimeRemainingPhrase = YES;
+    });
+    @synchronized (fmt) { return [fmt stringFromTimeInterval:MAX(1, round(seconds))]; }
 }
 
 - (double)averageBytesPerSecondFor:(unsigned long long)bytes {
@@ -244,8 +281,10 @@ void YouModHandlePostDownloadImage(UIImage *image, UIViewController *presenter) 
         gYMDownloadBusy = NO;
         [gYMDownloadProgressView dismiss];
         gYMDownloadProgressView = nil;
-        YouModSendError(message ?: LOC(@"DOWNLOAD_FAILED"));
+        if (!gYMDownloadQuietFailure) YouModSendError(message ?: LOC(@"DOWNLOAD_FAILED"));
+        gYMDownloadQuietFailure = NO;
     });
+    YMDownloadNotifyFinished(NO, message ?: LOC(@"DOWNLOAD_FAILED"));
 }
 
 + (void)saveThumbnail:(NSURL *)thumbnailURL alongsideVideo:(NSURL *)videoOutputURL {
@@ -302,7 +341,7 @@ void YouModHandlePostDownloadImage(UIImage *image, UIViewController *presenter) 
     dispatch_async(dispatch_get_main_queue(), ^{
         [gYMDownloadProgressView updateProgress:1.0 title:LOC(@"MERGING_VID") subtitle:nil];
     });
-    YMFFmpegMuxTracks(videoURL, audioURLs, subtitles, output, ^(BOOL success, NSString *failure) {
+    YMFFmpegMuxTracks(videoURL, audioURLs, audioFormats, subtitles, output, ^(BOOL success, NSString *failure) {
         if (success) {
             for (NSURL *url in temporaries) {
                 [[NSFileManager defaultManager] removeItemAtURL:url error:nil];
@@ -316,6 +355,7 @@ void YouModHandlePostDownloadImage(UIImage *image, UIViewController *presenter) 
                 gYMDownloadProgressView = nil;
                 if (output) YouModHandlePostDownloadFile(output, video != nil, destination, presenter);
             });
+            YMDownloadNotifyFinished(YES, nil);
         } else {
             [YMDownloadHelpers failWithMessage:(failure ?: LOC(@"DOWNLOAD_FAILED")) temporaries:temporaries];
         }
@@ -347,14 +387,17 @@ void YMDownloadStart(YMFormat *video, NSArray<YMFormat *> *audioTracks, NSArray<
     }
     if (audioTracks.count == 0) {
         YouModSendError(LOC(@"NO_AUDIO_STREAM_FOUND"));
+        YMDownloadNotifyFinished(NO, LOC(@"NO_AUDIO_STREAM_FOUND"));
         return;
     }
     NSString *unavailable = YMFFmpegUnavailableReason();
     if (!YMFFmpegIsAvailable()) {
         YouModSendError(unavailable ?: LOC(@"DOWNLOAD_FAILED"));
+        YMDownloadNotifyFinished(NO, unavailable ?: LOC(@"DOWNLOAD_FAILED"));
         return;
     }
-    if (destination == YMDownloadDestinationFiles) {
+    // Queued jobs never stop on the replace prompt (the output file gets a unique name).
+    if (destination == YMDownloadDestinationFiles && !gYMDownloadFinishHandler) {
         NSArray<NSURL *> *existing = [YMDownloadHelpers existingDownloadsForFileName:fileName];
         if (existing.count > 0) {
             YTAlertView *alert = [%c(YTAlertView) confirmationDialogWithAction:^{
@@ -381,7 +424,8 @@ void YMDownloadStart(YMFormat *video, NSArray<YMFormat *> *audioTracks, NSArray<
         [gYMDownloadMeter observeBytes:completedBytes];
         float overall = expectedTotal > 0 ? (float)((double)completedBytes / (double)expectedTotal) : phaseFraction;
         if (overall > 1.0f) overall = 1.0f;
-        NSString *title = [NSString stringWithFormat:@"%@  %.0f%%",
+        dispatch_async(dispatch_get_main_queue(), ^{ if (gYMDownloadProgressObserver) gYMDownloadProgressObserver(overall); });
+        NSString *title = [NSString stringWithFormat:@"%@ (%.0f%%)",
                            LOC(isAudio ? @"DOWNLOADING_AUDIO" : @"DOWNLOADING_VIDEO"),
                            (double)overall * 100.0];
         NSString *subtitle = [gYMDownloadMeter statusCaptionForCompletedBytes:completedBytes];
@@ -394,6 +438,7 @@ void YMDownloadStart(YMFormat *video, NSArray<YMFormat *> *audioTracks, NSArray<
                                                          message:msg
                                                     cancelAction:^{
                                                         [YMSABR cancelCurrent];
+                                                        YMDownloadNotifyFinished(NO, LOC(@"DOWNLOAD_CANCELLED"));
                                                         gYMDownloadBusy = NO;
                                                         gYMDownloadProgressView = nil;
                                                         YouModSendError(LOC(@"DOWNLOAD_CANCELLED"));
