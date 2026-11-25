@@ -193,7 +193,8 @@ void YouModFilterShortsDisplayView(_ASDisplayView *view, NSString *iden) {
         @try {
             desc = [[[no nodeController] performSelector:@selector(owningComponent)] description];
         } @catch (...) {}
-        if (desc != nil && [desc containsString:@"participation_bar.eml"] && IS_ENABLED(RemoveShortsCommentBar)) {
+        if (desc != nil && (([desc containsString:@"participation_bar.eml"] && IS_ENABLED(RemoveShortsCommentBar))
+            || ([desc containsString:@"in_short_survey.eml"] && IS_ENABLED(HideSurveys)))) {
             ASDisplayNode *supNode = ((_ASDisplayView *)view.superview).keepalive_node;
             [supNode removeYogaChild:no];
         } else {

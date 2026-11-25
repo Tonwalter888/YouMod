@@ -50,7 +50,6 @@
 @property (nonatomic, assign, readonly) BOOL isPlayingAd;
 @property (nonatomic, strong) UIView *YouModSpeedToastView;
 @property (nonatomic, strong) UILabel *YouModSpeedToastLabel;
-@property (nonatomic, retain) UILongPressGestureRecognizer *YouModHoldGesture;
 @property (nonatomic, strong) NSArray *YouModGesturesSuspendedByHold;
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer;
 - (void)YouModSetAutoSpeed;
@@ -69,6 +68,7 @@
 - (id)audioTrackController;
 - (void)YouModHideSpeedToast;
 - (void)YouModShowSpeedToast:(CGFloat)speed isLocked:(BOOL)isLocked;
+- (void)YouModHoldToSpeed:(UILongPressGestureRecognizer *)gesture;
 - (void)YouModAutoDRCAudio;
 - (void)setAudioTrack:(YTIAudioTrack *)arg1 source:(NSInteger)arg2;
 - (void)setMuted:(BOOL)muted;

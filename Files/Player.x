@@ -771,11 +771,11 @@ static float YMSeekStartValue;
 
 // Automatically mute video if user wants to
 %hook YTInlineMutedPlaybackStateController // 19.x-20.x
-- (void)setInlinePlaybackUnmutedAtStart:(BOOL)arg { %orig(IS_ENABLED(AutoFeedMute) || sStartupVideoPlaying ? NO : arg); }
+- (BOOL)inlinePlaybackUnmutedAtStart { return IS_ENABLED(AutoFeedMute) || sStartupVideoPlaying ? NO : %orig; }
 %end
 
 %hook YTInlineMutedPlaybackStateControllerImpl // 21.x+
-- (void)setInlinePlaybackUnmutedAtStart:(BOOL)arg { %orig(IS_ENABLED(AutoFeedMute) || sStartupVideoPlaying ? NO : arg); }
+- (BOOL)inlinePlaybackUnmutedAtStart { return IS_ENABLED(AutoFeedMute) || sStartupVideoPlaying ? NO : %orig; }
 %end
 
 // Exit Fullscreen on Finish
@@ -1042,7 +1042,9 @@ static BOOL YMWatchTransitionIsFromShorts(YTWatchController *watchController) {
 // setPlayerResponse: sets this directly, so the YTAnnotationsViewController hooks miss it.
 - (void)setFeaturedChannelWatermarkImageView:(id)arg { if (!IS_ENABLED(HideWaterMark)) %orig; }
 - (void)setLongPressGestureRecognizer:(UILongPressGestureRecognizer *)arg {
-    if (IS_ENABLED(HoldToSpeedEnabled) || IS_ENABLED(DisablesLongHold)) return;
+    // Keep YouTube's long-press installed: its Speedmaster handler drives hold-to-speed.
+    if (IS_ENABLED(DisablesLongHold)) return;
+    else if (IS_ENABLED(HoldToSpeedEnabled) && arg) arg.minimumPressDuration = 0.3;
     %orig;
 }
 // Remove Dark Background in Overlay
@@ -1321,15 +1323,23 @@ static BOOL YMWatchTransitionIsFromShorts(YTWatchController *watchController) {
             playerViewController.YouModTapGesture.delegate = playerViewController;
             [pv addGestureRecognizer:playerViewController.YouModTapGesture];
         }
-        if (!playerViewController.YouModHoldGesture && IS_ENABLED(HoldToSpeedEnabled) && !IS_ENABLED(DisablesLongHold)) {
-            playerViewController.YouModHoldGesture = [[UILongPressGestureRecognizer alloc] initWithTarget:playerViewController action:@selector(YouModHoldToSpeed:)];
-            playerViewController.YouModHoldGesture.minimumPressDuration = 0.3;
-            playerViewController.YouModHoldGesture.numberOfTouchesRequired = 1;
-            playerViewController.YouModHoldGesture.delegate = playerViewController;
-            [pv addGestureRecognizer:playerViewController.YouModHoldGesture];
-        }
     }
     %orig;
+}
+%end
+
+// YouTube's own long-press ("Speedmaster") drives hold-to-speed — its activation
+// flow (isSpeedmasterActivated etc.) runs untouched via %orig; only the speed and
+// the dialog (toast) are ours. Player VC = parentResponder.parentViewController.
+static BOOL sYMHoldSpeedActive = NO;
+
+%hook YTSpeedmasterController
+- (void)speedmasterDidLongPressWithRecognizer:(UILongPressGestureRecognizer *)recognizer {
+    if (IS_ENABLED(HoldToSpeedEnabled) && !IS_ENABLED(DisablesLongHold)) {
+        UIViewController *host = (UIViewController *)self.parentResponder;
+        YTPlayerViewController *player = (YTPlayerViewController *)host.parentViewController;
+        [player YouModHoldToSpeed:recognizer];
+    } else %orig;
 }
 %end
 
@@ -1339,12 +1349,11 @@ static BOOL YMWatchTransitionIsFromShorts(YTWatchController *watchController) {
 %property (nonatomic, retain) UILabel *YouModGestureHUD;
 %property (nonatomic, strong) UIView *YouModSpeedToastView;
 %property (nonatomic, strong) UILabel *YouModSpeedToastLabel;
-%property (nonatomic, retain) UILongPressGestureRecognizer *YouModHoldGesture;
 %property (nonatomic, strong) NSArray *YouModGesturesSuspendedByHold;
 %new
 - (BOOL)gestureRecognizerShouldBegin:(UIGestureRecognizer *)gestureRecognizer {
     if (gestureRecognizer == self.YouModPanGesture) {
-        if (self.YouModHoldGesture && (self.YouModHoldGesture.state == UIGestureRecognizerStateBegan || self.YouModHoldGesture.state == UIGestureRecognizerStateChanged)) {
+        if (sYMHoldSpeedActive) {
             return NO;
         }
 
@@ -1603,7 +1612,7 @@ static BOOL YMWatchTransitionIsFromShorts(YTWatchController *watchController) {
 }
 %new
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
-    if (gestureRecognizer == self.YouModPanGesture || gestureRecognizer == self.YouModHoldGesture) return NO;
+    if (gestureRecognizer == self.YouModPanGesture) return NO;
     return YES;
 }
 // Pause using Two fingers
@@ -1628,8 +1637,7 @@ static BOOL YMWatchTransitionIsFromShorts(YTWatchController *watchController) {
 }
 %new
 - (void)YouModSetAutoSpeed {
-    if (self.YouModHoldGesture 
-        && (self.YouModHoldGesture.state == UIGestureRecognizerStateBegan || self.YouModHoldGesture.state == UIGestureRecognizerStateChanged)) {
+    if (sYMHoldSpeedActive) {
         return;
     }
     if (IS_ENABLED(GlobalSpeedLocked)) {
@@ -1771,7 +1779,6 @@ static BOOL YMWatchTransitionIsFromShorts(YTWatchController *watchController) {
     static CGPoint startLocation;
     static BOOL initialLockState;
     static BOOL isPendingToggle;
-    static BOOL holdGestureActive = NO;
 
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 
@@ -1802,10 +1809,10 @@ static BOOL YMWatchTransitionIsFromShorts(YTWatchController *watchController) {
             [self setPlaybackRate:speed];
             [self YouModShowSpeedToast:speed isLocked:YES];
         }
-        holdGestureActive = YES;
+        sYMHoldSpeedActive = YES;
         [YouModPlayerGestures suspendGesturesForHold:self hold:gesture];
     } else if (gesture.state == UIGestureRecognizerStateChanged) {
-        if (!holdGestureActive || !IS_ENABLED(LockSpeed)) return;
+        if (!sYMHoldSpeedActive || !IS_ENABLED(LockSpeed)) return;
         
         CGPoint currentLocation = [gesture locationInView:self.playerView];
         CGFloat dragDistanceY = currentLocation.y - startLocation.y;
@@ -1845,7 +1852,7 @@ static BOOL YMWatchTransitionIsFromShorts(YTWatchController *watchController) {
                gesture.state == UIGestureRecognizerStateFailed) {
 
         // If Began never ran, nothing was applied; touching the rate now would flash the speed on touch-up
-        if (!holdGestureActive) return;
+        if (!sYMHoldSpeedActive) return;
 
         BOOL finalLockState = initialLockState;
         if (gesture.state == UIGestureRecognizerStateEnded || (gesture.state == UIGestureRecognizerStateCancelled && isPendingToggle)) {
@@ -1862,7 +1869,7 @@ static BOOL YMWatchTransitionIsFromShorts(YTWatchController *watchController) {
             [self setPlaybackRate:targetRate];
         }
         isPendingToggle = NO;
-        holdGestureActive = NO;
+        sYMHoldSpeedActive = NO;
         [self YouModHideSpeedToast];
     }
 }

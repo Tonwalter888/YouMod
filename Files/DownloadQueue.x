@@ -306,6 +306,7 @@ static void YMQLoadThumbnail(NSString *videoID, void (^completion)(UIImage *imag
     _thumb.backgroundColor = UIColor.tertiarySystemFillColor;
     _titleLabel = [UILabel new];
     _titleLabel.font = [UIFont preferredFontForTextStyle:UIFontTextStyleSubheadline];
+    _titleLabel.textColor = [UIColor labelColor];
     _titleLabel.numberOfLines = 2;
     _statusLabel = [UILabel new];
     _statusLabel.font = [UIFont preferredFontForTextStyle:UIFontTextStyleFootnote];
@@ -381,6 +382,14 @@ static void YMQLoadThumbnail(NSString *videoID, void (^completion)(UIImage *imag
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.title = YMQLoc(@"DOWNLOAD_QUEUE", @"Download queue");
+    // Standalone sheet — keep the title labelColor instead of YouTube's bar style.
+    UINavigationBarAppearance *titleAppearance = [[UINavigationBarAppearance alloc] init];
+    [titleAppearance configureWithDefaultBackground];
+    titleAppearance.titleTextAttributes = @{NSForegroundColorAttributeName: [UIColor labelColor]};
+    titleAppearance.largeTitleTextAttributes = @{NSForegroundColorAttributeName: [UIColor labelColor]};
+    self.navigationItem.standardAppearance = titleAppearance;
+    self.navigationItem.scrollEdgeAppearance = titleAppearance;
+    self.navigationItem.compactAppearance = titleAppearance;
     self.tableView.rowHeight = UITableViewAutomaticDimension;
     self.tableView.estimatedRowHeight = 76;
     [self.tableView registerClass:YMQueueCell.class forCellReuseIdentifier:@"job"];
