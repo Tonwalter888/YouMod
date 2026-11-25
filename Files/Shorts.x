@@ -1,4 +1,5 @@
 #import "Headers.h"
+#import <objc/message.h>
 
 UIViewController *YouModAppViewController() {
     return UIApplication.sharedApplication.delegate.window.rootViewController;
@@ -64,7 +65,33 @@ static void YouModRemoveShortsOverlayButton(_ASDisplayView *dpView) {
     }   
 }
 
+// Block Shorts player: close any Short as soon as it opens (from links, history, notifications, search).
+static void YouModCloseShortsController(UIViewController *controller) {
+    if (!IS_ENABLED(BlockShortsPlayer) || !controller) return;
+    YTPlayerViewController *player = [controller respondsToSelector:@selector(player)] ? [controller performSelector:@selector(player)] : nil;
+    if ([player respondsToSelector:@selector(pause)]) [player performSelector:@selector(pause)];
+    dispatch_async(dispatch_get_main_queue(), ^{
+        UINavigationController *nav = controller.navigationController;
+        if (nav && nav.viewControllers.count > 1) [nav popViewControllerAnimated:YES];
+        else if (controller.presentingViewController) [controller dismissViewControllerAnimated:YES completion:nil];
+        else {
+            UIViewController *root = YouModAppViewController();
+            if ([root respondsToSelector:@selector(pivotBarViewController)]) {
+                id pivot = [root performSelector:@selector(pivotBarViewController)];
+                if ([pivot respondsToSelector:@selector(selectItemWithPivotIdentifier:)]) [pivot performSelector:@selector(selectItemWithPivotIdentifier:) withObject:@"FEwhat_to_watch"];
+            }
+        }
+        Class hudClass = %c(YTHUDMessage), managerClass = %c(GOOHUDManagerInternal);
+        if ([hudClass respondsToSelector:@selector(messageWithText:)] && [managerClass respondsToSelector:@selector(sharedInstance)])
+            [[managerClass sharedInstance] showMessageMainThread:[hudClass messageWithText:LOC(@"SHORTS_BLOCKED")]];
+    });
+}
+
 %hook YTReelPlayerViewController
+- (void)viewDidAppear:(BOOL)animated {
+    %orig;
+    YouModCloseShortsController(self);
+}
 - (BOOL)shouldAlwaysEnablePlayerBar { return IS_ENABLED(ShowShortsSeekbar) ? YES : %orig; }
 - (BOOL)shouldEnablePlayerBarOnlyOnPause { return IS_ENABLED(ShowShortsSeekbar) ? NO : %orig; }
 - (void)loadPlayerBar {
@@ -84,6 +111,10 @@ static void YouModRemoveShortsOverlayButton(_ASDisplayView *dpView) {
 
 // YT 21.4x: Shorts are hosted by YTReelContainerViewController + YTShortsContentPresenter, not YTReelPlayerViewController
 %hook YTReelContainerViewController
+- (void)viewDidAppear:(BOOL)animated {
+    %orig;
+    YouModCloseShortsController(self);
+}
 - (void)handleLoopBehavior {
     NSInteger action = INTFORVAL(ShortsActionIndex);
     if (action == 1) [[self valueForKey:@"_delegate"] playbackSequentialItemControllerDidRequestNextReel:self isAutoAdvance:YES];
@@ -348,3 +379,84 @@ void YouModFilterShortsDisplayView(_ASDisplayView *view, NSString *iden) {
     [UIView animateWithDuration:0.3 animations:^{ self.overlayView.alpha = 1; }];
 }
 %end
+
+// Block Shorts player: Shorts links (youtube.com/shorts/ID) open as normal videos (youtube.com/watch?v=ID).
+static NSURL *YouModShortsLinkAsVideo(NSURL *url) {
+    if (!IS_ENABLED(BlockShortsPlayer) || ![url.host.lowercaseString hasSuffix:@"youtube.com"]) return url;
+    NSArray <NSString *> *parts = url.pathComponents;
+    if (parts.count < 3 || ![parts[1] isEqualToString:@"shorts"]) return url;
+    NSURLComponents *components = [NSURLComponents componentsWithURL:url resolvingAgainstBaseURL:NO];
+    NSMutableArray <NSURLQueryItem *> *query = [NSMutableArray arrayWithObject:[NSURLQueryItem queryItemWithName:@"v" value:parts[2]]];
+    if (components.queryItems) [query addObjectsFromArray:components.queryItems];
+    components.path = @"/watch";
+    components.queryItems = query;
+    return components.URL ?: url;
+}
+
+%hook YTAppDelegate
+- (void)handleURL:(NSURL *)url sourceApplication:(NSString *)app annotation:(id)annotation {
+    %orig(YouModShortsLinkAsVideo(url), app, annotation);
+}
+%end
+
+%hook YTURLHandlerImpl
+- (void)openURL:(NSURL *)url fromView:(id)view parentResponder:(id)parent originalResponder:(id)original referringApp:(id)app trackingParams:(id)params isOriginExternal:(BOOL)external linkOpenerOptions:(id)options {
+    %orig(YouModShortsLinkAsVideo(url), view, parent, original, app, params, external, options);
+}
+%end
+
+// Hide Shorts shelf: drop the Shorts tab from channel pages (its browse params start with field 2 = "shorts"), unless it is the open tab.
+static BOOL YouModIsShortsChannelTab(id tab) {
+    id tabRenderer = [tab respondsToSelector:@selector(tabRenderer)] ? [tab performSelector:@selector(tabRenderer)] : nil;
+    if (!tabRenderer || ([tabRenderer respondsToSelector:@selector(selected)] && ((BOOL (*)(id, SEL))objc_msgSend)(tabRenderer, @selector(selected)))) return NO;
+    GPBMessage *endpoint = [tabRenderer respondsToSelector:@selector(endpoint)] ? [tabRenderer performSelector:@selector(endpoint)] : nil;
+    if (![endpoint respondsToSelector:@selector(messageForFieldNumber:messageClass:)]) return NO;
+    id browseEndpoint = [endpoint messageForFieldNumber:48687626 messageClass:%c(YTIBrowseEndpoint)]; // YTIBrowseEndpointRoot_browseEndpoint
+    NSString *params = [browseEndpoint respondsToSelector:@selector(params)] ? [[browseEndpoint performSelector:@selector(params)] stringByRemovingPercentEncoding] : nil;
+    if (params.length == 0) return NO;
+    params = [[params stringByReplacingOccurrencesOfString:@"-" withString:@"+"] stringByReplacingOccurrencesOfString:@"_" withString:@"/"];
+    while (params.length % 4) params = [params stringByAppendingString:@"="];
+    NSData *data = [[NSData alloc] initWithBase64EncodedString:params options:0];
+    static const char prefix[] = "\x12\x06shorts";
+    return data.length >= sizeof(prefix) - 1 && memcmp(data.bytes, prefix, sizeof(prefix) - 1) == 0;
+}
+
+%hook YTISingleColumnBrowseResultsRenderer
+- (NSMutableArray *)tabsArray {
+    NSMutableArray *tabs = %orig;
+    if (IS_ENABLED(HideShortsShelf) && tabs.count > 1) {
+        NSIndexSet *shorts = [tabs indexesOfObjectsPassingTest:^BOOL(id tab, NSUInteger idx, BOOL *stop) { return YouModIsShortsChannelTab(tab); }];
+        if (shorts.count) [tabs removeObjectsAtIndexes:shorts];
+    }
+    return tabs;
+}
+%end
+
+// Remove the "Shorts" filter chip (History, Subscriptions, search) from its ELM chip collection, so the chip row reflows.
+void YouModRemoveShortsChip(_ASDisplayView *view, NSString *iden) {
+    if (![iden isEqualToString:@"id.elements.components.chip.primary_tap_container"] || ![view.accessibilityLabel isEqualToString:@"Shorts"]) return;
+    if (!IS_ENABLED(HideShortsShelf) && !IS_ENABLED(HideShortsHistory)) return;
+    UIView *cell = view;
+    while (cell && ![((_ASDisplayView *)cell).keepalive_node isKindOfClass:%c(ELMCellNode)]) cell = cell.superview;
+    UIView *collection = cell;
+    while (collection && ![collection isKindOfClass:%c(ASCollectionView)]) collection = collection.superview;
+    if (!cell || ![collection respondsToSelector:@selector(collectionNode)]) return;
+    ASDisplayNode *cellNode = ((_ASDisplayView *)cell).keepalive_node;
+    ELMNodeController *chip = (ELMNodeController *)[cellNode controller];
+    id bar = [chip respondsToSelector:@selector(parent)] ? chip.parent : nil;
+    id collectionNode = [collection performSelector:@selector(collectionNode)];
+    // Subscriptions keeps a stale cell after ELM's own removal, so drop it from the collection's section there instead.
+    BOOL isSubs = [collection.superview.superview.superview.accessibilityIdentifier isEqualToString:@"eml.subscriptions_chip_bar"];
+    if (isSubs && IS_ENABLED(KeepShortsSubscript)) return;
+    dispatch_async(dispatch_get_main_queue(), ^{
+        if (!isSubs) {
+            if ([bar respondsToSelector:@selector(remove:)]) [bar performSelector:@selector(remove:) withObject:chip];
+            return;
+        }
+        id section = nil;
+        @try { section = [collectionNode valueForKey:@"_singleSectionController"]; } @catch (id ex) { return; }
+        if (![[section valueForKey:@"_cellNodes"] containsObject:cellNode]) return;
+        [section performSelector:@selector(removeNode:) withObject:cellNode];
+        [collectionNode performSelector:@selector(reloadData)];
+    });
+}

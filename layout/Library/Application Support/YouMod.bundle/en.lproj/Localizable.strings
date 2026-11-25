@@ -790,3 +790,6 @@
 "QUEUE_NEED_PLAYBACK" = "Play any video once, then retry";
 "QUEUE_NO_FORMATS" = "No downloadable formats";
 "QUEUE_LIVE" = "Live streams can't be downloaded";
+"BLOCK_SHORTS_PLAYER" = "Block Shorts player";
+"BLOCK_SHORTS_PLAYER_DESC" = "Opens Shorts links as normal videos and closes any Short opened from History, notifications or search.";
+"SHORTS_BLOCKED" = "Shorts are blocked in YouMod settings";

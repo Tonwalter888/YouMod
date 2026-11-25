@@ -383,6 +383,7 @@ static NSArray<YMSettingsItem *> *YMPreferencesItems(void) {
             YMPicker(YMLOC(@"DEFAULT_SPEED_SHORTS"), YMLOC(@"DEFAULT_SPEED_SHORTS_DESC"), ShortsAutoSpeedIndex, (@[YMLOC(@"DISABLED"), @"0.25x", @"0.5x", @"0.75x", @"1x", @"1.25x", @"1.5x", @"1.75x", @"2x", @"3x", @"4x", @"5x"]), 0),
             YMToggle(YMLOC(@"ENABLES_SHORTS_QUALITY"), YMLOC(@"ENABLES_SHORTS_QUALITY_DESC"), EnablesShortsQuality),
             YMToggle(YMLOC(@"SHOW_SHORTS_SEEKBAR"), YMLOC(@"SHOW_SHORTS_SEEKBAR_DESC"), ShowShortsSeekbar),
+            YMToggle(YMLOC(@"BLOCK_SHORTS_PLAYER"), YMLOC(@"BLOCK_SHORTS_PLAYER_DESC"), BlockShortsPlayer),
             YMToggle(YMLOC(@"SHORTS_ONLY"), YMLOC(@"SHORTS_ONLY_DESC"), ShortsOnly),
             YMToggle(YMLOC(@"SHORTS_FULLSCREEN"), YMLOC(@"SHORTS_FULLSCREEN_DESC"), FullScreenShorts),
             YMToggle(YMLOC(@"REMOVE_LIVE_SHORTS"), YMLOC(@"REMOVE_LIVE_SHORTS_DESC"), RemoveShortsLive),
