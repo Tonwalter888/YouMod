@@ -330,11 +330,11 @@ typedef NS_ENUM(NSInteger, YMDownloadSheetSection) {
         self.codecHint.text = LOC(@"PHOTOS_CODEC_NOTE");
     }
     NSString *bytes = [YMDownloadSheetHelpers byteCountString:self.totalBytes];
+    NSString *action = LOC(@"DOWNLOAD_BUTTON");
     if (bytes.length > 0) {
-        [self.downloadButton setTitle:[NSString stringWithFormat:@"%@   ·   %@",
-                                       LOC(@"DOWNLOAD_BUTTON"), bytes] forState:UIControlStateNormal];
+        [self.downloadButton setTitle:[NSString stringWithFormat:@"%@   ·   %@", action, bytes] forState:UIControlStateNormal];
     } else {
-        [self.downloadButton setTitle:LOC(@"DOWNLOAD_BUTTON") forState:UIControlStateNormal];
+        [self.downloadButton setTitle:action forState:UIControlStateNormal];
     }
 }
 
@@ -490,20 +490,21 @@ typedef NS_ENUM(NSInteger, YMDownloadSheetSection) {
     [self dismissViewControllerAnimated:YES completion:nil];
 }
 
+// Every download goes through the queue: it starts at once when nothing else is
+// running. The queue re-resolves the formats itself when the job runs, using the
+// quality saved here and the soundtracks and captions picked in this sheet.
 - (void)startDownload {
+    BOOL audioOnly = [self isAudioOnly];
     YMFormat *video = self.selectedVideo;
-    NSArray<YMFormat *> *audioTracks = [self.selectedAudios copy];
-    NSArray<YMCaptionTrack *> *captions = [self.selectedCaptions copy];
-    NSString *title = self.videoTitle;
-    if (self.videoID.length > 0) title = [NSString stringWithFormat:@"%@ [%@]", title, self.videoID];
-    UIViewController *presenter = self.presentingViewController;
-    if (self.destination != YMDownloadDestinationFiles && !video) {
+    NSArray<YMFormat *> *audios = [self.selectedAudios copy];
+    if (self.videoID.length == 0 || audios.count == 0 || (!audioOnly && !video && self.destination != YMDownloadDestinationFiles)) {
         YouModSendError(LOC(@"NO_VID_AUDIO_STREAM_FOUND"));
         return;
     }
-    [self dismissViewControllerAnimated:YES completion:^{
-        YMDownloadStart(video, audioTracks, captions, title, self.destination, self.thumbnailURL, self.isShorts, presenter);
-    }];
+    YMDownloadQueueAdd(self.videoID, self.videoTitle, self.channelTitle, self.thumbnailURL, self.destination, self.isShorts,
+                       YMDownloadQueuePreference(video, audios.firstObject, audioOnly || !video),
+                       audios, [self.selectedCaptions copy], YES);
+    [self dismissViewControllerAnimated:YES completion:nil];
 }
 
 @end

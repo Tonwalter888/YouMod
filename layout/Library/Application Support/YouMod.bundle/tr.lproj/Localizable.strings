@@ -719,8 +719,8 @@
 "FILES_HINT_BOTH" = "%@ video and %@ audio are more efficient and higher quality, but the built-in iOS player cannot play them. Use a player like VLC.";
 "FILES_HINT_VIDEO" = "%@ video is more efficient and higher quality, but the built-in iOS player cannot play it. Use a player like VLC.";
 "FILES_HINT_AUDIO" = "%@ audio is more efficient, but the built-in iOS player cannot play it. Use a player like VLC.";
-"FILES_HINT_COMPATIBLE" = "H.264 video with AAC audio — plays in the built-in iOS player.";
-"FILES_HINT_AUDIO_COMPATIBLE" = "AAC audio — plays in the built-in iOS player.";
+"FILES_HINT_COMPATIBLE" = "H.264 video with AAC audio. (Plays in the built-in iOS player)";
+"FILES_HINT_AUDIO_COMPATIBLE" = "AAC audio. (Plays in the built-in iOS player)";
 "AUDIO_ORIGINAL" = "Original";
 "AUDIO_AUTO_DUBBED" = "%@ [AI]";
 "SLEEP_TIMER" = "Sleep Timer";
@@ -759,3 +759,6 @@
 "DEV_ROLE_AUTHOR" = "Author/Owner";
 "DEV_ROLE_COLLABORATOR" = "Collaborator";
 "DEV_HEADER" = "Developer";
+
+"HIDE_SHORTS_HISTORY" = "Hide Shorts in History";
+"HIDE_SHORTS_HISTORY_DESC" = "Also removes the Shorts shelf from the History tab. Requires \"Hide Shorts shelf\".";

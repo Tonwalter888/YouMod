@@ -717,8 +717,8 @@
 "FILES_HINT_BOTH" = "Видео %@ и аудио %@ эффективнее и качественнее, но встроенный плеер iOS не может их воспроизвести. Используйте плеер вроде VLC.";
 "FILES_HINT_VIDEO" = "Видео %@ эффективнее и качественнее, но встроенный плеер iOS не может его воспроизвести. Используйте плеер вроде VLC.";
 "FILES_HINT_AUDIO" = "Аудио %@ эффективнее, но встроенный плеер iOS не может его воспроизвести. Используйте плеер вроде VLC.";
-"FILES_HINT_COMPATIBLE" = "Видео H.264 с аудио AAC — воспроизводится во встроенном плеере iOS.";
-"FILES_HINT_AUDIO_COMPATIBLE" = "Аудио AAC — воспроизводится во встроенном плеере iOS.";
+"FILES_HINT_COMPATIBLE" = "Видео H.264 с аудио AAC. (работает во встроенном плеере iOS)";
+"FILES_HINT_AUDIO_COMPATIBLE" = "Аудио AAC. (воспроизводится во встроенном плеере iOS)";
 "AUDIO_ORIGINAL" = "Оригинал";
 "AUDIO_AUTO_DUBBED" = "%@ [ИИ]";
 "SLEEP_TIMER" = "Автовыключение";
@@ -757,3 +757,6 @@
 "DEV_ROLE_AUTHOR" = "Author/Owner";
 "DEV_ROLE_COLLABORATOR" = "Collaborator";
 "DEV_HEADER" = "Developer";
+
+"HIDE_SHORTS_HISTORY" = "Hide Shorts in History";
+"HIDE_SHORTS_HISTORY_DESC" = "Also removes the Shorts shelf from the History tab. Requires \"Hide Shorts shelf\".";

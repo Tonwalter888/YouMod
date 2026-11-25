@@ -9,6 +9,8 @@
 @property (nonatomic, strong) NSFileHandle *handle;
 @property (nonatomic, assign) uint64_t downloadedMs;   // real total downloaded duration (sum of segment durations)
 @property (nonatomic, assign) uint64_t lastSequence;   // highest segment index written
+@property (nonatomic, assign) uint64_t firstSequence;  // first segment index written (0 = none yet)
+@property (nonatomic, assign) uint64_t firstStartMs;   // start time of that segment
 // Per-round window of NEW segments (the buffered_range we report is a delta
 // window, not a cumulative 0..N range).
 @property (nonatomic, assign) uint64_t roundStartMs;

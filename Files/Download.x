@@ -116,8 +116,16 @@ static id YouModDownloadParentResponder = nil;
     return [NSURL URLWithString:bestThumbnail.URL];
 }
 
+static void YouModSetBoolIvar(id obj, const char *name, BOOL value) {
+    Ivar ivar = obj ? class_getInstanceVariable(object_getClass(obj), name) : NULL;
+    if (ivar) *(BOOL *)((uint8_t *)(__bridge void *)obj + ivar_getOffset(ivar)) = value;
+}
+
 + (void)presentMenuForPlayer:(YTPlayerViewController *)player items:(NSArray<YouModMenuItem *> *)items presenter:(UIViewController *)presenter sender:(UIView *)sender {
     YTDefaultSheetController *sheet = [%c(YTDefaultSheetController) sheetControllerWithParentResponder:YouModDownloadParentResponder];
+    YouModSetBoolIvar(sheet, "_iosEnableBottomSheetPaddingFixEnabled", YES);
+    Ivar actionsIvar = class_getInstanceVariable(object_getClass(sheet), "_actionsController");
+    YouModSetBoolIvar(actionsIvar ? object_getIvar(sheet, actionsIvar) : nil, "_iosEnableBottomSheetPaddingFixEnabled", YES);
     for (YouModMenuItem *item in items) {
         YTActionSheetAction *action;
         if (item.subtitle == nil) {
@@ -272,6 +280,15 @@ static id YouModDownloadParentResponder = nil;
         }]];
         [items addObject:[YouModMenuItem itemWithTitle:LOC(@"DOWNLOAD_TO_FILES") subtitle:LOC(@"DOWNLOAD_TO_FILES_DESC") icon:[YMHelpers ytIconImage:isShorts ? 769 : 658 useCustomColor:NO customColor:nil] handler:^{
             [YMDownloadSheet presentForPlayer:player destination:YMDownloadDestinationFiles isShorts:isShorts presenter:presenter];
+        }]];
+    }
+    if (!sgvid.isLivePlayback) {
+        NSUInteger pending = YMDownloadQueueCount();
+        NSString *queueTitle = LOC(@"DOWNLOAD_QUEUE");
+        if ([queueTitle isEqualToString:@"DOWNLOAD_QUEUE"]) queueTitle = @"Download queue";
+        if (pending > 0) queueTitle = [NSString stringWithFormat:@"%@ (%lu)", queueTitle, (unsigned long)pending];
+        [items addObject:[YouModMenuItem itemWithTitle:queueTitle subtitle:nil icon:[YMHelpers ytIconImage:658 useCustomColor:NO customColor:nil] handler:^{
+            YMDownloadQueuePresent(presenter);
         }]];
     }
     [items addObject:[YouModMenuItem itemWithTitle:LOC(@"DOWNLOAD_THUMBNAIL") subtitle:nil icon:[YMHelpers ytIconImage:367 useCustomColor:NO customColor:nil] handler:^{

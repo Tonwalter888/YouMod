@@ -14,4 +14,9 @@
                  progress:(void (^)(float fraction, unsigned long long bytesDownloaded))progress
                completion:(void (^)(NSURL *audioURL, NSString *err))completion;
 + (void)cancelCurrent;
+// Build the next downloads from this resolved player response instead of the
+// playing video's captured request (nil = back to the captured request).
++ (void)useResolvedResponse:(id)response capture:(NSDictionary *)capture;
+// The playing video's current SABR request (@{body, headers}), or nil if none seen yet. Main queue.
++ (void)currentCapture:(void (^)(NSDictionary *capture))completion;
 @end
