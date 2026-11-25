@@ -204,6 +204,7 @@ static YMSABRFormat *SABRFormatFromStream(YTIFormatStream *stream) {
     return f;
 }
 
+static id gSABRFreshResponse;
 static NSData *gSABRPinnedBody;
 static NSDictionary *gSABRPinnedHeaders;
 
