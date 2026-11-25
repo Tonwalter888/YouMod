@@ -2,7 +2,12 @@
 
 #pragma mark - YMDownloadProgressView
 
+static BOOL gYMProgressUserHidden = NO;
+
 @implementation YMDownloadProgressView
+
++ (BOOL)userHidden { return gYMProgressUserHidden; }
++ (void)setUserHidden:(BOOL)hidden { gYMProgressUserHidden = hidden; }
 
 - (instancetype)initWithFrame:(CGRect)frame {
     self = [super initWithFrame:frame];
@@ -20,18 +25,19 @@
     [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
+- (void)willMoveToSuperview:(UIView *)newSuperview {
+    [super willMoveToSuperview:newSuperview];
+    UIView *oldParent = self.superview;
+    if (!newSuperview && oldParent) dispatch_async(dispatch_get_main_queue(), ^{ YMToastRelayout(oldParent); });
+}
+
 - (void)appDidEnterBackground {
-    self.isDismissing = YES;
     [self.layer removeAllAnimations];
-    self.alpha = 0.0;
     [self removeFromSuperview];
+    self.transform = CGAffineTransformIdentity;
 }
 
 + (instancetype)showInView:(UIView *)parentView message:(NSString *)message cancelAction:(void (^)(void))cancelAction {
-    if (!parentView || [UIApplication sharedApplication].applicationState == UIApplicationStateBackground) return nil;
-
-    NSInteger sequence = [YouModPillView nextAnimationSequence];
-
     YMDownloadProgressView *view = [[YMDownloadProgressView alloc] initWithFrame:CGRectZero];
     view.onCancel = cancelAction;
     view.translatesAutoresizingMaskIntoConstraints = NO;
@@ -103,39 +109,77 @@
         [cancelButton.heightAnchor constraintEqualToConstant:32],
     ]];
 
-    // Dismiss existing pill if present, then present new progress pill
-    [YouModPillView dismissExistingPillsInView:parentView completion:^{
-        if (sequence != [YouModPillView currentAnimationSequence]) return;
-        if ([UIApplication sharedApplication].applicationState == UIApplicationStateBackground) return;
+    // Swipe down to hide (the download keeps going), tap to open the download queue.
+    UIPanGestureRecognizer *pan = [[UIPanGestureRecognizer alloc] initWithTarget:view action:@selector(handlePan:)];
+    [view addGestureRecognizer:pan];
+    UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:view action:@selector(handleTap)];
+    [view addGestureRecognizer:tap];
 
-        [parentView addSubview:view];
-
-        // Center horizontally with max width
-        NSLayoutConstraint *centerX = [view.centerXAnchor constraintEqualToAnchor:parentView.centerXAnchor];
-        NSLayoutConstraint *maxWidth = [view.widthAnchor constraintLessThanOrEqualToConstant:360];
-        NSLayoutConstraint *leadingFallback = [view.leadingAnchor constraintGreaterThanOrEqualToAnchor:parentView.leadingAnchor constant:16];
-        NSLayoutConstraint *trailingFallback = [view.trailingAnchor constraintLessThanOrEqualToAnchor:parentView.trailingAnchor constant:-16];
-        NSLayoutConstraint *preferredWidth = [view.widthAnchor constraintEqualToAnchor:parentView.widthAnchor constant:-32];
-        preferredWidth.priority = UILayoutPriorityDefaultHigh;
-
-        [NSLayoutConstraint activateConstraints:@[
-            centerX, maxWidth, leadingFallback, trailingFallback, preferredWidth,
-            [view.bottomAnchor constraintEqualToAnchor:parentView.safeAreaLayoutGuide.bottomAnchor constant:-12],
-        ]];
-
-        // Slide-up animation
-        view.transform = CGAffineTransformMakeTranslation(0, 80);
-        view.alpha = 0;
-        [UIView animateWithDuration:0.35 delay:0 usingSpringWithDamping:0.75 initialSpringVelocity:0.5 options:UIViewAnimationOptionCurveEaseOut animations:^{
-            view.transform = CGAffineTransformIdentity;
-            view.alpha = 1.0;
-        } completion:nil];
-    }];
-
+    if (!gYMProgressUserHidden) [view attachToParent:parentView];
     return view;
 }
 
+- (void)attachToParent:(UIView *)parentView {
+    if (!parentView || self.superview || self.isDismissing) return;
+    if ([UIApplication sharedApplication].applicationState != UIApplicationStateActive) return;
+    NSLayoutConstraint *maxWidth = [self.widthAnchor constraintLessThanOrEqualToConstant:360];
+    NSLayoutConstraint *leadingFallback = [self.leadingAnchor constraintGreaterThanOrEqualToAnchor:parentView.leadingAnchor constant:16];
+    NSLayoutConstraint *trailingFallback = [self.trailingAnchor constraintLessThanOrEqualToAnchor:parentView.trailingAnchor constant:-16];
+    NSLayoutConstraint *preferredWidth = [self.widthAnchor constraintEqualToAnchor:parentView.widthAnchor constant:-32];
+    preferredWidth.priority = UILayoutPriorityDefaultHigh;
+    YMToastPresent(parentView, self, YES, @[[self.centerXAnchor constraintEqualToAnchor:parentView.centerXAnchor], maxWidth, leadingFallback, trailingFallback, preferredWidth]);
+
+    self.transform = CGAffineTransformMakeTranslation(0, 80);
+    self.alpha = 0;
+    [UIView animateWithDuration:0.35 delay:0 usingSpringWithDamping:0.75 initialSpringVelocity:0.5 options:UIViewAnimationOptionCurveEaseOut animations:^{
+        self.transform = CGAffineTransformIdentity;
+        self.alpha = 1.0;
+    } completion:nil];
+}
+
+- (void)handleTap {
+    Class queueClass = NSClassFromString(@"YMDownloadQueueViewController");
+    UIViewController *top = [YMHelpers topViewController:nil];
+    if (!top || (queueClass && [top isKindOfClass:queueClass])) return;
+    YMDownloadQueuePresent(top);
+}
+
+- (void)handlePan:(UIPanGestureRecognizer *)gesture {
+    if (self.isDismissing) return;
+    CGFloat dy = [gesture translationInView:self.superview].y;
+    switch (gesture.state) {
+        case UIGestureRecognizerStateChanged:
+            self.transform = CGAffineTransformMakeTranslation(0, MAX(0, dy));
+            break;
+        case UIGestureRecognizerStateEnded:
+        case UIGestureRecognizerStateCancelled: {
+            if (dy > 30 || [gesture velocityInView:self.superview].y > 500) {
+                gYMProgressUserHidden = YES;
+                NSString *hint = LOC(@"DOWNLOAD_PROGRESS_HIDDEN");
+                YouModSendToast([hint isEqualToString:@"DOWNLOAD_PROGRESS_HIDDEN"] ? @"Still downloading. See progress in the download queue." : hint);
+                self.isDismissing = YES;
+                [UIView animateWithDuration:0.2 delay:0 options:UIViewAnimationOptionCurveEaseIn animations:^{
+                    self.transform = CGAffineTransformMakeTranslation(0, self.bounds.size.height + 80);
+                    self.alpha = 0.0;
+                } completion:^(BOOL finished) {
+                    [self removeFromSuperview];
+                    self.isDismissing = NO;   // detached, not finished: it can come back for the next queue run
+                    self.transform = CGAffineTransformIdentity;
+                }];
+            } else {
+                [UIView animateWithDuration:0.3 delay:0 usingSpringWithDamping:0.8 initialSpringVelocity:0.5 options:UIViewAnimationOptionBeginFromCurrentState animations:^{
+                    self.transform = CGAffineTransformIdentity;
+                } completion:nil];
+            }
+            break;
+        }
+        default:
+            break;
+    }
+}
+
 - (void)updateProgress:(float)progress title:(NSString *)title subtitle:(NSString *)subtitle {
+    if (!self.superview && !gYMProgressUserHidden) [self attachToParent:sbGetNotificationParent()];
     self.titleLabel.text = title;
     self.subtitleLabel.text = subtitle;
     [self.progressBar setProgress:progress animated:YES];

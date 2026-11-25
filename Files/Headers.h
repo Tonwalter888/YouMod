@@ -754,6 +754,8 @@ extern void YMPresentTabOrder(id presenter);
 // Implemented in YouModSettings.x next to the Manage Tabs screen; consumed by Tabbar.x.
 extern NSArray *YMDefaultTabOrder(void);
 extern void YouModShowPill(NSString *message, BOOL success);
+extern void YMToastPresent(UIView *parent, UIView *toast, BOOL persistent, NSArray<NSLayoutConstraint *> *constraints);
+extern void YMToastRelayout(UIView *parent);
 extern void YouModCheckForUpdateManually(void);
 
 // SponsorBlock menu / voting / whitelist (SponsorBlockMenu.x)

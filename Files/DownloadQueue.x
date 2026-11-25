@@ -149,7 +149,10 @@ static NSURL *YMBestThumbnail(id playerData) {
     if (self.paused || self.running) return;
     YMQueueJob *job = nil;
     for (YMQueueJob *j in self.jobs) if (j.state == YMQueueStateQueued) { job = j; break; }
-    if (!job) return;
+    if (!job) {
+        if (!self.running) [YMDownloadProgressView setUserHidden:NO];   // queue finished: show progress again next time
+        return;
+    }
     if (YMDownloadIsBusy()) {   // a manual download is running; try again shortly
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 3 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{ [self pump]; });
         return;
@@ -244,8 +247,12 @@ void YMDownloadQueueAdd(NSString *videoID, NSString *title, NSString *channel, N
     for (YMFormat *a in audios) [keys addObject:YMAudioKey(a)];
     job.audioKeys = keys; job.captions = captions;
     void (^add)(void) = ^{
-        [[YMDownloadQueueManager shared] addJob:job];
-        YouModSendSuccess(YMQLoc(@"QUEUE_ADDED", @"Added to download queue"));
+        // Only say "added" when the job has to wait; one that starts now shows its progress pill.
+        YMDownloadQueueManager *m = [YMDownloadQueueManager shared];
+        BOOL waits = m.paused || m.running || YMDownloadIsBusy();
+        for (YMQueueJob *j in m.jobs) if (j.state == YMQueueStateQueued) waits = YES;
+        [m addJob:job];
+        if (waits) YouModSendSuccess(YMQLoc(@"QUEUE_ADDED", @"Added to download queue"));
     };
     if (!fromPlayer) { add(); return; }
     [YMSABR currentCapture:^(NSDictionary *capture) { job.capture = capture; add(); }];

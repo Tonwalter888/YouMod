@@ -771,6 +771,7 @@
 "DOWNLOAD_QUEUE" = "Download queue";
 "ADD_TO_QUEUE" = "Add to download queue";
 "QUEUE_ADDED" = "Added to download queue";
+"DOWNLOAD_PROGRESS_HIDDEN" = "Still downloading. See progress in the download queue.";
 "QUEUE_EMPTY" = "The queue is empty";
 "QUEUE_PAUSE" = "Pause";
 "QUEUE_RESUME" = "Resume";
