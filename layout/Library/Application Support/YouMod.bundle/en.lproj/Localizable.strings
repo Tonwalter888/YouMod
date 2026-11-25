@@ -387,7 +387,9 @@
 "LOCK_SPEED" = "Lock speed";
 "LOCK_SPEED_DESC" = "Locks at adjusted speed by swiping down.";
 "SEEK_ON_OVERLAY" = "Seek on overlay";
-"SEEK_ON_OVERLAY_DESC" = "Allows controlling playback seeking by swiping left and right on the video overlay.";
+"SEEK_ON_OVERLAY_DESC" = "Allows seeking the video forward or backward by swiping left or right on the video overlay.";
+"SEEK_ON_FEED" = "Seek on feed";
+"SEEK_ON_FEED_DESC" = "Allows seeking the video forward or backward by swiping left or right on videos playing in the feed.";
 "DRC_AUDIO_OPTIONS" = "Auto Stable volume";
 "DRC_AUDIO_OPTIONS_DESC" = "Automatically chooses whether to enable or disable Stable volume.";
 "REMOVE_VIDEO_LIKE_BUTTON" = "Remove like button";

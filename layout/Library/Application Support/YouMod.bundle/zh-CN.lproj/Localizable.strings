@@ -325,7 +325,9 @@
 "LOCK_SPEED" = "锁定速度";
 "LOCK_SPEED_DESC" = "向下滑动时锁定已调整的速度。";
 "SEEK_ON_OVERLAY" = "播放界面拖动进度";
-"SEEK_ON_OVERLAY_DESC" = "在视频播放界面上左右滑动以控制播放进度。";
+"SEEK_ON_OVERLAY_DESC" = "Allows seeking the video forward or backward by swiping left or right on the video overlay.";
+"SEEK_ON_FEED" = "Seek on feed";
+"SEEK_ON_FEED_DESC" = "Allows seeking the video forward or backward by swiping left or right on videos playing in the feed.";
 "DRC_AUDIO_OPTIONS" = "自动稳定音量";
 "DRC_AUDIO_OPTIONS_DESC" = "自动选择是否启用稳定音量。";
 "REMOVE_VIDEO_LIKE_BUTTON" = "移除点赞按钮";

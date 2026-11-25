@@ -325,7 +325,9 @@
 "LOCK_SPEED" = "Khóa tốc độ";
 "LOCK_SPEED_DESC" = "Khóa ở tốc độ đã chỉnh bằng cách vuốt xuống.";
 "SEEK_ON_OVERLAY" = "Tua trên lớp phủ";
-"SEEK_ON_OVERLAY_DESC" = "Cho phép tua video bằng cách vuốt trái và phải trên lớp phủ video.";
+"SEEK_ON_OVERLAY_DESC" = "Allows seeking the video forward or backward by swiping left or right on the video overlay.";
+"SEEK_ON_FEED" = "Seek on feed";
+"SEEK_ON_FEED_DESC" = "Allows seeking the video forward or backward by swiping left or right on videos playing in the feed.";
 "DRC_AUDIO_OPTIONS" = "Âm lượng ổn định tự động";
 "DRC_AUDIO_OPTIONS_DESC" = "Tự động chọn bật hay tắt Âm lượng ổn định.";
 "REMOVE_VIDEO_LIKE_BUTTON" = "Xóa nút thích";

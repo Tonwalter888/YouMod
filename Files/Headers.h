@@ -963,5 +963,11 @@ extern void YouModApplyFrostedPanelBackgroundToView(UIView *view);
 
 // Tabbar.x — pivot identifier of a bar item (standard or icon-only renderer).
 extern NSString *YMPivotIDOfItem(YTIPivotBarSupportedRenderers *item);
+// Tabbar.x — icon variants for the glass tab bar (selected = YouTube's "selected" art).
+extern UIImage *YMGetTabIcon(int type, BOOL selected);
+// Tabbar.x — clears the icon cache (theme-colored icons go stale on light/dark change).
+extern void YMClearTabIconCache(void);
+// Tabbar.x — the long-press menu of the first tab (Manage Tabs, …).
+extern UIMenu *YMTabContextMenu(UIView *anchor);
 // Tabbar.x — presents the Download library like a real tap; YES when the item is that tab.
 extern BOOL YMShowLibraryForItem(YTPivotBarViewController *pivotBar, id item);

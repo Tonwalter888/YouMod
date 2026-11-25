@@ -325,7 +325,9 @@
 "LOCK_SPEED" = "Verrouiller la vitesse";
 "LOCK_SPEED_DESC" = "Verrouille la vitesse ajustée en glissant vers le bas.";
 "SEEK_ON_OVERLAY" = "Naviguer sur l'interface";
-"SEEK_ON_OVERLAY_DESC" = "Permet de naviguer dans la vidéo en glissant vers la gauche et la droite en superposition.";
+"SEEK_ON_OVERLAY_DESC" = "Allows seeking the video forward or backward by swiping left or right on the video overlay.";
+"SEEK_ON_FEED" = "Seek on feed";
+"SEEK_ON_FEED_DESC" = "Allows seeking the video forward or backward by swiping left or right on videos playing in the feed.";
 "DRC_AUDIO_OPTIONS" = "Volume stable automatique";
 "DRC_AUDIO_OPTIONS_DESC" = "Détermine automatiquement s'il faut activer ou désactiver la fonction 'Volume stable'.";
 "REMOVE_VIDEO_LIKE_BUTTON" = "Supprimer le bouton J'aime";

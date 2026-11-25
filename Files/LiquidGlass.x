@@ -266,6 +266,17 @@ static NSMutableArray<NSString *> *gPivotIDs;
 static NSString *gSelectedPivotID;
 static const void *kYMGlassMenuKey = &kYMGlassMenuKey;
 
+// Fresh VC reference first (the stored one goes stale after YouTube recreates the pivot bar).
+static YTPivotBarViewController *ymCurrentPivotVC(void) {
+    for (UIResponder *responder = gHostBar; responder; responder = responder.nextResponder) {
+        if ([responder isKindOfClass:%c(YTPivotBarViewController)]) {
+            gPivotVC = (YTPivotBarViewController *)responder;
+            return gPivotVC;
+        }
+    }
+    return gPivotVC;
+}
+
 @implementation YMPivotGlassTabBar
 
 + (BOOL)isActive {
@@ -297,17 +308,29 @@ static const void *kYMGlassMenuKey = &kYMGlassMenuKey;
 + (NSString *)titleForItem:(YTIPivotBarSupportedRenderers *)item {
     if (IS_ENABLED(HideTabLabels)) return nil;
     YTIStringRun *run = item.pivotBarItemRenderer.title.runsArray.firstObject;
-    // nil = icon-only item (centered); an empty title offsets the content.
     return run.text.length > 0 ? run.text : nil;
 }
 
-// Tab icon: YouTube's own glyph from the hidden item view.
-+ (UIImage *)iconForItemView:(YTPivotBarItemView *)itemView {
-    // Account avatar: YT's button image carries the selected ring and gets
-    // flattened to a black silhouette — draw the raw avatar as a colored circle.
+// Icon pair for a bar item: the avatar, or YouTube's outlined + "selected" art
+// (cached by the icon hook) — UIKit swaps them with the clear-glass capsule.
++ (void)applyIconTo:(UITabBarItem *)tabItem item:(YTIPivotBarSupportedRenderers *)item itemView:(YTPivotBarItemView *)itemView {
     UIImage *avatar = [self avatarForItemView:itemView];
-    if (avatar) return avatar;
-    return [itemView navigationButtonImageView].image;
+    if (avatar) {
+        tabItem.image = avatar;
+        tabItem.selectedImage = avatar;
+        return;
+    }
+    int iconType = [self iconTypeForItem:item];
+    // YouTube's current glyph first (fresh across light/dark changes); cache fills the gaps.
+    UIImage *normal = [itemView navigationButtonImageView].image ?: YMGetTabIcon(iconType, NO);
+    tabItem.image = normal;
+    tabItem.selectedImage = YMGetTabIcon(iconType, YES) ?: normal;
+}
+
++ (int)iconTypeForItem:(YTIPivotBarSupportedRenderers *)item {
+    YTIPivotBarIconOnlyItemRenderer *iconOnly = item.pivotBarIconOnlyItemRenderer;
+    if (iconOnly.pivotIdentifier.length > 0) return iconOnly.icon.iconType;
+    return item.pivotBarItemRenderer.icon.iconType;
 }
 
 // Ringless avatar, circle-cropped to the sibling icons' size, keeping its colors.
@@ -330,6 +353,8 @@ static const void *kYMGlassMenuKey = &kYMGlassMenuKey;
         if (sub != gTabBar) sub.hidden = YES;
     }
     gHostBar.backgroundColor = [UIColor clearColor];
+    // Nothing YouTube adds later may sit over the tab bar and eat taps.
+    if (gTabBar) [gHostBar bringSubviewToFront:gTabBar];
 }
 
 + (void)rebuild {
@@ -344,9 +369,8 @@ static const void *kYMGlassMenuKey = &kYMGlassMenuKey;
     for (YTIPivotBarSupportedRenderers *item in items) {
         NSString *pid = YMPivotIDOfItem(item);
         if (!pid) continue;
-        UITabBarItem *tabItem = [[UITabBarItem alloc] initWithTitle:[self titleForItem:item]
-                                                              image:[self iconForItemView:views[pid]]
-                                                               tag:0];
+        UITabBarItem *tabItem = [[UITabBarItem alloc] initWithTitle:[self titleForItem:item] image:nil tag:0];
+        [self applyIconTo:tabItem item:item itemView:views[pid]];
         tabItem.accessibilityIdentifier = pid;
         [tabItems addObject:tabItem];
         [gPivotItems addObject:item];
@@ -361,17 +385,13 @@ static const void *kYMGlassMenuKey = &kYMGlassMenuKey;
     if (![self isActive] || !barView) return;
     if (!gGlassDelegate) gGlassDelegate = [YMPivotGlassTabBar new];
     if (!gTabBar) {
-        // Stock UIKit drawing = iOS 26 Liquid Glass (the clear-glass capsule sits on
-        // the selected item). White icon only on that item; the others stay the
-        // default outlined look.
+        // Stock UIKit drawing = iOS 26 Liquid Glass (the clear-glass capsule on the
+        // selected item); icon colors adapt automatically.
         gTabBar = [[UITabBar alloc] initWithFrame:barView.bounds];
         gTabBar.delegate = gGlassDelegate;
         gTabBar.tintColor = [UIColor labelColor];
         UITabBarAppearance *appearance = [[UITabBarAppearance alloc] init];
         [appearance configureWithDefaultBackground];
-        appearance.stackedLayoutAppearance.selected.iconColor = [UIColor whiteColor];
-        appearance.inlineLayoutAppearance.selected.iconColor = [UIColor whiteColor];
-        appearance.compactInlineLayoutAppearance.selected.iconColor = [UIColor whiteColor];
         // Equal-width items (iOS 26 sizes them by content otherwise).
         appearance.stackedItemPositioning = UITabBarItemPositioningFill;
         gTabBar.standardAppearance = appearance;
@@ -391,30 +411,35 @@ static const void *kYMGlassMenuKey = &kYMGlassMenuKey;
 + (void)refreshIcons {
     if (!gTabBar || !gHostBar) return;
     NSDictionary<NSString *, YTPivotBarItemView *> *views = [self itemViewsByPivotID];
-    NSUInteger count = MIN(gTabBar.items.count, gPivotIDs.count);
+    NSUInteger count = MIN(gTabBar.items.count, gPivotItems.count);
     for (NSUInteger i = 0; i < count; i++) {
-        UIImage *image = [self iconForItemView:views[gPivotIDs[i]]];
-        if (image) gTabBar.items[i].image = image;
+        [self applyIconTo:gTabBar.items[i] item:gPivotItems[i] itemView:views[gPivotIDs[i]]];
     }
     [self hideChrome];
     [self attachContextMenu];
 }
 
 // The long-press menu (Manage Tabs, …) lives on YouTube's first item view, which
-// the glass tab bar hides and covers — forward the bar's long-press to that menu.
+// the glass tab bar hides and covers — the same context menu on the bar instead.
 + (void)attachContextMenu {
-    if (!gTabBar || !gHostBar || objc_getAssociatedObject(gTabBar, &kYMGlassMenuKey)) return;
+    if (!gTabBar || !gHostBar || !gGlassDelegate || objc_getAssociatedObject(gTabBar, &kYMGlassMenuKey)) return;
     UIContextMenuInteraction *interaction = [[UIContextMenuInteraction alloc] initWithDelegate:gGlassDelegate];
-    [gTabBar addInteraction:interaction];
+    // On the bar's parent so presses where the capsule overflows the top still land.
+    [gHostBar.superview ?: gHostBar addInteraction:interaction];
     objc_setAssociatedObject(gTabBar, &kYMGlassMenuKey, interaction, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 }
 
 - (UIContextMenuConfiguration *)contextMenuInteraction:(UIContextMenuInteraction *)interaction configurationForMenuAtLocation:(CGPoint)location {
-    // First item slot only, like the hidden item view interaction.
+    if (!gTabBar) return nil;
+    CGPoint point = [gTabBar convertPoint:location fromView:interaction.view];
+    // Bar area (reaching up over the capsule's overflow at the top).
+    if (!CGRectContainsPoint(CGRectInset(gTabBar.bounds, 0, -32), point)) return nil;
+    // First tab only (small touch slop).
     NSUInteger count = MAX(gTabBar.items.count, (NSUInteger)1);
-    if (location.x > CGRectGetWidth(gTabBar.bounds) / count) return nil;
-    YTPivotBarItemView *firstItem = [(id<YMPivotBarViewProto>)gHostBar itemViews].firstObject;
-    return [firstItem contextMenuInteraction:interaction configurationForMenuAtLocation:location];
+    if (point.x > CGRectGetWidth(gTabBar.bounds) / count + 8) return nil;
+    return [UIContextMenuConfiguration configurationWithIdentifier:nil previewProvider:nil actionProvider:^UIMenu * _Nullable(NSArray<UIMenuElement *> * _Nonnull suggestedActions) {
+        return YMTabContextMenu(gTabBar);
+    }];
 }
 
 + (void)selectPivotIdentifier:(NSString *)pivotID {
@@ -436,7 +461,7 @@ static const void *kYMGlassMenuKey = &kYMGlassMenuKey;
 - (void)tabBar:(UITabBar *)tabBar didSelectItem:(UITabBarItem *)item {
     NSUInteger index = [tabBar.items indexOfObject:item];
     if (index == NSNotFound || index >= gPivotIDs.count) return;
-    YTPivotBarViewController *vc = gPivotVC;
+    YTPivotBarViewController *vc = ymCurrentPivotVC();
     if (!vc) return;
     // The real tap path, not selectItemWithPivotIdentifier: — that one treats
     // every tab as a browse request and wedges on tabs without a destination
@@ -464,7 +489,7 @@ static const void *kYMGlassMenuKey = &kYMGlassMenuKey;
     %orig;
     [YMPivotGlassTabBar setBadgeCount:count forPivotIdentifier:identifier];
 }
-- (void)setShouldShowTopDivider:(BOOL)arg { %orig(NO); }
+- (BOOL)shouldShowTopDivider { return NO; }
 %end
 
 %hook YTPivotBarViewController
@@ -479,6 +504,16 @@ static const void *kYMGlassMenuKey = &kYMGlassMenuKey;
     %orig;
     if (selected) [YMPivotGlassTabBar selectPivotIdentifier:[self pivotIdentifier]];
     [YMPivotGlassTabBar refreshIcons]; // YouTube swaps outlined/filled art on selection
+}
+- (void)pageStyleDidChange:(long long)change {
+    YMClearTabIconCache(); // theme-colored icons go stale; drop before YouTube re-renders
+    %orig;
+    [YMPivotGlassTabBar refreshIcons];
+}
+- (void)traitCollectionDidChange:(UITraitCollection *)previousTraitCollection {
+    YMClearTabIconCache();
+    %orig;
+    [YMPivotGlassTabBar refreshIcons];
 }
 - (void)setupIconsAndTitles {
     %orig;
@@ -501,53 +536,6 @@ static const void *kYMGlassMenuKey = &kYMGlassMenuKey;
 %hook YTColdConfig
 - (BOOL)mainAppCoreClientIosEnablePositionedFloatyBars { return NO; }
 %end
-%end
-
-static float YMSeekStartValue;
-
-%hook YTInlineMutedPlaybackPlayerOverlayView
-%property (nonatomic, retain) UIPanGestureRecognizer *ymSeekPan;
-- (void)didMoveToWindow {
-    %orig;
-    if (self.window && !self.ymSeekPan) {
-        self.ymSeekPan = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(YouModHandleSeekPan:)];
-        self.ymSeekPan.delegate = (id<UIGestureRecognizerDelegate>)self;
-        self.ymSeekPan.cancelsTouchesInView = NO;
-        [self addGestureRecognizer:self.ymSeekPan];
-    }
-}
-%new(B@:@)
-- (BOOL)gestureRecognizerShouldBegin:(UIGestureRecognizer *)gesture {
-    if (gesture != self.ymSeekPan) return YES;
-    CGPoint velocity = [(UIPanGestureRecognizer *)gesture velocityInView:self];
-    return fabs(velocity.x) > fabs(velocity.y);
-}
-%new(v@:@)
-- (void)YouModHandleSeekPan:(UIPanGestureRecognizer *)gesture {
-    UISlider *slider = self.scrubberView.scrubber;
-    if (!slider) return;
-    float duration = slider.maximumValue - slider.minimumValue;
-    if (duration <= 0) return;
-    UIGestureRecognizerState state = gesture.state;
-    if (state == UIGestureRecognizerStateBegan) {
-        YMSeekStartValue = slider.value;
-        [slider sendActionsForControlEvents:UIControlEventTouchDown];
-    } else if (state != UIGestureRecognizerStateChanged &&
-        state != UIGestureRecognizerStateEnded &&
-        state != UIGestureRecognizerStateCancelled) return;
-    CGFloat dx = [gesture translationInView:self].x;
-    float value = YMSeekStartValue + dx / self.bounds.size.width * duration;
-    value = fminf(fmaxf(value, slider.minimumValue), slider.maximumValue);
-    slider.value = value;
-    if (state == UIGestureRecognizerStateChanged) {
-        [slider sendActionsForControlEvents:UIControlEventValueChanged];
-    } else if (state == UIGestureRecognizerStateEnded) {
-        [slider sendActionsForControlEvents:UIControlEventValueChanged];
-        [slider sendActionsForControlEvents:UIControlEventTouchUpInside]; // lets the scrub state machine commit + exit
-    } else {
-        [slider sendActionsForControlEvents:UIControlEventTouchCancel];
-    }
-}
 %end
 
 %ctor {

@@ -325,7 +325,9 @@
 "LOCK_SPEED" = "Hızı kilitle";
 "LOCK_SPEED_DESC" = "Aşağı kaydırarak ayarlanan hızı kilitler.";
 "SEEK_ON_OVERLAY" = "Katman üzerinde sarma";
-"SEEK_ON_OVERLAY_DESC" = "Video katmanında sola ve sağa kaydırarak oynatmayı ileri/geri sarmaya izin verir.";
+"SEEK_ON_OVERLAY_DESC" = "Allows seeking the video forward or backward by swiping left or right on the video overlay.";
+"SEEK_ON_FEED" = "Seek on feed";
+"SEEK_ON_FEED_DESC" = "Allows seeking the video forward or backward by swiping left or right on videos playing in the feed.";
 "DRC_AUDIO_OPTIONS" = "Otomatik Kararlı Ses Düzeyi";
 "DRC_AUDIO_OPTIONS_DESC" = "Kararlı Ses Düzeyi özelliğinin etkinleştirilip etkinleştirilmeyeceğini otomatik olarak seçer.";
 "REMOVE_VIDEO_LIKE_BUTTON" = "Beğen butonunu kaldır";

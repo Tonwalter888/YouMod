@@ -560,6 +560,10 @@ void YouModApplyPrevNextReplacement(YTMainAppControlsOverlayView *overlay) {
     if (extraTimeRange.location != NSNotFound) {
         baseText = [baseText substringToIndex:extraTimeRange.location];
     }
+    NSRange sleepRange = [baseText rangeOfString:@" \u263D "];
+    if (sleepRange.location != NSNotFound) {
+        baseText = [baseText substringToIndex:sleepRange.location];
+    }
     NSRange sbRange = [baseText rangeOfString:@" ("];
     if (sbRange.location != NSNotFound) {
         baseText = [baseText substringToIndex:sbRange.location];
@@ -568,6 +572,11 @@ void YouModApplyPrevNextReplacement(YTMainAppControlsOverlayView *overlay) {
     NSMutableString *newLabelText = [NSMutableString stringWithString:baseText];
     if (IS_ENABLED(SBShowDuration) && safeSBTimeRemaining.length > 0) {
         [newLabelText appendFormat:@" (%@)", safeSBTimeRemaining];
+    }
+    // ☽ + remaining sleep timer time, after the SponsorBlock part (fullscreen only).
+    if (ovcon.isFullscreen && YMSleepTimerIsActive()) {
+        NSString *sleepRemaining = YMSleepTimerRemainingText();
+        if (sleepRemaining.length > 0) [newLabelText appendFormat:@" \u263D %@", sleepRemaining];
     }
     if (IS_ENABLED(ShowExtraTimeRemaining) && safeRemainingTimeText.length > 0) {
         [newLabelText appendFormat:@" • %@", safeRemainingTimeText];
@@ -581,7 +590,7 @@ void YouModApplyPrevNextReplacement(YTMainAppControlsOverlayView *overlay) {
 }
 - (void)updateCurrentTimeTitleLabel {
     %orig;
-    if (!IS_ENABLED(ShowExtraTimeRemaining) && !IS_ENABLED(SBShowDuration)) return;
+    if (!IS_ENABLED(ShowExtraTimeRemaining) && !IS_ENABLED(SBShowDuration) && !YMSleepTimerIsActive()) return;
     YTMainAppVideoPlayerOverlayViewController *ovcon = (YTMainAppVideoPlayerOverlayViewController *)self._viewControllerForAncestor;
     if (![ovcon isKindOfClass:%c(YTMainAppVideoPlayerOverlayViewController)]) return;
     YTPlayerViewController *pvc = (YTPlayerViewController *)ovcon.parentViewController;
@@ -687,6 +696,54 @@ void YouModApplyPrevNextReplacement(YTMainAppControlsOverlayView *overlay) {
 // YTNoPaidPromo (https://github.com/PoomSmart/YTNoPaidPromo)
 %hook YTInlineMutedPlaybackPlayerOverlayViewController
 - (void)setPaidContentWithPlayerData:(id)data { if (!IS_ENABLED(HidePaidPromoOverlay)) %orig; }
+%end
+
+// Seek on feed — swipe left/right to scrub on the inline feed player (SeekOnFeed).
+static float YMSeekStartValue;
+
+%hook YTInlineMutedPlaybackPlayerOverlayView
+%property (nonatomic, retain) UIPanGestureRecognizer *ymSeekPan;
+- (void)didMoveToWindow {
+    %orig;
+    if (self.window && !self.ymSeekPan && IS_ENABLED(SeekOnFeed)) {
+        self.ymSeekPan = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(YouModHandleSeekPan:)];
+        self.ymSeekPan.delegate = (id<UIGestureRecognizerDelegate>)self;
+        self.ymSeekPan.cancelsTouchesInView = NO;
+        [self addGestureRecognizer:self.ymSeekPan];
+    }
+}
+%new(B@:@)
+- (BOOL)gestureRecognizerShouldBegin:(UIGestureRecognizer *)gesture {
+    if (gesture != self.ymSeekPan) return YES;
+    CGPoint velocity = [(UIPanGestureRecognizer *)gesture velocityInView:self];
+    return fabs(velocity.x) > fabs(velocity.y);
+}
+%new(v@:@)
+- (void)YouModHandleSeekPan:(UIPanGestureRecognizer *)gesture {
+    UISlider *slider = self.scrubberView.scrubber;
+    if (!slider) return;
+    float duration = slider.maximumValue - slider.minimumValue;
+    if (duration <= 0) return;
+    UIGestureRecognizerState state = gesture.state;
+    if (state == UIGestureRecognizerStateBegan) {
+        YMSeekStartValue = slider.value;
+        [slider sendActionsForControlEvents:UIControlEventTouchDown];
+    } else if (state != UIGestureRecognizerStateChanged &&
+        state != UIGestureRecognizerStateEnded &&
+        state != UIGestureRecognizerStateCancelled) return;
+    CGFloat dx = [gesture translationInView:self].x;
+    float value = YMSeekStartValue + dx / self.bounds.size.width * duration;
+    value = fminf(fmaxf(value, slider.minimumValue), slider.maximumValue);
+    slider.value = value;
+    if (state == UIGestureRecognizerStateChanged) {
+        [slider sendActionsForControlEvents:UIControlEventValueChanged];
+    } else if (state == UIGestureRecognizerStateEnded) {
+        [slider sendActionsForControlEvents:UIControlEventValueChanged];
+        [slider sendActionsForControlEvents:UIControlEventTouchUpInside]; // lets the scrub state machine commit + exit
+    } else {
+        [slider sendActionsForControlEvents:UIControlEventTouchCancel];
+    }
+}
 %end
 
 // Moved out of the overlay VC in 20.21.6; the hook above covers 19.x.

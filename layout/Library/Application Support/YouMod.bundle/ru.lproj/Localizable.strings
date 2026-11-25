@@ -325,7 +325,9 @@
 "LOCK_SPEED" = "Фиксация скорости";
 "LOCK_SPEED_DESC" = "Фиксирует скорость, настроенную свайпом вниз.";
 "SEEK_ON_OVERLAY" = "Перемотка свайпами";
-"SEEK_ON_OVERLAY_DESC" = "Позволяет перематывать видео свайпами влево и вправо по интерфейсу видео.";
+"SEEK_ON_OVERLAY_DESC" = "Allows seeking the video forward or backward by swiping left or right on the video overlay.";
+"SEEK_ON_FEED" = "Seek on feed";
+"SEEK_ON_FEED_DESC" = "Allows seeking the video forward or backward by swiping left or right on videos playing in the feed.";
 "DRC_AUDIO_OPTIONS" = "Автовыбор стабильной громкости";
 "DRC_AUDIO_OPTIONS_DESC" = "Автоматически определяет, включать или отключать стабильную громкость.";
 "REMOVE_VIDEO_LIKE_BUTTON" = "Удалить кнопку «Нравится»";

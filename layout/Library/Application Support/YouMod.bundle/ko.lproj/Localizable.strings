@@ -325,7 +325,9 @@
 "LOCK_SPEED" = "속도 고정";
 "LOCK_SPEED_DESC" = "아래로 스와이프하여 조절한 속도를 고정합니다.";
 "SEEK_ON_OVERLAY" = "오버레이에서 넘기기";
-"SEEK_ON_OVERLAY_DESC" = "동영상 오버레이에서 좌우로 스와이프하여 재생 위치를 넘길 수 있습니다.";
+"SEEK_ON_OVERLAY_DESC" = "Allows seeking the video forward or backward by swiping left or right on the video overlay.";
+"SEEK_ON_FEED" = "Seek on feed";
+"SEEK_ON_FEED_DESC" = "Allows seeking the video forward or backward by swiping left or right on videos playing in the feed.";
 "DRC_AUDIO_OPTIONS" = "안정적인 볼륨 자동 적용";
 "DRC_AUDIO_OPTIONS_DESC" = "안정적인 볼륨 기능의 사용 여부를 자동으로 결정합니다.";
 "REMOVE_VIDEO_LIKE_BUTTON" = "좋아요 버튼 제거";
