@@ -217,7 +217,6 @@ static NSURL *YMBestThumbnail(id playerData) {
             // Same as tapping retry: resolve again and start over.
             j.autoRetries++;
             [YMPlayerResolver appendLog:[NSString stringWithFormat:@"queue: %@ failed (%@), automatic retry %d/%d", j.videoID, err, j.autoRetries, kYMQueueAutoRetries]];
-            YouModSendError([NSString stringWithFormat:@"Retrying %d/%d: %@", j.autoRetries, kYMQueueAutoRetries, err]);   // debug
             [YMSABR useResolvedResponse:nil capture:nil];
             if (self.running == j) self.running = nil;
             j.state = YMQueueStateQueued; j.progress = 0;
