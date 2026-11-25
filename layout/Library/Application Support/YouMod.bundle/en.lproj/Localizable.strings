@@ -128,6 +128,10 @@
 "LIBRARY_INFO_VIDEO_BITRATE" = "Video Bitrate";
 "LIBRARY_INFO_AUDIO_CODEC" = "Audio Codec";
 "LIBRARY_INFO_AUDIO_BITRATE" = "Audio Bitrate";
+"LIBRARY_INFO_VIDEO_TRACK" = "Video";
+"LIBRARY_INFO_AUDIO_TRACK" = "Audio";
+"LIBRARY_INFO_SUBTITLE_TRACK" = "Subtitles";
+"LIBRARY_INFO_DEFAULT" = "default";
 "COPY_VID_INFO" = "Copy video informations";
 "COPY_TITLE" = "Copy title";
 "COPY_DESCRIPTION" = "Copy description";
@@ -734,8 +738,8 @@
 "FILES_HINT_BOTH" = "%@ video and %@ audio are more efficient and higher quality, but the built-in iOS player cannot play them. Use a player like VLC.";
 "FILES_HINT_VIDEO" = "%@ video is more efficient and higher quality, but the built-in iOS player cannot play it. Use a player like VLC.";
 "FILES_HINT_AUDIO" = "%@ audio is more efficient, but the built-in iOS player cannot play it. Use a player like VLC.";
-"FILES_HINT_COMPATIBLE" = "H.264 video with AAC audio — plays in the built-in iOS player.";
-"FILES_HINT_AUDIO_COMPATIBLE" = "AAC audio — plays in the built-in iOS player.";
+"FILES_HINT_COMPATIBLE" = "H.264 video with AAC audio. (Plays in the built-in iOS player)";
+"FILES_HINT_AUDIO_COMPATIBLE" = "AAC audio. (Plays in the built-in iOS player)";
 "AUDIO_ORIGINAL" = "Original";
 "AUDIO_AUTO_DUBBED" = "%@ [AI]";
 
@@ -760,3 +764,24 @@
 "DEV_ROLE_AUTHOR" = "Author/Owner";
 "DEV_ROLE_COLLABORATOR" = "Collaborator";
 "DEV_HEADER" = "Developer";
+"DOWNLOAD_QUEUE" = "Download queue";
+"ADD_TO_QUEUE" = "Add to download queue";
+"QUEUE_ADDED" = "Added to download queue";
+"QUEUE_EMPTY" = "The queue is empty";
+"QUEUE_PAUSE" = "Pause";
+"QUEUE_RESUME" = "Resume";
+"QUEUE_CLEAR_DONE" = "Clear done";
+"QUEUE_ADD" = "Add";
+"QUEUE_ADD_URL" = "Add video";
+"QUEUE_ADD_URL_PROMPT" = "Paste a YouTube link or video ID";
+"QUEUE_INVALID_URL" = "Not a YouTube link or video ID";
+"QUEUE_PREPARING" = "Preparing…";
+"QUEUE_DOWNLOADING" = "Downloading";
+"QUEUE_WAITING" = "Waiting";
+"QUEUE_PAUSED" = "Paused";
+"QUEUE_DONE" = "Done";
+"QUEUE_FAILED" = "Failed";
+"QUEUE_TAP_RETRY" = "tap to retry";
+"QUEUE_NEED_PLAYBACK" = "Play any video once, then retry";
+"QUEUE_NO_FORMATS" = "No downloadable formats";
+"QUEUE_LIVE" = "Live streams can't be downloaded";

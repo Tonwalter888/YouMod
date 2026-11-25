@@ -166,7 +166,8 @@
 @end
 
 NSArray<YMFormat *> *YMFormatsFromResponse(YTPlayerResponse *response) {
-    id streaming = [[response playerData] streamingData];
+    id playerData = [response respondsToSelector:@selector(playerData)] ? [response playerData] : response;
+    id streaming = [playerData streamingData];
     NSArray *adaptive = [streaming adaptiveFormatsArray];
     NSMutableArray<YMFormat *> *out = [NSMutableArray arrayWithCapacity:adaptive.count];
     for (id<YMFormatStreamReading> stream in adaptive) {

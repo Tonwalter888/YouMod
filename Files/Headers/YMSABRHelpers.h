@@ -3,6 +3,8 @@
 #import "YMSABRMediaHeader.h"
 #import "YMSABRTrack.h"
 
+@class YMSABRSessionState; // server-driven state of a session built from a resolved player response (SABRDownload.x)
+
 // YMSABRHelpers — SABR wire-format helpers (SABRDownload.x): UMP + protobuf
 // parse/encode and the download-engine support functions.
 
@@ -61,13 +63,14 @@
 + (NSData *)buildRequestBody:(NSData *)orig videoFmt:(YMSABRFormat *)videoFmt audioFmt:(YMSABRFormat *)audioFmt
                playerTimeMs:(uint64_t)playerTimeMs bufferedRanges:(NSArray<NSData *> *)bufferedRanges
              selectedFormats:(NSArray<NSData *> *)selectedFormats;
-// One network round-trip: POST `body` to the captured signed URL, return the raw
-// UMP response. Called on the serial queue.
-+ (void)postOnce:(NSURL *)url body:(NSData *)body completion:(void (^)(NSData *data, NSHTTPURLResponse *http, NSError *err))completion;
+// One network round-trip: POST `body` with `headers` (the app's request headers), return
+// the raw UMP response. Called on the serial queue.
++ (void)postOnce:(NSURL *)url body:(NSData *)body headers:(NSDictionary *)headers completion:(void (^)(NSData *data, NSHTTPURLResponse *http, NSError *err))completion;
 // Parse one UMP response, routing media to its track by itag; reports
-// redirect/reload via out-params.
+// redirect/reload via out-params. `ss` (may be nil) collects the session's cookie,
+// context updates, backoff, reload token and stream-protection status.
 + (void)ingestResponse:(NSData *)data tracks:(NSDictionary<NSNumber *, YMSABRTrack *> *)tracks
-           redirectURL:(NSString **)redirectURL reload:(BOOL *)reload;
+           redirectURL:(NSString **)redirectURL reload:(BOOL *)reload session:(YMSABRSessionState *)ss;
 // A track is complete at its last segment (authoritative), or when its real
 // downloaded duration reaches the total (backup check).
 + (BOOL)trackDone:(YMSABRTrack *)track;

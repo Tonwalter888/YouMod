@@ -77,6 +77,7 @@ YouMod is being worked on by a team of three
 - [YTweaks](https://github.com/fosterbarnes/YTweaks) - fosterbarnes
 - [jefemagril](https://github.com/jefemagril) - Implemented rewind/fast forward buttons to system Control Center
 - [AppropriateNet2928](https://github.com/AppropriateNet2928) - Experimental playback fix
+- [ytkace](https://github.com/itzzace/ytkace) - Reference for request-copying for our SABR resolver
 - [SponsorBlock](https://sponsor.ajay.app) - SponsorBlock segments API
 - [Google Fonts](https://fonts.google.com/icons) - Icons for custom tabs
 - And [PoomSmart](https://github.com/PoomSmart)'s tweaks

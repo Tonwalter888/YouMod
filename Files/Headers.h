@@ -214,6 +214,7 @@
 #import "Headers/YMSABRMediaHeader.h"
 #import "Headers/YMSABRTrack.h"
 #import "Headers/YMSABRHelpers.h"
+#import "Headers/YMPlayerResolver.h"
 #import "Headers/SBToggleRow.h"
 #import "Headers/SBColorCircleView.h"
 #import "Headers/SBSettingsViewController.h"
@@ -582,6 +583,7 @@ typedef NS_ENUM(NSUInteger, GestureSection) {
 @property (nonatomic, strong) UICollectionView *collectionView;
 @property (nonatomic, strong) UISearchBar *searchBar;
 @property (nonatomic, strong) YTQTMButton *sortButton;
+@property (nonatomic, strong) YTQTMButton *queueButton;
 @property (nonatomic, strong) YTQTMButton *settingsButton;
 @property (nonatomic, strong) YTQTMButton *selectButton;
 @property (nonatomic, strong) YTQTMButton *moreMenuButton;
@@ -860,9 +862,10 @@ extern BOOL YMFFmpegIsAvailable(void);
 extern NSString *YMFFmpegUnavailableReason(void);
 extern void YMFFmpegMux(NSURL *videoURL, NSURL *audioURL, NSArray<YMCaptionTrack *> *subtitles,
                         NSURL *outputURL, void (^completion)(BOOL success, NSString *failure));
-extern void YMFFmpegMuxTracks(NSURL *videoURL, NSArray<NSURL *> *audioURLs,
+extern void YMFFmpegMuxTracks(NSURL *videoURL, NSArray<NSURL *> *audioURLs, NSArray<YMFormat *> *audioFormats,
                               NSArray<YMCaptionTrack *> *subtitles, NSURL *outputURL,
                               void (^completion)(BOOL success, NSString *failure));
+extern NSDictionary *YMFFmpegProbe(NSURL *fileURL);
 extern BOOL YMFFmpegConvertStartupVideo(NSURL *inputURL, NSURL *outputURL, NSString **failureOut);
 extern BOOL YMStartupVideoFileExists(void);
 extern AVPlayer *YMStartupVideoActivePlayer(void);
@@ -872,6 +875,18 @@ extern void YMStartupVideoDismiss(YTStartupAnimationViewController *controller, 
 
 extern void YMDownloadStart(YMFormat *video, NSArray<YMFormat *> *audioTracks, NSArray<YMCaptionTrack *> *captions,
                             NSString *fileName, YMDownloadDestination destination, NSURL *thumbnailURL, BOOL isShorts, UIViewController *presenter);
+
+extern void YMDownloadSetHandlers(void (^progress)(float fraction), void (^finish)(BOOL success, NSString *error));
+extern void YMDownloadSetQuietFailure(BOOL quiet);
+extern BOOL YMDownloadIsBusy(void);
+extern NSString *YMDownloadRemainingString(void);
+
+extern void YMDownloadQueueAdd(NSString *videoID, NSString *title, NSString *channel, NSURL *thumbnailURL,
+                               YMDownloadDestination destination, BOOL isShorts, NSDictionary *preference,
+                               NSArray<YMFormat *> *audios, NSArray<YMCaptionTrack *> *captions, BOOL fromPlayer);
+extern NSDictionary *YMDownloadQueuePreference(YMFormat *video, YMFormat *audio, BOOL audioOnly);
+extern NSUInteger YMDownloadQueueCount(void);
+extern void YMDownloadQueuePresent(UIViewController *presenter);
 
 extern NSString *YouModTitleForPlayer(YTPlayerViewController *player);
 extern NSString *YouModAuthorForPlayer(YTPlayerViewController *player);
