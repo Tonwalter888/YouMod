@@ -2,6 +2,95 @@
 
 extern BOOL useBackwardIconForButton;
 
+#pragma mark - Toast stack
+
+// Toasts stack upward from the bottom of the overlay instead of replacing each other:
+// persistent ones (download progress) lowest, then the rest. A new toast goes on top; when
+// a lower one goes away, the ones above move down.
+static const void *kYMToastListKey = &kYMToastListKey;
+static const void *kYMToastBottomKey = &kYMToastBottomKey;
+static const void *kYMToastPersistentKey = &kYMToastPersistentKey;
+static const NSUInteger kYMToastMaxTransient = 3;
+static const CGFloat kYMToastSpacing = 8.0;
+static const CGFloat kYMToastSpacingLarge = 16.0;   // above taller toasts (download progress)
+
+static NSMutableArray<UIView *> *YMToastList(UIView *parent) {
+    NSMutableArray *list = objc_getAssociatedObject(parent, kYMToastListKey);
+    if (!list) {
+        list = [NSMutableArray array];
+        objc_setAssociatedObject(parent, kYMToastListKey, list, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    }
+    [list filterUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(UIView *v, NSDictionary *b) { return v.superview == parent; }]];
+    return list;
+}
+
+static BOOL YMToastIsDismissing(UIView *v) {
+    return [v respondsToSelector:@selector(isDismissing)] && [(id)v isDismissing];
+}
+
+static void YMToastDismiss(UIView *v) {
+    if ([v respondsToSelector:@selector(dismiss)]) [(id)v dismiss];
+    else [v removeFromSuperview];
+}
+
+static CGFloat YMToastHeight(UIView *v) {
+    CGFloat h = v.bounds.size.height;
+    return h > 0 ? h : [v systemLayoutSizeFittingSize:UILayoutFittingCompressedSize].height;
+}
+
+static void YMToastApplyPositions(UIView *parent) {
+    NSArray<UIView *> *list = [YMToastList(parent) copy];
+    CGFloat cursor = 12.0;
+    for (NSInteger pass = 0; pass < 2; pass++) {
+        if (pass == 1) cursor = MAX(cursor, 60.0);   // plain toasts keep their old spot above the tab bar
+        for (UIView *v in list) {   // oldest lowest
+            BOOL persistent = [objc_getAssociatedObject(v, kYMToastPersistentKey) boolValue];
+            if (persistent != (pass == 0)) continue;
+            NSLayoutConstraint *bottom = objc_getAssociatedObject(v, kYMToastBottomKey);
+            bottom.constant = -cursor;
+            CGFloat h = YMToastHeight(v);
+            cursor += h + (h > 50.0 ? kYMToastSpacingLarge : kYMToastSpacing);
+        }
+    }
+}
+
+void YMToastRelayout(UIView *parent) {
+    if (!parent) return;
+    YMToastApplyPositions(parent);
+    [UIView animateWithDuration:0.3 delay:0 usingSpringWithDamping:0.85 initialSpringVelocity:0.3
+                        options:UIViewAnimationOptionBeginFromCurrentState | UIViewAnimationOptionAllowUserInteraction
+                     animations:^{ [parent layoutIfNeeded]; } completion:nil];
+}
+
+void YMToastPresent(UIView *parent, UIView *toast, BOOL persistent, NSArray<NSLayoutConstraint *> *constraints) {
+    if (!parent || !toast) return;
+    NSMutableArray<UIView *> *list = YMToastList(parent);
+    // The same message twice replaces the older copy instead of stacking.
+    if ([toast isKindOfClass:[YouModPillView class]]) {
+        NSString *text = ((YouModPillView *)toast).messageLabel.text;
+        for (UIView *v in [list copy])
+            if ([v isKindOfClass:[YouModPillView class]] && [((YouModPillView *)v).messageLabel.text isEqualToString:text]) YMToastDismiss(v);
+    }
+    objc_setAssociatedObject(toast, kYMToastPersistentKey, @(persistent), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    [parent addSubview:toast];
+    [list addObject:toast];
+    NSLayoutConstraint *bottom = [toast.bottomAnchor constraintEqualToAnchor:parent.safeAreaLayoutGuide.bottomAnchor constant:persistent ? -12.0 : -60.0];
+    objc_setAssociatedObject(toast, kYMToastBottomKey, bottom, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    [NSLayoutConstraint activateConstraints:[constraints arrayByAddingObject:bottom]];
+
+    // Too many plain toasts: the oldest goes.
+    NSMutableArray<UIView *> *transient = [NSMutableArray array];
+    for (UIView *v in list)
+        if (![objc_getAssociatedObject(v, kYMToastPersistentKey) boolValue] && !YMToastIsDismissing(v)) [transient addObject:v];
+    while (transient.count > kYMToastMaxTransient) { YMToastDismiss(transient.firstObject); [transient removeObjectAtIndex:0]; }
+
+    // Place the new toast without animating its frame, then move the others aside.
+    [UIView performWithoutAnimation:^{
+        YMToastApplyPositions(parent);
+        [parent layoutIfNeeded];
+    }];
+}
+
 #pragma mark - YouModPillView Implementation
 
 static NSInteger YouModPillSequence = 0;
@@ -66,6 +155,12 @@ static NSInteger YouModPillSequence = 0;
     [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
+- (void)willMoveToSuperview:(UIView *)newSuperview {
+    [super willMoveToSuperview:newSuperview];
+    UIView *oldParent = self.superview;
+    if (!newSuperview && oldParent) dispatch_async(dispatch_get_main_queue(), ^{ YMToastRelayout(oldParent); });
+}
+
 - (void)appDidEnterBackground {
     self.isDismissing = YES;
     [self.progressOverlay.layer removeAllAnimations];
@@ -76,8 +171,6 @@ static NSInteger YouModPillSequence = 0;
 
 + (instancetype)showInView:(UIView *)parentView message:(NSString *)message buttonTitle:(NSString *)buttonTitle action:(void (^)(void))action duration:(NSTimeInterval)duration {
     if (!parentView || [UIApplication sharedApplication].applicationState == UIApplicationStateBackground) return nil;
-
-    NSInteger sequence = [YouModPillView nextAnimationSequence];
 
     YouModPillView *view = [[YouModPillView alloc] initWithFrame:CGRectZero];
     view.translatesAutoresizingMaskIntoConstraints = NO;
@@ -172,36 +265,28 @@ static NSInteger YouModPillSequence = 0;
     UIPanGestureRecognizer *pan = [[UIPanGestureRecognizer alloc] initWithTarget:view action:@selector(handlePan:)];
     [view addGestureRecognizer:pan];
 
-    // Dismiss existing pill if present, then present new pill
-    [YouModPillView dismissExistingPillsInView:parentView completion:^{
-        if (sequence != [YouModPillView currentAnimationSequence]) return;
-        if ([UIApplication sharedApplication].applicationState == UIApplicationStateBackground) return;
-
-        [parentView addSubview:view];
-
-        // Layout: centered horizontally, anchored above tab bar via safe area
-        NSLayoutConstraint *maxWidth = [view.widthAnchor constraintLessThanOrEqualToAnchor:parentView.widthAnchor multiplier:0.85];
-        [NSLayoutConstraint activateConstraints:@[
-            [view.centerXAnchor constraintEqualToAnchor:parentView.centerXAnchor],
-            [view.bottomAnchor constraintEqualToAnchor:parentView.safeAreaLayoutGuide.bottomAnchor constant:-60.0],
-            [view.heightAnchor constraintEqualToConstant:44.0],
-            maxWidth
-        ]];
-
-        // Slide up from below
-        view.transform = CGAffineTransformMakeTranslation(0, 60);
-        view.alpha = 0.0;
-        [UIView animateWithDuration:0.4 delay:0 usingSpringWithDamping:0.85 initialSpringVelocity:0.5 options:UIViewAnimationOptionCurveEaseOut animations:^{
-            view.alpha = 1.0;
-            view.transform = CGAffineTransformIdentity;
-        } completion:^(BOOL finished) {
-            if (finished && duration > 0 && sequence == [YouModPillView currentAnimationSequence] && !view.isDismissing) {
-                [view startProgressAnimation];
-            }
-        }];
-    }];
+    // Stack above whatever is already showing (YMToastPresent), centered horizontally.
+    [view presentInView:parentView widthMultiplier:0.85];
 
     return view;
+}
+
+- (void)presentInView:(UIView *)parentView widthMultiplier:(CGFloat)multiplier {
+    if ([UIApplication sharedApplication].applicationState == UIApplicationStateBackground) return;
+    YMToastPresent(parentView, self, NO, @[
+        [self.centerXAnchor constraintEqualToAnchor:parentView.centerXAnchor],
+        [self.heightAnchor constraintEqualToConstant:44.0],
+        [self.widthAnchor constraintLessThanOrEqualToAnchor:parentView.widthAnchor multiplier:multiplier],
+    ]);
+    // Rise into place on top of the stack
+    self.transform = CGAffineTransformMakeTranslation(0, 16);
+    self.alpha = 0.0;
+    [UIView animateWithDuration:0.4 delay:0 usingSpringWithDamping:0.85 initialSpringVelocity:0.5 options:UIViewAnimationOptionCurveEaseOut animations:^{
+        self.alpha = 1.0;
+        self.transform = CGAffineTransformIdentity;
+    } completion:^(BOOL finished) {
+        if (self.totalDuration > 0 && !self.isDismissing) [self startProgressAnimation];
+    }];
 }
 
 - (void)layoutSubviews {
@@ -388,8 +473,6 @@ static NSInteger YouModPillSequence = 0;
 + (instancetype)showDownloadCompleteDialogInView:(UIView *)parentView message:(NSString *)message saveHandler:(void (^)(void))saveHandler shareHandler:(void (^)(void))shareHandler duration:(NSTimeInterval)duration {
     if (!parentView || [UIApplication sharedApplication].applicationState == UIApplicationStateBackground) return nil;
 
-    NSInteger sequence = [YouModPillView nextAnimationSequence];
-
     YouModPillView *view = [[YouModPillView alloc] initWithFrame:CGRectZero];
     view.translatesAutoresizingMaskIntoConstraints = NO;
     view.clipsToBounds = YES;
@@ -476,34 +559,8 @@ static NSInteger YouModPillSequence = 0;
     UIPanGestureRecognizer *pan = [[UIPanGestureRecognizer alloc] initWithTarget:view action:@selector(handlePan:)];
     [view addGestureRecognizer:pan];
 
-    // Dismiss existing pill if present, then present new pill
-    [YouModPillView dismissExistingPillsInView:parentView completion:^{
-        if (sequence != [YouModPillView currentAnimationSequence]) return;
-        if ([UIApplication sharedApplication].applicationState == UIApplicationStateBackground) return;
-
-        [parentView addSubview:view];
-
-        // Layout: centered horizontally, anchored above tab bar via safe area
-        NSLayoutConstraint *maxWidth = [view.widthAnchor constraintLessThanOrEqualToAnchor:parentView.widthAnchor multiplier:0.88];
-        [NSLayoutConstraint activateConstraints:@[
-            [view.centerXAnchor constraintEqualToAnchor:parentView.centerXAnchor],
-            [view.bottomAnchor constraintEqualToAnchor:parentView.safeAreaLayoutGuide.bottomAnchor constant:-60.0],
-            [view.heightAnchor constraintEqualToConstant:44.0],
-            maxWidth
-        ]];
-
-        // Slide up from below
-        view.transform = CGAffineTransformMakeTranslation(0, 60);
-        view.alpha = 0.0;
-        [UIView animateWithDuration:0.4 delay:0 usingSpringWithDamping:0.85 initialSpringVelocity:0.5 options:UIViewAnimationOptionCurveEaseOut animations:^{
-            view.alpha = 1.0;
-            view.transform = CGAffineTransformIdentity;
-        } completion:^(BOOL finished) {
-            if (finished && duration > 0 && sequence == [YouModPillView currentAnimationSequence] && !view.isDismissing) {
-                [view startProgressAnimation];
-            }
-        }];
-    }];
+    // Stack above whatever is already showing (YMToastPresent), centered horizontally.
+    [view presentInView:parentView widthMultiplier:0.88];
 
     return view;
 }
