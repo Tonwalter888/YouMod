@@ -757,3 +757,6 @@
 "DEV_ROLE_AUTHOR" = "Author/Owner";
 "DEV_ROLE_COLLABORATOR" = "Collaborator";
 "DEV_HEADER" = "Developer";
+
+"HIDE_SHORTS_HISTORY" = "Hide Shorts in History";
+"HIDE_SHORTS_HISTORY_DESC" = "Also removes the Shorts shelf from the History tab. Requires \"Hide Shorts shelf\".";

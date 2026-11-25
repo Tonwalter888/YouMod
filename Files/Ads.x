@@ -91,6 +91,7 @@ static BOOL isAdRenderer(YTIElementRenderer *elementRenderer) {
 NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItemSectionRenderer *> *array) {
     const BOOL hideShorts = IS_ENABLED(HideShortsShelf);
     const BOOL keepShortsSub = IS_ENABLED(KeepShortsSubscript);
+    const BOOL hideShortsHistory = IS_ENABLED(HideShortsHistory);
     const BOOL hideFeedPost = IS_ENABLED(HideFeedPost);
     const BOOL hidePlayables = IS_ENABLED(HidePlayables);
     const BOOL hideHoriShelf = IS_ENABLED(HideHoriShelf);
@@ -141,6 +142,17 @@ NSMutableArray <YTIItemSectionRenderer *> *filteredArray(NSArray <YTIItemSection
                     }
                 }];
                 [contentsArray removeObjectsAtIndexes:indexesToRemove];
+                return ymKeepSection(sectionRenderer);
+            }
+
+            // History: each day is one section (day header, Shorts shelf, videos). Drop only the Shorts entries, never the section,
+            // since History positions its search box and chips by section.
+            if (hideShorts && hideShortsHistory && [description containsString:@"history-shorts-shelf-item"]) {
+                NSMutableArray <YTIItemSectionSupportedRenderers *> *items = sectionRenderer.contentsArray;
+                [items removeObjectsAtIndexes:[items indexesOfObjectsPassingTest:^BOOL(YTIItemSectionSupportedRenderers *item, NSUInteger idx2, BOOL *stop2) {
+                    NSString *desc = [item description];
+                    return [desc containsString:@"shorts_shelf.eml"] || ([desc containsString:@"compact_video.eml"] && [desc containsString:@"reel"]);
+                }]];
                 return ymKeepSection(sectionRenderer);
             }
 
