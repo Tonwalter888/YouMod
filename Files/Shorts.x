@@ -1,5 +1,4 @@
 #import "Headers.h"
-#import <objc/message.h>
 
 UIViewController *YouModAppViewController() {
     return UIApplication.sharedApplication.delegate.window.rootViewController;
@@ -408,7 +407,7 @@ static NSURL *YouModShortsLinkAsVideo(NSURL *url) {
 // Hide Shorts shelf: drop the Shorts tab from channel pages (its browse params start with field 2 = "shorts"), unless it is the open tab.
 static BOOL YouModIsShortsChannelTab(id tab) {
     id tabRenderer = [tab respondsToSelector:@selector(tabRenderer)] ? [tab performSelector:@selector(tabRenderer)] : nil;
-    if (!tabRenderer || ([tabRenderer respondsToSelector:@selector(selected)] && ((BOOL (*)(id, SEL))objc_msgSend)(tabRenderer, @selector(selected)))) return NO;
+    if (!tabRenderer || [[tabRenderer valueForKey:@"selected"] boolValue]) return NO;
     GPBMessage *endpoint = [tabRenderer respondsToSelector:@selector(endpoint)] ? [tabRenderer performSelector:@selector(endpoint)] : nil;
     if (![endpoint respondsToSelector:@selector(messageForFieldNumber:messageClass:)]) return NO;
     id browseEndpoint = [endpoint messageForFieldNumber:48687626 messageClass:%c(YTIBrowseEndpoint)]; // YTIBrowseEndpointRoot_browseEndpoint
@@ -435,7 +434,7 @@ static BOOL YouModIsShortsChannelTab(id tab) {
 // Remove the "Shorts" filter chip (History, Subscriptions, search) from its ELM chip collection, so the chip row reflows.
 void YouModRemoveShortsChip(_ASDisplayView *view, NSString *iden) {
     if (![iden isEqualToString:@"id.elements.components.chip.primary_tap_container"] || ![view.accessibilityLabel isEqualToString:@"Shorts"]) return;
-    if (!IS_ENABLED(HideShortsShelf) && !IS_ENABLED(HideShortsHistory)) return;
+    if (!IS_ENABLED(HideShortsShelf)) return;
     UIView *cell = view;
     while (cell && ![((_ASDisplayView *)cell).keepalive_node isKindOfClass:%c(ELMCellNode)]) cell = cell.superview;
     UIView *collection = cell;
