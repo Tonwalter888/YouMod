@@ -13,7 +13,7 @@
 
 A YouTube tweak that tries to recreate features from mods such as YTLite and Morphe as much as possible. Contributions are welcome! ^^
 
-Thanks for over 790 stars and 2.1k forks! This might be the best project I've done.
+Thanks for over 840 stars and 2.4k forks! This might be the best project I've done.
 
 If you want to contribute this project, scroll down to `How to contribute this project?` part.
 
