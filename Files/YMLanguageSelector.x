@@ -57,14 +57,11 @@ static const CGFloat YMLanguageCardPadWidth = 340;
 
 @implementation YMBottomCardPresentationController
 
-// Anchors the card to the bottom edge of the screen.
 - (CGRect)frameOfPresentedViewInContainerView {
     CGRect bounds = self.containerView.bounds;
-    CGSize size = self.presentedViewController.preferredContentSize;
-    // Full screen width on iPhone is intentional; iPad keeps side margins.
-    CGFloat width = MIN(size.width, bounds.size.width);
-    CGFloat height = MIN(size.height, bounds.size.height - 40);
-    return CGRectMake((bounds.size.width - width) / 2, bounds.size.height - height, width, height);
+    CGFloat width = bounds.size.width / 3.0;
+    CGFloat height = bounds.size.height / 2.0;
+    return CGRectMake((bounds.size.width - width) / 2, (bounds.size.height - height) / 3, width, height);
 }
 
 - (void)containerViewWillLayoutSubviews {
