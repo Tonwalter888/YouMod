@@ -49,10 +49,10 @@
 "CHECK_UPDATES" = "แจ้งเตือนเมื่อมีอัปเดต YouMod";
 "CHECK_UPDATES_DESC" = "ตรวจสอบการอัปเดตจาก GitHub เมื่อเปิด YouTube ครั้งแรก และลองใหม่อีกไม่กี่ครั้งหากคำขอล้มเหลว";
 "UPDATE" = "อัปเดต";
-"UPDATE_AVAILABLE_MESSAGE" = "มี YouMod เวอร์ชันใหม่ (build %@) ต้องการอัปเดต tweak หรือไม่?";
+"UPDATE_AVAILABLE_MESSAGE" = "พบ YouMod เวอร์ชันใหม่ (v%@) ต้องการอัปเดตหรือไม่?";
 "UPDATE_NOW" = "อัปเดต";
 "UPDATE_SKIP" = "ข้ามเวอร์ชันนี้";
-"UPDATE_UP_TO_DATE" = "YouMod เป็นเวอร์ชันล่าสุดแล้ว (build %@)";
+"UPDATE_UP_TO_DATE" = "YouMod เป็นเวอร์ชันล่าสุดแล้ว (v%@)";
 "UPDATE_CHECK_FAILED" = "ไม่สามารถตรวจสอบการอัปเดตได้ ลองใหม่ภายหลัง";
 "CHECK_UPDATES_NOW" = "ตรวจสอบการอัปเดตตอนนี้";
 "CHECK_UPDATES_NOW_DESC" = "ตรวจสอบ GitHub หาเวอร์ชัน YouMod ใหม่ทันที";
@@ -192,6 +192,8 @@
 "CAPTION_TRACK_SELECT_DESC" = "เลือกภาษาของคำบรรยายที่ต้องการให้แสดง ถ้ามี";
 "DISABLES_CAPTION_TRACK" = "ปิดใช้งานคำบรรยายอัตโนมัติ";
 "DISABLES_CAPTION_TRACK_DESC" = "ปิดใช้งานคำบรรยายอัตโนมัติถ้าภาษาที่เลือกเป็นแบบสร้างโดยอัตโนมัติหรือไม่พบ";
+"DISABLES_HDR" = "ปิดใช้งาน HDR";
+"DISABLES_HDR_DESC" = "ลบรูปแบบวิดีโอ HDR ออก การเล่นจะใช้ SDR แทน";
 "DEFAULT_SPEED" = "ความเร็วเริ่มต้น";
 "DEFAULT_SPEED_DESC" = "ตั้งค่าความเร็วเริ่มต้นเมื่อเปิดวิดีโอใหม่";
 "QUALITY_BUTTON" = "ควบคุมคุณภาพวิดีโอ";
@@ -417,6 +419,7 @@
 "TABBAR" = "แท็บนำทาง";
 "DEFAULT_TAB" = "แท็บเริ่มต้น";
 "FORSTED_TAB_BAR" = "แท็บโปร่งใส";
+"HIDDEN_PIVOT_BAR" = "ซ่อนแท็บนำทางเมื่อเลื่อนลง (เฉพาะเลย์เอาต์ iPhone)";
 "ENABLED" = "เปิดใช้งาน";
 "HOME_TAB" = "หน้าแรก";
 "SHORTS_TAB" = "Shorts";
@@ -740,7 +743,7 @@
 "STARTUP_ANIMATION_DESC" = "เลือกภาพเคลื่อนไหวเริ่มต้นของ YouTube หรือใช้วิดีโอจากแอปรูปภาพ";
 "STARTUP_ANIMATION_SHOW" = "แสดง";
 "STARTUP_VIDEO_PICK" = "เลือกวิดีโอเริ่มต้น";
-"STARTUP_VIDEO_PICK_DESC" = "เลือกวิดีโอจากแอปรูปภาพ วิดีโอจะถูกตัดให้เหลือ 10 วินาทีและแปลงเป็น MP4 ที่ความละเอียดสูงสุด 1080p";
+"STARTUP_VIDEO_PICK_DESC" = "เลือกวิดีโอจากแอปรูปภาพ วิดีโอจะถูกตัดให้เหลือ 10 วินาที";
 "STARTUP_VIDEO_DELETE" = "ลบวิดีโอเริ่มต้นที่บันทึกไว้";
 "STARTUP_VIDEO_DELETE_DESC" = "ลบวิดีโอที่แปลงแล้วซึ่งจัดเก็บไว้ในอุปกรณ์นี้";
 "STARTUP_VIDEO_INVALID" = "เลือกไฟล์วิดีโอ";

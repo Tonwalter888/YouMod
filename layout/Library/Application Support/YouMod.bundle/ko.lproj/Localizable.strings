@@ -49,10 +49,10 @@
 "CHECK_UPDATES" = "Notify about YouMod updates";
 "CHECK_UPDATES_DESC" = "Check GitHub for updates on first startup; retry briefly if the request fails.";
 "UPDATE" = "Update";
-"UPDATE_AVAILABLE_MESSAGE" = "A newer YouMod version is available (build %@). Do you want to update the tweak?";
+"UPDATE_AVAILABLE_MESSAGE" = "A new version of YouMod (v%@) is available. Do you want to update?";
 "UPDATE_NOW" = "Update";
 "UPDATE_SKIP" = "Skip this version";
-"UPDATE_UP_TO_DATE" = "YouMod is up to date (build %@).";
+"UPDATE_UP_TO_DATE" = "YouMod is up to date. (v%@)";
 "UPDATE_CHECK_FAILED" = "Couldn't check for updates. Try again later.";
 "CHECK_UPDATES_NOW" = "Check for updates";
 "CHECK_UPDATES_NOW_DESC" = "Check GitHub for a newer YouMod version right now.";
@@ -192,6 +192,8 @@
 "CAPTION_TRACK_SELECT_DESC" = "사용 가능한 경우 표시할 선호 자막 언어를 지정합니다.";
 "DISABLES_CAPTION_TRACK" = "자막 자동으로 끄기";
 "DISABLES_CAPTION_TRACK_DESC" = "선호 언어가 자동 생성된 것이거나 찾을 수 없는 경우 자막을 자동으로 끕니다.";
+"DISABLES_HDR" = "Disable HDR";
+"DISABLES_HDR_DESC" = "Remove HDR video formats; playback uses SDR.";
 "DEFAULT_SPEED" = "기본 재생 속도";
 "DEFAULT_SPEED_DESC" = "기본 재생 속도를 재정의합니다.";
 "QUALITY_BUTTON" = "화질 조절";
@@ -417,6 +419,7 @@
 "TABBAR" = "탭 메뉴";
 "DEFAULT_TAB" = "기본 시작 탭";
 "FORSTED_TAB_BAR" = "반투명 탭 메뉴";
+"HIDDEN_PIVOT_BAR" = "Hide tab bar when scrolling down (iPhone layout only)";
 "ENABLED" = "켜짐";
 "HOME_TAB" = "홈";
 "SHORTS_TAB" = "Shorts";
@@ -738,7 +741,7 @@
 "STARTUP_ANIMATION_DESC" = "Choose YouTube's startup animation or use a video from Photos.";
 "STARTUP_ANIMATION_SHOW" = "Show";
 "STARTUP_VIDEO_PICK" = "Choose startup video";
-"STARTUP_VIDEO_PICK_DESC" = "Choose a video from Photos. It will be trimmed to 10 seconds and converted to MP4 at up to 1080p.";
+"STARTUP_VIDEO_PICK_DESC" = "Choose a video from Photos. The video will be trimmed to 10 seconds.";
 "STARTUP_VIDEO_DELETE" = "Delete saved startup video";
 "STARTUP_VIDEO_DELETE_DESC" = "Remove the converted video stored on this device.";
 "STARTUP_VIDEO_INVALID" = "Choose a video file.";

@@ -49,10 +49,10 @@
 "CHECK_UPDATES" = "Notify about YouMod updates";
 "CHECK_UPDATES_DESC" = "Check GitHub for updates on first startup; retry briefly if the request fails.";
 "UPDATE" = "Update";
-"UPDATE_AVAILABLE_MESSAGE" = "A newer YouMod version is available (build %@). Do you want to update the tweak?";
+"UPDATE_AVAILABLE_MESSAGE" = "A new version of YouMod (v%@) is available. Do you want to update?";
 "UPDATE_NOW" = "Update";
 "UPDATE_SKIP" = "Skip this version";
-"UPDATE_UP_TO_DATE" = "YouMod is up to date (build %@).";
+"UPDATE_UP_TO_DATE" = "YouMod is up to date. (v%@)";
 "UPDATE_CHECK_FAILED" = "Couldn't check for updates. Try again later.";
 "CHECK_UPDATES_NOW" = "Check for updates";
 "CHECK_UPDATES_NOW_DESC" = "Check GitHub for a newer YouMod version right now.";
@@ -260,6 +260,8 @@
 "CAPTION_TRACK_SELECT_DESC" = "Specifies the preferred captions language to display, if available.";
 "DISABLES_CAPTION_TRACK" = "Automatically disable captions";
 "DISABLES_CAPTION_TRACK_DESC" = "Automatically disable captions if the preferred language is auto-generated or not found.";
+"DISABLES_HDR" = "Disable HDR";
+"DISABLES_HDR_DESC" = "Remove HDR video formats; playback uses SDR.";
 "DEFAULT_SPEED" = "Default playback rate";
 "DEFAULT_SPEED_DESC" = "Overrides the default playback speed.";
 "QUALITY_BUTTON" = "Quality controls";
@@ -485,6 +487,7 @@
 "TABBAR" = "Tab bar";
 "DEFAULT_TAB" = "Default startup tab";
 "FORSTED_TAB_BAR" = "Translucent tab bar";
+"HIDDEN_PIVOT_BAR" = "Hide tab bar when scrolling down (iPhone layout only)";
 "ENABLED" = "Enabled";
 "HOME_TAB" = "Home";
 "SHORTS_TAB" = "Shorts";
@@ -541,7 +544,7 @@
 "STARTUP_ANIMATION_DESC" = "Choose YouTube's startup animation or use a video from Photos.";
 "STARTUP_ANIMATION_SHOW" = "Show";
 "STARTUP_VIDEO_PICK" = "Choose startup video";
-"STARTUP_VIDEO_PICK_DESC" = "Choose a video from Photos. It will be trimmed to 10 seconds and converted to MP4 at up to 1080p.";
+"STARTUP_VIDEO_PICK_DESC" = "Choose a video from Photos. The video will be trimmed to 10 seconds.";
 "STARTUP_VIDEO_DELETE" = "Delete saved startup video";
 "STARTUP_VIDEO_DELETE_DESC" = "Remove the converted video stored on this device.";
 "STARTUP_VIDEO_INVALID" = "Choose a video file.";

@@ -429,6 +429,14 @@ static BOOL isTabSelected = NO;
 }
 %end
 
+%hook YTScrollableNavigationController
+- (BOOL)hidePivotBarOnScroll { 
+    if (INTFORVAL(HiddenPivotBar) == 1) return YES;
+    else if (INTFORVAL(HiddenPivotBar) == 2) return NO;
+    return %orig;
+}
+%end
+
 %hook YTAppDelegate
 - (void)sceneDidBecomeActive:(UIScene *)scene {
     %orig;

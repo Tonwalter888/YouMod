@@ -49,10 +49,10 @@
 "CHECK_UPDATES" = "Notify about YouMod updates";
 "CHECK_UPDATES_DESC" = "Check GitHub for updates on first startup; retry briefly if the request fails.";
 "UPDATE" = "Update";
-"UPDATE_AVAILABLE_MESSAGE" = "A newer YouMod version is available (build %@). Do you want to update the tweak?";
+"UPDATE_AVAILABLE_MESSAGE" = "A new version of YouMod (v%@) is available. Do you want to update?";
 "UPDATE_NOW" = "Update";
 "UPDATE_SKIP" = "Skip this version";
-"UPDATE_UP_TO_DATE" = "YouMod is up to date (build %@).";
+"UPDATE_UP_TO_DATE" = "YouMod is up to date. (v%@)";
 "UPDATE_CHECK_FAILED" = "Couldn't check for updates. Try again later.";
 "CHECK_UPDATES_NOW" = "Check for updates";
 "CHECK_UPDATES_NOW_DESC" = "Check GitHub for a newer YouMod version right now.";
@@ -192,6 +192,8 @@
 "CAPTION_TRACK_SELECT_DESC" = "指定显示的首选字幕语言（如可用）。";
 "DISABLES_CAPTION_TRACK" = "自动关闭字幕";
 "DISABLES_CAPTION_TRACK_DESC" = "如果首选语言是自动生成或未找到，则自动关闭字幕。";
+"DISABLES_HDR" = "Disable HDR";
+"DISABLES_HDR_DESC" = "Remove HDR video formats; playback uses SDR.";
 "DEFAULT_SPEED" = "默认播放倍速";
 "DEFAULT_SPEED_DESC" = "覆盖默认播放速度。";
 "QUALITY_BUTTON" = "画质控制";
@@ -417,6 +419,7 @@
 "TABBAR" = "标签栏";
 "DEFAULT_TAB" = "默认启动标签";
 "FORSTED_TAB_BAR" = "半透明标签栏";
+"HIDDEN_PIVOT_BAR" = "Hide tab bar when scrolling down (iPhone layout only)";
 "ENABLED" = "已启用";
 "HOME_TAB" = "首页";
 "SHORTS_TAB" = "Shorts";
@@ -739,7 +742,7 @@
 "STARTUP_ANIMATION_DESC" = "Choose YouTube's startup animation or use a video from Photos.";
 "STARTUP_ANIMATION_SHOW" = "Show";
 "STARTUP_VIDEO_PICK" = "Choose startup video";
-"STARTUP_VIDEO_PICK_DESC" = "Choose a video from Photos. It will be trimmed to 10 seconds and converted to MP4 at up to 1080p.";
+"STARTUP_VIDEO_PICK_DESC" = "Choose a video from Photos. The video will be trimmed to 10 seconds.";
 "STARTUP_VIDEO_DELETE" = "Delete saved startup video";
 "STARTUP_VIDEO_DELETE_DESC" = "Remove the converted video stored on this device.";
 "STARTUP_VIDEO_INVALID" = "Choose a video file.";

@@ -330,7 +330,8 @@ static const CGFloat YMLanguageCardPadWidth = 340;
     // Bottom card sliding up from below the screen edge.
     BOOL isPad = [YMHelpers isPad];
     CGFloat width = isPad ? YMLanguageCardPadWidth : [UIScreen mainScreen].bounds.size.width;
-    self.preferredContentSize = CGSizeMake(width, isPad ? 560 : 480);
+    // Language list: half the screen height.
+    self.preferredContentSize = CGSizeMake(width, [UIScreen mainScreen].bounds.size.height / 2);
     self.modalPresentationStyle = UIModalPresentationCustom;
     self.transitioningDelegate = [YMBottomCardTransitioning shared];
     [presenter presentViewController:self animated:YES completion:nil];

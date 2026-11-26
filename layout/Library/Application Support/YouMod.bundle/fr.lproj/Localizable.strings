@@ -49,10 +49,10 @@
 "CHECK_UPDATES" = "Notify about YouMod updates";
 "CHECK_UPDATES_DESC" = "Check GitHub for updates on first startup; retry briefly if the request fails.";
 "UPDATE" = "Update";
-"UPDATE_AVAILABLE_MESSAGE" = "A newer YouMod version is available (build %@). Do you want to update the tweak?";
+"UPDATE_AVAILABLE_MESSAGE" = "A new version of YouMod (v%@) is available. Do you want to update?";
 "UPDATE_NOW" = "Update";
 "UPDATE_SKIP" = "Skip this version";
-"UPDATE_UP_TO_DATE" = "YouMod is up to date (build %@).";
+"UPDATE_UP_TO_DATE" = "YouMod is up to date. (v%@)";
 "UPDATE_CHECK_FAILED" = "Couldn't check for updates. Try again later.";
 "CHECK_UPDATES_NOW" = "Check for updates";
 "CHECK_UPDATES_NOW_DESC" = "Check GitHub for a newer YouMod version right now.";
@@ -192,6 +192,8 @@
 "CAPTION_TRACK_SELECT_DESC" = "Spécifie la langue préférée des sous-titres à afficher, si disponible.";
 "DISABLES_CAPTION_TRACK" = "Désactiver automatiquement les sous-titres";
 "DISABLES_CAPTION_TRACK_DESC" = "Désactive automatiquement les sous-titres si la langue préférée est générée automatiquement ou introuvable.";
+"DISABLES_HDR" = "Disable HDR";
+"DISABLES_HDR_DESC" = "Remove HDR video formats; playback uses SDR.";
 "DEFAULT_SPEED" = "Vitesse de lecture par défaut";
 "DEFAULT_SPEED_DESC" = "Remplace la vitesse de lecture par défaut.";
 "QUALITY_BUTTON" = "Contrôles de qualité";
@@ -417,6 +419,7 @@
 "TABBAR" = "Barre d'onglets";
 "DEFAULT_TAB" = "Onglet de démarrage par défaut";
 "FORSTED_TAB_BAR" = "Barre d'onglets translucide";
+"HIDDEN_PIVOT_BAR" = "Hide tab bar when scrolling down (iPhone layout only)";
 "ENABLED" = "Activé";
 "HOME_TAB" = "Accueil";
 "SHORTS_TAB" = "Shorts";
@@ -739,7 +742,7 @@
 "STARTUP_ANIMATION_DESC" = "Choose YouTube's startup animation or use a video from Photos.";
 "STARTUP_ANIMATION_SHOW" = "Show";
 "STARTUP_VIDEO_PICK" = "Choose startup video";
-"STARTUP_VIDEO_PICK_DESC" = "Choose a video from Photos. It will be trimmed to 10 seconds and converted to MP4 at up to 1080p.";
+"STARTUP_VIDEO_PICK_DESC" = "Choose a video from Photos. The video will be trimmed to 10 seconds.";
 "STARTUP_VIDEO_DELETE" = "Delete saved startup video";
 "STARTUP_VIDEO_DELETE_DESC" = "Remove the converted video stored on this device.";
 "STARTUP_VIDEO_INVALID" = "Choose a video file.";
