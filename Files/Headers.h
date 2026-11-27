@@ -87,6 +87,12 @@
 #import "Headers/ELMImageNode.h"
 #import <objc/runtime.h>
 #import "Headers/GPBMessage.h"
+
+@interface YTIGetMiniAppAdsResponse : GPBMessage
+@property (nonatomic, readonly) _Bool hasAdCommand;
+@property (nonatomic, readonly) _Bool hasDisplayAdViewModel;
+@end
+
 #import "Headers/YTReelNonVideoContentModel.h"
 #import "Headers/GOODialogView.h"
 #import "Headers/GOOShrinkWrapView.h"

@@ -211,7 +211,7 @@
 "OVERLAY_BUTTONS_BOTTOM" = "ปุ่มด้านล่าง";
 "OVERLAY_BUTTONS_EMPTY" = "ไม่มีปุ่ม";
 "REMOVE_ADS" = "ลบโฆษณา";
-"REMOVE_ADS_DESC" = "ลบโฆษณาออกจากแอป ยกเว้นเกม";
+"REMOVE_ADS_DESC" = "ลบโฆษณาออกจากแอป";
 "HIDE_SPONSOR_BUTTON" = "ซ่อนปุ่มสปอนเซอร์";
 "HIDE_SPONSOR_BUTTON_DESC" = "ซ่อนปุ่มสปอนเซอร์ใต้วิดีโอและบนโอเวอร์เลย์ Shorts";
 "DEARROW_THUMBNAILS" = "ภาพขนาดย่อ DeArrow";
@@ -419,7 +419,7 @@
 "TABBAR" = "แท็บนำทาง";
 "DEFAULT_TAB" = "แท็บเริ่มต้น";
 "FORSTED_TAB_BAR" = "แท็บโปร่งใส";
-"HIDDEN_PIVOT_BAR" = "ซ่อนแท็บนำทางเมื่อเลื่อนลง (เฉพาะเลย์เอาต์ iPhone)";
+"HIDDEN_PIVOT_BAR" = "ซ่อนแท็บนำทางเมื่อเลื่อนลง";
 "ENABLED" = "เปิดใช้งาน";
 "HOME_TAB" = "หน้าแรก";
 "SHORTS_TAB" = "Shorts";
@@ -638,7 +638,7 @@
 // Sleep timer
 "SLEEP_TIMER" = "ตั้งเวลาปิด";
 "SLEEP_TIMER_OFF" = "ปิดตัวจับเวลา";
-"SLEEP_TIMER_REMAINING_FMT" = "เหลืออีก %@";
+"SLEEP_TIMER_REMAINING_FMT" = "เหลืออีก";
 "SLEEP_TIMER_MINUTES_FMT" = "%ld นาที";
 "SLEEP_TIMER_END_OF_VIDEO" = "จบวิดีโอนี้";
 "SLEEP_TIMER_TIME_UP" = "ตัวจับเวลาหมดแล้ว หยุดเล่นวิดีโอแล้ว";

@@ -462,14 +462,8 @@ void YMSleepTimerPresentPicker(UIView *sourceView) {
 
         YTDefaultSheetController *sheet = [%c(YTDefaultSheetController) sheetControllerWithParentResponder:parentResponder];
 
-        // Header subtitle: timer remaining + how long until the video ends.
-        NSMutableArray<NSString *> *subtitleParts = [NSMutableArray array];
-        if ([timer isActive] && timer.mode == YMSleepTimerModeCountdown) {
-            [subtitleParts addObject:[NSString stringWithFormat:LOC(@"SLEEP_TIMER_REMAINING_FMT"), [timer remainingText]]];
-        }
-        if (timeLeftText) [subtitleParts addObject:timeLeftText];
-
         if ([timer isActive]) {
+            if (timer.mode == YMSleepTimerModeCountdown) [sheet addHeaderWithTitle:LOC(@"SLEEP_TIMER_REMAINING_FMT") subtitle:[timer remainingText]];
             YTActionSheetAction *off = [%c(YTActionSheetAction) actionWithTitle:LOC(@"SLEEP_TIMER_OFF")
                                                                        subtitle:nil
                                                                       iconImage:nil

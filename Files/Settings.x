@@ -96,7 +96,9 @@ static NSArray<YMSettingsItem *> *YMTabBarItems(void) {
     return @[
         YMImageSegment(YMLOC(@"DEFAULT_TAB"), DefaultTab, defaultTabImages, 0),
         YMTextSegment(YMLOC(@"FORSTED_TAB_BAR"), UseFrostedTabBar, (@[YMLOC(@"DEFAULT"),YMLOC(@"ENABLED"), YMLOC(@"DISABLED")]), 0),
-        YMTextSegment(YMLOC(@"HIDDEN_PIVOT_BAR"), HiddenPivotBar, (@[YMLOC(@"DEFAULT"), YMLOC(@"ENABLED"), YMLOC(@"DISABLED")]), 0),
+        [YMTextSegment(YMLOC(@"HIDDEN_PIVOT_BAR"), HiddenPivotBar, (@[YMLOC(@"DEFAULT"), YMLOC(@"ENABLED"), YMLOC(@"DISABLED")]), 0) visibleWhen:^BOOL(NSUserDefaults *defaults) {
+            return ![YMHelpers isPad]; // iPhone layout only
+        }],
         YMToggle(YMLOC(@"HIDE_TAB_INDI"), YMLOC(@"HIDE_TAB_INDI_DESC"), HideTabIndi),
         YMToggle(YMLOC(@"HIDE_TAB_LABELS"), YMLOC(@"HIDE_TAB_LABELS_DESC"), HideTabLabels),
         YMNavAction(YMLOC(@"MANAGE_TABS"), YMLOC(@"MANAGE_TABS_DESC"), ^(UIViewController *vc) {

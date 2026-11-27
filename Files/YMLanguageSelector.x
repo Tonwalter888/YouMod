@@ -59,9 +59,14 @@ static const CGFloat YMLanguageCardPadWidth = 340;
 
 - (CGRect)frameOfPresentedViewInContainerView {
     CGRect bounds = self.containerView.bounds;
-    CGFloat width = bounds.size.width / 3.0;
-    CGFloat height = bounds.size.height / 2.0;
-    return CGRectMake((bounds.size.width - width) / 2, (bounds.size.height - height) / 3, width, height);
+    CGFloat width = bounds.size.width;
+    CGFloat height = bounds.size.height;
+    if ([YMHelpers isPadHardware]) {
+        width /= 2.0;
+        height /= 2.0;
+    } else if (bounds.size.height > bounds.size.width) height /= 2.0;
+    else width /= 2.0;
+    return CGRectMake((bounds.size.width - width) / 2, bounds.size.height - height, width, height);
 }
 
 - (void)containerViewWillLayoutSubviews {

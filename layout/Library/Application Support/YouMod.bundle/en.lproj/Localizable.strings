@@ -279,7 +279,7 @@
 "OVERLAY_BUTTONS_BOTTOM" = "Bottom buttons";
 "OVERLAY_BUTTONS_EMPTY" = "No buttons";
 "REMOVE_ADS" = "Remove ads";
-"REMOVE_ADS_DESC" = "Removes ads from the app, except Playables";
+"REMOVE_ADS_DESC" = "Removes ads from the app";
 "HIDE_SPONSOR_BUTTON" = "Hide sponsor button";
 "HIDE_SPONSOR_BUTTON_DESC" = "Hide the sponsor button under the video and in the Shorts overlay.";
 "DEARROW_THUMBNAILS" = "DeArrow thumbnails";
@@ -487,7 +487,7 @@
 "TABBAR" = "Tab bar";
 "DEFAULT_TAB" = "Default startup tab";
 "FORSTED_TAB_BAR" = "Translucent tab bar";
-"HIDDEN_PIVOT_BAR" = "Hide tab bar when scrolling down (iPhone layout only)";
+"HIDDEN_PIVOT_BAR" = "Hide tab bar when scrolling down";
 "ENABLED" = "Enabled";
 "HOME_TAB" = "Home";
 "SHORTS_TAB" = "Shorts";
@@ -754,7 +754,7 @@
 // Sleep timer
 "SLEEP_TIMER" = "Sleep Timer";
 "SLEEP_TIMER_OFF" = "Turn off timer";
-"SLEEP_TIMER_REMAINING_FMT" = "Time left: %@";
+"SLEEP_TIMER_REMAINING_FMT" = "Time left";
 "SLEEP_TIMER_MINUTES_FMT" = "%ld min";
 "SLEEP_TIMER_END_OF_VIDEO" = "End of video";
 "SLEEP_TIMER_TIME_UP" = "Sleep timer ended. Playback paused";

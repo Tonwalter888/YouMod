@@ -456,6 +456,14 @@ void YouModRemoveDrawerAds(YTELMViewController *self) {
 - (void)presentPromosheetWithEvent:(id)event {}
 %end
 
+// Route Playables ad responses through the command's existing no-ad fallback.
+%hook YTShowMiniAppAdCommandHandlerImpl
+- (void)handleGetMiniAppAdsResponse:(YTIGetMiniAppAdsResponse *)response model:(id)model miniAppContext:(id)context triggerType:(int)type rewardId:(id)rewardId messageID:(id)messageID sender:(id)sender completionBlock:(id)block {
+    if (response && (response.hasAdCommand || response.hasDisplayAdViewModel)) return;
+    %orig;
+}
+%end
+
 %ctor {
     [[NSUserDefaults standardUserDefaults] registerDefaults:@{
         RemoveAds: @YES

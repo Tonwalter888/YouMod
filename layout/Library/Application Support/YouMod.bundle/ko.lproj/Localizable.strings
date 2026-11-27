@@ -211,7 +211,7 @@
 "OVERLAY_BUTTONS_BOTTOM" = "하단 버튼";
 "OVERLAY_BUTTONS_EMPTY" = "버튼 없음";
 "REMOVE_ADS" = "광고 삭제";
-"REMOVE_ADS_DESC" = "게임을 제외한 앱 내 광고를 삭제합니다.";
+"REMOVE_ADS_DESC" = "앱 내 광고를 삭제합니다.";
 "HIDE_SPONSOR_BUTTON" = "Hide sponsor button";
 "HIDE_SPONSOR_BUTTON_DESC" = "Hide the sponsor button under the video and in the Shorts overlay.";
 "DEARROW_THUMBNAILS" = "DeArrow thumbnails";
@@ -419,7 +419,7 @@
 "TABBAR" = "탭 메뉴";
 "DEFAULT_TAB" = "기본 시작 탭";
 "FORSTED_TAB_BAR" = "반투명 탭 메뉴";
-"HIDDEN_PIVOT_BAR" = "Hide tab bar when scrolling down (iPhone layout only)";
+"HIDDEN_PIVOT_BAR" = "Hide tab bar when scrolling down";
 "ENABLED" = "켜짐";
 "HOME_TAB" = "홈";
 "SHORTS_TAB" = "Shorts";
@@ -726,7 +726,7 @@
 "AUDIO_AUTO_DUBBED" = "%@ [AI]";
 "SLEEP_TIMER" = "수면 타이머";
 "SLEEP_TIMER_OFF" = "타이머 끄기";
-"SLEEP_TIMER_REMAINING_FMT" = "남은 시간: %@";
+"SLEEP_TIMER_REMAINING_FMT" = "남은 시간";
 "SLEEP_TIMER_MINUTES_FMT" = "%ld분";
 "SLEEP_TIMER_END_OF_VIDEO" = "동영상 끝";
 "SLEEP_TIMER_TIME_UP" = "수면 타이머 종료 — 재생이 일시정지되었습니다";

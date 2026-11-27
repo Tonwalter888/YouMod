@@ -211,7 +211,7 @@
 "OVERLAY_BUTTONS_BOTTOM" = "Кнопки снизу";
 "OVERLAY_BUTTONS_EMPTY" = "Нет кнопок";
 "REMOVE_ADS" = "Убрать рекламу";
-"REMOVE_ADS_DESC" = "Убирает рекламу из приложения, кроме игр";
+"REMOVE_ADS_DESC" = "Убирает рекламу из приложения";
 "HIDE_SPONSOR_BUTTON" = "Скрыть кнопку «Спонсировать»";
 "HIDE_SPONSOR_BUTTON_DESC" = "Скрывает кнопку «Спонсировать» под видео и в оверлее Shorts.";
 "DEARROW_THUMBNAILS" = "DeArrow thumbnails";
@@ -419,7 +419,7 @@
 "TABBAR" = "Панель вкладок";
 "DEFAULT_TAB" = "Вкладка при запуске";
 "FORSTED_TAB_BAR" = "Полупрозрачная панель вкладок";
-"HIDDEN_PIVOT_BAR" = "Hide tab bar when scrolling down (iPhone layout only)";
+"HIDDEN_PIVOT_BAR" = "Hide tab bar when scrolling down";
 "ENABLED" = "Включено";
 "HOME_TAB" = "Главная";
 "SHORTS_TAB" = "Shorts";
@@ -726,7 +726,7 @@
 "AUDIO_AUTO_DUBBED" = "%@ [ИИ]";
 "SLEEP_TIMER" = "Автовыключение";
 "SLEEP_TIMER_OFF" = "Отключить автовыключение";
-"SLEEP_TIMER_REMAINING_FMT" = "Осталось: %@";
+"SLEEP_TIMER_REMAINING_FMT" = "Осталось";
 "SLEEP_TIMER_MINUTES_FMT" = "%ld мин.";
 "SLEEP_TIMER_END_OF_VIDEO" = "Конец видео";
 "SLEEP_TIMER_TIME_UP" = "Автовыключение сработало. Воспроизведение приостановлено";

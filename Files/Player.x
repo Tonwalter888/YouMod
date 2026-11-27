@@ -556,28 +556,20 @@ void YouModApplyPrevNextReplacement(YTMainAppControlsOverlayView *overlay) {
     NSString *labelText = durationLabel2.text ?: @"";
 
     NSString *baseText = labelText;
-    NSRange extraTimeRange = [baseText rangeOfString:@" • "];
-    if (extraTimeRange.location != NSNotFound) {
-        baseText = [baseText substringToIndex:extraTimeRange.location];
-    }
-    NSRange sleepRange = [baseText rangeOfString:@" \u263D "];
-    if (sleepRange.location != NSNotFound) {
-        baseText = [baseText substringToIndex:sleepRange.location];
-    }
     NSRange sbRange = [baseText rangeOfString:@" ("];
     if (sbRange.location != NSNotFound) {
         baseText = [baseText substringToIndex:sbRange.location];
+    }
+    NSRange extraTimeRange = [baseText rangeOfString:@" • "];
+    if (extraTimeRange.location != NSNotFound) {
+        baseText = [baseText substringToIndex:extraTimeRange.location];
     }
 
     NSMutableString *newLabelText = [NSMutableString stringWithString:baseText];
     if (IS_ENABLED(SBShowDuration) && safeSBTimeRemaining.length > 0) {
         [newLabelText appendFormat:@" (%@)", safeSBTimeRemaining];
     }
-    // ☽ + remaining sleep timer time, after the SponsorBlock part (fullscreen only).
-    if (ovcon.isFullscreen && YMSleepTimerIsActive()) {
-        NSString *sleepRemaining = YMSleepTimerRemainingText();
-        if (sleepRemaining.length > 0) [newLabelText appendFormat:@" \u263D %@", sleepRemaining];
-    }
+
     if (IS_ENABLED(ShowExtraTimeRemaining) && safeRemainingTimeText.length > 0) {
         [newLabelText appendFormat:@" • %@", safeRemainingTimeText];
     }
@@ -590,7 +582,7 @@ void YouModApplyPrevNextReplacement(YTMainAppControlsOverlayView *overlay) {
 }
 - (void)updateCurrentTimeTitleLabel {
     %orig;
-    if (!IS_ENABLED(ShowExtraTimeRemaining) && !IS_ENABLED(SBShowDuration) && !YMSleepTimerIsActive()) return;
+    if (!IS_ENABLED(ShowExtraTimeRemaining) && !IS_ENABLED(SBShowDuration)) return;
     YTMainAppVideoPlayerOverlayViewController *ovcon = (YTMainAppVideoPlayerOverlayViewController *)self._viewControllerForAncestor;
     if (![ovcon isKindOfClass:%c(YTMainAppVideoPlayerOverlayViewController)]) return;
     YTPlayerViewController *pvc = (YTPlayerViewController *)ovcon.parentViewController;
