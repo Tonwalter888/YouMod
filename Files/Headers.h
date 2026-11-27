@@ -305,6 +305,7 @@
 #define HideShortsShelf @"YouModHideShortsShelf"
 #define KeepShortsSubscript @"YouModKeepShortsSubscript"
 #define HideShortsHistory @"YouModHideShortsHistory"
+#define BlockShortsPlayer @"YouModBlockShortsPlayer"
 #define HideSearchHis @"YouModHideSearchHistoryAndSuggestions"
 #define HideSurveys @"YouModHideSurveys"
 #define HideRelatedVideos @"YouModHideRelatedVideos"
@@ -949,6 +950,7 @@ extern void YouModHandlePostLongPressAction(_ASDisplayView *view);
 extern void YouModHandleDownloadButtonAction(_ASDisplayView *view);
 extern void YouModFilterVideoButtons(_ASDisplayView *view, NSString *iden);
 extern void YouModFilterShortsDisplayView(_ASDisplayView *view, NSString *iden);
+extern void YouModRemoveShortsChip(_ASDisplayView *view, NSString *iden);
 extern void YouModRemoveShortsPausedButtons(_ASDisplayView *view, NSString *iden);
 extern void YouModApplyOLEDCollectionView(ASCollectionView *view, NSString *iden);
 extern void YouModRemoveDrawerAds(YTELMViewController *self);

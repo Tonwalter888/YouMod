@@ -14,6 +14,7 @@ static const void *kASViewKey = &kASViewKey;
     YouModSetupDownloadGestures(self, iden);
     if (IS_ENABLED(RemoveAds)) YouModFilterAdsDisplayView(self, iden);
     YouModFilterShortsDisplayView(self, iden);
+    YouModRemoveShortsChip(self, iden);
     YouModRemoveShortsPausedButtons(self, iden);
     if (iden.length > 0) objc_setAssociatedObject(self, kASViewKey, @YES, OBJC_ASSOCIATION_ASSIGN);
 }
